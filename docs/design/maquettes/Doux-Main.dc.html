@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Planning de la semaine (liserés doux)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 24px 20px 0">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 36px; letter-spacing: -0.5px">Menus</h1>
+<span style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1.5px solid #F2D27A; font-size: 13px; font-weight: 700; color: #8A6100">Famille · 4</span>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 4px; border-radius: 20px; border: 2px solid #22193A">
+<button aria-label="Semaine précédente" style="width: 44px; height: 44px; border: none; border-radius: 14px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">6 – 12 octobre</span>
+<span style="font-size: 12px; font-weight: 700; color: #C63D24">Les 7 prochains jours</span>
+</div>
+<button aria-label="Semaine suivante" style="width: 44px; height: 44px; border: none; border-radius: 14px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 100px">
+
+<sc-for list="{{days}}" as="day" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 22px; border: 1.5px solid #E7E1EE">
+<div style="display: flex; align-items: baseline; gap: 8px; padding: 0 4px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">{{day.name}}</span>
+<span style="font-size: 14px; font-weight: 600; color: #5E5470">{{day.date}}</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{day.meals}}" as="meal" hint-placeholder-count="2">
+<a href="Doux-Repas.dc.html" style="{{meal.tileStyle}}">
+<span style="{{meal.labelStyle}}">{{meal.label}}</span>
+<sc-if value="{{meal.empty}}" hint-placeholder-val="{{false}}">
+<span style="display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; color: #5E5470"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter</span>
+</sc-if>
+<sc-for list="{{meal.dishes}}" as="dish" hint-placeholder-count="1">
+<span style="{{dish.chipStyle}}">
+<span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{dish.name}}</span>
+<span title="parts" style="{{dish.badgeStyle}}">{{dish.parts}}</span>
+</span>
+</sc-for>
+</a>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</div>
+
+<nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 10px 16px 18px; background: #FFFFFF; border-top: 1.5px solid #E7E1EE; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<a href="Doux-Main.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 12px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>Planning</a>
+<a href="Doux-Bibliotheque.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"></path><path d="M4 21V5"></path><path d="M9 8h6"></path></svg>Plats</a>
+<a href="Doux-Courses.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"></path><circle cx="10" cy="20" r="1.3"></circle><circle cx="17" cy="20" r="1.3"></circle></svg>Courses</a>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var tint = function (h) { var n = parseInt(h.slice(1), 16), f = function (c) { return Math.round(c + (255 - c) * 0.6); }; return 'rgb(' + f(n >> 16) + ', ' + f((n >> 8) & 255) + ', ' + f(n & 255) + ')'; };
+    var tile = function (kind) {
+      var bc = kind === 'midi' ? '#F2D27A' : '#BDBAF0';
+      return 'display: flex; flex-direction: column; gap: 6px; min-height: 84px; box-sizing: border-box; padding: 10px; border-radius: 16px; background: #FFFFFF; border: 1.5px solid ' + bc + '; text-decoration: none; color: #22193A';
+    };
+    var emptyTile = 'display: flex; flex-direction: column; gap: 6px; min-height: 84px; box-sizing: border-box; padding: 10px; border-radius: 16px; background: #FFFFFF; border: 2px dashed #CFC6DE; text-decoration: none; color: #22193A';
+    var label = function (kind) {
+      var c = kind === 'midi' ? '#8A6100' : '#3D3A8C';
+      return 'font-size: 11px; font-weight: 800; letter-spacing: 1px; color: ' + c;
+    };
+    var meal = function (kind, dishes) {
+      var empty = dishes.length === 0;
+      return { label: kind === 'midi' ? 'MIDI' : 'SOIR', dishes: dishes, empty: empty, tileStyle: empty ? emptyTile : tile(kind), labelStyle: label(kind) };
+    };
+    var d = function (name, parts, color) {
+      return {
+        name: name,
+        parts: parts,
+        chipStyle: 'display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 2px 3px 2px 9px; border-radius: 999px; border: 1.5px solid ' + tint(color) + '; font-size: 13px; font-weight: 700; color: #22193A',
+        badgeStyle: 'flex-shrink: 0; min-width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid ' + tint(color) + '; color: ' + color + '; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center'
+      };
+    };
+    return {
+      days: [
+        { name: 'Mardi', date: '6 oct.', meals: [meal('midi', [d('Pâtes pesto', 4, '#2E8A6E')]), meal('soir', [d('Chili con carne', 3, '#C2502E'), d('Chili végétarien', 1, '#3F7F25')])] },
+        { name: 'Mercredi', date: '7 oct.', meals: [meal('midi', []), meal('soir', [d("Soupe à l'oignon", 4, '#8A45B3')])] },
+        { name: 'Jeudi', date: '8 oct.', meals: [meal('midi', [d('Chili con carne', 4, '#C2502E')]), meal('soir', [d('Gratin de courgettes', 4, '#2F6FB0')])] },
+        { name: 'Vendredi', date: '9 oct.', meals: [meal('midi', [d('Restes', 4, '#6E6680')]), meal('soir', [d('Pizza maison', 5, '#9C7400')])] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
