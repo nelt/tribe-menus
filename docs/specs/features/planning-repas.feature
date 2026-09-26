@@ -1,6 +1,6 @@
 # language: fr
 Fonctionnalité: Planning des repas
-  En tant que membre de la famille,
+  En tant que membre de la tribu,
   je veux placer des plats de la bibliothèque dans les repas de la semaine,
   afin d'organiser nos menus.
 

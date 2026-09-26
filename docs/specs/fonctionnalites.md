@@ -5,14 +5,15 @@
 
 ## Objectif
 
-Permettre à une famille de planifier ses repas de la semaine en choisissant des plats, puis d'obtenir automatiquement la liste de courses correspondante pour une période donnée. Usage principal : mobile.
+Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de planifier ses repas de la semaine en choisissant des plats, puis d'obtenir automatiquement la liste de courses correspondante pour une période donnée. Usage principal : mobile.
 
 ## Concepts
 
 | Concept | Description |
 | --- | --- |
-| **Ingrédient** | Élément du référentiel partagé (ex. « tomate », « riz »), avec une unité par défaut. |
-| **Bibliothèque de plats** | L'ensemble des plats de la famille. Un plat y reste indépendamment de son utilisation dans les repas. |
+| **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
+| **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut. |
+| **Bibliothèque de plats** | L'ensemble des plats de la tribu. Un plat y reste indépendamment de son utilisation dans les repas. |
 | **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (4 par défaut). Pas de recette (étapes) en V1. |
 | **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis. |
 | **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (toujours 4 par défaut). Exemple : chili 3 parts et chili végétarien 1 part. |
@@ -65,10 +66,14 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 - **C3** : Je coche les articles au fil des courses.
 - **C4** : Une liste déjà affichée reste consultable et cochable sans réseau ; les coches se synchronisent au retour du réseau.
 
-### Foyer (`features/foyer.feature`)
+### Tribu (`features/tribu.feature`)
 
-- **F1** : Les membres du foyer partagent la bibliothèque, le planning et les listes de courses.
-- **F2** : Tous les membres ont les mêmes droits.
+- **T1** : Les membres de la tribu partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses ; les autres tribus n'y ont pas accès.
+- **T2** : Tous les membres ont les mêmes droits.
+
+### Membres, sessions et administration
+
+Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; critères dans `features/membres-et-sessions.feature` et `features/administration.feature`. Les exigences ENF-01 (connexion et session) et ENF-02 (compartimentage entre tribus) ont leurs critères dans `features/authentification.feature` et `features/compartimentage-tribus.feature`.
 
 ## Hors périmètre V1
 
@@ -93,3 +98,4 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 - **Q6** : pas de droits différenciés en V1 ; pas de temps réel nécessaire.
 - **Q7** : la liste de courses doit pouvoir être consultée et cochée hors ligne.
 - **Q8** : chaque plat servi part toujours de 4 parts.
+- **Q9** : la bibliothèque de plats et le référentiel d'ingrédients sont propres à chaque tribu : partagés entre ses membres, jamais entre tribus.

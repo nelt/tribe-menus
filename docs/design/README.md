@@ -10,19 +10,28 @@ Principe : fond blanc, cartes délimitées par des liserés fins, couleur porté
 
 | Écran | Fichier de référence | Stories |
 | --- | --- | --- |
+| Accueil : saisie de l'e-mail | `maquettes/Doux-Connexion.dc.html` | ENF-01 |
+| Accueil : saisie du code | `maquettes/Doux-Code.dc.html` | ENF-01 |
 | Planning de la semaine | `maquettes/Doux-Main.dc.html` | R1, R5 |
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
 | Création / édition d'un plat | `maquettes/Doux-Plat.dc.html` | P1, P4 |
 | Liste de courses | `maquettes/Doux-Courses.dc.html` | C1, C2, C3, C4 |
+| Tribu : membres | `maquettes/Doux-Tribu.dc.html` | EF-02, EF-03 (quitter la tribu), EF-06 |
+| Ajouter un membre | `maquettes/Doux-AjoutMembre.dc.html` | EF-01, EF-06 |
+| Fiche d'un membre | `maquettes/Doux-Membre.dc.html` | EF-03, EF-06 |
+| Mes appareils | `maquettes/Doux-Appareils.dc.html` | EF-04, EF-05 |
 
 Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de design, pas du code de production). Ils servent de référence précise pour la structure, les styles et les comportements ; la logique de recherche de `Doux-Bibliotheque.dc.html` illustre les règles de P3.
 
 ## Navigation
 
+- Accueil → « Recevoir un code » ouvre la saisie du code → « Se connecter » ouvre le planning. « Se déconnecter » et « Quitter la tribu » ramènent à l'accueil.
 - Barre d'onglets en bas : **Planning**, **Plats**, **Courses**. Onglet actif en aplat rouge tomate, texte blanc.
 - Planning → toucher une case de repas ouvre le détail du repas.
 - Plats → « Nouveau » ouvre la création d'un plat.
+- Planning → la pastille de l'en-tête (nom de la tribu et nombre de membres) ouvre l'écran Tribu. Pas d'onglet dédié : la gestion de la tribu est occasionnelle.
+- Tribu → toucher un membre ouvre sa fiche ; « Ajouter un membre » ouvre l'ajout ; « Mes appareils » ouvre la liste des sessions.
 
 ## Tokens
 
@@ -77,3 +86,9 @@ Liseré = `c + (255 − c) × 0,6` sur chaque composante RVB.
 - **Initiale de plat** : carré arrondi 40–44 px, liseré adouci, lettre dans la teinte soutenue.
 - **Article de liste de courses** : case à cocher native, nom, quantité en rouge tomate ; coché = barré, liseré vert, déplacé en bas.
 - **Bandeau hors ligne** : liseré indigo adouci, icône et texte indigo.
+- **Avatar de membre** : rond 40 px (72 px sur la fiche), liseré adouci et initiale dans la teinte soutenue, comme l'initiale de plat. Membre révoqué : liseré en pointillé `#CFC6DE`, initiale `#6E6680`.
+- **Statut de membre** : pastille « Actif » (liseré `#A9D3B1`, texte `#2F7A3E`) ou « Révoqué » (pointillé `#CFC6DE`, texte `#6E6680`). La carte d'un membre révoqué est en pointillé.
+- **Carte de session** : icône d'appareil, nom donné ou appareil détecté, dates ; la session courante porte la pastille verte « cet appareil » et un liseré vert.
+- **Action destructive** (révoquer, déconnecter, quitter) : texte ou contour rouge tomate, jamais en aplat sur l'écran. L'aplat n'apparaît que dans la feuille de confirmation.
+- **Feuille de confirmation** : panneau blanc en bas d'écran (coins 26 px), voile `rgba(34, 25, 58, 0.45)`, titre sous forme de question, conséquences en une phrase, action en aplat puis « Annuler ».
+- **Fond d'accueil** (`maquettes/FondTribu.dc.html`, composant importé par les écrans d'accueil) : une foule de pictogrammes naïfs pleins, cernés d'un trait `#22193A`, qui se chevauchent sans ordre et couvrent tout l'écran (fond `#22193A` derrière). Moitié personnages de la tribu en buste (peaux, coiffures et vêtements variés), moitié ingrédients et plats. Couleurs vives de la palette des plats. Une sous-couche de grands pictogrammes sur une grille serrée garantit la couverture ; la foule est posée par-dessus. Le texte ne se pose jamais directement sur le fond : il est dans un médaillon ou une carte blanche au contour foncé de 2 px. C'est le seul endroit de l'application où la couleur est en aplat hors des actions.
