@@ -5,6 +5,7 @@ Exigences transverses de l'application familiale de menus de la semaine (PWA).
 ## ENF-01. Authentification simple et session persistante
 
 - **Statut** : retenue (2026-09-27)
+- **Décision d'architecture** : [ADR 0001](../adr/0001-authentification-code-email-et-session-cookie.md)
 
 ### Exigence
 
@@ -19,7 +20,7 @@ L'utilisateur se connecte une seule fois par appareil. Sa session survit à la f
   - attributs `HttpOnly`, `Secure`, `SameSite=Lax`, durée de 90 jours ;
   - expiration glissante : chaque utilisation prolonge la session ;
   - le cookie contient un jeton opaque aléatoire ; le serveur n'en conserve qu'une empreinte (hachage), associée à l'utilisateur et à l'appareil.
-- **Révocation** : l'utilisateur peut consulter la liste de ses appareils connectés et fermer une session à distance.
+- **Révocation** : l'utilisateur peut consulter la liste de ses appareils connectés et fermer une session à distance (détail : [gestion des membres et des sessions](gestion-membres-et-sessions.md), EF-04 et EF-05).
 - **Hors-ligne** : l'interface et les données en cache restent consultables sans réseau ; la validité de la session est vérifiée au retour de la connexion.
 
 ### Hors périmètre (pour l'instant)
