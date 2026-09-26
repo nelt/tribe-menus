@@ -46,7 +46,11 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
   - Les parts de référence valent 4 par défaut et sont modifiables.
   - Un plat doit avoir un nom ; la liste d'ingrédients peut être vide (ex. « restes »).
 - **P2** : Je modifie un plat de la bibliothèque. Les modifications s'appliquent à tous les repas où il est servi. Un plat ne peut pas être supprimé de la bibliothèque en V1.
-- **P3** : Je retrouve un plat par recherche sur son nom.
+- **P3** : Je retrouve un plat en cherchant sur les mots de son nom et sur ses ingrédients.
+  - Exemples : « chili » trouve « Chili con carne » ; « courgette » trouve tous les plats qui contiennent des courgettes.
+  - La recherche ignore la casse et les accents (« gratin » trouve « Gratin dauphinois », « creme » trouve « crème »).
+  - Avec plusieurs mots, un plat est retenu s'il contient chacun d'eux, dans son nom ou ses ingrédients (« gratin courgette »).
+  - Un début de mot suffit (« courg » trouve « courgette »).
 - **P4** : En saisissant un ingrédient, l'application me propose ceux qui existent déjà (autocomplétion), pour éviter les doublons (« tomate » / « tomates ») qui fausseraient l'agrégation. Je peux créer un nouvel ingrédient s'il n'existe pas.
 
 ### Planning des repas
