@@ -9,6 +9,7 @@ Dépôt bac à sable personnel. Le travail préparatoire (cadrage, architecture,
 ## Avant de coder
 
 - Si la demande fait référence à un plan, lire le fichier correspondant dans `docs/plans/` et suivre ses étapes dans l'ordre.
+- Les critères d'acceptation sont dans `docs/specs/features/*.feature` (Gherkin, en français). Écrire les tests à partir de ces scénarios, de préférence avant le code, et citer l'identifiant de la story (ex. `C2`) dans les commits.
 - Consulter `docs/adr/` pour les décisions déjà prises ; ne pas les contredire sans le signaler.
 - En cas d'ambiguïté ou d'écart par rapport au plan, le dire plutôt que d'improviser.
 

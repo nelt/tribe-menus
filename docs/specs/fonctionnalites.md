@@ -37,44 +37,37 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
 - Pour agréger un même ingrédient saisi dans des unités différentes de la même famille, on convertit (ex. 500 g + 1 kg = 1,5 kg).
 - Entre familles différentes (ex. « 2 pièces » et « 300 g » d'oignon), pas de conversion : lignes distinctes.
 - Dans la liste de courses, les quantités à la pièce sont arrondies à l'entier supérieur, après agrégation (1,5 oignon donne 2).
+- Une quantité agrégée est affichée dans la plus grande unité de sa famille qui donne une valeur d'au moins 1 (1 500 g s'affiche 1,5 kg ; 750 g reste 750 g).
 
 ## User stories
 
-### Bibliothèque de plats
+Les critères d'acceptation de chaque story sont écrits en Gherkin dans `features/`. Chaque scénario porte l'identifiant de sa story en tag (ex. `@C2`).
 
-- **P1** : En tant que membre, je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité).
-  - Les parts de référence valent 4 par défaut et sont modifiables.
-  - Un plat doit avoir un nom ; la liste d'ingrédients peut être vide (ex. « restes »).
-- **P2** : Je modifie un plat de la bibliothèque. Les modifications s'appliquent à tous les repas où il est servi. Un plat ne peut pas être supprimé de la bibliothèque en V1.
+### Bibliothèque de plats (`features/bibliotheque-plats.feature`)
+
+- **P1** : Je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité), pour 4 parts par défaut.
+- **P2** : Je modifie un plat ; la modification s'applique à tous les repas où il est servi. Pas de suppression en V1.
 - **P3** : Je retrouve un plat en cherchant sur les mots de son nom et sur ses ingrédients.
-  - Exemples : « chili » trouve « Chili con carne » ; « courgette » trouve tous les plats qui contiennent des courgettes.
-  - La recherche ignore la casse et les accents (« gratin » trouve « Gratin dauphinois », « creme » trouve « crème »).
-  - Avec plusieurs mots, un plat est retenu s'il contient chacun d'eux, dans son nom ou ses ingrédients (« gratin courgette »).
-  - Un début de mot suffit (« courg » trouve « courgette »).
-- **P4** : En saisissant un ingrédient, l'application me propose ceux qui existent déjà (autocomplétion), pour éviter les doublons (« tomate » / « tomates ») qui fausseraient l'agrégation. Je peux créer un nouvel ingrédient s'il n'existe pas.
+- **P4** : La saisie d'un ingrédient propose ceux qui existent déjà (autocomplétion) ; je peux en créer un nouveau.
 
-### Planning des repas
+### Planning des repas (`features/planning-repas.feature`)
 
-- **R1** : Je vois les repas des 7 prochains jours (de demain à J+7) sous forme de grille, avec deux cases par jour : midi et soir.
-- **R2** : J'ajoute un ou plusieurs plats de la bibliothèque à un repas. Chaque plat servi part de 4 parts, modifiable.
+- **R1** : Je vois les repas des 7 prochains jours (de demain à J+7), avec deux cases par jour : midi et soir.
+- **R2** : J'ajoute un ou plusieurs plats de la bibliothèque à un repas ; chaque plat servi part de 4 parts.
 - **R3** : Je modifie le nombre de parts d'un plat servi.
-- **R4** : Je retire un plat d'un repas. Le plat reste dans la bibliothèque ; seule sa configuration dans ce repas (nombre de parts) est perdue.
+- **R4** : Je retire un plat d'un repas ; il reste dans la bibliothèque, mais sa configuration dans ce repas est perdue.
 - **R5** : Je navigue vers les semaines précédentes et suivantes.
 
-### Liste de courses
+### Liste de courses (`features/liste-courses.feature`)
 
-- **C1** : Je demande la liste de courses en indiquant un jour de début et un jour de fin. Par défaut, la période va de demain à J+7 inclus.
-- **C2** : La liste agrège les ingrédients de tous les plats servis de la période :
-  - les quantités sont ajustées selon la règle de calcul ;
-  - un même ingrédient donne une seule ligne dès que ses unités sont convertibles entre elles ;
-  - sinon, une ligne par famille d'unités ;
-  - les quantités à la pièce sont arrondies à l'entier supérieur.
+- **C1** : Je demande la liste de courses pour une période ; par défaut, de demain à J+7 inclus.
+- **C2** : La liste agrège les ingrédients des plats servis de la période, avec ajustement aux parts, conversions et arrondis.
 - **C3** : Je coche les articles au fil des courses.
-- **C4** : Une liste de courses déjà affichée reste consultable et cochable sans réseau. Les coches faites hors ligne sont synchronisées au retour du réseau. Générer une nouvelle liste nécessite le réseau.
+- **C4** : Une liste déjà affichée reste consultable et cochable sans réseau ; les coches se synchronisent au retour du réseau.
 
-### Foyer
+### Foyer (`features/foyer.feature`)
 
-- **F1** : Les membres de la famille partagent la même bibliothèque, le même planning et les mêmes listes de courses.
+- **F1** : Les membres du foyer partagent la bibliothèque, le planning et les listes de courses.
 - **F2** : Tous les membres ont les mêmes droits.
 
 ## Hors périmètre V1
