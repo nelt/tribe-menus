@@ -1,6 +1,6 @@
 # language: fr
 Fonctionnalité: Liste de courses
-  En tant que membre de la famille,
+  En tant que membre de la tribu,
   je veux obtenir la liste de courses correspondant aux repas prévus,
   afin de faire les courses sans rien oublier ni acheter en trop.
 
@@ -89,7 +89,7 @@ Fonctionnalité: Liste de courses
   Scénario: Les coches faites hors ligne sont synchronisées au retour du réseau
     Étant donné que j'ai coché "bœuf haché" sans réseau
     Quand le réseau revient
-    Alors "bœuf haché" apparaît comme coché pour les autres membres du foyer
+    Alors "bœuf haché" apparaît comme coché pour les autres membres de la tribu
 
   @C4
   Scénario: Générer une liste nécessite le réseau
