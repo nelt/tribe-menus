@@ -1,6 +1,6 @@
 # language: fr
 Fonctionnalité: Bibliothèque de plats
-  En tant que membre de la famille,
+  En tant que membre de la tribu,
   je veux constituer une bibliothèque de plats avec leurs ingrédients,
   afin de pouvoir les choisir rapidement pour les repas.
 
