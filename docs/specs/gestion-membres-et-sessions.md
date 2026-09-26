@@ -2,14 +2,16 @@
 
 Spécification fonctionnelle. S'appuie sur ENF-01 et ENF-02 (`exigences-non-fonctionnelles.md`) et l'ADR 0001.
 
+Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07) et `features/administration.feature` (EF-08, EF-09).
+
 ## Principes
 
-- Une **famille** regroupe les personnes qui partagent les menus. Elle est créée par un script d'administration (EF-08).
-- Une instance de l'application **héberge plusieurs familles**, strictement compartimentées (ENF-02).
-- Chaque famille a un **identifiant d'URL** (par exemple `/f/<identifiant>/…`), unique sur l'instance, qui sert de discriminant : toutes les pages et tous les appels de l'application sont faits dans le contexte d'une famille.
-- Un **membre** est une personne autorisée à utiliser l'application au sein d'une famille.
-- Le membre est **identifié par son adresse e-mail** dans sa famille, normalisée (sans espaces, en minuscules). L'adresse est unique au sein d'une famille, mais **une même adresse peut être membre de plusieurs familles** ; chaque appartenance est un membre distinct, avec son propre statut.
-- **Les sessions sont propres à une famille** : se connecter à une famille n'ouvre pas de session dans une autre, même avec la même adresse. La connexion (ENF-01) se fait depuis l'URL de la famille ; le code n'est envoyé que si l'adresse est membre actif de cette famille.
+- Une **tribu** regroupe les personnes qui partagent les menus. Elle est créée par un script d'administration (EF-08).
+- Une instance de l'application **héberge plusieurs tribus**, strictement compartimentées (ENF-02).
+- Chaque tribu a un **identifiant d'URL** (par exemple `/t/<identifiant>/…`), unique sur l'instance, qui sert de discriminant : toutes les pages et tous les appels de l'application sont faits dans le contexte d'une tribu.
+- Un **membre** est une personne autorisée à utiliser l'application au sein d'une tribu.
+- Le membre est **identifié par son adresse e-mail** dans sa tribu, normalisée (sans espaces, en minuscules). L'adresse est unique au sein d'une tribu, mais **une même adresse peut être membre de plusieurs tribus** ; chaque appartenance est un membre distinct, avec son propre statut.
+- **Les sessions sont propres à une tribu** : se connecter à une tribu n'ouvre pas de session dans une autre, même avec la même adresse. La connexion (ENF-01) se fait depuis l'URL de la tribu ; le code n'est envoyé que si l'adresse est membre actif de cette tribu.
 - Il n'y a **pas d'inscription libre** : on ne devient membre que par le script d'initialisation ou par l'ajout d'un membre existant.
 - **Tous les membres ont les mêmes droits** en v1 (voir « Hors périmètre »).
 - **Aucune notification par e-mail** n'est envoyée lors des opérations sur les membres. Le seul e-mail envoyé par l'application est le code de connexion (ENF-01).
@@ -20,24 +22,24 @@ Spécification fonctionnelle. S'appuie sur ENF-01 et ENF-02 (`exigences-non-fonc
 - Un membre connecté peut ajouter un nouveau membre en saisissant son adresse e-mail (et, facultativement, un nom d'affichage).
 - Le nouveau membre peut ensuite se connecter avec le code par e-mail (ENF-01), sans autre démarche.
 - L'ajout d'une adresse déjà membre active est refusé avec un message explicite.
-- L'ajout d'une adresse de membre révoqué de la famille est refusé ; l'application propose de le réactiver (EF-06).
-- Que l'adresse soit déjà membre d'autres familles n'a aucune incidence, et n'est pas révélé.
+- L'ajout d'une adresse de membre révoqué de la tribu est refusé ; l'application propose de le réactiver (EF-06).
+- Que l'adresse soit déjà membre d'autres tribus n'a aucune incidence, et n'est pas révélé.
 
 ## EF-02. Consulter les membres
 
-- Un membre connecté voit la liste des membres de sa famille : nom d'affichage, e-mail, date d'ajout, ajouté par, statut (actif / révoqué).
+- Un membre connecté voit la liste des membres de sa tribu : nom d'affichage, e-mail, date d'ajout, ajouté par, statut (actif / révoqué).
 
 ## EF-03. Révoquer un membre
 
-- Un membre connecté peut révoquer un autre membre, ou se révoquer lui-même (quitter la famille).
+- Un membre connecté peut révoquer un autre membre, ou se révoquer lui-même (quitter la tribu).
 - La révocation est immédiate : toutes les sessions du membre révoqué sont fermées et ses éventuels codes de connexion en attente sont invalidés. Il ne peut plus demander de code.
 - En cas d'auto-révocation, la session courante est fermée et l'utilisateur revient à l'écran de connexion.
 - Le membre révoqué est désactivé, pas supprimé : ses données (menus, historique) sont conservées.
-- Si le dernier membre actif se révoque, la famille n'a plus de membre actif ; seul le script d'administration (EF-09) permet alors d'en réactiver un.
+- Si le dernier membre actif se révoque, la tribu n'a plus de membre actif ; seul le script d'administration (EF-09) permet alors d'en réactiver un.
 
 ## EF-04. Consulter ses sessions
 
-- Un membre connecté voit la liste de ses sessions actives dans la famille courante. Pour chacune :
+- Un membre connecté voit la liste de ses sessions actives dans la tribu courante. Pour chacune :
   - l'appareil détecté : type (téléphone, tablette, ordinateur), système, navigateur, et le fait qu'il s'agisse de la PWA installée ou d'un onglet de navigateur (par exemple « iPhone · Safari · app installée ») ;
   - la date d'ouverture et la date de dernière activité ;
   - un repère « cet appareil » pour la session courante.
@@ -58,26 +60,26 @@ Spécification fonctionnelle. S'appuie sur ENF-01 et ENF-02 (`exigences-non-fonc
 ## EF-07. Journal d'audit
 
 - Sont enregistrées en base :
-  - les opérations sur les membres : initialisation de la famille, ajout, révocation (y compris auto-révocation), réactivation ;
+  - les opérations sur les membres : initialisation de la tribu, ajout, révocation (y compris auto-révocation), réactivation ;
   - les opérations sur les sessions : ouverture (connexion réussie), révocation d'une session, « déconnecter tous les autres appareils », déconnexion, fermeture des sessions consécutive à la révocation d'un membre.
-- Chaque entrée contient : la famille, la date et l'heure, l'opération, le membre concerné, l'auteur (un membre, ou « script d'administration »), et pour une opération sur une session, la session et l'appareil détecté.
+- Chaque entrée contient : la tribu, la date et l'heure, l'opération, le membre concerné, l'auteur (un membre, ou « script d'administration »), et pour une opération sur une session, la session et l'appareil détecté.
 - Le journal est en ajout seul : ses entrées ne sont ni modifiées ni supprimées par l'application.
 
 ## Administration
 
 Scripts exécutés sur le serveur, hors de l'interface de l'application. Leurs opérations sont tracées dans le journal d'audit (EF-07) avec « script d'administration » comme auteur.
 
-### EF-08. Initialiser une famille
+### EF-08. Initialiser une tribu
 
-- Le script crée une nouvelle famille et demande de manière interactive son nom et son identifiant d'URL (refusé s'il est déjà pris), puis l'adresse e-mail du premier membre (et, facultativement, son nom d'affichage).
-- Il peut être lancé autant de fois que nécessaire, chaque exécution créant une famille distincte.
-- Il affiche l'URL de la famille à transmettre au premier membre.
+- Le script crée une nouvelle tribu et demande de manière interactive son nom et son identifiant d'URL (refusé s'il est déjà pris), puis l'adresse e-mail du premier membre (et, facultativement, son nom d'affichage).
+- Il peut être lancé autant de fois que nécessaire, chaque exécution créant une tribu distincte.
+- Il affiche l'URL de la tribu à transmettre au premier membre.
 - Le premier membre peut ensuite se connecter avec le code par e-mail et ajouter les autres membres (EF-01).
 
 ### EF-09. Réactiver un membre révoqué
 
-- Le script demande la famille (par son identifiant d'URL), puis l'adresse e-mail du membre révoqué, et le réactive avec le même effet qu'EF-06.
-- C'est le moyen de récupération lorsque la famille n'a plus aucun membre actif.
+- Le script demande la tribu (par son identifiant d'URL), puis l'adresse e-mail du membre révoqué, et le réactive avec le même effet qu'EF-06.
+- C'est le moyen de récupération lorsque la tribu n'a plus aucun membre actif.
 
 ## Hors périmètre (version ultérieure)
 
