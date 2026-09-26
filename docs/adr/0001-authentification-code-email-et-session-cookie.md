@@ -32,6 +32,7 @@ Contraintes relevées :
 - **Positif** : pas de mot de passe, pas de fournisseur tiers, révocation immédiate et granulaire, session robuste aux redémarrages et aux purges de stockage.
 - **Envoi d'e-mails** : un service d'envoi (SMTP ou service transactionnel) devient une dépendance ; sa délivrabilité conditionne la première connexion sur chaque appareil.
 - **Stockage des sessions** : une table de sessions est nécessaire, consultée à chaque requête authentifiée (coût négligeable à cette échelle).
+- **Une session par famille** : une instance héberge plusieurs familles (ENF-02) et une même adresse peut appartenir à plusieurs d'entre elles. Le cookie de session doit donc être propre à une famille (par exemple `Path` limité au préfixe d'URL de la famille, ou nom de cookie par famille), afin qu'un même navigateur puisse être connecté à plusieurs familles sans que les sessions se mélangent. Le choix précis relève de l'implémentation.
 - **Même origine** : le front et l'API doivent être servis depuis le même site pour que le cookie reste first-party.
 - **CSRF** : `SameSite=Lax` couvre l'essentiel ; les requêtes modifiant des données passent par des méthodes non-GET et une vérification de l'en-tête `Origin`.
 - **Hors-ligne** : sans réseau, la PWA affiche les données en cache ; la session est revérifiée au retour de la connexion.

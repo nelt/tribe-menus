@@ -1,13 +1,15 @@
 # Gestion des membres et des sessions
 
-Spécification fonctionnelle. S'appuie sur ENF-01 (`exigences-non-fonctionnelles.md`) et l'ADR 0001.
+Spécification fonctionnelle. S'appuie sur ENF-01 et ENF-02 (`exigences-non-fonctionnelles.md`) et l'ADR 0001.
 
 ## Principes
 
 - Une **famille** regroupe les personnes qui partagent les menus. Elle est créée par un script d'administration (EF-08).
-- Une instance de l'application **héberge plusieurs familles**, strictement isolées : un membre ne voit que les membres, les sessions, les menus et le journal d'audit de sa propre famille.
-- Un **membre** est une personne d'une famille autorisée à utiliser l'application.
-- Le membre est **identifié par son adresse e-mail**, unique et normalisée (sans espaces, en minuscules). L'unicité vaut pour toute l'instance : une adresse appartient à une seule famille.
+- Une instance de l'application **héberge plusieurs familles**, strictement compartimentées (ENF-02).
+- Chaque famille a un **identifiant d'URL** (par exemple `/f/<identifiant>/…`), unique sur l'instance, qui sert de discriminant : toutes les pages et tous les appels de l'application sont faits dans le contexte d'une famille.
+- Un **membre** est une personne autorisée à utiliser l'application au sein d'une famille.
+- Le membre est **identifié par son adresse e-mail** dans sa famille, normalisée (sans espaces, en minuscules). L'adresse est unique au sein d'une famille, mais **une même adresse peut être membre de plusieurs familles** ; chaque appartenance est un membre distinct, avec son propre statut.
+- **Les sessions sont propres à une famille** : se connecter à une famille n'ouvre pas de session dans une autre, même avec la même adresse. La connexion (ENF-01) se fait depuis l'URL de la famille ; le code n'est envoyé que si l'adresse est membre actif de cette famille.
 - Il n'y a **pas d'inscription libre** : on ne devient membre que par le script d'initialisation ou par l'ajout d'un membre existant.
 - **Tous les membres ont les mêmes droits** en v1 (voir « Hors périmètre »).
 - **Aucune notification par e-mail** n'est envoyée lors des opérations sur les membres. Le seul e-mail envoyé par l'application est le code de connexion (ENF-01).
@@ -18,12 +20,12 @@ Spécification fonctionnelle. S'appuie sur ENF-01 (`exigences-non-fonctionnelles
 - Un membre connecté peut ajouter un nouveau membre en saisissant son adresse e-mail (et, facultativement, un nom d'affichage).
 - Le nouveau membre peut ensuite se connecter avec le code par e-mail (ENF-01), sans autre démarche.
 - L'ajout d'une adresse déjà membre active est refusé avec un message explicite.
-- L'ajout d'une adresse de membre révoqué de la même famille est refusé ; l'application propose de le réactiver (EF-06).
-- L'ajout d'une adresse appartenant à une autre famille est refusé, avec un message qui ne révèle pas l'existence de cette autre famille.
+- L'ajout d'une adresse de membre révoqué de la famille est refusé ; l'application propose de le réactiver (EF-06).
+- Que l'adresse soit déjà membre d'autres familles n'a aucune incidence, et n'est pas révélé.
 
 ## EF-02. Consulter les membres
 
-- Un membre connecté voit la liste des membres : nom d'affichage, e-mail, date d'ajout, ajouté par, statut (actif / révoqué).
+- Un membre connecté voit la liste des membres de sa famille : nom d'affichage, e-mail, date d'ajout, ajouté par, statut (actif / révoqué).
 
 ## EF-03. Révoquer un membre
 
@@ -35,7 +37,7 @@ Spécification fonctionnelle. S'appuie sur ENF-01 (`exigences-non-fonctionnelles
 
 ## EF-04. Consulter ses sessions
 
-- Un membre connecté voit la liste de ses sessions actives. Pour chacune :
+- Un membre connecté voit la liste de ses sessions actives dans la famille courante. Pour chacune :
   - l'appareil détecté : type (téléphone, tablette, ordinateur), système, navigateur, et le fait qu'il s'agisse de la PWA installée ou d'un onglet de navigateur (par exemple « iPhone · Safari · app installée ») ;
   - la date d'ouverture et la date de dernière activité ;
   - un repère « cet appareil » pour la session courante.
@@ -67,14 +69,14 @@ Scripts exécutés sur le serveur, hors de l'interface de l'application. Leurs o
 
 ### EF-08. Initialiser une famille
 
-- Le script crée une nouvelle famille et demande de manière interactive son nom, puis l'adresse e-mail du premier membre (et, facultativement, son nom d'affichage).
+- Le script crée une nouvelle famille et demande de manière interactive son nom et son identifiant d'URL (refusé s'il est déjà pris), puis l'adresse e-mail du premier membre (et, facultativement, son nom d'affichage).
 - Il peut être lancé autant de fois que nécessaire, chaque exécution créant une famille distincte.
-- Il refuse une adresse déjà membre d'une famille.
+- Il affiche l'URL de la famille à transmettre au premier membre.
 - Le premier membre peut ensuite se connecter avec le code par e-mail et ajouter les autres membres (EF-01).
 
 ### EF-09. Réactiver un membre révoqué
 
-- Le script réactive un membre révoqué à partir de son adresse e-mail (unique sur l'instance, elle désigne aussi la famille), avec le même effet qu'EF-06.
+- Le script demande la famille (par son identifiant d'URL), puis l'adresse e-mail du membre révoqué, et le réactive avec le même effet qu'EF-06.
 - C'est le moyen de récupération lorsque la famille n'a plus aucun membre actif.
 
 ## Hors périmètre (version ultérieure)
