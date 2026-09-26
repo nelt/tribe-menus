@@ -1,7 +1,7 @@
 # Spécifications fonctionnelles : menus de la semaine (V1)
 
 - **Date** : 2026-09-26
-- **Statut** : brouillon, à valider
+- **Statut** : prêt
 
 ## Objectif
 
@@ -45,7 +45,7 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
 - **P1** : En tant que membre, je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité).
   - Les parts de référence valent 4 par défaut et sont modifiables.
   - Un plat doit avoir un nom ; la liste d'ingrédients peut être vide (ex. « restes »).
-- **P2** : Je modifie un plat de la bibliothèque. Les modifications s'appliquent à tous les repas où il est servi.
+- **P2** : Je modifie un plat de la bibliothèque. Les modifications s'appliquent à tous les repas où il est servi. Un plat ne peut pas être supprimé de la bibliothèque en V1.
 - **P3** : Je retrouve un plat par recherche sur son nom.
 - **P4** : En saisissant un ingrédient, l'application me propose ceux qui existent déjà (autocomplétion), pour éviter les doublons (« tomate » / « tomates ») qui fausseraient l'agrégation. Je peux créer un nouvel ingrédient s'il n'existe pas.
 
@@ -66,6 +66,7 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
   - sinon, une ligne par famille d'unités ;
   - les quantités à la pièce sont arrondies à l'entier supérieur.
 - **C3** : Je coche les articles au fil des courses.
+- **C4** : Une liste de courses déjà affichée reste consultable et cochable sans réseau. Les coches faites hors ligne sont synchronisées au retour du réseau. Générer une nouvelle liste nécessite le réseau.
 
 ### Foyer
 
@@ -75,6 +76,7 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
 ## Hors périmètre V1
 
 - Recettes (étapes, temps de préparation, photos).
+- Suppression d'un plat de la bibliothèque.
 - Rôles et droits différenciés entre membres.
 - Synchronisation en temps réel entre membres (un rafraîchissement suffit).
 - Suggestions automatiques de menus.
@@ -83,11 +85,6 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
 - Préférences et contraintes alimentaires par membre.
 - Budget, historique, statistiques.
 
-## Questions ouvertes
-
-- **Q5b. Suppression d'un plat de la bibliothèque** : peut-on supprimer un plat de la bibliothèque ? Si oui, que deviennent les repas où il est servi ?
-- **Q7. Hors-ligne** : la liste de courses doit-elle rester consultable et cochable sans réseau en magasin ?
-
 ## Décisions
 
 - **Q1** : deux moments par jour, midi et soir. Un repas peut contenir plusieurs plats, chacun avec son nombre de parts.
@@ -95,5 +92,7 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
 - **Q3** : conversion d'unités quand c'est nécessaire, au sein d'une même famille.
 - **Q4** : les quantités à la pièce sont arrondies à l'entier supérieur.
 - **Q5** : les plats vivent dans une bibliothèque ; retirer un plat d'un repas ne le supprime pas de la bibliothèque, mais perd sa configuration dans ce repas.
+- **Q5b** : pas de suppression de plat de la bibliothèque en V1.
 - **Q6** : pas de droits différenciés en V1 ; pas de temps réel nécessaire.
+- **Q7** : la liste de courses doit pouvoir être consultée et cochée hors ligne.
 - **Q8** : chaque plat servi part toujours de 4 parts.
