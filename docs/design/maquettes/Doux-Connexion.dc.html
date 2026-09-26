@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil : connexion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
+
+<div style="position: absolute; inset: 0">
+<dc-import name="FondTribu" graine="{{graine}}" hint-size="390px,844px"></dc-import>
+</div>
+
+<div style="position: absolute; left: 20px; right: 20px; top: 120px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 26px 20px; border-radius: 28px; background: #FFFFFF; border: 2px solid #22193A">
+<span style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1.5px solid #F2D27A; font-size: 13px; font-weight: 700; color: #8A6100"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 20a6 6 0 0 1 12 0"></path><circle cx="17" cy="9" r="2.6"></circle><path d="M16 14.2a5 5 0 0 1 5.5 5.8"></path></svg>Les Martin</span>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 52px; letter-spacing: -1px; line-height: 1">Menus</h1>
+<span style="font-size: 15px; font-weight: 700; color: #C63D24">de la tribu</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 16px; right: 16px; bottom: 24px; display: flex; flex-direction: column; gap: 14px; padding: 22px 18px 18px; border-radius: 28px; background: #FFFFFF; border: 2px solid #22193A">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Bienvenue !</h2>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700">Votre adresse e-mail
+<input type="email" inputmode="email" autocomplete="email" value="alice@exemple.fr" style="height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 16px; border: 2px solid #22193A; background: #FFFFFF; font-size: 17px; font-weight: 700; color: #22193A">
+</label>
+<a href="Doux-Code.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; box-sizing: border-box; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 17px; font-weight: 800">Recevoir un code</a>
+<span style="font-size: 13px; font-weight: 600; line-height: 1.4; color: #5E5470; text-align: center">Pas de mot de passe : un code à 6 chiffres vous est envoyé par e-mail.</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"graine":{"editor":"int","default":7,"min":1,"max":999}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { graine: this.props.graine ?? 7 };
+  }
+}
+</script>
+</body>
+</html>

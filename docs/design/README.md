@@ -10,6 +10,8 @@ Principe : fond blanc, cartes délimitées par des liserés fins, couleur porté
 
 | Écran | Fichier de référence | Stories |
 | --- | --- | --- |
+| Accueil : saisie de l'e-mail | `maquettes/Doux-Connexion.dc.html` | ENF-01 |
+| Accueil : saisie du code | `maquettes/Doux-Code.dc.html` | ENF-01 |
 | Planning de la semaine | `maquettes/Doux-Main.dc.html` | R1, R5 |
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
@@ -24,6 +26,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 
 ## Navigation
 
+- Accueil → « Recevoir un code » ouvre la saisie du code → « Se connecter » ouvre le planning. « Se déconnecter » et « Quitter la tribu » ramènent à l'accueil.
 - Barre d'onglets en bas : **Planning**, **Plats**, **Courses**. Onglet actif en aplat rouge tomate, texte blanc.
 - Planning → toucher une case de repas ouvre le détail du repas.
 - Plats → « Nouveau » ouvre la création d'un plat.
@@ -88,3 +91,4 @@ Liseré = `c + (255 − c) × 0,6` sur chaque composante RVB.
 - **Carte de session** : icône d'appareil, nom donné ou appareil détecté, dates ; la session courante porte la pastille verte « cet appareil » et un liseré vert.
 - **Action destructive** (révoquer, déconnecter, quitter) : texte ou contour rouge tomate, jamais en aplat sur l'écran. L'aplat n'apparaît que dans la feuille de confirmation.
 - **Feuille de confirmation** : panneau blanc en bas d'écran (coins 26 px), voile `rgba(34, 25, 58, 0.45)`, titre sous forme de question, conséquences en une phrase, action en aplat puis « Annuler ».
+- **Fond d'accueil** (`maquettes/FondTribu.dc.html`, composant importé par les écrans d'accueil) : une foule de pictogrammes naïfs pleins, cernés d'un trait `#22193A`, qui se chevauchent sans ordre et couvrent tout l'écran (fond `#22193A` derrière). Moitié personnages de la tribu en buste (peaux, coiffures et vêtements variés), moitié ingrédients et plats. Couleurs vives de la palette des plats. Une sous-couche de grands pictogrammes sur une grille serrée garantit la couverture ; la foule est posée par-dessus. Le texte ne se pose jamais directement sur le fond : il est dans un médaillon ou une carte blanche au contour foncé de 2 px. C'est le seul endroit de l'application où la couleur est en aplat hors des actions.
