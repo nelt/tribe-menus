@@ -4,17 +4,20 @@ Spécification fonctionnelle. S'appuie sur ENF-01 (`exigences-non-fonctionnelles
 
 ## Principes
 
-- Un **membre** est une personne du foyer autorisée à utiliser l'application.
+- Une **famille** regroupe les personnes qui partagent les menus. Elle est créée par un script d'administration (EF-08).
+- Un **membre** est une personne de la famille autorisée à utiliser l'application.
 - Le membre est **identifié par son adresse e-mail**, unique et normalisée (sans espaces, en minuscules).
-- Il n'y a **pas d'inscription libre** : on ne devient membre que si un membre existant nous ajoute.
+- Il n'y a **pas d'inscription libre** : on ne devient membre que par le script d'initialisation ou par l'ajout d'un membre existant.
 - **Tous les membres ont les mêmes droits** en v1 (voir « Hors périmètre »).
+- **Aucune notification par e-mail** n'est envoyée lors des opérations sur les membres. Le seul e-mail envoyé par l'application est le code de connexion (ENF-01).
+- Toutes les opérations sur les membres sont tracées dans un **journal d'audit** en base (EF-07).
 
 ## EF-01. Ajouter un membre
 
 - Un membre connecté peut ajouter un nouveau membre en saisissant son adresse e-mail (et, facultativement, un nom d'affichage).
 - Le nouveau membre peut ensuite se connecter avec le code par e-mail (ENF-01), sans autre démarche.
 - L'ajout d'une adresse déjà membre active est refusé avec un message explicite.
-- Le système enregistre qui a ajouté le membre et quand.
+- L'ajout d'une adresse de membre révoqué est refusé ; l'application propose de le réactiver (EF-06).
 
 ## EF-02. Consulter les membres
 
@@ -22,10 +25,11 @@ Spécification fonctionnelle. S'appuie sur ENF-01 (`exigences-non-fonctionnelles
 
 ## EF-03. Révoquer un membre
 
-- Un membre connecté peut révoquer un autre membre.
+- Un membre connecté peut révoquer un autre membre, ou se révoquer lui-même (quitter la famille).
 - La révocation est immédiate : toutes les sessions du membre révoqué sont fermées et ses éventuels codes de connexion en attente sont invalidés. Il ne peut plus demander de code.
-- Le membre révoqué est désactivé, pas supprimé : ses données (menus, historique) sont conservées. Il peut être réactivé par un nouvel ajout de la même adresse.
-- Le système enregistre qui a révoqué le membre et quand.
+- En cas d'auto-révocation, la session courante est fermée et l'utilisateur revient à l'écran de connexion.
+- Le membre révoqué est désactivé, pas supprimé : ses données (menus, historique) sont conservées.
+- Si le dernier membre actif se révoque, la famille n'a plus de membre actif ; seul le script d'administration (EF-09) permet alors d'en réactiver un.
 
 ## EF-04. Consulter ses sessions
 
@@ -42,13 +46,38 @@ Spécification fonctionnelle. S'appuie sur ENF-01 (`exigences-non-fonctionnelles
 - Il peut aussi « déconnecter tous les autres appareils » en une action.
 - Fermer la session courante équivaut à une déconnexion.
 
+## EF-06. Réactiver un membre
+
+- Un membre connecté peut réactiver un membre révoqué depuis la liste des membres.
+- Le membre réactivé retrouve ses données et peut de nouveau se connecter avec le code par e-mail. Aucune de ses anciennes sessions n'est restaurée.
+
+## EF-07. Journal d'audit
+
+- Chaque opération sur les membres est enregistrée en base : initialisation de la famille, ajout, révocation (y compris auto-révocation), réactivation.
+- Chaque entrée contient : la date et l'heure, l'opération, le membre concerné, l'auteur (un membre, ou « script d'administration »).
+- Le journal est en ajout seul : ses entrées ne sont ni modifiées ni supprimées par l'application.
+
+## Administration
+
+Scripts exécutés sur le serveur, hors de l'interface de l'application. Leurs opérations sont tracées dans le journal d'audit (EF-07) avec « script d'administration » comme auteur.
+
+### EF-08. Initialiser une famille
+
+- Le script crée une famille et demande de manière interactive l'adresse e-mail du premier membre (et, facultativement, son nom d'affichage).
+- Le premier membre peut ensuite se connecter avec le code par e-mail et ajouter les autres membres (EF-01).
+
+### EF-09. Réactiver un membre révoqué
+
+- Le script réactive un membre révoqué à partir de son adresse e-mail, avec le même effet qu'EF-06.
+- C'est le moyen de récupération lorsque la famille n'a plus aucun membre actif.
+
 ## Hors périmètre (version ultérieure)
 
 - Rôles et privilèges (administrateur, parent/enfant, lecture seule…).
 - Consultation ou révocation des sessions d'un autre membre à l'unité (la révocation d'un membre, EF-03, ferme déjà toutes ses sessions).
+- Consultation du journal d'audit dans l'interface.
 
 ## Questions ouvertes
 
-- **Premier membre** : comment est créé le tout premier membre du foyer (configuration au déploiement, commande d'administration, premier arrivant) ?
-- **Notification** : faut-il envoyer un e-mail au nouveau membre lors de son ajout, et au membre révoqué ?
-- **Auto-révocation** : un membre peut-il se révoquer lui-même (quitter le foyer) ? Faut-il interdire de laisser le foyer sans aucun membre actif ?
+- **Nombre de familles** : une instance de l'application héberge-t-elle une seule famille, ou plusieurs (le script d'initialisation pouvant alors être lancé plusieurs fois) ?
+- **Audit des sessions** : les ouvertures et révocations de sessions doivent-elles aussi figurer dans le journal d'audit ?
