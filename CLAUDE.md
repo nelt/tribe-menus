@@ -30,5 +30,6 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Front-end** : SPA TypeScript avec Lit, esbuild, service worker écrit dans le projet, embarquée dans le binaire Go (ADR 0004).
 - **Tests** : godog sur les `.feature` contre l'API, Playwright pour les scénarios `@ui`, `go test` et `node:test` pour les tests unitaires (ADR 0005).
 - **Exposition** : Caddy en reverse proxy (TLS automatique) sur `tribe-menus.codingmatters.org` ; site public statique à `/`, application sous `/tribes/<identifiant>/` (ADR 0006).
+- **Hébergement** : VPS OVHcloud (VPS-1), DNS `codingmatters.org` chez OVHcloud (ADR 0007).
 
 Organisation du dépôt, commandes de build et de test, et reste de l'hébergement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
