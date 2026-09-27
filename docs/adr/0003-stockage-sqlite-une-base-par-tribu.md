@@ -18,7 +18,7 @@ Toutes les données sont propres à une tribu : membres, sessions, codes de conn
 5. **Configuration de chaque base** : mode WAL, `foreign_keys = ON` et `busy_timeout` à chaque connexion, tables déclarées `STRICT`. Les écritures d'une tribu passent par une seule connexion.
 6. **Migrations** : fichiers SQL embarqués dans le binaire, version suivie par `PRAGMA user_version`, appliquées à l'ouverture de chaque base. Une commande d'administration permet de les appliquer à toutes les tribus d'un coup.
 7. **Quantités stockées en entiers**, dans l'unité de base de leur famille (milligrammes, millilitres, millièmes de pièce…), pour éviter les erreurs d'arrondi des flottants dans les calculs de la liste de courses (C2). La conversion pour l'affichage suit les règles de `docs/specs/fonctionnalites.md`.
-8. **Sauvegarde et réplication continue** avec Litestream vers un stockage objet, pour chaque base et pour le registre. Les modalités précises (déploiement, prise en compte des nouvelles tribus, restauration) relèvent de l'ADR d'hébergement.
+8. **Sauvegarde et réplication continue** avec Litestream vers un stockage objet, pour chaque base et pour le registre. **Reporté à une version ultérieure** (voir ADR 0007) ; les modalités précises (cible, prise en compte des nouvelles tribus, restauration) seront fixées à ce moment-là.
 
 ## Alternatives envisagées
 
