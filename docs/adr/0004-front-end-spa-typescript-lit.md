@@ -19,7 +19,7 @@ Critères retenus : une surface d'attaque réduite, peu de dépendances, pas de 
    - **champs sur mesure** (stepper de parts) : shadow DOM et déclaration comme champ de formulaire via `ElementInternals`.
 4. **Styles** : CSS natif. Les tokens de `docs/design/README.md` sont déclarés comme propriétés personnalisées sur `:root`, ce qui les rend visibles dans les shadow roots. Pas de framework CSS.
 5. **Polices auto-hébergées** (Bricolage Grotesque, Figtree) : pas d'appel à Google Fonts, pour le fonctionnement hors-ligne, la vie privée et une CSP stricte.
-6. **Routage** : un petit routeur écrit dans le projet, fondé sur l'API History, avec le préfixe de tribu (`/t/<identifiant>/…`).
+6. **Routage** : un petit routeur écrit dans le projet, fondé sur l'API History, avec le préfixe de tribu (`/tribes/<identifiant>/…`).
 7. **Hors-ligne** :
    - **service worker écrit dans le projet** : pré-cache des ressources versionnées, cache d'abord pour les ressources statiques, réseau d'abord pour l'API ;
    - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ;
