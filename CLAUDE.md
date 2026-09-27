@@ -23,4 +23,11 @@ Dépôt bac à sable personnel. Le travail préparatoire (cadrage, architecture,
 
 ## Stack
 
-À définir. Mettre à jour cette section dès que le premier projet est initialisé (langage, build, commandes de test).
+Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
+
+- **Back-end** : Go, monolithe modulaire, bibliothèque standard d'abord, sqlc pour l'accès aux données (ADR 0002).
+- **Données** : SQLite, un fichier par tribu plus un registre global, Litestream pour la réplication (ADR 0003).
+- **Front-end** : SPA TypeScript avec Lit, esbuild, service worker écrit dans le projet, embarquée dans le binaire Go (ADR 0004).
+- **Tests** : godog sur les `.feature` contre l'API, Playwright pour les scénarios `@ui`, `go test` et `node:test` pour les tests unitaires (ADR 0005).
+
+Organisation du dépôt, commandes de build et de test, et hébergement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
