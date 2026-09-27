@@ -15,7 +15,7 @@ L'intention est qu'une version modifiée de l'application, même seulement explo
 
 ## Décision
 
-1. **Dépôt public**, sous licence **`AGPL-3.0-or-later`** : fichier `LICENSE` à la racine, texte intégral de la licence.
+1. **Dépôt public**, sous licence **`AGPL-3.0-or-later`** : fichier `LICENSE` à la racine, texte intégral de la licence. **La licence couvre tout le dépôt**, code comme documentation (specs, scénarios, ADR, maquettes), à la seule exception des polices (point 3).
 2. **Lien vers le code source dans l'application et sur le site public**, pointant vers la version exacte déployée (étiquette ou commit), comme l'exige la clause réseau de l'AGPL.
 3. **Polices** : distribuées avec leur licence OFL, dans le dossier des polices.
 4. **Avant la publication** :
@@ -41,6 +41,7 @@ L'intention est qu'une version modifiée de l'application, même seulement explo
 - **EUPL-1.2** : envisagée (copyleft couvrant l'usage en ligne, droit européen, texte français faisant foi). Écartée : sa clause de compatibilité peut affaiblir le copyleft dans certaines combinaisons.
 - **CeCILL v2.1** : écartée, sans clause réseau.
 - **MIT, Apache-2.0** : écartées, ne correspondant pas à l'intention copyleft.
+- **CC BY-SA 4.0 pour la documentation** : écartée. Copyleft conçu pour les contenus, mais deux licences imposent un marquage fichier par fichier et des cas limites (maquettes, scénarios, exemples de code) ; utile seulement si la documentation devait être réutilisée seule.
 - **CLA (accord de cession de droits aux contributeurs)** : écarté. Utile seulement pour garder la liberté de changer de licence ou de proposer une double licence, ce qui n'est pas prévu ; plus lourd et parfois mal perçu.
 - **Réécriture de l'historique pour masquer les adresses e-mail** : écartée, disproportionnée.
 
@@ -49,4 +50,4 @@ L'intention est qu'une version modifiée de l'application, même seulement explo
 - **Positif** : minutes de CI illimitées ; détection de secrets et analyse de code gratuites ; attestation de provenance possible sans offre Entreprise (reportée, ADR 0012) ; code auditable.
 - **Négatif** : infrastructure et code lisibles par des attaquants potentiels ; adresses e-mail de l'historique exposées ; CI exposée aux PR externes, d'où les règles du point 6.
 - **Contributions externes** : sans CLA, tout changement de licence ultérieur exigera l'accord de chaque contributeur ; accepté, puisqu'aucune double licence n'est prévue.
-- **Point ouvert** : licence de la documentation et des maquettes (AGPL comme le reste, ou CC BY-SA 4.0).
+- **Documentation sous AGPL** : une licence de logiciel s'applique imparfaitement à du texte, mais une licence unique évite de tracer une frontière délicate (les scénarios `.feature` sont exécutés en CI, les maquettes contiennent du JavaScript).

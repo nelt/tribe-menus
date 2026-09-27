@@ -36,6 +36,6 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Environnement de développement** : Dev Container de référence ; versions épinglées dans `go.mod` (`toolchain`, `tool`), `.nvmrc` et `web/package.json` ; serveur local sur `http://localhost:8080` ; VS Code avec une liste courte d'extensions épinglées (ADR 0009).
 - **Commandes** : Makefile sommaire, toujours passer par ses cibles (ADR 0010) : `make tools`, `dev`, `seed`, `generate`, `lint`, `test`, `acceptance`, `e2e`, `vuln`, `build`, et `make ci` avant de pousser (c'est ce que lance la CI).
 - **Build et release** : build uniquement en CI ; archive (binaire `linux/amd64` avec front embarqué, `site/`, `deploy/`) ; versions sémantiques par étiquette manuelle `vX.Y.Z` ; chaque PR ajoute une ligne à `CHANGELOG.md` ; procédure dans `RELEASING.md` (ADR 0012).
-- **Dépôt public, licence `AGPL-3.0-or-later`** ; contributions sous DCO (`git commit -s`) ; aucun secret ni valeur propre à l'instance dans le dépôt ; protections du dépôt listées dans `docs/securite-depot.md` (ADR 0011).
+- **Dépôt public, licence `AGPL-3.0-or-later` pour tout le dépôt** (documentation comprise, polices exceptées) ; contributions sous DCO (`git commit -s`) ; aucun secret ni valeur propre à l'instance dans le dépôt ; protections du dépôt listées dans `docs/securite-depot.md` (ADR 0011).
 
 CI, système et déploiement, envoi d'e-mails : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
