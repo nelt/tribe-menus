@@ -20,7 +20,7 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
 4. **Tests d'accès croisé entre tribus (ENF-02)** : exécutés avec godog contre l'API, avec deux tribus réelles, pour la lecture, la modification et la suppression.
 5. **Principes de clean code appliqués** :
    - logique métier sans dépendance à HTTP, SQL ou au DOM, et testable isolément ;
-   - vocabulaire du code aligné sur celui des spécifications (tribu, plat, repas, plat servi, liste, article…) ;
+   - vocabulaire du code aligné sur celui des spécifications, traduit en anglais selon `docs/specs/glossaire.md` (ADR 0008) ;
    - fonctions courtes, une seule responsabilité, erreurs traitées explicitement ;
    - pas d'abstraction sans deuxième usage réel ;
    - formatage et analyse statique automatiques : `gofmt`, `go vet` et `staticcheck` côté Go ; `tsc` en mode strict côté TypeScript.
@@ -39,4 +39,3 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
 - **À préciser à l'implémentation** :
   - le moyen de faire lire les `.feature` par Playwright (par exemple `playwright-bdd`, ou des tests Playwright qui référencent les scénarios par leur tag) ;
   - l'ajout du tag `@ui` aux scénarios concernés dans `docs/specs/features/`, au fil des stories implémentées ;
-  - la langue des identifiants dans le code (vocabulaire métier en français, termes techniques en anglais, ou tout en anglais).
