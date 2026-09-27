@@ -31,5 +31,7 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Tests** : godog sur les `.feature` contre l'API, Playwright pour les scénarios `@ui`, `go test` et `node:test` pour les tests unitaires (ADR 0005).
 - **Exposition** : Caddy en reverse proxy (TLS automatique) sur `tribe-menus.codingmatters.org` ; site public statique à `/`, application sous `/tribes/<identifiant>/` (ADR 0006).
 - **Hébergement** : VPS OVHcloud (VPS-1), DNS `codingmatters.org` chez OVHcloud (ADR 0007).
+- **Dépôt** : `tribe-menus`, module `github.com/nelt/tribe-menus`, un paquet Go par domaine dans `internal/`, front dans `web/`, site public dans `site/` (ADR 0008).
+- **Langue** : code entièrement en anglais ; specs en français ; traduction des termes métier fixée par `docs/specs/glossaire.md` (ADR 0008).
 
-Organisation du dépôt, commandes de build et de test, et reste de l'hébergement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
+Environnement de développement, commandes de build et de test, CI et reste de l'hébergement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
