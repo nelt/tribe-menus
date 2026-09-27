@@ -34,6 +34,7 @@ L'utilisateur se connecte une seule fois par appareil. Sa session survit à la f
 ## ENF-02. Compartimentage strict des données entre tribus
 
 - **Statut** : retenue (2026-09-27)
+- **Décision d'architecture** : [ADR 0003](../adr/0003-stockage-sqlite-une-base-par-tribu.md) (une base SQLite par tribu)
 - **Critères d'acceptation** : `features/compartimentage-tribus.feature`
 
 ### Exigence
