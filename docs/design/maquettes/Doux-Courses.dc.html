@@ -8,28 +8,43 @@
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
 <style>
 body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
 a{color:#C63D24}a:hover{color:#9E2E19}
-button{font-family:inherit}
+button,input{font-family:inherit}
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
 
-<div style="display: flex; flex-direction: column; gap: 14px; padding: 24px 20px 100px">
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 84px; overflow-y: auto">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 28px">
 
-<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 36px; letter-spacing: -0.5px">Courses</h1>
+<a href="Doux-ListesCourses.dc.html" style="display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 700; color: #22193A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Listes</a>
+
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px">6 → 12 oct.</h1>
 
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
-<button style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Du</span><span style="font-size: 16px; font-weight: 800">mar. 6 oct.</span></button>
-<button style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Au</span><span style="font-size: 16px; font-weight: 800">lun. 12 oct.</span></button>
+<a href="Doux-NouvelleListe.dc.html" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; box-sizing: border-box; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-decoration: none"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Du</span><span style="font-size: 16px; font-weight: 800">mar. 6 oct.</span></a>
+<a href="Doux-NouvelleListe.dc.html" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; box-sizing: border-box; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-decoration: none"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Au</span><span style="font-size: 16px; font-weight: 800">lun. 12 oct.</span></a>
 </div>
 
+<sc-if value="{{stale}}" hint-placeholder-val="{{true}}">
+<div role="status" style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid #F2D27A">
+<div style="display: flex; align-items: flex-start; gap: 10px; color: #8A6100">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Les repas ont changé depuis le calcul de cette liste.</span>
+</div>
+<button onClick="{{recalc}}" style="align-self: flex-start; height: 44px; padding: 0 18px; border: none; border-radius: 14px; background: #C63D24; color: #FFFFFF; font-size: 15px; font-weight: 800; cursor: pointer">Recalculer</button>
+</div>
+</sc-if>
+
+<sc-if value="{{offline}}" hint-placeholder-val="{{false}}">
 <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #BDBAF0; color: #3D3A8C">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F5BD0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M2 8.8a15 15 0 0 1 4.2-2.6M9.5 5.1A15 15 0 0 1 22 8.8"></path><path d="M5 12.6a10 10 0 0 1 3.6-2M16.4 11a10 10 0 0 1 2.6 1.6"></path><path d="M8.5 16.2a5 5 0 0 1 7 0"></path><circle cx="12" cy="20" r="1"></circle><path d="M3 3l18 18"></path></svg>
-<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Hors ligne · vos coches seront synchronisées au retour du réseau</span>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Hors ligne · vos coches et ajouts seront synchronisés au retour du réseau</span>
 </div>
+</sc-if>
 
 <div style="display: flex; flex-direction: column; gap: 6px">
 <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700"><span>{{progressLabel}}</span><span style="color: #5E5470">{{remainingLabel}}</span></div>
@@ -37,67 +52,224 @@ button{font-family:inherit}
 </div>
 
 <div style="display: flex; flex-direction: column; gap: 6px">
-<sc-for list="{{items}}" as="it" hint-placeholder-count="9">
-<label style="{{it.rowStyle}}">
-<input type="checkbox" checked="{{it.checked}}" onChange="{{it.toggle}}" style="width: 24px; height: 24px; margin: 0; flex-shrink: 0; accent-color: #2F7A3E; cursor: pointer">
+<sc-for list="{{items}}" as="it" hint-placeholder-count="11">
+<div style="{{it.cardStyle}}">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 6px 0 14px">
+<input type="checkbox" aria-label="{{it.checkLabel}}" checked="{{it.checked}}" onChange="{{it.toggle}}" style="width: 24px; height: 24px; margin: 0; flex-shrink: 0; accent-color: #2F7A3E; cursor: pointer">
+<sc-if value="{{it.computed}}" hint-placeholder-val="{{true}}">
+<button onClick="{{it.expand}}" aria-expanded="{{it.open}}" style="flex-grow: 1; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 4px 0 0; border: none; background: transparent; color: inherit; text-align: left; cursor: pointer">
 <span style="{{it.nameStyle}}">{{it.name}}</span>
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px solid #E7E1EE; font-size: 12px; font-weight: 700; color: #5E5470">{{it.mealsLabel}}</span>
 <span style="{{it.qtyStyle}}">{{it.qty}}</span>
-</label>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="{{it.chevronStyle}}"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</sc-if>
+<sc-if value="{{it.added}}" hint-placeholder-val="{{false}}">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 8px; min-height: 48px">
+<span style="{{it.nameStyle}}">{{it.name}}</span>
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px dashed #CFC6DE; font-size: 12px; font-weight: 700; color: #5E5470">ajouté</span>
+<span style="{{it.qtyStyle}}">{{it.qty}}</span>
+<button onClick="{{it.remove}}" aria-label="{{it.removeLabel}}" style="width: 40px; height: 44px; flex-shrink: 0; border: none; border-radius: 10px; background: transparent; color: #6E6680; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{it.open}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; margin: 0 10px 10px; border-top: 1.5px solid #E7E1EE">
+<sc-for list="{{it.sources}}" as="s" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 10px; padding: 9px 4px 0">
+<span style="{{s.initialStyle}}">{{s.initial}}</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; font-weight: 700">{{s.dish}} · {{s.parts}}</span>
+<span style="font-size: 12px; font-weight: 600; color: #5E5470">{{s.day}} · <span style="{{s.momentStyle}}">{{s.moment}}</span></span>
+</div>
+<span style="font-size: 14px; font-weight: 800; color: #22193A">{{s.qty}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
 </sc-for>
 </div>
 
+<sc-if value="{{adding}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 1.5px solid #E39A89">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 6px">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5E5470">Article
+<input type="text" value="{{draftName}}" onChange="{{typeName}}" placeholder="ex. pain, lessive" style="height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; border: 2px solid #22193A; font-size: 16px; font-weight: 700; color: #22193A"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5E5470">Quantité
+<input type="text" value="{{draftQty}}" onChange="{{typeQty}}" placeholder="facult." style="height: 44px; box-sizing: border-box; padding: 0 10px; border-radius: 12px; border: 1.5px solid #E7E1EE; font-size: 15px; font-weight: 700; color: #22193A"></label>
+</div>
+<div style="display: flex; gap: 8px">
+<button onClick="{{confirmAdd}}" style="flex-grow: 1; height: 46px; border: none; border-radius: 14px; background: #C63D24; color: #FFFFFF; font-size: 15px; font-weight: 800; cursor: pointer">Ajouter à la liste</button>
+<button onClick="{{cancelAdd}}" style="height: 46px; padding: 0 14px; border: none; border-radius: 14px; background: transparent; color: #22193A; font-size: 15px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{notAdding}}" hint-placeholder-val="{{true}}">
+<button onClick="{{startAdd}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 48px; border: 2px dashed #CFC6DE; border-radius: 16px; background: transparent; font-size: 15px; font-weight: 700; color: #22193A; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un article hors repas</button>
+</sc-if>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px">
+<button onClick="{{askDone}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 54px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 16px; font-weight: 800; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Courses faites</button>
+<button onClick="{{askAbandon}}" style="height: 48px; border: none; border-radius: 16px; background: transparent; color: #C63D24; font-size: 15px; font-weight: 800; cursor: pointer">Abandonner la liste</button>
+</div>
+
+</div>
 </div>
 
 <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 10px 16px 18px; background: #FFFFFF; border-top: 1.5px solid #E7E1EE; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
 <a href="Doux-Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>Planning</a>
 <a href="Doux-Bibliotheque.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"></path><path d="M4 21V5"></path><path d="M9 8h6"></path></svg>Plats</a>
-<a href="Doux-Courses.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 12px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"></path><circle cx="10" cy="20" r="1.3"></circle><circle cx="17" cy="20" r="1.3"></circle></svg>Courses</a>
+<a href="Doux-ListesCourses.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 12px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"></path><circle cx="10" cy="20" r="1.3"></circle><circle cx="17" cy="20" r="1.3"></circle></svg>Courses</a>
 </nav>
+
+<sc-if value="{{confirmingDone}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
+<div role="dialog" aria-modal="true" aria-labelledby="faites-titre" style="display: flex; flex-direction: column; gap: 12px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="faites-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Courses faites ?</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.45">{{doneMessage}}</p>
+<a href="Doux-Historique.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 800">Courses faites</a>
+<button onClick="{{closeSheet}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{confirmingAbandon}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
+<div role="dialog" aria-modal="true" aria-labelledby="abandon-titre" style="display: flex; flex-direction: column; gap: 12px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="abandon-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Abandonner cette liste ?</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.45">Elle sera supprimée définitivement, avec ses coches et ses articles ajoutés. Le planning n’est pas modifié.</p>
+<a href="Doux-ListesCourses.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 800">Abandonner</a>
+<button onClick="{{closeSheet}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"etat":{"editor":"enum","options":["périmée","à jour","hors ligne"],"default":"périmée"}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { checked: { pates: true, basilic: true, creme: true } };
+    this.state = {
+      checked: { pates: true, basilic: true },
+      open: { boeuf: true },
+      recalculated: false,
+      removed: {},
+      extra: [],
+      adding: false,
+      draftName: '',
+      draftQty: '',
+      sheet: null
+    };
   }
   renderVals() {
     var self = this;
+    var st = this.state;
+    var etat = this.props.etat || 'périmée';
+    var stale = etat === 'périmée' && !st.recalculated;
+    var fresh = st.recalculated;
+    var DISH = {
+      chili: ['Chili con carne', '#C2502E', '#E7B9AB'],
+      rata: ['Ratatouille', '#B36A0B', '#E1C39D'],
+      gratin: ['Gratin de courgettes', '#2F6FB0', '#ACC5DF'],
+      pizza: ['Pizza maison', '#9C7400', '#D7C799'],
+      dauph: ['Gratin dauphinois', '#B0306A', '#DFACC3'],
+      pesto: ['Pâtes pesto', '#2E8A6E', '#ABD0C5']
+    };
+    var src = function (dish, day, moment, parts, qty) { return { dish: dish, day: day, moment: moment, parts: parts, qty: qty }; };
     var list = [
-      { id: 'boeuf', name: 'Bœuf haché', qty: '875 g' },
-      { id: 'haricots', name: 'Haricots rouges', qty: '800 g' },
-      { id: 'oignon', name: 'Oignon', qty: '6 pièces' },
-      { id: 'courgette', name: 'Courgette', qty: '3 pièces' },
-      { id: 'gruyere', name: 'Gruyère', qty: '400 g' },
-      { id: 'mozzarella', name: 'Mozzarella', qty: '250 g' },
-      { id: 'creme', name: 'Crème', qty: '50 cl' },
-      { id: 'pates', name: 'Pâtes', qty: '500 g' },
-      { id: 'basilic', name: 'Basilic', qty: '1 pièce' }
-    ];
-    var c = this.state.checked;
+      { id: 'boeuf', name: 'Bœuf haché', qty: fresh ? '1 kg' : '875 g', sources: [src('chili', 'mar. 6 oct.', 'soir', 3, '375 g'), src('chili', 'jeu. 8 oct.', 'midi', fresh ? 5 : 4, fresh ? '625 g' : '500 g')] },
+      { id: 'haricots', name: 'Haricots rouges', qty: fresh ? '800 g' : '700 g', sources: [src('chili', 'mar. 6 oct.', 'soir', 3, '300 g'), src('chili', 'jeu. 8 oct.', 'midi', fresh ? 5 : 4, fresh ? '500 g' : '400 g')] },
+      { id: 'oignon', name: 'Oignon', qty: '2 pièces', sources: [src('chili', 'mar. 6 oct.', 'soir', 3, '0,75 pièce'), src('chili', 'jeu. 8 oct.', 'midi', fresh ? 5 : 4, fresh ? '1,25 pièce' : '1 pièce')] },
+      { id: 'courgette', name: 'Courgette', qty: '6 pièces', sources: [src('rata', 'mer. 7 oct.', 'soir', 4, '3 pièces'), src('gratin', 'ven. 9 oct.', 'soir', 4, '3 pièces')] },
+      { id: 'gruyere', name: 'Gruyère', qty: '250 g', sources: [src('gratin', 'ven. 9 oct.', 'soir', 4, '150 g'), src('pizza', 'sam. 10 oct.', 'soir', 4, '100 g')] },
+      { id: 'mozzarella', name: 'Mozzarella', qty: '250 g', sources: [src('pizza', 'sam. 10 oct.', 'soir', 4, '250 g')] },
+      { id: 'creme', name: 'Crème', qty: '50 cl', sources: [src('dauph', 'dim. 11 oct.', 'midi', 4, '50 cl')] },
+      { id: 'pates', name: 'Pâtes', qty: '500 g', sources: [src('pesto', 'lun. 12 oct.', 'midi', 4, '500 g')] },
+      { id: 'basilic', name: 'Basilic', qty: '1 pièce', sources: [src('pesto', 'lun. 12 oct.', 'midi', 4, '1 pièce')] },
+      { id: 'pain', name: 'Pain', qty: '2 pièces', manual: true },
+      { id: 'lessive', name: 'Lessive', qty: '', manual: true }
+    ].concat(st.extra).filter(function (x) { return !st.removed[x.id]; });
+    var c = st.checked;
     var done = list.filter(function (x) { return c[x.id]; }).length;
+    var left = list.length - done;
     var sorted = list.filter(function (x) { return !c[x.id]; }).concat(list.filter(function (x) { return c[x.id]; }));
+    var patch = function (key, id) {
+      return function () {
+        var next = Object.assign({}, self.state[key]);
+        next[id] = !next[id];
+        var s = {}; s[key] = next;
+        self.setState(s);
+      };
+    };
+    var set = function (s) { return function () { self.setState(s); }; };
     return {
+      stale: stale,
+      offline: etat === 'hors ligne',
+      recalc: set({ recalculated: true }),
       progressLabel: done + ' sur ' + list.length + ' articles',
-      remainingLabel: (list.length - done) + ' à prendre',
+      remainingLabel: left + ' à prendre',
       barStyle: 'height: 100%; border-radius: 999px; background: #2F7A3E; width: ' + Math.round(done * 100 / list.length) + '%',
       items: sorted.map(function (x) {
         var on = !!c[x.id];
+        var open = !x.manual && !!st.open[x.id];
+        var n = x.sources ? x.sources.length : 0;
         return {
           name: x.name,
           qty: x.qty,
           checked: on,
-          toggle: function () {
-            var next = Object.assign({}, self.state.checked);
-            next[x.id] = !next[x.id];
-            self.setState({ checked: next });
-          },
-          rowStyle: 'display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-radius: 16px; cursor: pointer; background: #FFFFFF; border: 1.5px solid ' + (on ? '#A9D3B1' : '#E7E1EE'),
-          nameStyle: 'flex-grow: 1; font-size: 16px; font-weight: 700; ' + (on ? 'text-decoration: line-through; color: #5E5470' : 'color: #22193A'),
-          qtyStyle: 'font-size: 15px; font-weight: 800; ' + (on ? 'color: #5E5470' : 'color: #C63D24')
+          computed: !x.manual,
+          added: !!x.manual,
+          open: open,
+          checkLabel: 'Cocher ' + x.name,
+          removeLabel: 'Retirer ' + x.name,
+          mealsLabel: n + (n > 1 ? ' repas' : ' repas'),
+          toggle: patch('checked', x.id),
+          expand: patch('open', x.id),
+          remove: function () { var r = Object.assign({}, self.state.removed); r[x.id] = true; self.setState({ removed: r }); },
+          cardStyle: 'display: flex; flex-direction: column; border-radius: 16px; background: #FFFFFF; border: 1.5px solid ' + (on ? '#A9D3B1' : (open ? '#CFC6DE' : '#E7E1EE')),
+          nameStyle: 'flex-grow: 1; min-width: 0; font-size: 16px; font-weight: 700; ' + (on ? 'text-decoration: line-through; color: #5E5470' : 'color: #22193A'),
+          qtyStyle: 'flex-shrink: 0; font-size: 15px; font-weight: 800; ' + (on ? 'color: #5E5470' : 'color: #C63D24'),
+          chevronStyle: 'flex-shrink: 0; transition: transform .15s; transform: rotate(' + (open ? 180 : 0) + 'deg)',
+          sources: (x.sources || []).map(function (s) {
+            var d = DISH[s.dish];
+            var soir = s.moment === 'soir';
+            return {
+              dish: d[0],
+              initial: d[0].charAt(0),
+              parts: s.parts + ' parts',
+              day: s.day,
+              moment: soir ? 'SOIR' : 'MIDI',
+              qty: s.qty,
+              momentStyle: 'font-size: 11px; font-weight: 800; letter-spacing: 1px; color: ' + (soir ? '#3D3A8C' : '#8A6100'),
+              initialStyle: "width: 32px; height: 32px; flex-shrink: 0; box-sizing: border-box; border-radius: 10px; border: 1.5px solid " + d[2] + "; color: " + d[1] + "; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 16px"
+            };
+          })
         };
-      })
+      }),
+      adding: st.adding,
+      notAdding: !st.adding,
+      draftName: st.draftName,
+      draftQty: st.draftQty,
+      typeName: function (e) { self.setState({ draftName: e.target.value }); },
+      typeQty: function (e) { self.setState({ draftQty: e.target.value }); },
+      startAdd: set({ adding: true }),
+      cancelAdd: set({ adding: false, draftName: '', draftQty: '' }),
+      confirmAdd: function () {
+        var name = (self.state.draftName || '').trim();
+        if (!name) { return; }
+        var item = { id: 'x' + Date.now(), name: name.charAt(0).toUpperCase() + name.slice(1), qty: (self.state.draftQty || '').trim(), manual: true };
+        self.setState({ extra: self.state.extra.concat([item]), adding: false, draftName: '', draftQty: '' });
+      },
+      confirmingDone: st.sheet === 'done',
+      confirmingAbandon: st.sheet === 'abandon',
+      doneMessage: left > 0
+        ? 'Il reste ' + left + (left > 1 ? ' articles non cochés' : ' article non coché') + '. La liste passera dans l’historique et ne sera plus modifiable.'
+        : 'La liste passera dans l’historique et ne sera plus modifiable.',
+      askDone: set({ sheet: 'done' }),
+      askAbandon: set({ sheet: 'abandon' }),
+      closeSheet: set({ sheet: null })
     };
   }
 }
