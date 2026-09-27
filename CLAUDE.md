@@ -26,7 +26,7 @@ Dépôt bac à sable personnel. Le travail préparatoire (cadrage, architecture,
 Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 
 - **Back-end** : Go, monolithe modulaire, bibliothèque standard d'abord, sqlc pour l'accès aux données (ADR 0002).
-- **Données** : SQLite, un fichier par tribu plus un registre global, Litestream pour la réplication (ADR 0003).
+- **Données** : SQLite, un fichier par tribu plus un registre global (ADR 0003). Réplication hors site par Litestream reportée à une version ultérieure (ADR 0007).
 - **Front-end** : SPA TypeScript avec Lit, esbuild, service worker écrit dans le projet, embarquée dans le binaire Go (ADR 0004).
 - **Tests** : godog sur les `.feature` contre l'API, Playwright pour les scénarios `@ui`, `go test` et `node:test` pour les tests unitaires (ADR 0005).
 - **Exposition** : Caddy en reverse proxy (TLS automatique) sur `tribe-menus.codingmatters.org` ; site public statique à `/`, application sous `/tribes/<identifiant>/` (ADR 0006).

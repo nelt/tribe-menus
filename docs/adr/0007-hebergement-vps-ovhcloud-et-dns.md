@@ -17,7 +17,7 @@ Critères : hébergement dans l'UE (ou juridiction équivalente), coût, simplic
    - enregistrement **CAA** n'autorisant que Let's Encrypt (`letsencrypt.org`) à émettre des certificats pour le domaine ;
    - **DNSSEC** activé.
    Caddy valide le domaine par HTTP-01 ou TLS-ALPN-01, sans accès à l'API DNS : aucun plugin n'est nécessaire.
-3. **La sauvegarde incluse par OVHcloud n'est pas la sauvegarde de référence.** Les données sont répliquées hors site, chez un autre fournisseur, par Litestream (ADR 0003) ; la cible sera fixée par un ADR dédié.
+3. **Sauvegarde hors site : reportée à une version ultérieure.** À terme, les données seront répliquées chez un autre fournisseur par Litestream (ADR 0003), la cible étant fixée par un ADR dédié. **En V1, la seule sauvegarde est celle incluse par OVHcloud** (quotidienne, conservée un jour, dans le même datacenter).
 
 ## Alternatives envisagées
 
@@ -31,6 +31,6 @@ Critères : hébergement dans l'UE (ou juridiction équivalente), coût, simplic
 
 - **Positif** : coût minimal, fournisseur français, domaine et serveur sous le même compte.
 - **Négatif** : un seul serveur, sans haute disponibilité ; une panne du VPS interrompt le service jusqu'à sa restauration (acceptable pour un usage familial). La réputation du support OVHcloud est inégale.
-- **Risque fournisseur** : un incident de datacenter (précédent de Strasbourg en 2021) justifie la réplication hors site chez un autre fournisseur.
+- **Risque accepté en V1** : sans réplication hors site, un incident de datacenter (précédent de Strasbourg en 2021) ou une corruption découverte après plus d'un jour ferait perdre les données. C'est la raison de prévoir Litestream dans une version ultérieure.
 - **À vérifier à la commande** : les conditions d'engagement associées au prix affiché.
-- **Restent à décider** : système d'exploitation et durcissement, mode de déploiement, cible de sauvegarde hors site, service d'envoi d'e-mails, supervision.
+- **Restent à décider** : système d'exploitation et durcissement, mode de déploiement, service d'envoi d'e-mails, supervision. Reporté à une version ultérieure : sauvegarde hors site.
