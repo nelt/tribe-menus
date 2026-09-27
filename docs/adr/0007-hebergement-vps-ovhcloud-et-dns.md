@@ -33,4 +33,4 @@ Critères : hébergement dans l'UE (ou juridiction équivalente), coût, simplic
 - **Négatif** : un seul serveur, sans haute disponibilité ; une panne du VPS interrompt le service jusqu'à sa restauration (acceptable pour un usage familial). La réputation du support OVHcloud est inégale.
 - **Risque accepté en V1** : sans réplication hors site, un incident de datacenter (précédent de Strasbourg en 2021) ou une corruption découverte après plus d'un jour ferait perdre les données. C'est la raison de prévoir Litestream dans une version ultérieure.
 - **À vérifier à la commande** : les conditions d'engagement associées au prix affiché.
-- **Restent à décider** : système d'exploitation et durcissement, mode de déploiement, service d'envoi d'e-mails, supervision. Reporté à une version ultérieure : sauvegarde hors site.
+- **Restent à décider** : système d'exploitation et durcissement, mode de déploiement, supervision. Envoi d'e-mails : ADR 0014. Reporté à une version ultérieure : sauvegarde hors site.
