@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dates d’une liste de courses</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 0">
+
+<a href="{{backHref}}" style="display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 700; color: #22193A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>{{backLabel}}</a>
+
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px">{{title}}</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.4; color: #5E5470">Les repas de ces dates, incluses, seront pris en compte.</p>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button onClick="{{editStart}}" aria-pressed="{{startActive}}" style="{{startFieldStyle}}"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Du</span><span style="font-size: 16px; font-weight: 800">{{startLabel}}</span></button>
+<button onClick="{{editEnd}}" aria-pressed="{{endActive}}" style="{{endFieldStyle}}"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Au</span><span style="font-size: 16px; font-weight: 800">{{endLabel}}</span></button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 10px; border-radius: 20px; border: 1.5px solid #E7E1EE">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 6px 4px">
+<button aria-label="Mois précédent" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">Octobre 2026</span>
+<button aria-label="Mois suivant" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px">
+<sc-for list="{{weekdays}}" as="w" hint-placeholder-count="7">
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">{{w.label}}</span>
+</sc-for>
+<sc-for list="{{cells}}" as="d" hint-placeholder-count="35">
+<sc-if value="{{d.blank}}" hint-placeholder-val="{{false}}"><span></span></sc-if>
+<sc-if value="{{d.real}}" hint-placeholder-val="{{true}}">
+<button onClick="{{d.pick}}" aria-label="{{d.aria}}" style="{{d.style}}"><span>{{d.num}}</span><span style="{{d.dotStyle}}"></span></button>
+</sc-if>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 6px; padding: 6px 6px 0; font-size: 12px; font-weight: 600; color: #5E5470"><span style="width: 5px; height: 5px; border-radius: 999px; background: #5E5470"></span>jour avec des repas planifiés</div>
+</div>
+
+<sc-if value="{{invalid}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #E39A89; color: #9E2E19">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">La date de fin doit suivre la date de début.</span>
+</div>
+</sc-if>
+<sc-if value="{{valid}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-size: 14px; font-weight: 700"><span>{{daysLabel}}</span><span style="color: #5E5470">{{mealsLabel}}</span></div>
+</sc-if>
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; padding: 0 4px; font-size: 13px; line-height: 1.45; color: #5E5470">La liste sera recalculée. Les articles ajoutés à la main sont conservés, ainsi que les coches, sauf si la quantité d’un article augmente.</p>
+</sc-if>
+
+</div>
+
+<div style="position: absolute; left: 20px; right: 20px; bottom: 24px">
+<sc-if value="{{valid}}" hint-placeholder-val="{{true}}">
+<a href="Doux-Courses.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; box-sizing: border-box; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 17px; font-weight: 800">{{cta}}</a>
+</sc-if>
+<sc-if value="{{invalid}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="width: 100%; height: 56px; border: 2px dashed #CFC6DE; border-radius: 18px; background: #FFFFFF; color: #6E6680; font-size: 17px; font-weight: 800">{{cta}}</button>
+</sc-if>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"mode":{"editor":"enum","options":["création","modification"],"default":"création"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { start: 6, end: 12, field: 'end' };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var edit = (this.props.mode || 'création') === 'modification';
+    var DAYS = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    var OFFSET = 3; // 1er octobre 2026 : jeudi
+    var TODAY = 5;
+    var MEALS = { 6: 1, 7: 1, 8: 1, 9: 1, 10: 2, 11: 1, 12: 1, 13: 2, 14: 1 };
+    var label = function (d) { return DAYS[(d - 1 + OFFSET) % 7] + ' ' + d + ' oct.'; };
+    var invalid = st.end < st.start;
+    var cells = [];
+    for (var b = 0; b < OFFSET; b++) { cells.push({ blank: true, real: false }); }
+    for (var d = 1; d <= 31; d++) {
+      (function (day) {
+        var isEnd = day === st.start || day === st.end;
+        var inRange = !invalid && day > st.start && day < st.end;
+        var border = isEnd ? '2px solid #C63D24' : (inRange ? '1.5px solid #E39A89' : (day === TODAY ? '1.5px dashed #CFC6DE' : '1.5px solid transparent'));
+        cells.push({
+          blank: false,
+          real: true,
+          num: day,
+          aria: label(day) + (MEALS[day] ? ', repas planifiés' : ''),
+          style: 'height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 12px; border: ' + border + '; background: #FFFFFF; font-size: 15px; cursor: pointer; font-weight: ' + (isEnd ? 800 : 600) + '; color: ' + (isEnd ? '#C63D24' : (day < TODAY ? '#6E6680' : '#22193A')),
+          dotStyle: 'width: 5px; height: 5px; border-radius: 999px; background: ' + (MEALS[day] ? (isEnd ? '#C63D24' : '#5E5470') : 'transparent'),
+          pick: function () {
+            if (self.state.field === 'start') { self.setState({ start: day, field: 'end' }); }
+            else { self.setState({ end: day }); }
+          }
+        });
+      })(d);
+    }
+    var nbDays = st.end - st.start + 1;
+    var nbMeals = 0;
+    for (var k = st.start; k <= st.end; k++) { nbMeals += MEALS[k] || 0; }
+    var field = function (active, bad) {
+      return 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: 7px 14px; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer; border: 2px solid ' + (bad ? '#C63D24' : (active ? '#22193A' : '#E7E1EE'));
+    };
+    return {
+      title: edit ? 'Modifier les dates' : 'Nouvelle liste',
+      backLabel: edit ? '6 → 12 oct.' : 'Listes',
+      backHref: edit ? 'Doux-Courses.dc.html' : 'Doux-ListesCourses.dc.html',
+      cta: edit ? 'Recalculer la liste' : 'Créer la liste',
+      isEdit: edit,
+      startLabel: label(st.start),
+      endLabel: label(st.end),
+      startActive: st.field === 'start',
+      endActive: st.field === 'end',
+      startFieldStyle: field(st.field === 'start', false),
+      endFieldStyle: field(st.field === 'end', invalid),
+      editStart: function () { self.setState({ field: 'start' }); },
+      editEnd: function () { self.setState({ field: 'end' }); },
+      weekdays: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(function (l) { return { label: l }; }),
+      cells: cells,
+      invalid: invalid,
+      valid: !invalid,
+      daysLabel: nbDays + (nbDays > 1 ? ' jours' : ' jour'),
+      mealsLabel: nbMeals + (nbMeals > 1 ? ' repas planifiés' : ' repas planifié')
+    };
+  }
+}
+</script>
+</body>
+</html>
