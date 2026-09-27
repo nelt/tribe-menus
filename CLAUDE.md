@@ -34,5 +34,6 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Dépôt** : `tribe-menus`, module `github.com/nelt/tribe-menus`, un paquet Go par domaine dans `internal/`, front dans `web/`, site public dans `site/` (ADR 0008).
 - **Langue** : code entièrement en anglais ; specs en français ; traduction des termes métier fixée par `docs/specs/glossaire.md` (ADR 0008).
 - **Environnement de développement** : Dev Container de référence ; versions épinglées dans `go.mod` (`toolchain`, `tool`), `.nvmrc` et `web/package.json` ; serveur local sur `http://localhost:8080` ; VS Code avec une liste courte d'extensions épinglées (ADR 0009).
+- **Commandes** : Makefile sommaire, toujours passer par ses cibles (ADR 0010) : `make tools`, `dev`, `seed`, `generate`, `lint`, `test`, `acceptance`, `e2e`, `vuln`, `build`, et `make ci` avant de pousser (c'est ce que lance la CI).
 
-Commandes du projet, build, CI et reste de l'hébergement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
+Chaîne de build, CI et reste de l'hébergement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.

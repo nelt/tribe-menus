@@ -18,13 +18,13 @@ Le souci de limiter les adhérences (ADR 0002, 0004) s'applique aussi à l'outil
 1. **Une seule source de vérité pour les versions, sans gestionnaire d'outils supplémentaire** :
    - **Go** : directive `toolchain` de `go.mod` (téléchargement automatique de la bonne version) ; outils de développement (sqlc, staticcheck, govulncheck) épinglés par la directive `tool` de `go.mod` et lancés par `go tool <outil>` ;
    - **Node** : version dans `.nvmrc` ; TypeScript, esbuild et Playwright dans les `devDependencies` de `web/package.json`, avec le fichier de verrouillage.
-2. **Une commande unique et idempotente installe tout le reste** (dépendances npm, navigateurs Playwright et leurs bibliothèques système). C'est la même commande pour le Dev Container, pour le script d'installation de l'environnement Claude Code dans le cloud et pour la CI. Sa forme (cible de Makefile ou autre) relève de la décision sur les commandes du projet.
+2. **Une commande unique et idempotente installe tout le reste** (dépendances npm, navigateurs Playwright et leurs bibliothèques système). C'est la même commande pour le Dev Container, pour le script d'installation de l'environnement Claude Code dans le cloud et pour la CI. Il s'agit de `make tools` (ADR 0010).
 3. **Dev Container comme environnement de référence** (`.devcontainer/devcontainer.json`) : image de base Go, Node ajouté, puis appel de la commande d'installation. Il reste mince : aucune version n'y est dupliquée. Travailler hors conteneur reste possible avec Go et Node installés sur le poste.
 4. **Boucle de développement** :
    - esbuild en mode surveillance reconstruit le front à chaque modification ;
    - le serveur Go en mode développement écoute sur `http://localhost:8080`, lit le front sur le disque plutôt que dans le binaire, sert aussi `site/` à la racine (ce que fait Caddy en production) et écrit les codes de connexion dans les logs au lieu de les envoyer par e-mail ;
    - pas de TLS en local : les navigateurs traitent `localhost` comme un contexte sécurisé, ce qui suffit au service worker et à l'installation de la PWA ;
-   - une commande crée des données de démonstration (tribu, membres, plats, planning) via la sous-commande `admin`.
+   - `make dev` lance l'ensemble ; `make seed` crée des données de démonstration (tribu, membres, plats, planning) via la sous-commande `admin`.
 5. **Éditeur de référence : VS Code** (distribution officielle, seule à disposer de l'extension Dev Containers). Le dépôt n'en dépend pas pour autant : seuls sont partagés un `.editorconfig` et la configuration du Dev Container.
 6. **Politique des extensions VS Code.** Une extension s'exécute sans bac à sable, avec les droits de l'utilisateur, et peut être compromise par une mise à jour automatique. Règles :
    - **liste courte, déclarée dans `devcontainer.json` avec des versions épinglées** : Go (équipe Go), Playwright (Microsoft), et Claude Code (Anthropic) au besoin. Aucune extension communautaire au départ ; lit-plugin (vérification des gabarits Lit), maintenu essentiellement par une personne, n'est pas retenu, `tsc` vérifiant déjà les types ;
