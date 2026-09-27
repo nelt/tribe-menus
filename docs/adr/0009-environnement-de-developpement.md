@@ -33,7 +33,7 @@ Le souci de limiter les adhérences (ADR 0002, 0004) s'applique aussi à l'outil
    - un profil VS Code dédié au projet, pour que les extensions installées pour d'autres usages ne s'y invitent pas ;
    - authentification GitHub par un jeton limité à ce dépôt plutôt que par une clé SSH personnelle : VS Code transmet par défaut l'agent SSH et les identifiants Git au conteneur, où une extension pourrait s'en servir ;
    - télémétrie désactivée (`telemetry.telemetryLevel: off`).
-7. **Tests sur un vrai téléphone** : en première itération, en déployant sur le VPS. Un tunnel depuis le poste de développement est à étudier plus tard (plusieurs solutions existent).
+7. **Tests sur un vrai téléphone** : en première itération, en déployant l'archive d'une PR dans l'environnement de recette du VPS (ADR 0016). Un tunnel depuis le poste de développement est à étudier plus tard (plusieurs solutions existent).
 
 ## Alternatives envisagées
 

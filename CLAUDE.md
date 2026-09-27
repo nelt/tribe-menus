@@ -38,6 +38,8 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Build et release** : build uniquement en CI ; archive (binaire `linux/amd64` avec front embarqué, `site/`, `deploy/`) ; versions sémantiques par étiquette manuelle `vX.Y.Z` ; chaque PR ajoute une ligne à `CHANGELOG.md` ; procédure dans `RELEASING.md` (ADR 0012).
 - **E-mails** : code de connexion envoyé par le SMTP du MX Plan OVHcloud (`no-reply@codingmatters.org`) via `net/smtp`, derrière une interface `Mailer` ; SPF, DKIM, DMARC (ADR 0014).
 - **CI** : GitHub Actions, runner `ubuntu-24.04` avec `setup-go` et `setup-node` ; un job `ci` qui lance `make tools` puis `make ci`, obligatoire pour fusionner ; revue des dépendances et CodeQL sur les PR ; construction hebdomadaire du Dev Container (ADR 0013).
+- **Serveur** : Debian 13 provisionné par `deploy/provision.sh` ; service systemd confiné, activation de socket, secrets en credentials systemd ; alertes par e-mail via `msmtp` (ADR 0015).
+- **Déploiement** : manuel par SSH (`sudo tribe-menus-deploy <version>`), instantané des bases et retour arrière automatique ; environnement de recette `recette.tribe-menus.codingmatters.org` alimenté par les archives de PR (ADR 0016).
 - **Dépôt public, licence `AGPL-3.0-or-later` pour tout le dépôt** (documentation comprise, polices exceptées) ; contributions sous DCO (`git commit -s`) ; aucun secret ni valeur propre à l'instance dans le dépôt ; protections du dépôt listées dans `docs/securite-depot.md` (ADR 0011).
 
-Système et déploiement : à définir (prochains ADR). Mettre à jour cette section à l'initialisation du projet.
+Mettre à jour cette section à l'initialisation du projet (commandes réelles, versions).
