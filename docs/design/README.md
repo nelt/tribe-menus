@@ -16,9 +16,11 @@ Principe : fond blanc, cartes délimitées par des liserés fins, couleur porté
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
 | Création / édition d'un plat | `maquettes/Doux-Plat.dc.html` | P1, P4 |
-| Liste de courses | `maquettes/Doux-Courses.dc.html` | C2, C3, C4 (à compléter pour C5, C6, C8, C9, C10, C11) |
-| Listes en cours et historique | à maquetter | C7, C10 |
-| Création d'une liste / choix des dates | à maquetter | C1, C5 |
+| Listes en cours (onglet Courses) | `maquettes/Doux-ListesCourses.dc.html` | C7, C10 |
+| Nouvelle liste / modifier les dates | `maquettes/Doux-NouvelleListe.dc.html` (réglage `mode`) | C1, C5 |
+| Liste de courses | `maquettes/Doux-Courses.dc.html` (réglage `etat` : périmée, à jour, hors ligne) | C2, C3, C4, C5, C6, C8, C9, C10, C11 |
+| Historique | `maquettes/Doux-Historique.dc.html` | C10 |
+| Liste faite (lecture seule) | `maquettes/Doux-CoursesFaite.dc.html` | C10 |
 | Tribu : membres | `maquettes/Doux-Tribu.dc.html` | EF-02, EF-03 (quitter la tribu), EF-06 |
 | Ajouter un membre | `maquettes/Doux-AjoutMembre.dc.html` | EF-01, EF-06 |
 | Fiche d'un membre | `maquettes/Doux-Membre.dc.html` | EF-03, EF-06 |
@@ -32,7 +34,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 - Barre d'onglets en bas : **Planning**, **Plats**, **Courses**. Onglet actif en aplat rouge tomate, texte blanc.
 - Planning → toucher une case de repas ouvre le détail du repas.
 - Plats → « Nouveau » ouvre la création d'un plat.
-- Courses → l'onglet présente les listes en cours et un accès à l'historique ; « Nouvelle liste » ouvre le choix des dates ; toucher une liste l'ouvre. *(À maquetter : la maquette actuelle ne montre qu'une liste.)*
+- Courses → l'onglet présente les listes en cours et un accès à l'historique ; « Nouvelle liste » ouvre le choix des dates ; toucher une liste l'ouvre. Dans une liste, toucher « Du » ou « Au » ouvre la modification des dates ; « Courses faites » mène à l'historique, « Abandonner » revient aux listes (chacun après confirmation).
 - Planning → la pastille de l'en-tête (nom de la tribu et nombre de membres) ouvre l'écran Tribu. Pas d'onglet dédié : la gestion de la tribu est occasionnelle.
 - Tribu → toucher un membre ouvre sa fiche ; « Ajouter un membre » ouvre l'ajout ; « Mes appareils » ouvre la liste des sessions.
 
@@ -88,8 +90,10 @@ Liseré = `c + (255 − c) × 0,6` sur chaque composante RVB.
 - **Stepper de parts** : − / valeur / +, contour foncé, « + » en rouge tomate.
 - **Initiale de plat** : carré arrondi 40–44 px, liseré adouci, lettre dans la teinte soutenue.
 - **Article de liste de courses** : case à cocher native, nom, quantité en rouge tomate ; coché = barré, liseré vert, déplacé en bas.
-- **Bandeau de liste périmée** (C6, à maquetter) : en haut de la liste, sous l'en-tête ; texte « Les repas ont changé » et bouton « Recalculer » en aplat rouge tomate (action).
-- **Article calculé / ajouté** (C8, C9, à maquetter) : un article calculé porte une mention discrète du nombre de repas (ex. « 2 repas ») et se déplie au toucher pour lister repas, plat, parts et quantité apportée ; un article ajouté porte la mention « ajouté » et ne se déplie pas.
+- **Bandeau de liste périmée** (C6) : sous les dates, liseré ambre `#F2D27A`, icône et texte `#8A6100` ; bouton « Recalculer » en aplat rouge tomate. La pastille « Repas modifiés » (mêmes couleurs) signale une liste périmée dans l'index des listes.
+- **Article calculé / ajouté** (C8, C9) : la case à cocher et la ligne sont deux cibles distinctes. Un article calculé porte une pastille neutre « N repas » et un chevron ; toucher la ligne la déplie : initiale du plat, plat et parts, jour et moment (couleurs midi/soir), quantité apportée. Un article ajouté porte une pastille en pointillé « ajouté », une croix pour le retirer, et ne se déplie pas.
+- **Ajout d'un article hors repas** (C8) : bouton en pointillé en bas de la liste, qui s'ouvre en formulaire (article, quantité facultative) au liseré de saisie `#E39A89`.
+- **Calendrier de période** (C1, C5) : grille du mois, lundi en premier ; bornes au contour rouge tomate 2 px, jours intermédiaires au liseré `#E39A89`, aujourd'hui en pointillé, point sous les jours ayant des repas. Date de fin avant la date de début : message au liseré `#E39A89` et bouton désactivé en pointillé.
 - **Abandon d'une liste** (C11) : action destructive, confirmée par la feuille de confirmation.
 - **Bandeau hors ligne** : liseré indigo adouci, icône et texte indigo.
 - **Avatar de membre** : rond 40 px (72 px sur la fiche), liseré adouci et initiale dans la teinte soutenue, comme l'initiale de plat. Membre révoqué : liseré en pointillé `#CFC6DE`, initiale `#6E6680`.
