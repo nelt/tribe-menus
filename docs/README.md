@@ -1,6 +1,7 @@
 # docs
 
-- `specs/` : spécifications fonctionnelles (le *quoi*, indépendamment de la technique) et exigences non fonctionnelles.
+- `specs/` : spécifications fonctionnelles (le *quoi*, indépendamment de la technique) et exigences non fonctionnelles. `specs/glossaire.md` fixe la traduction anglaise des termes métier utilisée dans le code.
 - `design/` : design retenu (tokens, composants, correspondance écrans ↔ stories, maquettes sources).
 - `plans/` : plans de travail préparés en amont, nommés `AAAA-MM-JJ-sujet.md`. Modèle : `plans/_template.md`.
 - `adr/` : Architecture Decision Records, numérotés `NNNN-titre.md`. Modèle : `adr/0000-template.md`.
+- `securite-depot.md` : liste des protections du dépôt GitHub (ADR 0011), à appliquer avant le passage en public.
