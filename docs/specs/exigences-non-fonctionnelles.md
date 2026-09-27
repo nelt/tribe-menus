@@ -47,6 +47,7 @@ Les données d'une tribu ne sont jamais accessibles depuis une autre tribu, ni e
 - **Tribu déterminée par la session** : la tribu de chaque requête authentifiée est celle de la session, jamais un paramètre fourni par le client. Le discriminant de l'URL doit correspondre à la tribu de la session ; sinon la requête est traitée comme non authentifiée pour cette tribu.
 - **Filtrage imposé en un point central** : l'accès aux données passe par une couche qui applique le filtre par tribu, plutôt que par un filtre ajouté à la main dans chaque requête.
 - **Pas de fuite indirecte** : les messages d'erreur, les réponses de connexion et les identifiants exposés ne permettent pas de déduire l'existence de données ou de membres d'une autre tribu.
+- **Rien n'est révélé avant connexion** : sans session valide, l'URL d'une tribu affiche un écran de connexion générique, identique que la tribu existe ou non. Le nom de la tribu n'apparaît qu'une fois la connexion réussie.
 - **Même adresse, tribus distinctes** : une personne membre de plusieurs tribus a une identité et des sessions distinctes dans chacune ; rien ne relie ses appartenances côté application.
 - **Application installée** : une PWA installée est rattachée à une tribu (son URL de démarrage contient le discriminant).
 - **Vérification** : des tests automatisés couvrent les tentatives d'accès croisé (lecture, modification, suppression) entre deux tribus.
