@@ -10,7 +10,7 @@ La CI exécute `make ci`, commande unique partagée avec le développeur et Clau
 ## Décision
 
 1. **Workflows** :
-   - **`ci.yml`** : sur chaque PR, chaque push sur `main`, à la demande, et une fois par semaine (pour détecter une vulnérabilité nouvellement publiée dans une dépendance même sans changement de code). Un seul job `ci` qui lance `make tools` puis `make ci` ; c'est la vérification obligatoire pour fusionner. Il vérifie aussi la signature DCO des commits d'une PR (ADR 0011) ;
+   - **`ci.yml`** : sur chaque PR, chaque push sur `main`, à la demande, et une fois par semaine (pour détecter une vulnérabilité nouvellement publiée dans une dépendance même sans changement de code). Un seul job `ci` qui lance `make tools` puis `make ci` ; c'est la vérification obligatoire pour fusionner. Il vérifie aussi la signature DCO des commits d'une PR (ADR 0011) et, sur une PR, conserve quelques jours l'archive produite par `make build` comme artefact, pour l'environnement de recette (ADR 0016) ;
    - **`release.yml`** : sur une étiquette `v*` (ADR 0012) ;
    - **`dependency-review.yml`** : sur chaque PR, bloque l'ajout d'une dépendance vulnérable ou sous une licence incompatible avec l'AGPL ;
    - **`devcontainer.yml`** : une fois par semaine et sur les PR qui modifient `.devcontainer/`, construit le Dev Container et y lance `make tools`, pour vérifier qu'il fonctionne toujours ;

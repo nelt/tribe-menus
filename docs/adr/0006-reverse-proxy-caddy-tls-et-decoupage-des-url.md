@@ -16,12 +16,12 @@ Le domaine `codingmatters.org` est disponible.
 
 ## Décision
 
-1. **Nom d'hôte** : `tribe-menus.codingmatters.org`.
+1. **Nom d'hôte** : `tribe-menus.codingmatters.org` ; environnement de recette sur `recette.tribe-menus.codingmatters.org` (ADR 0016).
 2. **Caddy en reverse proxy**, seul processus exposé sur les ports 80 et 443 :
    - certificats obtenus et renouvelés automatiquement auprès de Let's Encrypt ; redirection de HTTP vers HTTPS ; en-tête HSTS ;
    - paquet officiel, **sans plugin** (pas de compilation sur mesure) ;
    - API d'administration désactivée (`admin off`) ;
-   - chaque application écoute sur un **socket Unix** (pas de port local), accessible au seul utilisateur de Caddy ; ajouter une application revient à ajouter un bloc de configuration avec son nom d'hôte.
+   - chaque application écoute sur un **socket Unix** (pas de port local), accessible au seul utilisateur de Caddy, et créé par systemd (activation de socket, ADR 0015) ; ajouter une application revient à ajouter un bloc de configuration avec son nom d'hôte.
 3. **Découpage des chemins** sur `tribe-menus.codingmatters.org` :
    - `/` : **site public statique**, servi directement par Caddy. Première itération : trois pages (présentation, mentions légales, politique de confidentialité). Sources dans le dépôt, dossier `site/`, déployées indépendamment de l'application ;
    - `/tribes/<identifiant>/…` : **l'application**, transmise au binaire Go. Toutes ses ressources sont servies sous ce préfixe : pages, fichiers statiques, API (`/tribes/<identifiant>/api/…`), manifeste et service worker. Aucun chemin applicatif n'est partagé entre tribus, donc aucun identifiant de tribu n'a besoin d'être réservé.
