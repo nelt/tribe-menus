@@ -31,6 +31,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 ## Navigation
 
 - Accueil → « Recevoir un code » ouvre la saisie du code → « Se connecter » ouvre le planning. « Se déconnecter » et « Quitter la tribu » ramènent à l'accueil.
+- Les écrans d'accueil n'affichent pas le nom de la tribu : il n'apparaît qu'une fois la connexion réussie (ENF-02, ADR 0006). La pastille « Les Martin » des versions antérieures des maquettes a été retirée.
 - Barre d'onglets en bas : **Planning**, **Plats**, **Courses**. Onglet actif en aplat rouge tomate, texte blanc.
 - Planning → toucher une case de repas ouvre le détail du repas.
 - Plats → « Nouveau » ouvre la création d'un plat.

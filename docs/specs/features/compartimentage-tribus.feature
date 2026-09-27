@@ -80,6 +80,20 @@ Fonctionnalité: Compartimentage des données entre tribus
     Et une fois connecté, il reste connecté à la tribu "martin"
 
   @ENF-02
+  Scénario: L'écran de connexion ne révèle pas la tribu
+    Étant donné je ne suis connecté à aucune tribu
+    Quand j'ouvre l'URL de la tribu "martin"
+    Alors je vois l'écran de connexion
+    Et le nom "Les Martin" n'apparaît nulle part dans la réponse
+    Et la réponse est la même que pour l'URL d'une tribu qui n'existe pas
+
+  @ENF-02
+  Scénario: Le nom de la tribu apparaît une fois connecté
+    Étant donné "alice@exemple.fr" a reçu un code de connexion pour la tribu "martin"
+    Quand elle saisit ce code
+    Alors elle voit le nom "Les Martin"
+
+  @ENF-02
   Scénario: Les messages ne révèlent pas l'existence d'une autre tribu
     Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand j'ajoute le membre "david@exemple.fr"
