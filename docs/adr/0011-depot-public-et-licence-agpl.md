@@ -23,7 +23,8 @@ L'intention est qu'une version modifiée de l'application, même seulement explo
    - détection de secrets et blocage des pushes qui en contiennent activés (*secret scanning*, *push protection*) ;
    - `SECURITY.md` et signalement privé des vulnérabilités activé.
 5. **Rien de propre à l'instance dans le dépôt** : IP du serveur, utilisateur SSH, clés et toute valeur de configuration de production vivent dans les variables et secrets GitHub, jamais dans les fichiers versionnés. Aucun fichier `.env` versionné. Aucun secret dans le code front.
-6. **Durcissement de la CI** :
+6. **Toutes les protections disponibles sont appliquées avant la publication**, selon la liste tenue dans `docs/securite-depot.md` (accès, règles de branches et d'étiquettes, contributions externes, Actions, sécurité du code et des dépendances). Les points essentiels de la CI sont rappelés ci-dessous.
+   **Durcissement de la CI** :
    - approbation requise avant l'exécution des workflows déclenchés par des contributeurs externes ;
    - jamais de déclencheur `pull_request_target` ;
    - droits du jeton de CI en lecture seule par défaut, élargis workflow par workflow ;
