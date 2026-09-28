@@ -9,9 +9,9 @@ Fonctionnalité: Planning des repas
     Et la bibliothèque contient les plats "Chili con carne" et "Chili végétarien"
 
   @R1
-  Scénario: Afficher les repas des 7 prochains jours
+  Scénario: Afficher les repas de 7 jours à partir d'aujourd'hui
     Quand j'ouvre le planning
-    Alors je vois les jours du mardi 6 au lundi 12 octobre 2026
+    Alors je vois les jours du lundi 5 au dimanche 11 octobre 2026
     Et chaque jour comporte deux repas : midi et soir
 
   @R2
@@ -27,6 +27,13 @@ Fonctionnalité: Planning des repas
       | plat             | parts |
       | Chili con carne  | 4     |
       | Chili végétarien | 4     |
+
+  @R2
+  Scénario: Un même plat ne peut pas être ajouté deux fois à un repas
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
+    Quand je choisis un plat à ajouter au repas du mardi 6 octobre au soir
+    Alors "Chili con carne" ne m'est pas proposé
+    Et l'API refuse l'ajout de "Chili con carne" à ce repas
 
   @R3
   Scénario: Modifier le nombre de parts d'un plat servi
@@ -56,10 +63,15 @@ Fonctionnalité: Planning des repas
   Scénario: Naviguer vers la semaine suivante
     Quand j'ouvre le planning
     Et je passe à la semaine suivante
-    Alors je vois les jours du mardi 13 au lundi 19 octobre 2026
+    Alors je vois les jours du lundi 12 au dimanche 18 octobre 2026
 
   @R5
   Scénario: Naviguer vers la semaine précédente
     Quand j'ouvre le planning
     Et je passe à la semaine précédente
-    Alors je vois les jours du mardi 29 septembre au lundi 5 octobre 2026
+    Alors je vois les jours du lundi 28 septembre au dimanche 4 octobre 2026
+
+  @R5
+  Scénario: Les repas passés restent modifiables
+    Quand j'ajoute le plat "Chili con carne" au repas du samedi 3 octobre au soir
+    Alors le repas du samedi 3 octobre 2026 au soir contient "Chili con carne" pour 4 parts
