@@ -14,7 +14,7 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 | **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
 | **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut. |
 | **Bibliothèque de plats** | L'ensemble des plats de la tribu. Un plat y reste indépendamment de son utilisation dans les repas. |
-| **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (4 par défaut). Pas de recette (étapes) en V1. |
+| **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (4 par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
 | **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis. |
 | **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (toujours 4 par défaut). Exemple : chili 3 parts et chili végétarien 1 part. |
 | **Liste de courses** | Liste créée pour une **période** (date de début et date de fin incluses). Elle contient les ingrédients agrégés des plats servis de la période, quantités ajustées au nombre de parts, plus d'éventuels articles ajoutés à la main. C'est un **instantané** : calculée à sa création, elle ne change ensuite que par un recalcul explicite. Plusieurs listes peuvent exister en même temps. |
@@ -135,4 +135,5 @@ Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; cri
   - si la liste a été entre-temps déclarée faite ou abandonnée, ils sont ignorés et un message le signale ;
   - si un recalcul a entre-temps supprimé un article coché hors ligne, la coche est ignorée et un message le signale ;
   - un ingrédient créé hors ligne par un article ajouté est rapproché d'un ingrédient existant de même nom normalisé plutôt que dupliqué.
+- **Q19** : à sa création, un plat reçoit la teinte de la palette (`design/README.md`) la moins utilisée dans la bibliothèque, la première dans l'ordre de la palette en cas d'égalité ; elle est enregistrée avec le plat et ne change plus. Pas de choix de couleur par le membre en V1 (PT-05, 2026-09-28).
 - **Q17** : une liste est désignée par sa période (ex. « 6 → 12 oct. ») ; les listes en cours sont triées par date de début, l'historique par date de courses faites, la plus récente en premier.

@@ -59,7 +59,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 | Coché : liseré / barre de progression | `#A9D3B1` / `#2F7A3E` |
 | Champ en cours de saisie (liseré) | `#E39A89` |
 
-Chaque plat a une couleur, utilisée en **texte** (initiale, badge de parts) dans sa teinte soutenue, et en **liseré** dans une teinte éclaircie de 60 % vers le blanc :
+Chaque plat a une couleur, attribuée automatiquement à sa création parmi les teintes ci-dessous (règle Q19 de `fonctionnalites.md`), utilisée en **texte** (initiale, badge de parts) dans sa teinte soutenue, et en **liseré** dans une teinte éclaircie de 60 % vers le blanc :
 
 | Teinte soutenue | Exemple |
 | --- | --- |

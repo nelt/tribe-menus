@@ -20,6 +20,18 @@ Fonctionnalité: Bibliothèque de plats
     Alors le plat "Gratin dauphinois" est défini pour 6 parts
 
   @P1
+  Scénario: Un nouveau plat reçoit la teinte la moins utilisée
+    Étant donné la bibliothèque contient un plat de chaque teinte de la palette, sauf la teinte "#6E6680"
+    Quand je crée le plat "Curry de lentilles"
+    Alors le plat "Curry de lentilles" a la teinte "#6E6680"
+
+  @P1
+  Scénario: La couleur d'un plat ne change pas quand on le modifie
+    Étant donné le plat "Chili con carne" a la teinte "#C2502E"
+    Quand je modifie le plat "Chili con carne"
+    Alors le plat "Chili con carne" a toujours la teinte "#C2502E"
+
+  @P1
   Scénario: Le nom d'un plat est obligatoire
     Quand je crée un plat sans nom
     Alors le plat n'est pas enregistré
