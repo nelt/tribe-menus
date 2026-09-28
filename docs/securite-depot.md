@@ -44,7 +44,7 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 - [ ] « Allow GitHub Actions to create and approve pull requests » désactivé.
 - [ ] Jamais de déclencheur `pull_request_target` ; jamais de runner auto-hébergé.
 - [ ] Aucune donnée venant d'une PR (titre, branche, corps) interpolée directement dans un script de workflow (injection de commande).
-- [ ] Environnement GitHub `production` : secrets de déploiement uniquement là ; déploiement limité aux étiquettes `v*` ; approbation manuelle du propriétaire requise.
+- [ ] Aucun secret ni clé de déploiement chez GitHub : le déploiement est manuel, par SSH depuis le poste de l'administrateur (ADR 0016).
 - [ ] Workflows analysés en CI par **actionlint** (écrit en Go, épinglé par `go tool`).
 
 ## 5. Sécurité du code et des dépendances
@@ -68,4 +68,4 @@ Réglages sans enjeu de sécurité, faits au même moment parce que certains n'e
 
 - Attestation de provenance des archives de release (ADR 0012).
 - Score OpenSSF Scorecard publié.
-- Clé de déploiement restreinte côté serveur (commande forcée) : ADR sur le déploiement.
+- Clé de déploiement restreinte côté serveur (commande forcée), si le déploiement tiré par le serveur (alternative reportée de l'ADR 0016) est retenu.

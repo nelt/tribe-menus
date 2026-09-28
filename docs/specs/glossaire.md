@@ -7,6 +7,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | Français | Anglais | Remarque |
 | --- | --- | --- |
 | tribu | tribe | |
+| taille de la tribu | tribe size | 4 par défaut, T3 |
 | identifiant d'URL (de la tribu) | slug | `/tribes/<slug>/` |
 | registre (des tribus) | registry | base globale, ADR 0003 |
 | membre | member | |
@@ -18,8 +19,23 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | session | session | |
 | appareil | device | |
 | déconnecter tous les autres appareils | sign out other devices | |
+| nom (d'une session) | session label | nom donné par le membre, EF-04 |
+| appareil détecté | detected device | EF-04 |
+| essai (de code) | attempt | 3 par code, ENF-01 |
+| limitation des demandes | rate limit | ENF-01 |
+| anonymisé | anonymized | EF-11 |
 | journal d'audit | audit log | |
+| opération d'audit | audit operation | valeurs ci-dessous |
+| initialisation de la tribu | tribe initialized | EF-08 |
+| ajout / révocation / réactivation / anonymisation (d'un membre) | member added / member revoked / member reactivated / member anonymized | EF-07, EF-11 |
+| ouverture de session | session opened | |
+| révocation de session | session revoked | |
+| déconnexion des autres appareils | other devices signed out | |
+| déconnexion | signed out | |
+| fermeture de session (suite à la révocation d'un membre) | session closed | |
 | script d'administration | admin command | sous-commande `admin` du binaire |
+| supprimer une tribu | delete a tribe | EF-10 |
+| anonymiser (un membre) | anonymize | EF-11 |
 
 ## Plats et ingrédients
 
@@ -29,8 +45,9 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | référentiel d'ingrédients | ingredient catalog | |
 | bibliothèque de plats | dish library | |
 | plat | dish | |
-| parts de référence | reference servings | 4 par défaut |
+| parts de référence | reference servings | taille de la tribu par défaut |
 | unité par défaut | default unit | |
+| couleur (d'un plat) | color | teinte de la palette, Q19 |
 
 ## Planning
 
@@ -57,6 +74,9 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | abandonner | discard | supprime la liste |
 | recalculer / recalcul | recompute / recomputation | |
 | périmée | stale | |
+| provenance (d'un article calculé) | item source | un repas et un plat servi, C9 |
+| quantité apportée | contributed quantity | part d'une provenance, C9 |
+| nombre de repas (d'un article) | meal count | C9 |
 | historique | history | |
 
 ## Quantités
@@ -65,7 +85,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | --- | --- | --- |
 | quantité | quantity | |
 | unité | unit | |
-| famille d'unités : masse, volume, autres | unit family: mass, volume, other | |
+| famille d'unités : masse, volume, pièce, cuillère à soupe, cuillère à café, pincée | unit family: mass, volume, piece, tablespoon, teaspoon, pinch | les quatre dernières ne comptent qu'une unité |
 | pièce | piece | |
 | cuillère à soupe / à café | tablespoon / teaspoon | |
 | pincée | pinch | |

@@ -16,14 +16,20 @@ L'utilisateur se connecte une seule fois par appareil. Sa session survit à la f
 
 - **Login initial par code à usage unique envoyé par e-mail** : l'utilisateur saisit son adresse, reçoit un code à 6 chiffres et le tape dans l'application. Pas de mot de passe.
   - Un code, plutôt qu'un lien magique : sur iOS, une PWA installée a un stockage séparé de Safari, et un lien ouvert depuis le mail créerait la session dans Safari et non dans la PWA.
-  - Le code a une durée de validité courte et un nombre de tentatives limité.
+  - Le code est valable **10 minutes** et accepte **3 essais** ; au troisième essai erroné, il est invalidé.
+  - Un seul code valable à la fois par adresse et par tribu : une nouvelle demande invalide le code précédent.
+  - **Limitation des demandes de code** : 3 demandes par quart d'heure pour une même adresse dans une tribu, 10 par heure depuis une même adresse IP, 30 par heure pour une même tribu. Au-delà, l'application affiche « Réessayez dans quelques minutes » et n'envoie rien. La limite par adresse s'applique de la même façon à une adresse inconnue, révoquée ou d'une autre tribu, pour ne rien révéler (ENF-02). Elle protège aussi le quota d'envoi du compte e-mail (ADR 0014).
 - **Session portée par un cookie persistant posé par le serveur** :
   - attributs `HttpOnly`, `Secure`, `SameSite=Lax`, durée de 90 jours ;
   - expiration glissante : chaque utilisation prolonge la session ;
   - le cookie contient un jeton opaque aléatoire ; le serveur n'en conserve qu'une empreinte (hachage), associée à l'utilisateur et à l'appareil.
 - **Portée** : une session est ouverte pour une tribu donnée et ne vaut que pour elle (voir ENF-02).
 - **Révocation** : l'utilisateur peut consulter la liste de ses appareils connectés et fermer une session à distance (détail : [gestion des membres et des sessions](gestion-membres-et-sessions.md), EF-04 et EF-05).
-- **Hors-ligne** : l'interface et les données en cache restent consultables sans réseau ; la validité de la session est vérifiée au retour de la connexion.
+- **Hors-ligne** (PT-04, 2026-09-28) :
+  - restent consultables sans réseau le planning, la bibliothèque de plats, le référentiel d'ingrédients (pour l'autocomplétion) et les listes de courses déjà affichés ;
+  - seules les coches et l'ajout d'articles fonctionnent hors ligne (Q16) ; toute autre modification (planning, plats, membres, sessions) affiche « Réseau nécessaire » et ne change rien ;
+  - la validité de la session est vérifiée au retour de la connexion ;
+  - les données de la tribu stockées sur l'appareil (caches, IndexedDB, file d'opérations) sont effacées à la déconnexion et dès que le serveur signale une session invalide (session révoquée ou expirée, membre révoqué).
 
 ### Hors périmètre (pour l'instant)
 

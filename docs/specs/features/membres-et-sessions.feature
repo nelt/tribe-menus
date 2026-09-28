@@ -55,6 +55,12 @@ Fonctionnalité: Membres et sessions
     Et je ne vois pas "david@exemple.fr"
     Et chaque membre affiche son nom d'affichage, sa date d'ajout et l'auteur de l'ajout
 
+  @EF-02 @EF-03
+  Scénario: Un membre révoqué affiche l'auteur et la date de sa révocation
+    Étant donné "bruno@exemple.fr" est membre actif de la tribu "martin"
+    Quand je révoque "bruno@exemple.fr" le 12 octobre 2026
+    Alors "bruno@exemple.fr" apparaît avec le statut "révoqué", révoqué par "alice@exemple.fr" le 12 octobre 2026
+
   @EF-03
   Scénario: Révoquer un autre membre
     Étant donné "bruno@exemple.fr" est membre actif de la tribu "martin"
@@ -158,7 +164,7 @@ Fonctionnalité: Membres et sessions
     Et son ancienne session n'est pas restaurée
 
   @EF-07
-  Plan du Scénario: Les opérations sur les membres sont tracées
+  Plan du scénario: Les opérations sur les membres sont tracées
     Étant donné "bruno@exemple.fr" est membre <statut initial> de la tribu "martin"
     Quand j'effectue l'opération "<opération>" sur "bruno@exemple.fr"
     Alors le journal d'audit de la tribu "martin" contient une entrée "<opération>"
@@ -171,7 +177,7 @@ Fonctionnalité: Membres et sessions
       | révoqué        | réactivation |
 
   @EF-07
-  Plan du Scénario: Les opérations sur les sessions sont tracées
+  Plan du scénario: Les opérations sur les sessions sont tracées
     Quand <action>
     Alors le journal d'audit de la tribu "martin" contient une entrée "<opération>"
     Et cette entrée indique la session et l'appareil détecté
@@ -193,4 +199,10 @@ Fonctionnalité: Membres et sessions
   @EF-07
   Scénario: Le journal d'audit est en ajout seul
     Étant donné le journal d'audit de la tribu "martin" contient des entrées
-    Alors aucune fonction de l'application ne permet de modifier ou de supprimer une entrée
+    Alors aucune fonction de l'interface ne permet de modifier ou de supprimer une entrée
+
+  @EF-07
+  Scénario: Les entrées de plus de 12 mois sont effacées
+    Étant donné le journal d'audit de la tribu "martin" contient une entrée datée d'il y a 13 mois et une d'il y a 11 mois
+    Quand l'effacement automatique a lieu
+    Alors seule l'entrée d'il y a 11 mois est conservée

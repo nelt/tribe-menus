@@ -14,36 +14,36 @@ Fonctionnalité: Liste de courses
   @C1
   Scénario: Période par défaut
     Quand je crée une liste de courses sans modifier les dates proposées
-    Alors la période retenue va du mardi 6 au lundi 12 octobre 2026 inclus
+    Alors la période retenue va du 6 au 12 octobre 2026 inclus
 
   @C1
   Scénario: Choisir les dates de début et de fin
-    Quand je crée une liste de courses du jeudi 8 au dimanche 11 octobre 2026
+    Quand je crée une liste de courses du 8 au 11 octobre 2026
     Alors la liste porte sur la période du 8 au 11 octobre 2026 inclus
 
   @C1
   Scénario: La date de fin ne peut pas précéder la date de début
-    Quand je choisis une date de début au jeudi 8 octobre et une date de fin au mardi 6 octobre 2026
+    Quand je choisis une date de début au jeudi 8 octobre 2026 et une date de fin au mardi 6 octobre 2026
     Alors la création de la liste est impossible
     Et un message m'indique que la date de fin doit suivre la date de début
 
   @C1
   Scénario: Seuls les repas de la période sont pris en compte
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le mardi 13 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 13 octobre 2026 au soir
     Quand je crée une liste de courses du 6 au 12 octobre 2026
     Alors la liste contient 500 g de "bœuf haché"
 
   @C2
   Scénario: Les quantités sont ajustées au nombre de parts
-    Étant donné le plat "Chili con carne" servi pour 6 parts le mardi 6 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 6 parts le mardi 6 octobre 2026 au soir
     Quand je crée une liste de courses du 6 au 12 octobre 2026
     Alors la liste contient 750 g de "bœuf haché"
 
   @C2
   Scénario: Les quantités d'un même ingrédient sont additionnées
-    Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre à midi
+    Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre 2026 à midi
     Quand je crée une liste de courses du 6 au 12 octobre 2026
     Alors la liste contient une seule ligne "bœuf haché" de 875 g
 
@@ -71,9 +71,25 @@ Fonctionnalité: Liste de courses
     Alors la liste contient 2 pièces de "oignon"
 
   @C2
+  Scénario: Les cuillères à soupe et à café ne sont pas converties entre elles
+    Étant donné le plat "Vinaigrette" défini pour 4 parts avec 1 cuillère à soupe de "huile d'olive"
+    Et le plat "Taboulé" défini pour 4 parts avec 2 cuillères à café de "huile d'olive"
+    Et chacun de ces plats servi pour 4 parts dans la période
+    Quand je crée une liste de courses de la période
+    Alors la liste contient 1 cuillère à soupe de "huile d'olive"
+    Et la liste contient 2 cuillères à café de "huile d'olive"
+
+  @C2
+  Scénario: Les quantités en cuillères sont arrondies à l'entier supérieur
+    Étant donné le plat "Vinaigrette" défini pour 4 parts avec 1 cuillère à soupe de "huile d'olive"
+    Et le plat "Vinaigrette" servi pour 6 parts dans la période
+    Quand je crée une liste de courses de la période
+    Alors la liste contient 2 cuillères à soupe de "huile d'olive"
+
+  @C2
   Scénario: L'arrondi s'applique après l'addition
-    Étant donné le plat "Chili con carne" servi pour 2 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 2 parts le jeudi 8 octobre à midi
+    Étant donné le plat "Chili con carne" servi pour 2 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 2 parts le jeudi 8 octobre 2026 à midi
     Quand je crée une liste de courses du 6 au 12 octobre 2026
     Alors la liste contient 1 pièce de "oignon"
 
@@ -111,7 +127,40 @@ Fonctionnalité: Liste de courses
     Et quand le réseau revient, "pain" apparaît pour les autres membres de la tribu
 
   @C4
-  Plan du Scénario: Les actions sur la liste elle-même nécessitent le réseau
+  Plan du scénario: Les modifications hors ligne d'une liste close entre-temps sont ignorées
+    Étant donné une liste de courses du 6 au 12 octobre 2026 en cours
+    Et j'ai coché "bœuf haché" et ajouté l'article "pain" sans réseau
+    Et entre-temps un autre membre a <action> la liste
+    Quand le réseau revient
+    Alors un message m'indique que la liste a été <état> entre-temps et que mes modifications hors ligne n'ont pas été appliquées
+    Et la liste est inchangée
+
+    Exemples:
+      | action                        | état             |
+      | déclaré les courses faites de | déclarée faite   |
+      | abandonné                     | abandonnée       |
+
+  @C4
+  Scénario: La coche d'un article supprimé par un recalcul est ignorée
+    Étant donné le plat "Chili con carne" servi pour 4 parts le samedi 10 octobre 2026 au soir
+    Et une liste de courses du 6 au 12 octobre 2026
+    Et j'ai coché "bœuf haché" sans réseau
+    Et entre-temps un autre membre a modifié la date de fin de la liste au jeudi 8 octobre 2026
+    Quand le réseau revient
+    Alors la liste ne contient pas "bœuf haché"
+    Et un message m'indique que "bœuf haché" a été retiré par un recalcul et que ma coche n'a pas été appliquée
+
+  @C4 @C8
+  Scénario: Un ingrédient créé hors ligne n'est pas dupliqué
+    Étant donné que le référentiel d'ingrédients ne contient pas "lessive"
+    Et j'ai ajouté l'article "lessive" à une liste sans réseau
+    Et entre-temps un autre membre a créé l'ingrédient "Lessive"
+    Quand le réseau revient
+    Alors le référentiel d'ingrédients contient un seul ingrédient "lessive"
+    Et mon article ajouté est rattaché à cet ingrédient
+
+  @C4
+  Plan du scénario: Les actions sur la liste elle-même nécessitent le réseau
     Étant donné une liste de courses en cours affichée
     Et le réseau est coupé
     Quand je tente de <action>
@@ -128,8 +177,8 @@ Fonctionnalité: Liste de courses
 
   @C5
   Scénario: Modifier les dates recalcule la liste
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le mardi 13 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 13 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026 contenant 500 g de "bœuf haché"
     Quand je modifie la date de fin de la liste au mardi 13 octobre 2026
     Alors la liste porte sur la période du 6 au 13 octobre 2026
@@ -144,8 +193,8 @@ Fonctionnalité: Liste de courses
 
   @C5
   Scénario: Une coche est conservée si la quantité n'augmente pas
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le samedi 10 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le samedi 10 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026 où "oignon" est coché
     Quand je modifie la date de fin de la liste au jeudi 8 octobre 2026
     Alors la liste contient 1 pièce de "oignon"
@@ -153,8 +202,8 @@ Fonctionnalité: Liste de courses
 
   @C5
   Scénario: Une coche est retirée si la quantité augmente
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le mardi 13 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 13 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026 où "bœuf haché" est coché
     Quand je modifie la date de fin de la liste au mardi 13 octobre 2026
     Alors la liste contient 1 kg de "bœuf haché"
@@ -162,7 +211,7 @@ Fonctionnalité: Liste de courses
 
   @C5
   Scénario: Un article qui n'est plus nécessaire disparaît, même coché
-    Étant donné le plat "Chili con carne" servi pour 4 parts le samedi 10 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le samedi 10 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026 où "bœuf haché" est coché
     Quand je modifie la date de fin de la liste au jeudi 8 octobre 2026
     Alors la liste ne contient plus "bœuf haché"
@@ -170,7 +219,7 @@ Fonctionnalité: Liste de courses
   @C6
   Scénario: Un bandeau signale que les repas ont changé
     Étant donné une liste de courses du 6 au 12 octobre 2026 contenant 500 g de "bœuf haché"
-    Quand un membre règle à 6 parts le "Chili con carne" du mardi 6 octobre au soir
+    Quand un membre règle à 6 parts le "Chili con carne" du mardi 6 octobre 2026 au soir
     Alors un bandeau en haut de la liste indique que les repas ont changé
     Et le bandeau propose l'action "Recalculer"
     Et la liste contient toujours 500 g de "bœuf haché"
@@ -178,13 +227,13 @@ Fonctionnalité: Liste de courses
   @C6
   Scénario: Recalculer met la liste à jour et fait disparaître le bandeau
     Étant donné une liste de courses du 6 au 12 octobre 2026 signalée comme périmée
-    Et le "Chili con carne" du mardi 6 octobre au soir réglé à 6 parts
+    Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
     Quand je touche "Recalculer"
     Alors la liste contient 750 g de "bœuf haché"
     Et le bandeau n'est plus affiché
 
   @C6
-  Plan du Scénario: Les changements qui rendent une liste périmée
+  Plan du scénario: Les changements qui rendent une liste périmée
     Étant donné une liste de courses du 6 au 12 octobre 2026
     Quand <changement>
     Alors le bandeau de liste périmée est affiché
@@ -199,14 +248,14 @@ Fonctionnalité: Liste de courses
   @C6
   Scénario: Un changement hors de la période ne rend pas la liste périmée
     Étant donné une liste de courses du 6 au 12 octobre 2026
-    Quand un plat est ajouté au repas du mardi 13 octobre au soir
+    Quand un plat est ajouté au repas du mardi 13 octobre 2026 au soir
     Alors le bandeau de liste périmée n'est pas affiché
 
   @C6
   Scénario: Un changement sans effet sur les articles ne rend pas la liste périmée
     Étant donné le plat "Restes" sans ingrédient
     Et une liste de courses du 6 au 12 octobre 2026
-    Quand le plat "Restes" est ajouté au repas du mercredi 7 octobre à midi
+    Quand le plat "Restes" est ajouté au repas du mercredi 7 octobre 2026 à midi
     Alors le bandeau de liste périmée n'est pas affiché
 
   @C7
@@ -217,7 +266,7 @@ Fonctionnalité: Liste de courses
 
   @C7
   Scénario: Des listes peuvent porter sur des périodes qui se chevauchent
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026
     Quand je crée une liste de courses du 6 au 8 octobre 2026
     Alors chacune des deux listes contient 500 g de "bœuf haché"
@@ -243,7 +292,7 @@ Fonctionnalité: Liste de courses
 
   @C8
   Scénario: Un article ajouté n'est pas fusionné avec un article calculé
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026
     Quand j'ajoute l'article "oignon" pour 3 pièces
     Alors la liste contient 1 pièce de "oignon" rattachée à 1 repas
@@ -263,15 +312,15 @@ Fonctionnalité: Liste de courses
 
   @C9
   Scénario: Un article indique le nombre de repas dont il provient
-    Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre à midi
+    Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre 2026 à midi
     Quand je consulte la liste de courses du 6 au 12 octobre 2026
     Alors la ligne "bœuf haché" indique qu'elle provient de 2 repas
 
   @C9
   Scénario: Déplier un article pour voir les repas et plats concernés
-    Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre au soir
-    Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre à midi
+    Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre 2026 à midi
     Et la liste de courses du 6 au 12 octobre 2026
     Quand je touche la ligne "bœuf haché"
     Alors elle se déplie et montre :
@@ -320,7 +369,7 @@ Fonctionnalité: Liste de courses
 
   @C11
   Scénario: Abandonner une liste ne touche pas au planning
-    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre au soir
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Et une liste de courses du 6 au 12 octobre 2026
     Quand j'abandonne la liste
-    Alors le repas du mardi 6 octobre au soir contient toujours "Chili con carne" pour 4 parts
+    Alors le repas du mardi 6 octobre 2026 au soir contient toujours "Chili con carne" pour 4 parts

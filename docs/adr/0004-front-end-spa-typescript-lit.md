@@ -22,15 +22,17 @@ Critères retenus : une surface d'attaque réduite, peu de dépendances, pas de 
 6. **Routage** : un petit routeur écrit dans le projet, fondé sur l'API History, avec le préfixe de tribu (`/tribes/<identifiant>/…`).
 7. **Hors-ligne** :
    - **service worker écrit dans le projet** : pré-cache des ressources versionnées, cache d'abord pour les ressources statiques, réseau d'abord pour l'API ;
-   - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ;
-   - l'écran de liste s'affiche à partir de ces données locales, jamais d'un HTML en cache.
+   - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ; un ingrédient créé hors ligne est transmis par son nom et rapproché côté serveur d'un ingrédient existant de même nom normalisé ; les opérations devenues sans objet (liste close, article retiré par un recalcul) sont ignorées et signalées (Q18) ;
+   - l'écran de liste s'affiche à partir de ces données locales, jamais d'un HTML en cache ;
+   - le planning, la bibliothèque de plats et le référentiel d'ingrédients restent consultables hors ligne grâce au cache des réponses de l'API (réseau d'abord) ; leurs modifications exigent le réseau (ENF-01, PT-04) ;
+   - caches et IndexedDB de la tribu sont effacés à la déconnexion et dès qu'une réponse de l'API signale une session invalide.
 8. **Outillage** :
    - `typescript` pour la vérification des types (`tsc --noEmit`) ;
    - **esbuild** pour transpiler et assembler ;
    - pas de Vite, de Webpack ni de Workbox.
 9. **Sécurité** :
    - CSP stricte : `script-src 'self'`, aucun script en ligne, aucune ressource tierce ;
-   - interdiction, vérifiée par lint ou revue, des échappatoires au rendu échappé (`unsafeHTML`, `innerHTML`) ;
+   - interdiction des échappatoires au rendu échappé (`unsafeHTML`, `unsafeSVG`, `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`), vérifiée par `make lint` au moyen d'un petit programme Go du projet (`internal/tools/webcheck`) qui parcourt `web/src`, sans dépendance supplémentaire (PT-13) ;
    - versions de dépendances épinglées, installation par `npm ci --ignore-scripts`, mises à jour suivies par Dependabot.
 
 ## Alternatives envisagées

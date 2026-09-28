@@ -25,12 +25,14 @@ Fonctionnalité: Compartimentage des données entre tribus
 
   @ENF-02
   Scénario: Un même nom d'ingrédient est indépendant d'une tribu à l'autre
-    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
-    Quand je crée l'ingrédient "reblochon" avec l'unité "pièce"
-    Alors l'ingrédient "reblochon" de la tribu "durand" est inchangé
+    Étant donné l'ingrédient "reblochon" de la tribu "durand" a l'unité par défaut "g"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand j'ajoute 1 pièce de "reblochon" au plat "Raclette"
+    Alors l'ingrédient "reblochon" est créé dans la tribu "martin" avec l'unité par défaut "pièce"
+    Et l'ingrédient "reblochon" de la tribu "durand" a toujours l'unité par défaut "g"
 
   @ENF-02
-  Plan du Scénario: Accès croisé refusé
+  Plan du scénario: Accès croisé refusé
     Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand je tente de <action> une donnée de la tribu "durand" en utilisant son identifiant
     Alors la requête est refusée
@@ -44,7 +46,7 @@ Fonctionnalité: Compartimentage des données entre tribus
       | supprimer |
 
   @ENF-02
-  Plan du Scénario: Toutes les données sont compartimentées
+  Plan du scénario: Toutes les données sont compartimentées
     Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand je consulte <donnée>
     Alors je ne vois aucun élément de la tribu "durand"
@@ -74,7 +76,7 @@ Fonctionnalité: Compartimentage des données entre tribus
   @ENF-02
   Scénario: Une même adresse a des sessions distinctes dans chaque tribu
     Étant donné "bruno@exemple.fr" est membre actif des tribus "martin" et "durand"
-    Et Bruno est connecté à la tribu "martin" dans son navigateur
+    Et "bruno@exemple.fr" est connecté à la tribu "martin" dans son navigateur
     Quand Bruno ouvre l'URL de la tribu "durand" dans le même navigateur
     Alors il doit se connecter à la tribu "durand" avec un code
     Et une fois connecté, il reste connecté à la tribu "martin"

@@ -24,7 +24,7 @@ L'identité visuelle (nom **Melting Tribe**, symbole, logotype, icônes), qui s'
 | Liste de courses | `maquettes/Doux-Courses.dc.html` (réglage `etat` : périmée, à jour, hors ligne) | C2, C3, C4, C5, C6, C8, C9, C10, C11 |
 | Historique | `maquettes/Doux-Historique.dc.html` | C10 |
 | Liste faite (lecture seule) | `maquettes/Doux-CoursesFaite.dc.html` | C10 |
-| Tribu : membres | `maquettes/Doux-Tribu.dc.html` | EF-02, EF-03 (quitter la tribu), EF-06 |
+| Tribu : membres | `maquettes/Doux-Tribu.dc.html` | EF-02, EF-03 (quitter la tribu), EF-06, T3 |
 | Ajouter un membre | `maquettes/Doux-AjoutMembre.dc.html` | EF-01, EF-06 |
 | Fiche d'un membre | `maquettes/Doux-Membre.dc.html` | EF-03, EF-06 |
 | Mes appareils | `maquettes/Doux-Appareils.dc.html` | EF-04, EF-05 |
@@ -40,6 +40,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 - Plats → « Nouveau » ouvre la création d'un plat.
 - Courses → l'onglet présente les listes en cours et un accès à l'historique ; « Nouvelle liste » ouvre le choix des dates ; toucher une liste l'ouvre. Dans une liste, toucher « Du » ou « Au » ouvre la modification des dates ; « Courses faites » mène à l'historique, « Abandonner » revient aux listes (chacun après confirmation).
 - Planning → la pastille de l'en-tête (nom de la tribu et nombre de membres) ouvre l'écran Tribu. Pas d'onglet dédié : la gestion de la tribu est occasionnelle.
+- Tribu → le réglage **Taille de la tribu** (stepper) fixe les parts proposées pour les plats servis ajoutés et les nouveaux plats (T3).
 - Tribu → toucher un membre ouvre sa fiche ; « Ajouter un membre » ouvre l'ajout ; « Mes appareils » ouvre la liste des sessions.
 
 ## Tokens
@@ -59,7 +60,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 | Coché : liseré / barre de progression | `#A9D3B1` / `#2F7A3E` |
 | Champ en cours de saisie (liseré) | `#E39A89` |
 
-Chaque plat a une couleur, utilisée en **texte** (initiale, badge de parts) dans sa teinte soutenue, et en **liseré** dans une teinte éclaircie de 60 % vers le blanc :
+Chaque plat a une couleur, attribuée automatiquement à sa création parmi les teintes ci-dessous (règle Q19 de `fonctionnalites.md`), utilisée en **texte** (initiale, badge de parts) dans sa teinte soutenue, et en **liseré** dans une teinte éclaircie de 60 % vers le blanc :
 
 | Teinte soutenue | Exemple |
 | --- | --- |

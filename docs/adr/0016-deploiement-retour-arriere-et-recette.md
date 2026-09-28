@@ -17,7 +17,7 @@ Les releases sont construites par la CI et publiées sur GitHub (ADR 0012). Le s
    3. prend un instantané `VACUUM INTO` du registre et de chaque base de tribu, dans `/var/lib/tribe-menus/<environnement>/backups/avant-<version>/` ;
    4. installe la version dans `releases/<version>/` et, en production, met à jour le site public ;
    5. bascule le lien `current` de façon atomique et redémarre le service (les requêtes attendent dans le socket) ;
-   6. vérifie la santé du service (`/healthz` appelé par le socket) et, en cas d'échec, **revient automatiquement** à la version précédente ;
+   6. vérifie la santé du service (`/healthz` appelé par le socket, qui ne répond qu'une fois toutes les bases migrées, ADR 0003) et, en cas d'échec, **revient automatiquement** à la version précédente ;
    7. conserve les cinq dernières versions et leurs instantanés.
 2. **Retour arrière manuel** : `tribe-menus-deploy --rollback`, ou déploiement de la version précédente. Après une migration non compatible, restauration depuis l'instantané pris avant le déploiement.
 3. **`/healthz`** n'est pas exposé publiquement : Caddy ne le transmet pas.

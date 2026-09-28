@@ -30,7 +30,7 @@ L'intention est qu'une version modifiée de l'application, même seulement explo
    - droits du jeton de CI en lecture seule par défaut, élargis workflow par workflow ;
    - actions tierces épinglées par empreinte de commit ;
    - pas de runner auto-hébergé ;
-   - secrets de déploiement dans un environnement GitHub protégé, accessible aux seuls workflows de release, jamais aux PR.
+   - aucun secret accessible aux workflows de PR. *Le déploiement ne passe pas par GitHub : aucune clé ni secret de déploiement n'y est stocké (ADR 0016).*
 7. **Contributions sous DCO** (*Developer Certificate of Origin*) : chaque commit porte une ligne `Signed-off-by`, par laquelle son auteur certifie avoir le droit de le contribuer sous la licence du projet. Pas de CLA : aucune double licence commerciale n'est envisagée. Règle décrite dans un `CONTRIBUTING.md` et vérifiée en CI sur les PR externes.
 8. **Sourcemaps publiées** avec l'application (exclues du pré-cache du service worker) : le code étant public, elles n'exposent rien de plus et facilitent le débogage sur téléphone.
 
