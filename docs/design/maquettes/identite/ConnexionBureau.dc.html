@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Connexion : adresse e-mail, ordinateur</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A; display: flex"><div style="width: 640px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; border-right: 1.5px solid #E7E1EE"><div style="width: 360px; height: 360px; overflow: hidden; flex-shrink: 0"><div style="width: 320px; height: 320px; transform: scale(1.1250); transform-origin: 0 0"><dc-import name="Symbole" pastille="{{ true }}" hint-size="320px,320px"></dc-import></div></div><div style="width: 420px; height: 84px; overflow: hidden; flex-shrink: 0"><div style="width: 560px; height: 112px; transform: scale(0.7500); transform-origin: 0 0"><dc-import name="Wordmark" hint-size="560px,112px"></dc-import></div></div><span style="font-size: 18px; font-weight: 700; color: #5E5470">Les menus de la semaine, en tribu</span></div><div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 120px; gap: 40px"><div style="width: 400px"><form style="display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Bienvenue !</h2>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700">Votre adresse e-mail
+<input type="email" inputmode="email" autocomplete="email" value="{{adresse}}" aria-invalid="{{invalide}}" style="{{champ}}">
+</label>
+<sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
+<span role="alert" style="display: flex; align-items: flex-start; gap: 6px; font-size: 14px; font-weight: 700; line-height: 1.4; color: #C63D24"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.5v.5"></path></svg>{{errorText}}</span>
+</sc-if>
+<sc-if value="{{canSubmit}}" hint-placeholder-val="{{ true }}">
+<a href="Code.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; box-sizing: border-box; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 17px; font-weight: 800; border: none; cursor: pointer">Recevoir un code</a>
+</sc-if>
+<sc-if value="{{blocked}}" hint-placeholder-val="{{ false }}">
+<span aria-disabled="true" style="display: flex; align-items: center; justify-content: center; height: 56px; box-sizing: border-box; border-radius: 18px; background: #FFFFFF; color: #6E6680; border: 2px dashed #CFC6DE; font-size: 17px; font-weight: 800">Recevoir un code</span>
+</sc-if>
+<span style="font-size: 13px; font-weight: 600; line-height: 1.4; color: #5E5470; text-align: center">Pas de mot de passe : un code à 6 chiffres vous est envoyé par e-mail.</span>
+</form></div><footer style="display: flex; justify-content: flex-start; gap: 6px; font-size: 12px; font-weight: 600; color: #6E6680">Melting Tribe · <a href="https://github.com/nelt/tribe-menus" style="color: #6E6680">logiciel libre, code source</a></footer></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800},"etat":{"editor":"enum","options":["saisie","adresse mal formée","trop de demandes"],"default":"saisie"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var etat = this.props.etat ?? 'saisie';
+    var bad = etat === 'adresse mal formée';
+    var many = etat === 'trop de demandes';
+    return {
+      adresse: bad ? 'alice@exemple' : 'alice@exemple.fr',
+      invalide: bad ? 'true' : 'false',
+      champ: 'height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 16px; border: 2px solid ' + (bad ? '#C63D24' : '#22193A') + '; background: #FFFFFF; font-size: 17px; font-weight: 700; color: #22193A',
+      hasError: bad || many,
+      errorText: bad ? 'Cette adresse ne semble pas complète. Vérifiez-la.' : 'Trop de demandes depuis cet appareil. Réessayez dans quelques minutes.',
+      canSubmit: !many,
+      blocked: many
+    };
+  }
+}
+</script>
+</body>
+</html>

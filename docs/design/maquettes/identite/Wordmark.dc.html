@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Logotype Melting Tribe</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 560px; height: 112px; position: relative; font-family: 'Bricolage Grotesque', sans-serif; color: #22193A">
+<svg viewBox="0 0 300 40" width="300" height="40" aria-hidden="true" style="position: absolute; left: 2px; top: 60px"><path d="M6 0 H288 V4 Q282 8 276 4 Q270 0 266 8 Q262 30 254 22 Q250 14 244 6 Q230 0 200 4 Q160 8 120 4 Q96 2 92 12 Q88 36 80 26 Q76 16 70 8 Q60 2 40 4 Q22 6 18 14 Q14 22 10 14 Q8 8 6 4 Z" fill="{{coulee}}"></path></svg>
+<span style="position: relative; display: block; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 72px; letter-spacing: -1.8px; line-height: 1; white-space: nowrap"><span style="color: {{c1}}">Melting</span> <span style="color: {{c2}}">Tribe</span></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":112},"c1":{"editor":"color","options":["#C63D24","#EE7A5F","#FFFFFF"],"default":"#C63D24"},"c2":{"editor":"color","options":["#22193A","#FFFFFF"],"default":"#22193A"},"coulee":{"editor":"color","options":["#F2C94C","#FFFFFF"],"default":"#F2C94C"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { c1: this.props.c1 ?? '#C63D24', c2: this.props.c2 ?? '#22193A', coulee: this.props.coulee ?? '#F2C94C' };
+  }
+}
+</script>
+</body>
+</html>
