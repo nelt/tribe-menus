@@ -7,6 +7,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | Français | Anglais | Remarque |
 | --- | --- | --- |
 | tribu | tribe | |
+| taille de la tribu | tribe size | 4 par défaut, T3 |
 | identifiant d'URL (de la tribu) | slug | `/tribes/<slug>/` |
 | registre (des tribus) | registry | base globale, ADR 0003 |
 | membre | member | |
@@ -31,7 +32,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | référentiel d'ingrédients | ingredient catalog | |
 | bibliothèque de plats | dish library | |
 | plat | dish | |
-| parts de référence | reference servings | 4 par défaut |
+| parts de référence | reference servings | taille de la tribu par défaut |
 | unité par défaut | default unit | |
 | couleur (d'un plat) | color | teinte de la palette, Q19 |
 

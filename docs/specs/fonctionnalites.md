@@ -11,12 +11,12 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 
 | Concept | Description |
 | --- | --- |
-| **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
+| **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Elle a une **taille** (4 par défaut, réglable, T3), qui sert de nombre de parts initial. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
 | **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut, proposée à chaque saisie (Q20). Il est créé en saisissant un plat (P4) ou un article ajouté (C8), jamais seul. |
 | **Bibliothèque de plats** | L'ensemble des plats de la tribu. Un plat y reste indépendamment de son utilisation dans les repas. |
-| **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (4 par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
+| **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (la taille de la tribu par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
 | **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis. |
-| **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (toujours 4 par défaut). Exemple : chili 3 parts et chili végétarien 1 part. |
+| **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (la taille de la tribu par défaut). Exemple : chili 3 parts et chili végétarien 1 part. |
 | **Liste de courses** | Liste créée pour une **période** (date de début et date de fin incluses). Elle contient les ingrédients agrégés des plats servis de la période, quantités ajustées au nombre de parts, plus d'éventuels articles ajoutés à la main. C'est un **instantané** : calculée à sa création, elle ne change ensuite que par un recalcul explicite. Plusieurs listes peuvent exister en même temps. |
 | **Article** | Une ligne d'une liste de courses : un ingrédient, une quantité et une unité. Un article **calculé** provient d'un ou plusieurs repas de la période ; un article **ajouté** a été saisi à la main, hors planning. |
 | **État d'une liste** | **En cours** (visible dans l'onglet Courses, modifiable) ou **faite** (figée, consultable dans l'historique). Une liste abandonnée est supprimée. |
@@ -63,18 +63,18 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 
 ### Bibliothèque de plats (`features/bibliotheque-plats.feature`)
 
-- **P1** : Je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité), pour 4 parts par défaut.
+- **P1** : Je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité), pour un nombre de parts égal par défaut à la taille de la tribu.
 - **P2** : Je modifie un plat ; la modification s'applique à tous les repas où il est servi. Pas de suppression en V1.
 - **P3** : Je retrouve un plat en cherchant sur les mots de son nom et sur ses ingrédients.
 - **P4** : La saisie d'un ingrédient propose ceux qui existent déjà (autocomplétion, sans tenir compte de la casse ni des accents) ; je peux en créer un nouveau. L'unité par défaut de l'ingrédient est proposée.
 
 ### Planning des repas (`features/planning-repas.feature`)
 
-- **R1** : Je vois les repas des 7 prochains jours (de demain à J+7), avec deux cases par jour : midi et soir.
-- **R2** : J'ajoute un ou plusieurs plats de la bibliothèque à un repas ; chaque plat servi part de 4 parts.
+- **R1** : Je vois les repas de 7 jours à partir d'aujourd'hui (J à J+6), avec deux cases par jour : midi et soir.
+- **R2** : J'ajoute un ou plusieurs plats de la bibliothèque à un repas ; chaque plat servi part d'un nombre de parts égal à la taille de la tribu. Un même plat ne figure qu'une fois dans un repas.
 - **R3** : Je modifie le nombre de parts d'un plat servi.
 - **R4** : Je retire un plat d'un repas ; il reste dans la bibliothèque, mais sa configuration dans ce repas est perdue.
-- **R5** : Je navigue vers les semaines précédentes et suivantes.
+- **R5** : Je navigue vers les semaines précédentes et suivantes. Les repas passés restent modifiables comme les autres.
 
 ### Liste de courses (`features/liste-courses.feature`)
 
@@ -94,6 +94,7 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 
 - **T1** : Les membres de la tribu partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses ; les autres tribus n'y ont pas accès.
 - **T2** : Tous les membres ont les mêmes droits.
+- **T3** : Je règle la taille de la tribu (4 par défaut). Elle s'applique aux plats servis ajoutés ensuite et aux nouveaux plats ; les plats servis déjà placés et les plats existants ne changent pas.
 
 ### Membres, sessions et administration
 
@@ -116,14 +117,14 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
 ## Décisions
 
 - **Q1** : deux moments par jour, midi et soir. Un repas peut contenir plusieurs plats, chacun avec son nombre de parts.
-- **Q2** : « les 7 prochains jours » commencent demain (J+1 à J+7).
+- **Q2** : le planning s'ouvre sur aujourd'hui et les 6 jours suivants (J à J+6) ; la période par défaut d'une nouvelle liste de courses reste de demain à J+7 (C1), les courses se faisant pour les jours à venir. Les repas passés sont modifiables (PT-09, 2026-09-28).
 - **Q3** : conversion d'unités quand c'est nécessaire, au sein d'une même famille. Seules la masse et le volume comptent plusieurs unités ; pièce, cuillère à soupe, cuillère à café et pincée sont chacune leur propre famille (PT-01, 2026-09-28).
 - **Q4** : les quantités en pièces, cuillères et pincées sont arrondies à l'entier supérieur (PT-01, 2026-09-28).
 - **Q5** : les plats vivent dans une bibliothèque ; retirer un plat d'un repas ne le supprime pas de la bibliothèque, mais perd sa configuration dans ce repas.
 - **Q5b** : pas de suppression de plat de la bibliothèque en V1.
 - **Q6** : pas de droits différenciés en V1 ; pas de temps réel nécessaire.
 - **Q7** : la liste de courses doit pouvoir être consultée et cochée hors ligne.
-- **Q8** : chaque plat servi part toujours de 4 parts.
+- **Q8** : chaque plat servi part de la taille de la tribu (4 par défaut, réglable par tout membre, T3), quel que soit le nombre de parts de référence du plat ; un nouveau plat est proposé pour ce même nombre de parts (PT-08, 2026-09-28).
 - **Q9** : la bibliothèque de plats et le référentiel d'ingrédients sont propres à chaque tribu : partagés entre ses membres, jamais entre tribus.
 - **Q10** : une liste de courses est un instantané, recalculé seulement sur action explicite (changement de dates ou « Recalculer »), jamais automatiquement : la liste ne bouge pas sous les yeux de celui qui fait les courses.
 - **Q11** : au recalcul, les articles ajoutés à la main sont conservés, et les coches aussi, sauf quand la quantité d'un article augmente.
@@ -141,4 +142,5 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
   - deux noms qui ne diffèrent que par la casse, les accents ou les espaces (en tête, en fin, répétés) désignent le même ingrédient ; le nom affiché est celui de la première saisie ;
   - l'unité par défaut d'un ingrédient est la première unité saisie avec lui ; elle est proposée à chaque saisie suivante et reste modifiable ligne par ligne ;
   - un ingrédient n'est créé qu'en saisissant un plat ou un article ajouté ; pas d'écran de gestion du référentiel en V1.
+- **Q21** : un même plat ne peut figurer qu'une fois dans un repas ; pour en prévoir davantage, on augmente ses parts (PT-10, 2026-09-28).
 - **Q17** : une liste est désignée par sa période (ex. « 6 → 12 oct. ») ; les listes en cours sont triées par date de début, l'historique par date de courses faites, la plus récente en premier.
