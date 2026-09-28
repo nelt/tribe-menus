@@ -19,7 +19,20 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | session | session | |
 | appareil | device | |
 | déconnecter tous les autres appareils | sign out other devices | |
+| nom (d'une session) | session label | nom donné par le membre, EF-04 |
+| appareil détecté | detected device | EF-04 |
+| essai (de code) | attempt | 3 par code, ENF-01 |
+| limitation des demandes | rate limit | ENF-01 |
+| anonymisé | anonymized | EF-11 |
 | journal d'audit | audit log | |
+| opération d'audit | audit operation | valeurs ci-dessous |
+| initialisation de la tribu | tribe initialized | EF-08 |
+| ajout / révocation / réactivation / anonymisation (d'un membre) | member added / member revoked / member reactivated / member anonymized | EF-07, EF-11 |
+| ouverture de session | session opened | |
+| révocation de session | session revoked | |
+| déconnexion des autres appareils | other devices signed out | |
+| déconnexion | signed out | |
+| fermeture de session (suite à la révocation d'un membre) | session closed | |
 | script d'administration | admin command | sous-commande `admin` du binaire |
 | supprimer une tribu | delete a tribe | EF-10 |
 | anonymiser (un membre) | anonymize | EF-11 |
@@ -61,6 +74,9 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | abandonner | discard | supprime la liste |
 | recalculer / recalcul | recompute / recomputation | |
 | périmée | stale | |
+| provenance (d'un article calculé) | item source | un repas et un plat servi, C9 |
+| quantité apportée | contributed quantity | part d'une provenance, C9 |
+| nombre de repas (d'un article) | meal count | C9 |
 | historique | history | |
 
 ## Quantités
