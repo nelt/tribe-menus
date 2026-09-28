@@ -1,6 +1,10 @@
-# personal-sandbox
+<p align="center"><img src="docs/design/identite/symbole.svg" alt="" width="160"><br><img src="docs/design/identite/logotype.svg" alt="Melting Tribe" width="320"></p>
 
-Bac à sable personnel pour expérimenter, notamment un flux de travail hybride avec Claude :
+# Melting Tribe
+
+Les menus de la semaine, en tribu : chacun ajoute ses plats au planning, la liste de courses se fait toute seule. Application web progressive, logiciel libre sous licence AGPL-3.0, servie sur `meltingtribe.codingmatters.org` (ADR 0017).
+
+Le projet sert aussi à expérimenter un flux de travail hybride avec Claude :
 
 - **Claude (app web / mobile)** pour le cadrage, l'architecture et la préparation, avec les résultats déposés dans `docs/`.
 - **Claude Code** (terminal, IDE ou cloud) pour l'implémentation, en s'appuyant sur `CLAUDE.md` et `docs/`.

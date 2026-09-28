@@ -52,7 +52,7 @@ Sur fond sombre, le symbole garde son intérieur blanc et son anneau rouge.
 - **Coulée** : une coulée de soupe jaune `#F2C94C` sous « Melting ». Elle reste jaune partout : jamais rouge (effet de coulée de sang).
 - **Sur fond sombre** (`#22193A`) : « Melting » en tomate éclaircie `#EE7A5F`, « Tribe » en blanc, coulée jaune.
 - **Assemblages** : horizontal (symbole à gauche) et vertical (symbole au-dessus, avec l'accroche « Les menus de la semaine, en tribu »).
-- Source : `maquettes/identite/Wordmark.dc.html`. Le lettrage dépend de la police ; une version vectorisée (texte converti en tracés) sera à produire pour les usages hors web.
+- Fichiers : `identite/logotype.svg` (fond clair) et `identite/logotype-sombre.svg` (fond sombre), texte converti en tracés : ils ne dépendent d'aucune police. Obtenus à partir de Bricolage Grotesque (instance `wght` 800, `opsz` 72, `wdth` 100) avec approche de −1,8 px et crénage de la police, comme le rendu du navigateur à 72 px. Source de maquette : `maquettes/identite/Wordmark.dc.html`.
 
 ## Écrans de connexion
 
@@ -87,6 +87,10 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 - **Confidentialité** : données traitées, un seul cookie strictement nécessaire, aucune mesure d'audience ni cookie sur le site public, hébergement en France, durées de conservation, droits et CNIL.
 - **À compléter avant publication** : `[DATE]` et `[VERSION]` (au déploiement), durée de conservation des journaux du serveur (`[DURÉE]`), modalité de suppression des données d'une tribu sur demande ; créer la boîte `contact@codingmatters.org`.
 
+## Image de partage
+
+`identite/partage.png` (1200 × 630, source `identite/partage.svg`), pour les balises Open Graph et Twitter du site public et l'aperçu social du dépôt GitHub : symbole avec cercle à gauche, logotype, accroche « Les menus de la semaine, en tribu. » et adresse `meltingtribe.codingmatters.org` à droite, sur fond blanc. Textes en tracés.
+
 ## Couleurs ajoutées
 
 En plus des tokens de `README.md` :
@@ -105,8 +109,6 @@ Sur les pages publiques, l'aplat de couleur n'est plus réservé aux actions : l
 
 ## Reste à faire
 
-- Image de partage (1200×630).
 - Fichiers d'icônes (PNG 192, 512, maskable, Apple 180 ; favicon SVG), à générer à l'initialisation du projet.
 - Supprimer `Doux-Connexion.dc.html`, `Doux-Code.dc.html` et `FondTribu.dc.html` une fois les nouveaux écrans implémentés.
-- Lettrage vectorisé.
 - Licence : le symbole et le logotype sont couverts, comme tout le dépôt, par l'AGPL (ADR 0011). Protéger le nom et le logo (usage de la marque par des versions modifiées) demanderait une décision dédiée, non prise à ce jour.
