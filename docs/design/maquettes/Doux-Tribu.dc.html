@@ -27,6 +27,18 @@ button{font-family:inherit}
 <span style="font-size: 14px; font-weight: 600; color: #5E5470">{{activeLabel}}</span>
 </div>
 
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 22px; border: 1.5px solid #E7E1EE">
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span id="taille-titre" style="font-weight: 800; font-size: 16px">Taille de la tribu</span>
+<span style="font-size: 13px; font-weight: 600; color: #5E5470">Parts proposées pour chaque plat ajouté à un repas et pour chaque nouveau plat.</span>
+</div>
+<div role="group" aria-labelledby="taille-titre" style="display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 14px; border: 1.5px solid #22193A">
+<button aria-label="Une personne de moins" onClick="{{decSize}}" style="width: 36px; height: 42px; border: none; border-radius: 11px; background: transparent; color: #22193A; font-size: 22px; font-weight: 700; cursor: pointer">−</button>
+<span aria-live="polite" style="min-width: 24px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">{{tribeSize}}</span>
+<button aria-label="Une personne de plus" onClick="{{incSize}}" style="width: 36px; height: 42px; border: none; border-radius: 11px; background: transparent; color: #C63D24; font-size: 22px; font-weight: 800; cursor: pointer">+</button>
+</div>
+</div>
+
 <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 22px; border: 1.5px solid #F2D27A">
 <div style="display: flex; align-items: center; gap: 10px">
 <span style="width: 44px; height: 44px; flex-shrink: 0; box-sizing: border-box; border-radius: 999px; border: 1.5px solid #E7B9AB; color: #C2502E; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 19px">A</span>
@@ -97,7 +109,7 @@ button{font-family:inherit}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { reactivated: false, leaving: null };
+    this.state = { reactivated: false, leaving: null, tribeSize: 4 };
   }
   renderVals() {
     var self = this;
@@ -125,6 +137,9 @@ class Component extends DCLogic {
       revoked: revoked,
       hasRevoked: revoked.length > 0,
       activeLabel: count + ' membres actifs',
+      tribeSize: this.state.tribeSize,
+      incSize: function () { self.setState({ tribeSize: self.state.tribeSize + 1 }); },
+      decSize: function () { self.setState({ tribeSize: Math.max(1, self.state.tribeSize - 1) }); },
       leaving: leaving,
       lastMember: this.props.dernierMembre ?? false,
       openLeave: function () { self.setState({ leaving: true }); },

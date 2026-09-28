@@ -40,10 +40,7 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 - Plats → « Nouveau » ouvre la création d'un plat.
 - Courses → l'onglet présente les listes en cours et un accès à l'historique ; « Nouvelle liste » ouvre le choix des dates ; toucher une liste l'ouvre. Dans une liste, toucher « Du » ou « Au » ouvre la modification des dates ; « Courses faites » mène à l'historique, « Abandonner » revient aux listes (chacun après confirmation).
 - Planning → la pastille de l'en-tête (nom de la tribu et nombre de membres) ouvre l'écran Tribu. Pas d'onglet dédié : la gestion de la tribu est occasionnelle.
-- **Écarts connus des maquettes** (décisions du 2026-09-28, maquettes non encore reprises) :
-  - `Doux-Main` commence le planning au lendemain (mardi 6) ; il commence désormais aujourd'hui (R1, Q2) ;
-  - `Doux-Tribu` n'a pas le réglage de la **taille de la tribu** (T3) : un stepper de parts, comme dans le détail d'un repas, sous le titre ;
-  - `Doux-Repas` doit ne plus proposer un plat déjà présent dans le repas (Q21).
+- Tribu → le réglage **Taille de la tribu** (stepper) fixe les parts proposées pour les plats servis ajoutés et les nouveaux plats (T3).
 - Tribu → toucher un membre ouvre sa fiche ; « Ajouter un membre » ouvre l'ajout ; « Mes appareils » ouvre la liste des sessions.
 
 ## Tokens
