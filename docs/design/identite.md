@@ -1,0 +1,77 @@
+# Identité visuelle : Melting Tribe
+
+- **Date** : 2026-09-28
+- **Statut** : retenu (symbole, icônes, logotype). Les pages publiques et l'écran de connexion restent à décliner.
+- **Canevas** :
+  - [Melting Tribe, identité visuelle](https://claude.ai/artifact/VQKHQXpkeWw3DmP6wBaUvg) (privé) : l'exploration, pistes A à D10 ;
+  - [Melting Tribe, déclinaisons](https://claude.ai/artifact/PnDbsVYrEjfZondTPHUVe1) (privé) : la version retenue et ses déclinaisons. Sources dans `maquettes/identite/`.
+
+Périmètre : pages publiques (site statique, ADR 0006) et fenêtre de connexion. Le design interne de l'application (`README.md`) ne change pas pour l'instant.
+
+## Nom
+
+**Melting Tribe**, en référence au *melting pot* : la tribu qui se mélange autour de la marmite. Le nom sert de marque sur le site et l'écran de connexion ; le domaine (`tribe-menus.codingmatters.org`) et le dépôt (`tribe-menus`) ne changent pas pour l'instant.
+
+Le nom de marque apparaît aussi dans le manifeste servi sans session et dans l'e-mail du code : jamais le nom d'une tribu avant connexion (ENF-02, ADR 0006, ADR 0014).
+
+## Symbole
+
+Trois personnages émergent d'une marmite dont la soupe déborde ; au-dessus, des ingrédients s'envolent en arc, de plus en plus gros de droite à gauche (cosse de petits pois, aubergine, part de pizza, tomate, carotte). La tomate touche le cercle, la carotte en sort franchement : ce débordement est une signature du symbole.
+
+- **Personnages** : silhouettes pleines, sans visage ni main ; bras droits levés. Couleurs : ocre `#B36A0B`, bleu `#2F6FB0`, vert `#3F7F25`.
+- **Volume** : lumière venant d'en haut à gauche, traitée en aplats (pas de dégradés) : croissant d'ombre dans un ton plus foncé en bas à droite, petit reflet clair en haut à gauche.
+- **Marmite** : demi-disque rouge tomate `#C63D24`, bord `#22193A`, soupe et coulures jaunes `#F2C94C`.
+- **Cercle** : anneau rouge tomate `#C63D24`, intérieur blanc. Il remplace le disque crème des premières pistes (le crème est abandonné). Il est présent dans toutes les versions ; la carotte passe par-dessus.
+
+| Fichier | Usage |
+| --- | --- |
+| `identite/symbole.svg` | Version principale, avec cercle. |
+| `identite/symbole-sans-cercle.svg` | Quand le cadre est déjà rond ou chargé. |
+| `identite/symbole-reduit.svg` | 48 px et moins (favicon, onglets) : sans ombres, carotte et tomate seulement, formes épaissies, anneau deux fois plus épais. |
+| `identite/symbole-mono.svg` | Une couleur (encre `#22193A`), formes séparées par un liseré de la couleur du fond (blanc). |
+| `identite/symbole-mono-inverse.svg` | Blanc sur fond `#22193A`. |
+
+Sur fond sombre, le symbole garde son intérieur blanc et son anneau rouge.
+
+## Petites tailles
+
+- Au-dessus de 48 px : symbole complet.
+- 48 px et moins : symbole réduit. Son anneau épais reste lisible jusqu'à 16 px ; l'anneau fin du symbole complet disparaît vers 32 px.
+
+## Icônes d'application
+
+- **Icône PWA** (192 et 512 px) : symbole complet avec cercle sur fond blanc ; variante sur fond `#22193A` si le blanc se perd.
+- **Android « maskable »** : plein cadre blanc, symbole dans la zone sûre (cercle central de 80 %). Les fanes de la carotte sortent de la zone et sont rognées par les lanceurs à masque rond : accepté.
+- **Apple** (180 px) : fond blanc, iOS arrondit les coins.
+- **Favicon** : symbole réduit, en SVG.
+- **Manifeste** : nom générique « Melting Tribe » sans session (ADR 0006, point 9).
+
+## Logotype
+
+- **Lettrage** : « Melting Tribe » en Bricolage Grotesque 800, « Melting » en rouge tomate `#C63D24`, « Tribe » en `#22193A`.
+- **Coulée** : une coulée de soupe jaune `#F2C94C` sous « Melting ». Elle reste jaune partout : jamais rouge (effet de coulée de sang).
+- **Sur fond sombre** (`#22193A`) : « Melting » en tomate éclaircie `#EE7A5F`, « Tribe » en blanc, coulée jaune.
+- **Assemblages** : horizontal (symbole à gauche) et vertical (symbole au-dessus, avec l'accroche « Les menus de la semaine, en tribu »).
+- Source : `maquettes/identite/Wordmark.dc.html`. Le lettrage dépend de la police ; une version vectorisée (texte converti en tracés) sera à produire pour les usages hors web.
+
+## Couleurs ajoutées
+
+En plus des tokens de `README.md` :
+
+| Rôle | Valeur |
+| --- | --- |
+| Soupe, coulée | `#F2C94C` |
+| Carotte | `#E07B1F` |
+| Personnage ocre (lumière / ombre) | `#B36A0B` (`#D9953A` / `#8A5008`) |
+| Personnage bleu (lumière / ombre) | `#2F6FB0` (`#5C93CC` / `#1F4E80`) |
+| Personnage vert (lumière / ombre) | `#3F7F25` (`#67A24A` / `#2B5A18`) |
+| Marmite (lumière / ombre) | `#C63D24` (`#E0654C` / `#952B17`) |
+| « Melting » sur fond sombre | `#EE7A5F` |
+
+Sur les pages publiques, l'aplat de couleur n'est plus réservé aux actions : le symbole et les grands blocs (bandeau `#22193A` du site) en portent.
+
+## Reste à faire
+
+- Pages : saisie de l'e-mail et du code (avec les états d'erreur), site public (présentation, mentions légales, politique de confidentialité), image de partage (1200×630). Le fond de pictogrammes (`maquettes/FondTribu.dc.html`) sera remplacé par le symbole.
+- Lettrage vectorisé.
+- Licence : le symbole et le logotype sont couverts, comme tout le dépôt, par l'AGPL (ADR 0011). Protéger le nom et le logo (usage de la marque par des versions modifiées) demanderait une décision dédiée, non prise à ce jour.
