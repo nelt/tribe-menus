@@ -6,12 +6,15 @@
 
 Principe : fond blanc, cartes délimitées par des liserés fins, couleur portée par des liserés adoucis et par le texte. La seule couleur pleine est réservée aux actions (rouge tomate). Clair et coloré, sans être chargé.
 
+L'identité visuelle (nom **Melting Tribe**, symbole, logotype, icônes), qui s'applique aux pages publiques et à l'écran de connexion, est décrite dans [`identite.md`](identite.md).
+
 ## Écrans et stories
 
 | Écran | Fichier de référence | Stories |
 | --- | --- | --- |
-| Accueil : saisie de l'e-mail | `maquettes/Doux-Connexion.dc.html` | ENF-01 |
-| Accueil : saisie du code | `maquettes/Doux-Code.dc.html` | ENF-01 |
+| Chargement (session valide) | `maquettes/identite/Chargement.dc.html` (réglage `etat`) | ENF-01 |
+| Accueil : saisie de l'e-mail | `maquettes/identite/Connexion.dc.html`, `maquettes/identite/ConnexionBureau.dc.html` (réglage `etat`) | ENF-01 |
+| Accueil : saisie du code | `maquettes/identite/Code.dc.html` (réglage `etat`) | ENF-01 |
 | Planning de la semaine | `maquettes/Doux-Main.dc.html` | R1, R5 |
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
@@ -102,4 +105,4 @@ Liseré = `c + (255 − c) × 0,6` sur chaque composante RVB.
 - **Carte de session** : icône d'appareil, nom donné ou appareil détecté, dates ; la session courante porte la pastille verte « cet appareil » et un liseré vert.
 - **Action destructive** (révoquer, déconnecter, quitter) : texte ou contour rouge tomate, jamais en aplat sur l'écran. L'aplat n'apparaît que dans la feuille de confirmation.
 - **Feuille de confirmation** : panneau blanc en bas d'écran (coins 26 px), voile `rgba(34, 25, 58, 0.45)`, titre sous forme de question, conséquences en une phrase, action en aplat puis « Annuler ».
-- **Fond d'accueil** (`maquettes/FondTribu.dc.html`, composant importé par les écrans d'accueil) : une foule de pictogrammes naïfs pleins, cernés d'un trait `#22193A`, qui se chevauchent sans ordre et couvrent tout l'écran (fond `#22193A` derrière). Moitié personnages de la tribu en buste (peaux, coiffures et vêtements variés), moitié ingrédients et plats. Couleurs vives de la palette des plats. Une sous-couche de grands pictogrammes sur une grille serrée garantit la couverture ; la foule est posée par-dessus. Le texte ne se pose jamais directement sur le fond : il est dans un médaillon ou une carte blanche au contour foncé de 2 px. C'est le seul endroit de l'application où la couleur est en aplat hors des actions.
+- **Fond d'accueil** (`maquettes/FondTribu.dc.html`, composant importé par les écrans d'accueil) : *abandonné, à remplacer par le symbole de l'identité visuelle (voir `identite.md`) lors de la refonte des écrans d'accueil.* Description de la version d'origine : une foule de pictogrammes naïfs pleins, cernés d'un trait `#22193A`, qui se chevauchent sans ordre et couvrent tout l'écran (fond `#22193A` derrière). Moitié personnages de la tribu en buste (peaux, coiffures et vêtements variés), moitié ingrédients et plats. Couleurs vives de la palette des plats. Une sous-couche de grands pictogrammes sur une grille serrée garantit la couverture ; la foule est posée par-dessus. Le texte ne se pose jamais directement sur le fond : il est dans un médaillon ou une carte blanche au contour foncé de 2 px. C'est le seul endroit de l'application où la couleur est en aplat hors des actions.

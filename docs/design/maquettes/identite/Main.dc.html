@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Versions du symbole</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1400px; height: 560px; box-sizing: border-box; padding: 40px; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A; display: flex; flex-direction: column; gap: 24px"><div style="display: flex; flex-direction: column; gap: 4px"><h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px">Versions du symbole</h1><p style="margin: 0; font-size: 15px; color: #5E5470">Le cercle rouge remplace le disque crème, dans toutes les versions.</p></div><div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; flex-grow: 1"><div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 16px; padding: 28px 16px 22px; border-radius: 22px; border: 1.5px solid #E7E1EE; background: #FFFFFF"><div style="width: 220px; height: 220px; overflow: hidden; flex-shrink: 0"><div style="width: 320px; height: 320px; transform: scale(0.6875); transform-origin: 0 0"><dc-import name="Symbole" pastille="{{ true }}" hint-size="320px,320px"></dc-import></div></div><div style="display: flex; flex-direction: column; gap: 2px; text-align: center"><span style="font-size: 15px; font-weight: 800; color: #22193A">Avec cercle</span><span style="font-size: 13px; font-weight: 600; color: #5E5470">Version principale : la carotte sort du cercle</span></div></div><div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 16px; padding: 28px 16px 22px; border-radius: 22px; border: 1.5px solid #E7E1EE; background: #FFFFFF"><div style="width: 220px; height: 220px; overflow: hidden; flex-shrink: 0"><div style="width: 320px; height: 320px; transform: scale(0.6875); transform-origin: 0 0"><dc-import name="Symbole" pastille="{{ false }}" hint-size="320px,320px"></dc-import></div></div><div style="display: flex; flex-direction: column; gap: 2px; text-align: center"><span style="font-size: 15px; font-weight: 800; color: #22193A">Sans cercle</span><span style="font-size: 13px; font-weight: 600; color: #5E5470">Quand le cadre est déjà rond</span></div></div><div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 16px; padding: 28px 16px 22px; border-radius: 22px; background: #22193A"><div style="width: 220px; height: 220px; overflow: hidden; flex-shrink: 0"><div style="width: 320px; height: 320px; transform: scale(0.6875); transform-origin: 0 0"><dc-import name="Symbole" pastille="{{ true }}" hint-size="320px,320px"></dc-import></div></div><div style="display: flex; flex-direction: column; gap: 2px; text-align: center"><span style="font-size: 15px; font-weight: 800; color: #FFFFFF">Sur fond nuit</span><span style="font-size: 13px; font-weight: 600; color: #D9D3E4">Intérieur blanc, cercle rouge</span></div></div><div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 16px; padding: 28px 16px 22px; border-radius: 22px; border: 1.5px solid #E7E1EE; background: #FFFFFF"><div style="width: 220px; height: 220px; overflow: hidden; flex-shrink: 0"><div style="width: 320px; height: 320px; transform: scale(0.6875); transform-origin: 0 0"><dc-import name="SymboleMono" encre="#22193A" fond="#FFFFFF" hint-size="320px,320px"></dc-import></div></div><div style="display: flex; flex-direction: column; gap: 2px; text-align: center"><span style="font-size: 15px; font-weight: 800; color: #22193A">Monochrome</span><span style="font-size: 13px; font-weight: 600; color: #5E5470">Impression, tampon, gravure</span></div></div><div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 16px; padding: 28px 16px 22px; border-radius: 22px; background: #22193A"><div style="width: 220px; height: 220px; overflow: hidden; flex-shrink: 0"><div style="width: 320px; height: 320px; transform: scale(0.6875); transform-origin: 0 0"><dc-import name="SymboleMono" encre="#FFFFFF" fond="#22193A" hint-size="320px,320px"></dc-import></div></div><div style="display: flex; flex-direction: column; gap: 2px; text-align: center"><span style="font-size: 15px; font-weight: 800; color: #FFFFFF">Monochrome inversé</span><span style="font-size: 13px; font-weight: 600; color: #D9D3E4">Blanc sur fond foncé</span></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
