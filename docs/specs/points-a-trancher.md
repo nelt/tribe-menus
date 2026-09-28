@@ -13,10 +13,11 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Conséquence : règle « encore présent = même famille » du recalcul, unité de base de stockage, scénarios C2.
   - **Décision (2026-09-28)** : pièce, cuillère à soupe, cuillère à café et pincée forment chacune leur propre famille, sans conversion ; toutes sont arrondies à l'entier supérieur après agrégation. Reporté dans `fonctionnalites.md` (unités, Q3, Q4), `glossaire.md`, ADR 0003 point 7 et `liste-courses.feature` (C2).
 
-- [ ] **PT-02. Paramètres de connexion et limitation des demandes** (ENF-01, `authentification.feature`, ADR 0006 point 7, ADR 0014 point 5, `identite.md`)
+- [x] **PT-02. Paramètres de connexion et limitation des demandes** (ENF-01, `authentification.feature`, ADR 0006 point 7, ADR 0014 point 5, `identite.md`)
   - Valeurs absentes : durée de validité du code, nombre d'essais, seuils de limitation des demandes.
   - Les ADR 0006 et 0014 renvoient à une limitation « par adresse, par IP et par tribu » prévue par ENF-01, qui ne la décrit pas ; l'état « trop de demandes » des maquettes n'a pas de scénario.
   - À décider aussi : une nouvelle demande invalide-t-elle le code précédent ? La limitation par adresse s'applique-t-elle de la même façon aux adresses inconnues (pour ne rien révéler, ENF-02) ?
+  - **Décision (2026-09-28)** : code valable 10 minutes, 3 essais ; une nouvelle demande invalide le code précédent ; limites de 3 demandes par quart d'heure par adresse et par tribu (adresses inconnues comprises), 10 par heure par IP, 30 par heure par tribu. Reporté dans ENF-01 et `authentification.feature`.
 
 - [ ] **PT-03. Conflits de la file hors ligne** (C4, Q16, ADR 0004 point 7)
   - Sort d'une coche ou d'un article ajouté rejoué au retour du réseau si, entre-temps, la liste a été recalculée (article disparu), déclarée faite (figée, Q14) ou abandonnée.

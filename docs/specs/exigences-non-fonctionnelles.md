@@ -16,7 +16,9 @@ L'utilisateur se connecte une seule fois par appareil. Sa session survit à la f
 
 - **Login initial par code à usage unique envoyé par e-mail** : l'utilisateur saisit son adresse, reçoit un code à 6 chiffres et le tape dans l'application. Pas de mot de passe.
   - Un code, plutôt qu'un lien magique : sur iOS, une PWA installée a un stockage séparé de Safari, et un lien ouvert depuis le mail créerait la session dans Safari et non dans la PWA.
-  - Le code a une durée de validité courte et un nombre de tentatives limité.
+  - Le code est valable **10 minutes** et accepte **3 essais** ; au troisième essai erroné, il est invalidé.
+  - Un seul code valable à la fois par adresse et par tribu : une nouvelle demande invalide le code précédent.
+  - **Limitation des demandes de code** : 3 demandes par quart d'heure pour une même adresse dans une tribu, 10 par heure depuis une même adresse IP, 30 par heure pour une même tribu. Au-delà, l'application affiche « Réessayez dans quelques minutes » et n'envoie rien. La limite par adresse s'applique de la même façon à une adresse inconnue, révoquée ou d'une autre tribu, pour ne rien révéler (ENF-02). Elle protège aussi le quota d'envoi du compte e-mail (ADR 0014).
 - **Session portée par un cookie persistant posé par le serveur** :
   - attributs `HttpOnly`, `Secure`, `SameSite=Lax`, durée de 90 jours ;
   - expiration glissante : chaque utilisation prolonge la session ;
