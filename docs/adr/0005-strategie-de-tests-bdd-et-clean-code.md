@@ -17,14 +17,17 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
    - Go : `go test`, tests en tableaux de cas, sur la logique métier pure de chaque domaine (conversion et agrégation des quantités, règles de recalcul…) ;
    - TypeScript : `node:test`, sur les modules purs sans DOM (file d'opérations hors-ligne, fusion des coches, formatage des quantités).
    Les composants Lit ne sont pas testés isolément dans un DOM simulé : leur logique est extraite dans des modules purs, et leur comportement est couvert par les scénarios `@ui`.
-4. **Tests d'accès croisé entre tribus (ENF-02)** : exécutés avec godog contre l'API, avec deux tribus réelles, pour la lecture, la modification et la suppression.
-5. **Principes de clean code appliqués** :
+4. **Scénarios difficiles à automatiser** (PT-15, 2026-09-28) :
+   - les scénarios négatifs (« aucune action ne permet de supprimer le plat », « aucune fonction de l'interface ne permet de modifier le journal ») sont prouvés contre l'API : la route correspondante n'existe pas et la requête est refusée (`405 Method Not Allowed` ou `404`) ;
+   - les scénarios qui exigent un vrai appareil (survie de la session après fermeture du navigateur ou de l'app installée) portent le tag `@manuel` : exclus de `make ci`, ils sont vérifiés sur téléphone dans l'environnement de recette avant chaque release, selon la liste tenue dans `RELEASING.md` (ADR 0012).
+5. **Tests d'accès croisé entre tribus (ENF-02)** : exécutés avec godog contre l'API, avec deux tribus réelles, pour la lecture, la modification et la suppression.
+6. **Principes de clean code appliqués** :
    - logique métier sans dépendance à HTTP, SQL ou au DOM, et testable isolément ;
    - vocabulaire du code aligné sur celui des spécifications, traduit en anglais selon `docs/specs/glossaire.md` (ADR 0008) ;
    - fonctions courtes, une seule responsabilité, erreurs traitées explicitement ;
    - pas d'abstraction sans deuxième usage réel ;
    - formatage et analyse statique automatiques : `gofmt`, `go vet` et `staticcheck` côté Go ; `tsc` en mode strict côté TypeScript.
-6. **Intégration continue** : chaque PR exécute les tests unitaires, les scénarios godog, les scénarios `@ui` et l'analyse statique. Une PR ne fusionne que si tout est vert. Les commits citent l'identifiant de la story concernée.
+7. **Intégration continue** : chaque PR exécute les tests unitaires, les scénarios godog, les scénarios `@ui` et l'analyse statique. Une PR ne fusionne que si tout est vert. Les commits citent l'identifiant de la story concernée.
 
 ## Alternatives envisagées
 
