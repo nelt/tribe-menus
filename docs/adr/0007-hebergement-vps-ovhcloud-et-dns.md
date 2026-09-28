@@ -13,7 +13,7 @@ Critères : hébergement dans l'UE (ou juridiction équivalente), coût, simplic
 
 1. **Serveur** : VPS OVHcloud, gamme VPS-1 (2 vCores, 4 Go de RAM, 40 Go NVMe au moment du choix), dans un datacenter français. Trafic illimité, sauvegarde quotidienne et protection anti-DDoS incluses.
 2. **DNS** : la zone `codingmatters.org` reste chez OVHcloud.
-   - enregistrements A et AAAA `tribe-menus.codingmatters.org` vers le VPS ;
+   - enregistrements A et AAAA `tribe-menus.codingmatters.org` vers le VPS ; *nom remplacé par `meltingtribe.codingmatters.org` (ADR 0017)* ;
    - enregistrement **CAA** n'autorisant que Let's Encrypt (`letsencrypt.org`) à émettre des certificats pour le domaine ;
    - **DNSSEC** activé.
    Caddy valide le domaine par HTTP-01 ou TLS-ALPN-01, sans accès à l'API DNS : aucun plugin n'est nécessaire.
