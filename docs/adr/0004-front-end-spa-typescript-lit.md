@@ -32,7 +32,7 @@ Critères retenus : une surface d'attaque réduite, peu de dépendances, pas de 
    - pas de Vite, de Webpack ni de Workbox.
 9. **Sécurité** :
    - CSP stricte : `script-src 'self'`, aucun script en ligne, aucune ressource tierce ;
-   - interdiction, vérifiée par lint ou revue, des échappatoires au rendu échappé (`unsafeHTML`, `innerHTML`) ;
+   - interdiction des échappatoires au rendu échappé (`unsafeHTML`, `unsafeSVG`, `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`), vérifiée par `make lint` au moyen d'un petit programme Go du projet (`internal/tools/webcheck`) qui parcourt `web/src`, sans dépendance supplémentaire (PT-13) ;
    - versions de dépendances épinglées, installation par `npm ci --ignore-scripts`, mises à jour suivies par Dependabot.
 
 ## Alternatives envisagées

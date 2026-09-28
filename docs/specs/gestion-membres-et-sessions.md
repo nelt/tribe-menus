@@ -28,7 +28,7 @@ Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07
 
 ## EF-02. Consulter les membres
 
-- Un membre connecté voit la liste des membres de sa tribu : nom d'affichage, e-mail, date d'ajout, ajouté par, statut (actif / révoqué).
+- Un membre connecté voit la liste des membres de sa tribu : nom d'affichage, e-mail, date d'ajout, ajouté par, statut (actif / révoqué), et pour un membre révoqué, la date de révocation et son auteur (« vous », un membre, lui-même s'il a quitté la tribu, ou « script d'administration »).
 
 ## EF-03. Révoquer un membre
 
