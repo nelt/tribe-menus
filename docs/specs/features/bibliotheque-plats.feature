@@ -82,6 +82,26 @@ Fonctionnalité: Bibliothèque de plats
     Alors l'ingrédient "tomate" m'est proposé
 
   @P4
+  Scénario: L'autocomplétion ignore la casse et les accents
+    Étant donné l'ingrédient "crème fraîche" existe dans le référentiel
+    Quand je saisis "CREME" comme ingrédient d'un plat
+    Alors l'ingrédient "crème fraîche" m'est proposé
+
+  @P4
+  Scénario: Un nom qui ne diffère que par la casse, les accents ou les espaces désigne le même ingrédient
+    Étant donné l'ingrédient "crème fraîche" existe dans le référentiel
+    Quand j'ajoute l'ingrédient " Creme  Fraiche " à un plat
+    Alors le référentiel contient un seul ingrédient "crème fraîche"
+    Et le plat utilise l'ingrédient "crème fraîche"
+
+  @P4
+  Scénario: L'unité par défaut est proposée à la saisie
+    Étant donné l'ingrédient "riz" a été saisi pour la première fois en "g"
+    Quand je saisis "riz" comme ingrédient d'un plat
+    Alors l'unité "g" est proposée
+    Et je peux choisir une autre unité pour ce plat
+
+  @P4
   Scénario: Créer un nouvel ingrédient pendant la saisie d'un plat
     Étant donné l'ingrédient "gingembre" n'existe pas dans le référentiel
     Quand j'ajoute l'ingrédient "gingembre" à un plat

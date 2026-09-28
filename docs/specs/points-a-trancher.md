@@ -34,11 +34,12 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Le design attribue une couleur à chaque plat ; aucune story ne dit comment elle est choisie (par le membre, automatiquement dans la palette) ni si elle est stockée.
   - **Décision (2026-09-28)** : attribuée automatiquement à la création (teinte la moins utilisée, ordre de la palette en cas d'égalité), stockée, jamais modifiée ; pas de choix par le membre en V1. Reporté dans `fonctionnalites.md` (Q19), `design/README.md`, `glossaire.md` et `bibliotheque-plats.feature` (P1).
 
-- [ ] **PT-06. Référentiel d'ingrédients** (P4, C8, T1, ENF-02)
+- [x] **PT-06. Référentiel d'ingrédients** (P4, C8, T1, ENF-02)
   - L'unité par défaut d'un ingrédient est définie mais n'intervient dans aucune story (pré-remplissage de l'unité à la saisie ?).
   - Des scénarios créent un ingrédient seul, avec une unité (`tribu.feature` T1, `compartimentage-tribus.feature`), sans story ni écran correspondant.
   - Normalisation des noms non spécifiée (casse, accents, espaces) : la recherche P3 ignore les accents, l'autocomplétion P4 ne le dit pas.
   - Correction d'une faute de frappe ou fusion de doublons : hors périmètre V1 à acter, ou story à ajouter.
+  - **Décision (2026-09-28)** : unité par défaut = première unité saisie, proposée ensuite ; création seulement en saisissant un plat ou un article ; noms rapprochés sans casse, accents ni espaces superflus (autocomplétion comprise) ; renommage et fusion hors périmètre V1. Reporté dans `fonctionnalites.md` (concepts, P4, Q20, hors périmètre), `bibliotheque-plats.feature` (P4), `tribu.feature` (T1) et `compartimentage-tribus.feature`.
 
 - [ ] **PT-07. Conservation et effacement des données** (EF-03, EF-07, `identite.md` page Confidentialité)
   - La page Confidentialité exige des durées de conservation et une modalité de suppression sur demande.

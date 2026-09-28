@@ -19,7 +19,7 @@ Fonctionnalité: Tribu
 
   @T1
   Scénario: Le référentiel d'ingrédients est partagé entre membres
-    Quand Alice crée l'ingrédient "piment d'Espelette"
+    Quand Alice ajoute le nouvel ingrédient "piment d'Espelette" au plat "Axoa"
     Et Bruno saisit "pim" comme ingrédient d'un plat
     Alors "piment d'Espelette" fait partie des propositions
 
