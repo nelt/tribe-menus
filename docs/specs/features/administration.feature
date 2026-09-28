@@ -19,7 +19,7 @@ Fonctionnalité: Administration des tribus
   @EF-08
   Scénario: Le premier membre peut se connecter et ajouter des membres
     Étant donné la tribu "martin" initialisée avec le premier membre "alice@exemple.fr"
-    Quand Alice se connecte à la tribu "martin" avec un code reçu par e-mail
+    Quand "alice@exemple.fr" se connecte à la tribu "martin" avec un code reçu par e-mail
     Alors elle peut ajouter le membre "bruno@exemple.fr"
 
   @EF-08
@@ -65,7 +65,7 @@ Fonctionnalité: Administration des tribus
     Et "alice@exemple.fr" est toujours membre révoqué de la tribu "durand"
 
   @EF-09
-  Plan du Scénario: Refus de réactivation
+  Plan du scénario: Refus de réactivation
     Étant donné <situation>
     Quand je réactive "alice@exemple.fr" dans la tribu "<tribu>" avec le script
     Alors le script refuse avec le message "<message>"

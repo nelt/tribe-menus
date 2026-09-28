@@ -164,7 +164,7 @@ Fonctionnalité: Membres et sessions
     Et son ancienne session n'est pas restaurée
 
   @EF-07
-  Plan du Scénario: Les opérations sur les membres sont tracées
+  Plan du scénario: Les opérations sur les membres sont tracées
     Étant donné "bruno@exemple.fr" est membre <statut initial> de la tribu "martin"
     Quand j'effectue l'opération "<opération>" sur "bruno@exemple.fr"
     Alors le journal d'audit de la tribu "martin" contient une entrée "<opération>"
@@ -177,7 +177,7 @@ Fonctionnalité: Membres et sessions
       | révoqué        | réactivation |
 
   @EF-07
-  Plan du Scénario: Les opérations sur les sessions sont tracées
+  Plan du scénario: Les opérations sur les sessions sont tracées
     Quand <action>
     Alors le journal d'audit de la tribu "martin" contient une entrée "<opération>"
     Et cette entrée indique la session et l'appareil détecté
