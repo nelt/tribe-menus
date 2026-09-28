@@ -90,7 +90,7 @@ Fonctionnalité: Connexion et session persistante
     Alors l'application affiche « Réessayez dans quelques minutes »
 
   @ENF-01
-  Plan du Scénario: Le nombre de demandes est aussi limité par IP et par tribu
+  Plan du scénario: Le nombre de demandes est aussi limité par IP et par tribu
     Étant donné <demandes> ont été faites dans la dernière heure
     Quand une nouvelle demande de code est faite <origine>
     Alors l'application affiche « Réessayez dans quelques minutes »
@@ -103,19 +103,19 @@ Fonctionnalité: Connexion et session persistante
 
   @ENF-01
   Scénario: Un code ne sert qu'une fois
-    Étant donné je me suis connecté avec un code
+    Étant donné je me suis connecté à la tribu "martin" en tant que "alice@exemple.fr" avec un code
     Quand je saisis à nouveau ce code sur un autre appareil
     Alors je ne suis pas connecté sur cet autre appareil
 
   @ENF-01 @manuel
   Scénario: La session survit au redémarrage du navigateur
-    Étant donné je suis connecté à la tribu "martin" dans mon navigateur
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr" dans mon navigateur
     Quand je ferme complètement le navigateur puis le rouvre sur l'URL de la tribu "martin"
     Alors je suis toujours connecté, sans ressaisir de code
 
   @ENF-01 @manuel
   Scénario: La session survit à la fermeture de l'app installée
-    Étant donné je suis connecté à la tribu "martin" dans l'app installée
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr" dans l'app installée
     Quand je ferme l'app puis la rouvre
     Alors je suis toujours connecté, sans ressaisir de code
 
@@ -135,26 +135,26 @@ Fonctionnalité: Connexion et session persistante
 
   @ENF-01
   Scénario: Le cookie de session n'est pas lisible par le code de la page
-    Étant donné je suis connecté à la tribu "martin"
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Alors le cookie de session est marqué HttpOnly, Secure et SameSite=Lax
     Et le jeton de session n'est pas stocké en clair côté serveur
 
   @ENF-01
   Scénario: Consultation hors ligne
-    Étant donné je suis connecté à la tribu "martin" et j'ai déjà affiché le planning
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr" et j'ai déjà affiché le planning
     Quand je perds le réseau et rouvre l'application
     Alors je vois le planning en cache
     Et ma session est revérifiée au retour du réseau
 
   @ENF-01
   Scénario: Consultation hors ligne de la bibliothèque de plats
-    Étant donné je suis connecté à la tribu "martin" et j'ai déjà affiché la bibliothèque de plats
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr" et j'ai déjà affiché la bibliothèque de plats
     Quand je perds le réseau et rouvre l'application
     Alors je vois la bibliothèque de plats en cache
 
   @ENF-01
-  Plan du Scénario: Les modifications autres que les listes de courses nécessitent le réseau
-    Étant donné je suis connecté à la tribu "martin"
+  Plan du scénario: Les modifications autres que les listes de courses nécessitent le réseau
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Et le réseau est coupé
     Quand je tente de <action>
     Alors un message m'indique que le réseau est nécessaire
@@ -171,7 +171,7 @@ Fonctionnalité: Connexion et session persistante
 
   @ENF-01
   Scénario: La déconnexion efface les données de la tribu sur l'appareil
-    Étant donné je suis connecté à la tribu "martin" et j'ai déjà affiché le planning
+    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr" et j'ai déjà affiché le planning
     Quand je me déconnecte
     Alors aucune donnée de la tribu "martin" ne reste stockée sur l'appareil
 
