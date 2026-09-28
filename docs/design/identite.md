@@ -10,7 +10,7 @@ Périmètre : pages publiques (site statique, ADR 0006) et fenêtre de connexion
 
 ## Nom
 
-**Melting Tribe**, en référence au *melting pot* : la tribu qui se mélange autour de la marmite. Le nom sert de marque sur le site et l'écran de connexion ; le domaine (`tribe-menus.codingmatters.org`) et le dépôt (`tribe-menus`) ne changent pas pour l'instant.
+**Melting Tribe**, en référence au *melting pot* : la tribu qui se mélange autour de la marmite. Le nom sert de marque sur le site et l'écran de connexion ; le nom d'hôte devient `meltingtribe.codingmatters.org` (ADR 0017) ; le dépôt et les noms techniques restent `tribe-menus`. La question d'un dépôt de marque est reportée.
 
 Le nom de marque apparaît aussi dans le manifeste servi sans session et dans l'e-mail du code : jamais le nom d'une tribu avant connexion (ENF-02, ADR 0006, ADR 0014).
 
