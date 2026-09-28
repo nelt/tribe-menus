@@ -25,7 +25,11 @@ L'utilisateur se connecte une seule fois par appareil. Sa session survit à la f
   - le cookie contient un jeton opaque aléatoire ; le serveur n'en conserve qu'une empreinte (hachage), associée à l'utilisateur et à l'appareil.
 - **Portée** : une session est ouverte pour une tribu donnée et ne vaut que pour elle (voir ENF-02).
 - **Révocation** : l'utilisateur peut consulter la liste de ses appareils connectés et fermer une session à distance (détail : [gestion des membres et des sessions](gestion-membres-et-sessions.md), EF-04 et EF-05).
-- **Hors-ligne** : l'interface et les données en cache restent consultables sans réseau ; la validité de la session est vérifiée au retour de la connexion.
+- **Hors-ligne** (PT-04, 2026-09-28) :
+  - restent consultables sans réseau le planning, la bibliothèque de plats, le référentiel d'ingrédients (pour l'autocomplétion) et les listes de courses déjà affichés ;
+  - seules les coches et l'ajout d'articles fonctionnent hors ligne (Q16) ; toute autre modification (planning, plats, membres, sessions) affiche « Réseau nécessaire » et ne change rien ;
+  - la validité de la session est vérifiée au retour de la connexion ;
+  - les données de la tribu stockées sur l'appareil (caches, IndexedDB, file d'opérations) sont effacées à la déconnexion et dès que le serveur signale une session invalide (session révoquée ou expirée, membre révoqué).
 
 ### Hors périmètre (pour l'instant)
 

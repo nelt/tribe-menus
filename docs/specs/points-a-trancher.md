@@ -24,10 +24,11 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Un article ajouté hors ligne peut créer un ingrédient (C8, Q13) : l'ADR 0004 ne prévoit d'identifiants générés côté client que pour les articles ; risque de doublons dans le référentiel si deux membres créent le même ingrédient.
   - **Décision (2026-09-28)** : liste faite ou abandonnée entre-temps → modifications ignorées et signalées ; article retiré par un recalcul → coche ignorée et signalée ; ingrédient créé hors ligne → rapproché par nom normalisé (normalisation fixée par PT-06). Reporté dans `fonctionnalites.md` (Q18), `liste-courses.feature` (C4) et ADR 0004 point 7.
 
-- [ ] **PT-04. Périmètre du hors-ligne hors listes de courses** (ENF-01, `identite.md` écran de chargement, ADR 0004)
+- [x] **PT-04. Périmètre du hors-ligne hors listes de courses** (ENF-01, `identite.md` écran de chargement, ADR 0004)
   - ENF-01 promet le planning en cache ; l'ADR 0004 ne stocke que les listes en IndexedDB (le reste via le cache du service worker).
   - À préciser : écrans consultables sans réseau (planning, plats, autocomplétion), comportement d'une modification du planning ou d'un plat hors ligne (refus avec message, comme C4 ?).
   - À préciser : purge des données locales (IndexedDB, caches) à la déconnexion, à la révocation d'une session ou d'un membre (EF-03, EF-05).
+  - **Décision (2026-09-28)** : planning, plats, référentiel et listes consultables hors ligne ; seules les coches et les ajouts d'articles fonctionnent sans réseau, le reste affiche « Réseau nécessaire » ; données locales effacées à la déconnexion et dès qu'une session est signalée invalide. Reporté dans ENF-01, `authentification.feature` et ADR 0004 point 7.
 
 - [ ] **PT-05. Couleur des plats** (`design/README.md` tokens, P1)
   - Le design attribue une couleur à chaque plat ; aucune story ne dit comment elle est choisie (par le membre, automatiquement dans la palette) ni si elle est stockée.

@@ -147,8 +147,38 @@ Fonctionnalité: Connexion et session persistante
     Et ma session est revérifiée au retour du réseau
 
   @ENF-01
+  Scénario: Consultation hors ligne de la bibliothèque de plats
+    Étant donné je suis connecté à la tribu "martin" et j'ai déjà affiché la bibliothèque de plats
+    Quand je perds le réseau et rouvre l'application
+    Alors je vois la bibliothèque de plats en cache
+
+  @ENF-01
+  Plan du Scénario: Les modifications autres que les listes de courses nécessitent le réseau
+    Étant donné je suis connecté à la tribu "martin"
+    Et le réseau est coupé
+    Quand je tente de <action>
+    Alors un message m'indique que le réseau est nécessaire
+    Et rien n'est modifié
+
+    Exemples:
+      | action                              |
+      | ajouter un plat à un repas          |
+      | modifier le nombre de parts d'un plat servi |
+      | créer un plat                       |
+      | modifier un plat                    |
+      | ajouter un membre                   |
+      | révoquer une de mes sessions        |
+
+  @ENF-01
+  Scénario: La déconnexion efface les données de la tribu sur l'appareil
+    Étant donné je suis connecté à la tribu "martin" et j'ai déjà affiché le planning
+    Quand je me déconnecte
+    Alors aucune donnée de la tribu "martin" ne reste stockée sur l'appareil
+
+  @ENF-01
   Scénario: Une session révoquée hors ligne est fermée au retour du réseau
     Étant donné je suis hors ligne sur mon téléphone
     Et ma session sur ce téléphone est révoquée depuis un autre appareil
     Quand le réseau revient
     Alors le téléphone affiche l'écran de connexion
+    Et aucune donnée de la tribu "martin" ne reste stockée sur le téléphone
