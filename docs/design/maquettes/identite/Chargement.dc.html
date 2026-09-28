@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Chargement</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button{font-family:inherit}
+@keyframes mt-goutte{0%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(8px);opacity:1}}
+@keyframes mt-souffle{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.mt-goutte{animation:mt-goutte 1.2s ease-in-out infinite}
+.mt-souffle{animation:mt-souffle 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.mt-goutte,.mt-souffle{animation:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 20px; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px">
+<div class="mt-souffle" style="width: 180px; height: 180px; overflow: hidden; flex-shrink: 0">
+<div style="width: 320px; height: 320px; transform: scale(0.5625); transform-origin: 0 0">
+<dc-import name="Symbole" pastille="{{ true }}" hint-size="320px,320px"></dc-import>
+</div>
+</div>
+<sc-if value="{{charge}}" hint-placeholder-val="{{ true }}">
+<div role="status" aria-label="Chargement" style="display: flex; align-items: flex-start; gap: 10px; height: 28px">
+<svg class="mt-goutte" width="12" height="16" viewBox="0 0 12 16" aria-hidden="true" style="animation-delay: 0s"><path d="M6 0 C6 0 12 8 12 11 A6 6 0 0 1 0 11 C0 8 6 0 6 0 Z" fill="#F2C94C"></path></svg>
+<svg class="mt-goutte" width="12" height="16" viewBox="0 0 12 16" aria-hidden="true" style="animation-delay: 0.2s"><path d="M6 0 C6 0 12 8 12 11 A6 6 0 0 1 0 11 C0 8 6 0 6 0 Z" fill="#F2C94C"></path></svg>
+<svg class="mt-goutte" width="12" height="16" viewBox="0 0 12 16" aria-hidden="true" style="animation-delay: 0.4s"><path d="M6 0 C6 0 12 8 12 11 A6 6 0 0 1 0 11 C0 8 6 0 6 0 Z" fill="#F2C94C"></path></svg>
+</div>
+</sc-if>
+<sc-if value="{{lent}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 300px; text-align: center">
+<p style="margin: 0; font-size: 16px; font-weight: 700; line-height: 1.4">Le réseau est lent ou absent.</p>
+<p style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.4; color: #5E5470">Le planning de la semaine s’affichera depuis le téléphone s’il y a déjà été consulté.</p>
+<button type="button" style="height: 48px; padding: 0 22px; border-radius: 16px; border: 2px solid #22193A; background: #FFFFFF; color: #22193A; font-size: 15px; font-weight: 800; cursor: pointer">Réessayer</button>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"etat":{"editor":"enum","options":["chargement","réseau lent"],"default":"chargement"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var etat = this.props.etat ?? 'chargement';
+    return { charge: etat === 'chargement', lent: etat === 'réseau lent' };
+  }
+}
+</script>
+</body>
+</html>

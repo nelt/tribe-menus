@@ -12,8 +12,9 @@ L'identité visuelle (nom **Melting Tribe**, symbole, logotype, icônes), qui s'
 
 | Écran | Fichier de référence | Stories |
 | --- | --- | --- |
-| Accueil : saisie de l'e-mail | `maquettes/Doux-Connexion.dc.html` | ENF-01 |
-| Accueil : saisie du code | `maquettes/Doux-Code.dc.html` | ENF-01 |
+| Chargement (session valide) | `maquettes/identite/Chargement.dc.html` (réglage `etat`) | ENF-01 |
+| Accueil : saisie de l'e-mail | `maquettes/identite/Connexion.dc.html`, `maquettes/identite/ConnexionBureau.dc.html` (réglage `etat`) | ENF-01 |
+| Accueil : saisie du code | `maquettes/identite/Code.dc.html` (réglage `etat`) | ENF-01 |
 | Planning de la semaine | `maquettes/Doux-Main.dc.html` | R1, R5 |
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
