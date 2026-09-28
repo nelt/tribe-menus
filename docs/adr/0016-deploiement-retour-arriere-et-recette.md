@@ -28,7 +28,7 @@ Les releases sont construites par la CI et publiées sur GitHub (ADR 0012). Le s
 
 ### Recette
 
-5. **Environnement de recette sur le même VPS**, sur `recette.tribe-menus.codingmatters.org`, pour tester sur téléphone avant release :
+5. **Environnement de recette sur le même VPS**, sur `recette.tribe-menus.codingmatters.org` (*remplacé par `recette.meltingtribe.codingmatters.org`, ADR 0017*), pour tester sur téléphone avant release :
    - seconde instance de l'unité systemd modèle (`tribe-menus@recette`, la production étant `tribe-menus@production`), avec son utilisateur, ses données, son socket et sa configuration ;
    - **données de démonstration uniquement**, jamais de copie de la production ;
    - envoi d'e-mails réels par le compte `no-reply@` (ADR 0014), pour recevoir les codes sur téléphone ;
