@@ -16,7 +16,7 @@ Le domaine `codingmatters.org` est disponible.
 
 ## Décision
 
-1. **Nom d'hôte** : `tribe-menus.codingmatters.org` ; environnement de recette sur `recette.tribe-menus.codingmatters.org` (ADR 0016).
+1. **Nom d'hôte** : `tribe-menus.codingmatters.org` ; environnement de recette sur `recette.tribe-menus.codingmatters.org` (ADR 0016). *Remplacés par `meltingtribe.codingmatters.org` et `recette.meltingtribe.codingmatters.org` (ADR 0017).*
 2. **Caddy en reverse proxy**, seul processus exposé sur les ports 80 et 443 :
    - certificats obtenus et renouvelés automatiquement auprès de Let's Encrypt ; redirection de HTTP vers HTTPS ; en-tête HSTS ;
    - paquet officiel, **sans plugin** (pas de compilation sur mesure) ;
