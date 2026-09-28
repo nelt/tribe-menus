@@ -41,9 +41,10 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Correction d'une faute de frappe ou fusion de doublons : hors périmètre V1 à acter, ou story à ajouter.
   - **Décision (2026-09-28)** : unité par défaut = première unité saisie, proposée ensuite ; création seulement en saisissant un plat ou un article ; noms rapprochés sans casse, accents ni espaces superflus (autocomplétion comprise) ; renommage et fusion hors périmètre V1. Reporté dans `fonctionnalites.md` (concepts, P4, Q20, hors périmètre), `bibliotheque-plats.feature` (P4), `tribu.feature` (T1) et `compartimentage-tribus.feature`.
 
-- [ ] **PT-07. Conservation et effacement des données** (EF-03, EF-07, `identite.md` page Confidentialité)
+- [x] **PT-07. Conservation et effacement des données** (EF-03, EF-07, `identite.md` page Confidentialité)
   - La page Confidentialité exige des durées de conservation et une modalité de suppression sur demande.
   - Or le journal d'audit est en ajout seul et un membre révoqué n'est jamais supprimé : son e-mail est conservé sans limite. Codes expirés et sessions expirées : purge non spécifiée.
+  - **Décision (2026-09-28)** : codes et sessions expirés effacés automatiquement ; journal d'audit conservé 12 mois ; anonymisation d'un membre révoqué sur demande (EF-11) ; suppression d'une tribu par commande d'administration (EF-10) ; journaux du serveur conservés 1 mois. Reporté dans `gestion-membres-et-sessions.md`, `administration.feature`, `membres-et-sessions.feature`, `glossaire.md`, `identite.md`, la maquette `Confidentialite.dc.html` et les ADR 0002 et 0015.
 
 ## Mineurs
 

@@ -20,6 +20,8 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | déconnecter tous les autres appareils | sign out other devices | |
 | journal d'audit | audit log | |
 | script d'administration | admin command | sous-commande `admin` du binaire |
+| supprimer une tribu | delete a tribe | EF-10 |
+| anonymiser (un membre) | anonymize | EF-11 |
 
 ## Plats et ingrédients
 

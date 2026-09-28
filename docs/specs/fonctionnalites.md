@@ -97,7 +97,7 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 
 ### Membres, sessions et administration
 
-Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; critères dans `features/membres-et-sessions.feature` et `features/administration.feature`. Les exigences ENF-01 (connexion et session) et ENF-02 (compartimentage entre tribus) ont leurs critères dans `features/authentification.feature` et `features/compartimentage-tribus.feature`.
+Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; critères dans `features/membres-et-sessions.feature` et `features/administration.feature`. Les exigences ENF-01 (connexion et session) et ENF-02 (compartimentage entre tribus) ont leurs critères dans `features/authentification.feature` et `features/compartimentage-tribus.feature`.
 
 ## Hors périmètre V1
 

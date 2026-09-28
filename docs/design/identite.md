@@ -85,7 +85,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 - **Pied de page** (toutes les pages) : symbole, « logiciel libre sous licence AGPL-3.0 », liens Mentions légales, Confidentialité et « Code source de cette version » pointant vers l'étiquette déployée (ADR 0011, point 2).
 - **Mentions légales** : éditeur Nel Taurisson, à titre personnel ; contact `contact@codingmatters.org` ; hébergeur OVH SAS ; licences (AGPL pour le code, la documentation et les éléments graphiques, OFL pour les polices).
 - **Confidentialité** : données traitées, un seul cookie strictement nécessaire, aucune mesure d'audience ni cookie sur le site public, hébergement en France, durées de conservation, droits et CNIL.
-- **À compléter avant publication** : `[DATE]` et `[VERSION]` (au déploiement), durée de conservation des journaux du serveur (`[DURÉE]`), modalité de suppression des données d'une tribu sur demande ; créer la boîte `contact@codingmatters.org`.
+- **À compléter avant publication** : `[DATE]` et `[VERSION]` (au déploiement), *durées de conservation et suppression sur demande fixées par PT-07 (journaux du serveur : 1 mois ; journal d'audit : 12 mois ; EF-10, EF-11) et reportées dans la maquette* ; créer la boîte `contact@codingmatters.org`.
 
 ## Image de partage
 
