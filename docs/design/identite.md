@@ -1,7 +1,7 @@
 # Identité visuelle : Melting Tribe
 
 - **Date** : 2026-09-28
-- **Statut** : retenu (symbole, icônes, logotype). Les pages publiques et l'écran de connexion restent à décliner.
+- **Statut** : retenu (symbole, icônes, logotype, écrans de connexion et de chargement). Le site public reste à décliner.
 - **Canevas** :
   - [Melting Tribe, identité visuelle](https://claude.ai/artifact/VQKHQXpkeWw3DmP6wBaUvg) (privé) : l'exploration, pistes A à D10 ;
   - [Melting Tribe, déclinaisons](https://claude.ai/artifact/PnDbsVYrEjfZondTPHUVe1) (privé) : la version retenue et ses déclinaisons. Sources dans `maquettes/identite/`.
@@ -54,6 +54,28 @@ Sur fond sombre, le symbole garde son intérieur blanc et son anneau rouge.
 - **Assemblages** : horizontal (symbole à gauche) et vertical (symbole au-dessus, avec l'accroche « Les menus de la semaine, en tribu »).
 - Source : `maquettes/identite/Wordmark.dc.html`. Le lettrage dépend de la police ; une version vectorisée (texte converti en tracés) sera à produire pour les usages hors web.
 
+## Écrans de connexion
+
+Remplacent `Doux-Connexion.dc.html` et `Doux-Code.dc.html` (ENF-01). Sources : `maquettes/identite/Connexion.dc.html`, `ConnexionBureau.dc.html`, `Code.dc.html`.
+
+- Fond blanc ; en haut le symbole avec cercle, le logotype et l'accroche ; le formulaire en bas (téléphone) ou à droite (ordinateur, symbole et logotype en grand à gauche).
+- Jamais le nom de la tribu (ENF-02) ; même message pour une adresse inconnue, révoquée ou d'une autre tribu : « Si … fait partie de la tribu, un code à 6 chiffres vient d'y être envoyé. »
+- États (réglage `etat`) :
+  - e-mail : saisie ; adresse mal formée (champ cerclé de rouge) ; trop de demandes (bouton désactivé en pointillés, « Réessayez dans quelques minutes ») ;
+  - code : saisie ; code erroné (essais restants) ; essais épuisés et code expiré (seule action : « Recevoir un nouveau code »).
+- Messages d'erreur en rouge tomate `#C63D24`, avec icône, annoncés aux lecteurs d'écran (`role="alert"`).
+- Pied de page : « Melting Tribe · logiciel libre, code source », lien vers la version déployée (ADR 0011, point 2).
+
+## Écran de chargement
+
+Affiché au démarrage quand la session est valide, le temps que l'application démarre. Source : `maquettes/identite/Chargement.dc.html`.
+
+- Fond blanc, symbole au centre qui « respire » (±3 %), trois gouttes de soupe jaunes qui tombent en décalé. Aucun texte ni nom de tribu.
+- N'apparaît que si le chargement dépasse environ 300 ms, pour éviter un flash.
+- Animations coupées avec `prefers-reduced-motion`.
+- Réseau lent ou absent : message et bouton « Réessayer » ; le planning en cache reste accessible (ENF-01, consultation hors ligne).
+- Fond blanc partout (`background_color` du manifeste, écran de lancement du système, chargement) pour un enchaînement sans saut de couleur. Sur iOS, pas d'images de démarrage : l'écran blanc du système suffit.
+
 ## Couleurs ajoutées
 
 En plus des tokens de `README.md` :
@@ -72,6 +94,7 @@ Sur les pages publiques, l'aplat de couleur n'est plus réservé aux actions : l
 
 ## Reste à faire
 
-- Pages : saisie de l'e-mail et du code (avec les états d'erreur), site public (présentation, mentions légales, politique de confidentialité), image de partage (1200×630). Le fond de pictogrammes (`maquettes/FondTribu.dc.html`) sera remplacé par le symbole.
+- Site public : présentation, mentions légales, politique de confidentialité ; image de partage (1200×630).
+- Supprimer `Doux-Connexion.dc.html`, `Doux-Code.dc.html` et `FondTribu.dc.html` une fois les nouveaux écrans implémentés.
 - Lettrage vectorisé.
 - Licence : le symbole et le logotype sont couverts, comme tout le dépôt, par l'AGPL (ADR 0011). Protéger le nom et le logo (usage de la marque par des versions modifiées) demanderait une décision dédiée, non prise à ce jour.
