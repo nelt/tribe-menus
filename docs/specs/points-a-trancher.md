@@ -48,12 +48,18 @@ Chaque point est à décider puis reporté dans le document de référence cité
 
 ## Mineurs
 
-- [ ] **PT-08. Parts initiales d'un plat servi** (Q8, R2) : un plat servi part toujours de 4 parts, même si le plat est défini pour 6 parts (P1). À confirmer, ou partir des parts de référence du plat.
-- [ ] **PT-09. Planning glissant** (R1, R5, Q2) : les repas du jour ne sont visibles que via « semaine précédente ». Les repas passés sont-ils modifiables ?
-- [ ] **PT-10. Même plat deux fois dans un repas** (R2) : autorisé ou refusé ?
-- [ ] **PT-11. Révocation affichée sur la fiche membre** (EF-02, `Doux-Membre.dc.html`) : la maquette affiche « Révoqué par … · date », qu'EF-02 ne prévoit pas (seuls la date et l'auteur de l'ajout y figurent).
-- [ ] **PT-12. Migrations et contrôle de santé** (ADR 0003 point 6, ADR 0016) : les migrations s'appliquent à l'ouverture de chaque base ; `/healthz` après déploiement ne détecte pas l'échec de migration d'une tribu ouverte plus tard. Migrer toutes les bases au démarrage ?
-- [ ] **PT-13. Contrôle des échappatoires au rendu** (ADR 0004 point 9, ADR 0010) : l'interdiction de `unsafeHTML` et `innerHTML` est « vérifiée par lint ou revue », mais `make lint` n'a pas d'outil pour cela (pas de linter JavaScript). Petit contrôle écrit dans le projet, ou revue seule ?
+- [x] **PT-08. Parts initiales d'un plat servi** (Q8, R2) : un plat servi part toujours de 4 parts, même si le plat est défini pour 6 parts (P1). À confirmer, ou partir des parts de référence du plat.
+  - **Décision (2026-09-28)** : taille de la tribu (4 par défaut, réglable par tout membre, nouvelle story T3), qui fixe les parts des plats servis ajoutés ensuite et les parts proposées pour un nouveau plat ; l'existant ne change pas. Reporté dans `fonctionnalites.md` (concepts, P1, R2, T3, Q8), `glossaire.md`, `tribu.feature` et `design/README.md`.
+- [x] **PT-09. Planning glissant** (R1, R5, Q2) : les repas du jour ne sont visibles que via « semaine précédente ». Les repas passés sont-ils modifiables ?
+  - **Décision (2026-09-28)** : le planning s'ouvre sur aujourd'hui (J à J+6) ; la période par défaut des listes reste demain à J+7 ; les repas passés sont modifiables. Reporté dans `fonctionnalites.md` (R1, R5, Q2), `planning-repas.feature` et `design/README.md` (écart de `Doux-Main`).
+- [x] **PT-10. Même plat deux fois dans un repas** (R2) : autorisé ou refusé ?
+  - **Décision (2026-09-28)** : refusé ; le plat déjà présent n'est pas proposé, on augmente ses parts. Reporté dans `fonctionnalites.md` (R2, Q21), `planning-repas.feature` et `design/README.md`.
+- [x] **PT-11. Révocation affichée sur la fiche membre** (EF-02, `Doux-Membre.dc.html`) : la maquette affiche « Révoqué par … · date », qu'EF-02 ne prévoit pas (seuls la date et l'auteur de l'ajout y figurent).
+  - **Décision (2026-09-28)** : ajouté à EF-02 (date et auteur de la révocation). Reporté dans `gestion-membres-et-sessions.md` et `membres-et-sessions.feature`.
+- [x] **PT-12. Migrations et contrôle de santé** (ADR 0003 point 6, ADR 0016) : les migrations s'appliquent à l'ouverture de chaque base ; `/healthz` après déploiement ne détecte pas l'échec de migration d'une tribu ouverte plus tard. Migrer toutes les bases au démarrage ?
+  - **Décision (2026-09-28)** : toutes les bases migrées au démarrage, avant toute requête ; un échec fait échouer `/healthz` et déclenche le retour arrière. Reporté dans les ADR 0003 et 0016.
+- [x] **PT-13. Contrôle des échappatoires au rendu** (ADR 0004 point 9, ADR 0010) : l'interdiction de `unsafeHTML` et `innerHTML` est « vérifiée par lint ou revue », mais `make lint` n'a pas d'outil pour cela (pas de linter JavaScript). Petit contrôle écrit dans le projet, ou revue seule ?
+  - **Décision (2026-09-28)** : contrôle écrit dans le projet (`internal/tools/webcheck`), lancé par `make lint`. Reporté dans les ADR 0004, 0008 et 0010.
 - [ ] **PT-14. Harmonisation des étapes Gherkin** (`features/`, ADR 0005) : même idée écrite de plusieurs façons (dates avec ou sans année, « dans la période », « je suis connecté … en tant que » / « dans mon navigateur » / « Alice se connecte »). À normaliser avant d'écrire les définitions d'étapes godog.
 - [ ] **PT-15. Scénarios non automatisables tels quels** (ADR 0005) : scénarios négatifs (« aucune action ne permet de supprimer le plat », « aucune fonction … ne permet de modifier le journal »), survie de la session après fermeture de l'app installée. Décider de leur preuve (absence de route dans l'API, test manuel en recette…).
 - [ ] **PT-16. Glossaire** : ajouter nom de session (EF-04), tentative et limitation (ENF-01), noms des opérations d'audit (EF-07), provenance d'un article et quantité apportée (C9).

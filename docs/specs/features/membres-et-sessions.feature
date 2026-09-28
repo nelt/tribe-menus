@@ -55,6 +55,12 @@ Fonctionnalité: Membres et sessions
     Et je ne vois pas "david@exemple.fr"
     Et chaque membre affiche son nom d'affichage, sa date d'ajout et l'auteur de l'ajout
 
+  @EF-02 @EF-03
+  Scénario: Un membre révoqué affiche l'auteur et la date de sa révocation
+    Étant donné "bruno@exemple.fr" est membre actif de la tribu "martin"
+    Quand je révoque "bruno@exemple.fr" le 12 octobre 2026
+    Alors "bruno@exemple.fr" apparaît avec le statut "révoqué", révoqué par "alice@exemple.fr" le 12 octobre 2026
+
   @EF-03
   Scénario: Révoquer un autre membre
     Étant donné "bruno@exemple.fr" est membre actif de la tribu "martin"

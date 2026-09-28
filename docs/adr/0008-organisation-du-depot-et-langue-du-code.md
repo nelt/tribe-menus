@@ -25,6 +25,7 @@ Le projet réunit un back-end Go (ADR 0002), un front-end TypeScript (ADR 0004),
      quantity/          unités, conversions, arrondis
      storage/           registre, ouverture des bases, migrations SQL embarquées
      server/            routage HTTP, middlewares, résolution de la tribu
+     tools/webcheck/    contrôle des échappatoires au rendu dans web/src (ADR 0004)
    acceptance/          scénarios godog, lisent docs/specs/features/
    web/                 front-end TypeScript
      package.json, tsconfig.json

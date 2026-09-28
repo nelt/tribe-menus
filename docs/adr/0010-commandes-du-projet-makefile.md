@@ -19,7 +19,7 @@ Le projet a besoin d'un point d'entrée unique pour ses actions courantes : inst
    | `make dev` | esbuild en surveillance et serveur local |
    | `make seed` | données de démonstration |
    | `make generate` | génération du code sqlc |
-   | `make lint` | `gofmt`, `go vet`, `staticcheck`, `tsc --noEmit`, `actionlint` |
+   | `make lint` | `gofmt`, `go vet`, `staticcheck`, `tsc --noEmit`, `actionlint`, contrôle des échappatoires au rendu (ADR 0004) |
    | `make test` | tests unitaires Go et TypeScript |
    | `make acceptance` | scénarios godog contre l'API |
    | `make e2e` | scénarios Playwright `@ui` |
