@@ -4,7 +4,7 @@ Instructions pour Claude Code dans ce dépôt.
 
 ## Contexte
 
-Dépôt bac à sable personnel. Le travail préparatoire (cadrage, architecture, découpage) est souvent fait en amont dans Claude (chat) puis déposé dans `docs/`.
+Application **Melting Tribe** (menus de la semaine, en tribu), dépôt public sous AGPL. Le travail préparatoire (cadrage, architecture, découpage) est souvent fait en amont dans Claude (chat) puis déposé dans `docs/`.
 
 ## Avant de coder
 
