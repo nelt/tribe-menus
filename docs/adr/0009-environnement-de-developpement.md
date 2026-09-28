@@ -7,7 +7,7 @@
 
 Le développement se fait dans trois contextes qui doivent utiliser exactement les mêmes versions d'outils : le poste du développeur, Claude Code (y compris dans le cloud) et la CI. Les outils nécessaires sont :
 
-- Go, sqlc, staticcheck, govulncheck ; godog est une bibliothèque du module (ADR 0005) ;
+- Go, sqlc, staticcheck, govulncheck, actionlint (analyse des workflows, `docs/securite-depot.md`) ; godog est une bibliothèque du module (ADR 0005) ;
 - Node, TypeScript, esbuild, Playwright et ses navigateurs (ADR 0004, 0005) ;
 - le client `sqlite3` pour inspecter les bases.
 
@@ -16,7 +16,7 @@ Le souci de limiter les adhérences (ADR 0002, 0004) s'applique aussi à l'outil
 ## Décision
 
 1. **Une seule source de vérité pour les versions, sans gestionnaire d'outils supplémentaire** :
-   - **Go** : directive `toolchain` de `go.mod` (téléchargement automatique de la bonne version) ; outils de développement (sqlc, staticcheck, govulncheck) épinglés par la directive `tool` de `go.mod` et lancés par `go tool <outil>` ;
+   - **Go** : directive `toolchain` de `go.mod` (téléchargement automatique de la bonne version) ; outils de développement (sqlc, staticcheck, govulncheck, actionlint) épinglés par la directive `tool` de `go.mod` et lancés par `go tool <outil>` ;
    - **Node** : version dans `.nvmrc` ; TypeScript, esbuild et Playwright dans les `devDependencies` de `web/package.json`, avec le fichier de verrouillage.
 2. **Une commande unique et idempotente installe tout le reste** (dépendances npm, navigateurs Playwright et leurs bibliothèques système). C'est la même commande pour le Dev Container, pour le script d'installation de l'environnement Claude Code dans le cloud et pour la CI. Il s'agit de `make tools` (ADR 0010).
 3. **Dev Container comme environnement de référence** (`.devcontainer/devcontainer.json`) : image de base Go, Node ajouté, puis appel de la commande d'installation. Il reste mince : aucune version n'y est dupliquée. Travailler hors conteneur reste possible avec Go et Node installés sur le poste.

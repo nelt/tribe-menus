@@ -16,7 +16,7 @@ Le projet réunit un back-end Go (ADR 0002), un front-end TypeScript (ADR 0004),
    ```
    go.mod               module github.com/nelt/tribe-menus
    Makefile
-   cmd/tribe-menus/     point d'entrée : sous-commandes serve et admin
+   cmd/tribe-menus/     point d'entrée : sous-commandes serve, admin et version (ADR 0012)
    internal/
      tribe/             membres, sessions, connexion, audit
      dish/              plats et référentiel d'ingrédients
@@ -33,7 +33,8 @@ Le projet réunit un back-end Go (ADR 0002), un front-end TypeScript (ADR 0004),
      dist/              généré, embarqué dans le binaire
      embed.go           paquet Go qui embarque dist/
    site/                pages publiques statiques
-   deploy/              Caddyfile, unité systemd
+   deploy/              Caddyfile, unités systemd, provision.sh (ADR 0015),
+                        tribe-menus-deploy (ADR 0016), tribe-menus-admin
    docs/
    ```
 
