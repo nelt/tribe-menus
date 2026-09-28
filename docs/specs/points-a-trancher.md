@@ -19,9 +19,10 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - À décider aussi : une nouvelle demande invalide-t-elle le code précédent ? La limitation par adresse s'applique-t-elle de la même façon aux adresses inconnues (pour ne rien révéler, ENF-02) ?
   - **Décision (2026-09-28)** : code valable 10 minutes, 3 essais ; une nouvelle demande invalide le code précédent ; limites de 3 demandes par quart d'heure par adresse et par tribu (adresses inconnues comprises), 10 par heure par IP, 30 par heure par tribu. Reporté dans ENF-01 et `authentification.feature`.
 
-- [ ] **PT-03. Conflits de la file hors ligne** (C4, Q16, ADR 0004 point 7)
+- [x] **PT-03. Conflits de la file hors ligne** (C4, Q16, ADR 0004 point 7)
   - Sort d'une coche ou d'un article ajouté rejoué au retour du réseau si, entre-temps, la liste a été recalculée (article disparu), déclarée faite (figée, Q14) ou abandonnée.
   - Un article ajouté hors ligne peut créer un ingrédient (C8, Q13) : l'ADR 0004 ne prévoit d'identifiants générés côté client que pour les articles ; risque de doublons dans le référentiel si deux membres créent le même ingrédient.
+  - **Décision (2026-09-28)** : liste faite ou abandonnée entre-temps → modifications ignorées et signalées ; article retiré par un recalcul → coche ignorée et signalée ; ingrédient créé hors ligne → rapproché par nom normalisé (normalisation fixée par PT-06). Reporté dans `fonctionnalites.md` (Q18), `liste-courses.feature` (C4) et ADR 0004 point 7.
 
 - [ ] **PT-04. Périmètre du hors-ligne hors listes de courses** (ENF-01, `identite.md` écran de chargement, ADR 0004)
   - ENF-01 promet le planning en cache ; l'ADR 0004 ne stocke que les listes en IndexedDB (le reste via le cache du service worker).

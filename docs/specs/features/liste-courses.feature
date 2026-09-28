@@ -127,6 +127,39 @@ Fonctionnalité: Liste de courses
     Et quand le réseau revient, "pain" apparaît pour les autres membres de la tribu
 
   @C4
+  Plan du Scénario: Les modifications hors ligne d'une liste close entre-temps sont ignorées
+    Étant donné une liste de courses du 6 au 12 octobre 2026 en cours
+    Et j'ai coché "bœuf haché" et ajouté l'article "pain" sans réseau
+    Et entre-temps un autre membre a <action> la liste
+    Quand le réseau revient
+    Alors un message m'indique que la liste a été <état> entre-temps et que mes modifications hors ligne n'ont pas été appliquées
+    Et la liste est inchangée
+
+    Exemples:
+      | action                        | état             |
+      | déclaré les courses faites de | déclarée faite   |
+      | abandonné                     | abandonnée       |
+
+  @C4
+  Scénario: La coche d'un article supprimé par un recalcul est ignorée
+    Étant donné le plat "Chili con carne" servi pour 4 parts le samedi 10 octobre au soir
+    Et une liste de courses du 6 au 12 octobre 2026
+    Et j'ai coché "bœuf haché" sans réseau
+    Et entre-temps un autre membre a modifié la date de fin de la liste au jeudi 8 octobre 2026
+    Quand le réseau revient
+    Alors la liste ne contient pas "bœuf haché"
+    Et un message m'indique que "bœuf haché" a été retiré par un recalcul et que ma coche n'a pas été appliquée
+
+  @C4 @C8
+  Scénario: Un ingrédient créé hors ligne n'est pas dupliqué
+    Étant donné que le référentiel d'ingrédients ne contient pas "lessive"
+    Et j'ai ajouté l'article "lessive" à une liste sans réseau
+    Et entre-temps un autre membre a créé l'ingrédient "Lessive"
+    Quand le réseau revient
+    Alors le référentiel d'ingrédients contient un seul ingrédient "lessive"
+    Et mon article ajouté est rattaché à cet ingrédient
+
+  @C4
   Plan du Scénario: Les actions sur la liste elle-même nécessitent le réseau
     Étant donné une liste de courses en cours affichée
     Et le réseau est coupé
