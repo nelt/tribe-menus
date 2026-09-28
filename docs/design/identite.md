@@ -1,7 +1,7 @@
 # Identité visuelle : Melting Tribe
 
 - **Date** : 2026-09-28
-- **Statut** : retenu (symbole, icônes, logotype, écrans de connexion et de chargement). Le site public reste à décliner.
+- **Statut** : retenu (symbole, icônes, logotype, écrans de connexion et de chargement, site public).
 - **Canevas** :
   - [Melting Tribe, identité visuelle](https://claude.ai/artifact/VQKHQXpkeWw3DmP6wBaUvg) (privé) : l'exploration, pistes A à D10 ;
   - [Melting Tribe, déclinaisons](https://claude.ai/artifact/PnDbsVYrEjfZondTPHUVe1) (privé) : la version retenue et ses déclinaisons. Sources dans `maquettes/identite/`.
@@ -76,6 +76,17 @@ Affiché au démarrage quand la session est valide, le temps que l'application d
 - Réseau lent ou absent : message et bouton « Réessayer » ; le planning en cache reste accessible (ENF-01, consultation hors ligne).
 - Fond blanc partout (`background_color` du manifeste, écran de lancement du système, chargement) pour un enchaînement sans saut de couleur. Sur iOS, pas d'images de démarrage : l'écran blanc du système suffit.
 
+## Site public
+
+Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, ADR 0017), sources à venir dans `site/`. Maquettes : `maquettes/identite/Site.dc.html` (ordinateur), `SiteMobile.dc.html` (téléphone), `Mentions.dc.html`, `Confidentialite.dc.html` ; le texte des maquettes fait référence.
+
+- **Ton** : vouvoiement ; neutre (pas d'histoire de l'auteur) ; pas d'aperçus d'écrans, seulement le symbole.
+- **Présentation** : titre « Les menus de la semaine, en tribu. », sous-titre, boutons « Comment ça marche » et « Voir le code source », phrase d'accès (« sur invitation d'un membre d'une tribu », pas d'inscription) ; deux messages mis en avant, les courses calculées et la semaine construite à plusieurs, dans des cartes aux liserés midi et soir ; une ligne « Fonctionne hors ligne · Vos données restent à votre tribu » ; bandeau « Un logiciel libre » sur fond `#22193A` avec lien vers le dépôt.
+- **Pied de page** (toutes les pages) : symbole, « logiciel libre sous licence AGPL-3.0 », liens Mentions légales, Confidentialité et « Code source de cette version » pointant vers l'étiquette déployée (ADR 0011, point 2).
+- **Mentions légales** : éditeur Nel Taurisson, à titre personnel ; contact `contact@codingmatters.org` ; hébergeur OVH SAS ; licences (AGPL pour le code, la documentation et les éléments graphiques, OFL pour les polices).
+- **Confidentialité** : données traitées, un seul cookie strictement nécessaire, aucune mesure d'audience ni cookie sur le site public, hébergement en France, durées de conservation, droits et CNIL.
+- **À compléter avant publication** : `[DATE]` et `[VERSION]` (au déploiement), durée de conservation des journaux du serveur (`[DURÉE]`), modalité de suppression des données d'une tribu sur demande ; créer la boîte `contact@codingmatters.org`.
+
 ## Couleurs ajoutées
 
 En plus des tokens de `README.md` :
@@ -94,7 +105,8 @@ Sur les pages publiques, l'aplat de couleur n'est plus réservé aux actions : l
 
 ## Reste à faire
 
-- Site public : présentation, mentions légales, politique de confidentialité ; image de partage (1200×630).
+- Image de partage (1200×630).
+- Fichiers d'icônes (PNG 192, 512, maskable, Apple 180 ; favicon SVG), à générer à l'initialisation du projet.
 - Supprimer `Doux-Connexion.dc.html`, `Doux-Code.dc.html` et `FondTribu.dc.html` une fois les nouveaux écrans implémentés.
 - Lettrage vectorisé.
 - Licence : le symbole et le logotype sont couverts, comme tout le dépôt, par l'AGPL (ADR 0011). Protéger le nom et le logo (usage de la marque par des versions modifiées) demanderait une décision dédiée, non prise à ce jour.
