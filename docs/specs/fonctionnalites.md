@@ -12,7 +12,7 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 | Concept | Description |
 | --- | --- |
 | **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
-| **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut. |
+| **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut, proposée à chaque saisie (Q20). Il est créé en saisissant un plat (P4) ou un article ajouté (C8), jamais seul. |
 | **Bibliothèque de plats** | L'ensemble des plats de la tribu. Un plat y reste indépendamment de son utilisation dans les repas. |
 | **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (4 par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
 | **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis. |
@@ -66,7 +66,7 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 - **P1** : Je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité), pour 4 parts par défaut.
 - **P2** : Je modifie un plat ; la modification s'applique à tous les repas où il est servi. Pas de suppression en V1.
 - **P3** : Je retrouve un plat en cherchant sur les mots de son nom et sur ses ingrédients.
-- **P4** : La saisie d'un ingrédient propose ceux qui existent déjà (autocomplétion) ; je peux en créer un nouveau.
+- **P4** : La saisie d'un ingrédient propose ceux qui existent déjà (autocomplétion, sans tenir compte de la casse ni des accents) ; je peux en créer un nouveau. L'unité par défaut de l'ingrédient est proposée.
 
 ### Planning des repas (`features/planning-repas.feature`)
 
@@ -111,6 +111,7 @@ Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; cri
 - Budget, statistiques, historique des repas (seul existe l'historique des listes de courses faites, C10).
 - Réouverture d'une liste faite ; suppression d'une liste de l'historique.
 - Retrait d'un article calculé d'une liste (on peut le laisser non coché).
+- Écran de gestion du référentiel d'ingrédients : renommer, corriger, fusionner ou supprimer un ingrédient.
 
 ## Décisions
 
@@ -136,4 +137,8 @@ Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; cri
   - si un recalcul a entre-temps supprimé un article coché hors ligne, la coche est ignorée et un message le signale ;
   - un ingrédient créé hors ligne par un article ajouté est rapproché d'un ingrédient existant de même nom normalisé plutôt que dupliqué.
 - **Q19** : à sa création, un plat reçoit la teinte de la palette (`design/README.md`) la moins utilisée dans la bibliothèque, la première dans l'ordre de la palette en cas d'égalité ; elle est enregistrée avec le plat et ne change plus. Pas de choix de couleur par le membre en V1 (PT-05, 2026-09-28).
+- **Q20** : référentiel d'ingrédients (PT-06, 2026-09-28) :
+  - deux noms qui ne diffèrent que par la casse, les accents ou les espaces (en tête, en fin, répétés) désignent le même ingrédient ; le nom affiché est celui de la première saisie ;
+  - l'unité par défaut d'un ingrédient est la première unité saisie avec lui ; elle est proposée à chaque saisie suivante et reste modifiable ligne par ligne ;
+  - un ingrédient n'est créé qu'en saisissant un plat ou un article ajouté ; pas d'écran de gestion du référentiel en V1.
 - **Q17** : une liste est désignée par sa période (ex. « 6 → 12 oct. ») ; les listes en cours sont triées par date de début, l'historique par date de courses faites, la plus récente en premier.

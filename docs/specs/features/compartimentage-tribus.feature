@@ -25,9 +25,11 @@ Fonctionnalité: Compartimentage des données entre tribus
 
   @ENF-02
   Scénario: Un même nom d'ingrédient est indépendant d'une tribu à l'autre
-    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
-    Quand je crée l'ingrédient "reblochon" avec l'unité "pièce"
-    Alors l'ingrédient "reblochon" de la tribu "durand" est inchangé
+    Étant donné l'ingrédient "reblochon" de la tribu "durand" a l'unité par défaut "g"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand j'ajoute 1 pièce de "reblochon" au plat "Raclette"
+    Alors l'ingrédient "reblochon" est créé dans la tribu "martin" avec l'unité par défaut "pièce"
+    Et l'ingrédient "reblochon" de la tribu "durand" a toujours l'unité par défaut "g"
 
   @ENF-02
   Plan du Scénario: Accès croisé refusé
