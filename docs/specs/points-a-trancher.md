@@ -30,8 +30,9 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - À préciser : purge des données locales (IndexedDB, caches) à la déconnexion, à la révocation d'une session ou d'un membre (EF-03, EF-05).
   - **Décision (2026-09-28)** : planning, plats, référentiel et listes consultables hors ligne ; seules les coches et les ajouts d'articles fonctionnent sans réseau, le reste affiche « Réseau nécessaire » ; données locales effacées à la déconnexion et dès qu'une session est signalée invalide. Reporté dans ENF-01, `authentification.feature` et ADR 0004 point 7.
 
-- [ ] **PT-05. Couleur des plats** (`design/README.md` tokens, P1)
+- [x] **PT-05. Couleur des plats** (`design/README.md` tokens, P1)
   - Le design attribue une couleur à chaque plat ; aucune story ne dit comment elle est choisie (par le membre, automatiquement dans la palette) ni si elle est stockée.
+  - **Décision (2026-09-28)** : attribuée automatiquement à la création (teinte la moins utilisée, ordre de la palette en cas d'égalité), stockée, jamais modifiée ; pas de choix par le membre en V1. Reporté dans `fonctionnalites.md` (Q19), `design/README.md`, `glossaire.md` et `bibliotheque-plats.feature` (P1).
 
 - [ ] **PT-06. Référentiel d'ingrédients** (P4, C8, T1, ENF-02)
   - L'unité par défaut d'un ingrédient est définie mais n'intervient dans aucune story (pré-remplissage de l'unité à la saisie ?).

@@ -31,6 +31,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | plat | dish | |
 | parts de référence | reference servings | 4 par défaut |
 | unité par défaut | default unit | |
+| couleur (d'un plat) | color | teinte de la palette, Q19 |
 
 ## Planning
 
