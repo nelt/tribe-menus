@@ -21,9 +21,10 @@ Chaque version déployée doit pouvoir être rattachée à un commit précis et 
 5. **Procédure de release** (décrite dans `RELEASING.md`, que Claude Code peut suivre pour préparer la PR de release) :
    1. chaque PR ajoute une ligne à la section « Non publié » de `CHANGELOG.md`, en citant la story ;
    2. une PR `release/vX.Y.Z` renomme cette section en `X.Y.Z — date` ;
-   3. après sa fusion, une étiquette annotée `vX.Y.Z` est posée sur ce commit de `main` ;
-   4. l'étiquette déclenche le workflow de release : `make ci`, `make build` avec la version de l'étiquette, empreinte, puis release GitHub avec l'archive et les notes extraites de `CHANGELOG.md` ;
-   5. le déploiement est une action distincte (ADR 0016) : publier une version ne la déploie pas, et revenir en arrière consiste à redéployer une version antérieure.
+   3. l'archive de cette PR est déployée en recette, où les scénarios `@manuel` (ADR 0005) sont vérifiés sur téléphone ;
+   4. après sa fusion, une étiquette annotée `vX.Y.Z` est posée sur ce commit de `main` ;
+   5. l'étiquette déclenche le workflow de release : `make ci`, `make build` avec la version de l'étiquette, empreinte, puis release GitHub avec l'archive et les notes extraites de `CHANGELOG.md` ;
+   6. le déploiement est une action distincte (ADR 0016) : publier une version ne la déploie pas, et revenir en arrière consiste à redéployer une version antérieure.
 6. **Garde-fous** :
    - une règle GitHub protège les étiquettes `v*` : seul le propriétaire du dépôt peut les créer, et elles ne peuvent être ni déplacées ni supprimées ;
    - les migrations de base (appliquées au démarrage, ADR 0003) sont signalées dans les notes de version ; d'une version à la suivante, elles ajoutent sans casser, pour qu'un retour à la version précédente reste possible.

@@ -107,13 +107,13 @@ Fonctionnalité: Connexion et session persistante
     Quand je saisis à nouveau ce code sur un autre appareil
     Alors je ne suis pas connecté sur cet autre appareil
 
-  @ENF-01
+  @ENF-01 @manuel
   Scénario: La session survit au redémarrage du navigateur
     Étant donné je suis connecté à la tribu "martin" dans mon navigateur
     Quand je ferme complètement le navigateur puis le rouvre sur l'URL de la tribu "martin"
     Alors je suis toujours connecté, sans ressaisir de code
 
-  @ENF-01
+  @ENF-01 @manuel
   Scénario: La session survit à la fermeture de l'app installée
     Étant donné je suis connecté à la tribu "martin" dans l'app installée
     Quand je ferme l'app puis la rouvre
