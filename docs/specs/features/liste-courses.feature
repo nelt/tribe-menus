@@ -71,6 +71,22 @@ Fonctionnalité: Liste de courses
     Alors la liste contient 2 pièces de "oignon"
 
   @C2
+  Scénario: Les cuillères à soupe et à café ne sont pas converties entre elles
+    Étant donné le plat "Vinaigrette" défini pour 4 parts avec 1 cuillère à soupe de "huile d'olive"
+    Et le plat "Taboulé" défini pour 4 parts avec 2 cuillères à café de "huile d'olive"
+    Et chacun de ces plats servi pour 4 parts dans la période
+    Quand je crée une liste de courses de la période
+    Alors la liste contient 1 cuillère à soupe de "huile d'olive"
+    Et la liste contient 2 cuillères à café de "huile d'olive"
+
+  @C2
+  Scénario: Les quantités en cuillères sont arrondies à l'entier supérieur
+    Étant donné le plat "Vinaigrette" défini pour 4 parts avec 1 cuillère à soupe de "huile d'olive"
+    Et le plat "Vinaigrette" servi pour 6 parts dans la période
+    Quand je crée une liste de courses de la période
+    Alors la liste contient 2 cuillères à soupe de "huile d'olive"
+
+  @C2
   Scénario: L'arrondi s'applique après l'addition
     Étant donné le plat "Chili con carne" servi pour 2 parts le mardi 6 octobre au soir
     Et le plat "Chili con carne" servi pour 2 parts le jeudi 8 octobre à midi

@@ -46,10 +46,15 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
 - Les unités forment une liste fermée, regroupée par famille :
   - masse : g, kg ;
   - volume : ml, cl, l ;
-  - autres : pièce, cuillère à soupe, cuillère à café, pincée…
+  - pièce ;
+  - cuillère à soupe ;
+  - cuillère à café ;
+  - pincée.
+
+  Pièce, cuillère à soupe, cuillère à café et pincée forment chacune une famille à elles seules : aucune conversion entre elles (1 cuillère à soupe et 2 cuillères à café d'huile donnent deux lignes).
 - Pour agréger un même ingrédient saisi dans des unités différentes de la même famille, on convertit (ex. 500 g + 1 kg = 1,5 kg).
 - Entre familles différentes (ex. « 2 pièces » et « 300 g » d'oignon), pas de conversion : lignes distinctes.
-- Dans la liste de courses, les quantités à la pièce sont arrondies à l'entier supérieur, après agrégation (1,5 oignon donne 2).
+- Dans la liste de courses, les quantités en pièces, cuillères et pincées sont arrondies à l'entier supérieur, après agrégation (1,5 oignon donne 2 ; 1,5 cuillère à soupe donne 2). Les masses et les volumes ne sont pas arrondis à l'entier.
 - Une quantité agrégée est affichée dans la plus grande unité de sa famille qui donne une valeur d'au moins 1 (1 500 g s'affiche 1,5 kg ; 750 g reste 750 g).
 
 ## User stories
@@ -111,8 +116,8 @@ Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; cri
 
 - **Q1** : deux moments par jour, midi et soir. Un repas peut contenir plusieurs plats, chacun avec son nombre de parts.
 - **Q2** : « les 7 prochains jours » commencent demain (J+1 à J+7).
-- **Q3** : conversion d'unités quand c'est nécessaire, au sein d'une même famille.
-- **Q4** : les quantités à la pièce sont arrondies à l'entier supérieur.
+- **Q3** : conversion d'unités quand c'est nécessaire, au sein d'une même famille. Seules la masse et le volume comptent plusieurs unités ; pièce, cuillère à soupe, cuillère à café et pincée sont chacune leur propre famille (PT-01, 2026-09-28).
+- **Q4** : les quantités en pièces, cuillères et pincées sont arrondies à l'entier supérieur (PT-01, 2026-09-28).
 - **Q5** : les plats vivent dans une bibliothèque ; retirer un plat d'un repas ne le supprime pas de la bibliothèque, mais perd sa configuration dans ce repas.
 - **Q5b** : pas de suppression de plat de la bibliothèque en V1.
 - **Q6** : pas de droits différenciés en V1 ; pas de temps réel nécessaire.
