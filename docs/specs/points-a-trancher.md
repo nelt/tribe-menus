@@ -2,6 +2,7 @@
 
 - **Date** : 2026-09-28
 - **Origine** : analyse de cohérence des specs, du design et des ADR.
+- **Statut** : tous les points tranchés le 2026-09-28 ; restent à reprendre les maquettes listées dans `design/README.md` (écarts connus).
 
 Chaque point est à décider puis reporté dans le document de référence cité (specs, `.feature`, glossaire, ADR ou maquette). Un point tranché est coché, avec la décision en une ligne et le lien vers la modification.
 
@@ -60,7 +61,9 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - **Décision (2026-09-28)** : toutes les bases migrées au démarrage, avant toute requête ; un échec fait échouer `/healthz` et déclenche le retour arrière. Reporté dans les ADR 0003 et 0016.
 - [x] **PT-13. Contrôle des échappatoires au rendu** (ADR 0004 point 9, ADR 0010) : l'interdiction de `unsafeHTML` et `innerHTML` est « vérifiée par lint ou revue », mais `make lint` n'a pas d'outil pour cela (pas de linter JavaScript). Petit contrôle écrit dans le projet, ou revue seule ?
   - **Décision (2026-09-28)** : contrôle écrit dans le projet (`internal/tools/webcheck`), lancé par `make lint`. Reporté dans les ADR 0004, 0008 et 0010.
-- [ ] **PT-14. Harmonisation des étapes Gherkin** (`features/`, ADR 0005) : même idée écrite de plusieurs façons (dates avec ou sans année, « dans la période », « je suis connecté … en tant que » / « dans mon navigateur » / « Alice se connecte »). À normaliser avant d'écrire les définitions d'étapes godog.
+- [x] **PT-14. Harmonisation des étapes Gherkin** (`features/`, ADR 0005) : même idée écrite de plusieurs façons (dates avec ou sans année, « dans la période », « je suis connecté … en tant que » / « dans mon navigateur » / « Alice se connecte »). À normaliser avant d'écrire les définitions d'étapes godog.
+  - **Fait (2026-09-28)** : conventions écrites dans `conventions-gherkin.md` ; scénarios alignés (dates avec l'année, périodes de liste sans jour de la semaine, connexion sous forme de référence, `Plan du scénario`).
 - [x] **PT-15. Scénarios non automatisables tels quels** (ADR 0005) : scénarios négatifs (« aucune action ne permet de supprimer le plat », « aucune fonction … ne permet de modifier le journal »), survie de la session après fermeture de l'app installée. Décider de leur preuve (absence de route dans l'API, test manuel en recette…).
   - **Décision (2026-09-28)** : scénarios négatifs prouvés contre l'API (route absente, requête refusée) ; survie de session taguée `@manuel`, exclue de `make ci`, vérifiée sur téléphone en recette sur la PR de release. Reporté dans `authentification.feature` et les ADR 0005 et 0012.
-- [ ] **PT-16. Glossaire** : ajouter nom de session (EF-04), tentative et limitation (ENF-01), noms des opérations d'audit (EF-07), provenance d'un article et quantité apportée (C9).
+- [x] **PT-16. Glossaire** : ajouter nom de session (EF-04), tentative et limitation (ENF-01), noms des opérations d'audit (EF-07), provenance d'un article et quantité apportée (C9).
+  - **Fait (2026-09-28)** : termes ajoutés au glossaire (session, essai, limitation, opérations d'audit, provenance et quantité apportée, anonymisation).
