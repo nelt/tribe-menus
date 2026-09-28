@@ -22,7 +22,7 @@ Critères retenus : une surface d'attaque réduite, peu de dépendances, pas de 
 6. **Routage** : un petit routeur écrit dans le projet, fondé sur l'API History, avec le préfixe de tribu (`/tribes/<identifiant>/…`).
 7. **Hors-ligne** :
    - **service worker écrit dans le projet** : pré-cache des ressources versionnées, cache d'abord pour les ressources statiques, réseau d'abord pour l'API ;
-   - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ;
+   - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ; un ingrédient créé hors ligne est transmis par son nom et rapproché côté serveur d'un ingrédient existant de même nom normalisé ; les opérations devenues sans objet (liste close, article retiré par un recalcul) sont ignorées et signalées (Q18) ;
    - l'écran de liste s'affiche à partir de ces données locales, jamais d'un HTML en cache.
 8. **Outillage** :
    - `typescript` pour la vérification des types (`tsc --noEmit`) ;

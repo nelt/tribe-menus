@@ -131,4 +131,8 @@ Stories EF-01 à EF-09, détaillées dans `gestion-membres-et-sessions.md` ; cri
 - **Q14** : « courses faites » est possible même s'il reste des articles non cochés. La liste faite est figée : ni coche, ni ajout, ni recalcul.
 - **Q15** : abandonner une liste la supprime définitivement, après confirmation ; seule une liste en cours peut être abandonnée.
 - **Q16** : sans réseau, on peut cocher et ajouter des articles (synchronisés au retour du réseau) ; créer une liste, changer ses dates, recalculer, la déclarer faite ou l'abandonner nécessitent le réseau.
+- **Q18** : au retour du réseau, les coches et les articles ajoutés hors ligne sont rejoués (PT-03, 2026-09-28) :
+  - si la liste a été entre-temps déclarée faite ou abandonnée, ils sont ignorés et un message le signale ;
+  - si un recalcul a entre-temps supprimé un article coché hors ligne, la coche est ignorée et un message le signale ;
+  - un ingrédient créé hors ligne par un article ajouté est rapproché d'un ingrédient existant de même nom normalisé plutôt que dupliqué.
 - **Q17** : une liste est désignée par sa période (ex. « 6 → 12 oct. ») ; les listes en cours sont triées par date de début, l'historique par date de courses faites, la plus récente en premier.
