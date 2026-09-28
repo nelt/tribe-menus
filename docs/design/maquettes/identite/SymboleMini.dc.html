@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Symbole réduit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 320px; height: 320px; position: relative; font-family: 'Figtree', sans-serif; color: #22193A">
+<svg viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Version réduite du symbole : cercle rouge, trois silhouettes dans une marmite, une carotte et une tomate" style="display: block">
+<g stroke-linecap="round" stroke-linejoin="round">
+<sc-if value="{{pastille}}" hint-placeholder-val="{{ true }}">
+<circle cx="160" cy="160" r="142" fill="{{fond}}" stroke="{{cercle}}" stroke-width="20"></circle>
+</sc-if>
+<g transform="translate(62 62) rotate(-45) scale(2.1)">
+<ellipse cx="-4" cy="-27" rx="3.5" ry="8" transform="rotate(-20 -4 -27)" fill="#3F7F25"></ellipse>
+<ellipse cx="0" cy="-29" rx="3.5" ry="9" fill="#3F7F25"></ellipse>
+<ellipse cx="4" cy="-27" rx="3.5" ry="8" transform="rotate(20 4 -27)" fill="#3F7F25"></ellipse>
+<path d="M-8 -18 C-8 -24 8 -24 8 -18 C8 -4 3 16 0 22 C-3 16 -8 -4 -8 -18 Z" fill="#E07B1F"></path>
+</g>
+<circle cx="112" cy="36" r="27" fill="#C2502E"></circle>
+<path d="M112 13 L99 9 L106 19 L100 30 L112 22 L124 30 L118 19 L125 9 Z" fill="#3F7F25"></path>
+<line x1="94" y1="150" x2="70" y2="116" stroke="#B36A0B" stroke-width="20"></line>
+<line x1="228" y1="150" x2="252" y2="116" stroke="#3F7F25" stroke-width="20"></line>
+<path d="M76 178 C76 146 92 130 112 130 C132 130 148 146 148 178 Z" fill="#B36A0B"></path>
+<circle cx="112" cy="106" r="20" fill="#B36A0B"></circle>
+<path d="M174 178 C174 144 190 128 210 128 C230 128 246 144 246 178 Z" fill="#3F7F25"></path>
+<circle cx="210" cy="104" r="21" fill="#3F7F25"></circle>
+<path d="M116 178 C116 134 136 112 160 112 C184 112 204 134 204 178 Z" fill="#2F6FB0"></path>
+<circle cx="160" cy="80" r="27" fill="#2F6FB0"></circle>
+<path d="M60 176 A100 100 0 0 0 260 176 Z" fill="#C63D24"></path>
+<rect x="46" y="162" width="228" height="26" rx="13" fill="#22193A"></rect>
+<path d="M82 186 H238 V192 Q226 202 214 196 Q206 222 194 210 Q180 194 150 196 Q138 224 124 208 Q112 192 82 194 Z" fill="#F2C94C"></path>
+</g>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":320,"height":320},"pastille":{"editor":"boolean","default":true},"cercle":{"editor":"color","options":["#C63D24","#22193A","#FFFFFF"],"default":"#C63D24"},"fond":{"editor":"color","options":["#FFFFFF","#22193A"],"default":"#FFFFFF"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { pastille: this.props.pastille ?? true, cercle: this.props.cercle ?? '#C63D24', fond: this.props.fond ?? '#FFFFFF' };
+  }
+}
+</script>
+</body>
+</html>
