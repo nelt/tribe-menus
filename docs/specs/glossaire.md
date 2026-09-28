@@ -65,7 +65,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | --- | --- | --- |
 | quantité | quantity | |
 | unité | unit | |
-| famille d'unités : masse, volume, autres | unit family: mass, volume, other | |
+| famille d'unités : masse, volume, pièce, cuillère à soupe, cuillère à café, pincée | unit family: mass, volume, piece, tablespoon, teaspoon, pinch | les quatre dernières ne comptent qu'une unité |
 | pièce | piece | |
 | cuillère à soupe / à café | tablespoon / teaspoon | |
 | pincée | pinch | |

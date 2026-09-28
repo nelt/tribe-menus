@@ -7,10 +7,11 @@ Chaque point est à décider puis reporté dans le document de référence cité
 
 ## Bloquants
 
-- [ ] **PT-01. Unités de la famille « autres »** (`fonctionnalites.md`, `glossaire.md`, ADR 0003 point 7)
+- [x] **PT-01. Unités de la famille « autres »** (`fonctionnalites.md`, `glossaire.md`, ADR 0003 point 7)
   - Pièce, cuillère à soupe, cuillère à café et pincée sont rangées dans une même famille, sans conversion définie entre elles, alors que l'ADR 0003 prévoit une unité de base unique (« millièmes de pièce »).
   - À décider : chaque unité forme-t-elle sa propre famille, ou définit-on des conversions (1 c. à soupe = 3 c. à café) ? L'arrondi à l'entier supérieur s'applique-t-il aux cuillères et aux pincées, ou seulement à la pièce ?
   - Conséquence : règle « encore présent = même famille » du recalcul, unité de base de stockage, scénarios C2.
+  - **Décision (2026-09-28)** : pièce, cuillère à soupe, cuillère à café et pincée forment chacune leur propre famille, sans conversion ; toutes sont arrondies à l'entier supérieur après agrégation. Reporté dans `fonctionnalites.md` (unités, Q3, Q4), `glossaire.md`, ADR 0003 point 7 et `liste-courses.feature` (C2).
 
 - [ ] **PT-02. Paramètres de connexion et limitation des demandes** (ENF-01, `authentification.feature`, ADR 0006 point 7, ADR 0014 point 5, `identite.md`)
   - Valeurs absentes : durée de validité du code, nombre d'essais, seuils de limitation des demandes.
