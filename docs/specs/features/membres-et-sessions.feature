@@ -193,4 +193,10 @@ Fonctionnalité: Membres et sessions
   @EF-07
   Scénario: Le journal d'audit est en ajout seul
     Étant donné le journal d'audit de la tribu "martin" contient des entrées
-    Alors aucune fonction de l'application ne permet de modifier ou de supprimer une entrée
+    Alors aucune fonction de l'interface ne permet de modifier ou de supprimer une entrée
+
+  @EF-07
+  Scénario: Les entrées de plus de 12 mois sont effacées
+    Étant donné le journal d'audit de la tribu "martin" contient une entrée datée d'il y a 13 mois et une d'il y a 11 mois
+    Quand l'effacement automatique a lieu
+    Alors seule l'entrée d'il y a 11 mois est conservée

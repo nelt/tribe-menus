@@ -2,7 +2,7 @@
 
 Spécification fonctionnelle. S'appuie sur ENF-01 et ENF-02 (`exigences-non-fonctionnelles.md`) et l'ADR 0001.
 
-Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07) et `features/administration.feature` (EF-08, EF-09).
+Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07) et `features/administration.feature` (EF-08 à EF-11).
 
 ## Principes
 
@@ -16,6 +16,7 @@ Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07
 - **Tous les membres ont les mêmes droits** en v1 (voir « Hors périmètre »).
 - **Aucune notification par e-mail** n'est envoyée lors des opérations sur les membres. Le seul e-mail envoyé par l'application est le code de connexion (ENF-01).
 - Toutes les opérations sur les membres et les sessions sont tracées dans un **journal d'audit** en base (EF-07).
+- **Conservation** (PT-07, 2026-09-28) : les codes de connexion expirés ou utilisés et les sessions expirées ou révoquées sont effacés automatiquement ; les entrées du journal d'audit sont conservées 12 mois, puis effacées automatiquement ; les données d'une tribu sont conservées tant qu'elle existe.
 
 ## EF-01. Ajouter un membre
 
@@ -63,7 +64,7 @@ Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07
   - les opérations sur les membres : initialisation de la tribu, ajout, révocation (y compris auto-révocation), réactivation ;
   - les opérations sur les sessions : ouverture (connexion réussie), révocation d'une session, « déconnecter tous les autres appareils », déconnexion, fermeture des sessions consécutive à la révocation d'un membre.
 - Chaque entrée contient : la tribu, la date et l'heure, l'opération, le membre concerné, l'auteur (un membre, ou « script d'administration »), et pour une opération sur une session, la session et l'appareil détecté.
-- Le journal est en ajout seul : ses entrées ne sont ni modifiées ni supprimées par l'application.
+- Le journal est en ajout seul : aucune fonction de l'interface ne modifie ni ne supprime ses entrées. Seules exceptions, hors interface : l'effacement automatique des entrées de plus de 12 mois, et l'anonymisation d'un membre (EF-11).
 
 ## Administration
 
@@ -80,6 +81,20 @@ Scripts exécutés sur le serveur, hors de l'interface de l'application. Leurs o
 
 - Le script demande la tribu (par son identifiant d'URL), puis l'adresse e-mail du membre révoqué, et le réactive avec le même effet qu'EF-06.
 - C'est le moyen de récupération lorsque la tribu n'a plus aucun membre actif.
+
+### EF-10. Supprimer une tribu
+
+- Sur demande de la tribu, le script demande l'identifiant d'URL de la tribu, affiche son nom et son nombre de membres, puis exige de retaper l'identifiant pour confirmer.
+- Il supprime la base de la tribu et son entrée au registre. L'URL de la tribu se comporte ensuite comme celle d'une tribu qui n'existe pas (ENF-02).
+- Les instantanés pris avant les déploiements (ADR 0016) qui contiennent encore la tribu disparaissent au plus tard après cinq déploiements ; le script le rappelle.
+- L'opération est tracée dans les journaux du serveur (le journal d'audit de la tribu disparaît avec elle).
+
+### EF-11. Anonymiser un membre révoqué
+
+- Sur demande de la personne ou de la tribu, le script demande la tribu, puis l'adresse e-mail d'un membre **révoqué** (un membre actif doit d'abord être révoqué).
+- Il remplace son adresse et son nom d'affichage par « membre anonymisé », dans la liste des membres comme dans le journal d'audit. Ses plats, menus et listes restent dans la tribu.
+- L'adresse est ensuite libre : elle peut être ajoutée de nouveau comme un nouveau membre (EF-01), sans lien avec l'ancien.
+- L'opération est tracée dans le journal d'audit, sans l'adresse effacée.
 
 ## Hors périmètre (version ultérieure)
 

@@ -17,7 +17,7 @@ Le serveur est un VPS OVHcloud (ADR 0007) qui fait tourner Caddy (ADR 0006) et l
 4. **Pare-feu nftables** : seuls les ports 22, 80 et 443 sont ouverts en entrée.
 5. **Mises à jour** : correctifs de sécurité installés automatiquement (`unattended-upgrades`) ; **redémarrage automatique la nuit (3 h 30) quand il est nécessaire**, précédé d'un rapport par e-mail signalant le redémarrage à venir, qu'on peut annuler (`shutdown -c`). Montées de version majeures de Debian manuelles.
 6. **Relais d'envoi `msmtp`** vers le SMTP du MX Plan, avec un compte dédié (`server@codingmatters.org`), distinct de celui de l'application : rapports de mise à jour et alertes.
-7. Pas de Docker sur le serveur ; journald persistant et plafonné ; synchronisation de l'heure active.
+7. Pas de Docker sur le serveur ; journald persistant et plafonné, logs conservés 1 mois (PT-07) ; synchronisation de l'heure active.
 
 ### Exécution de l'application
 
@@ -30,7 +30,7 @@ Le serveur est un VPS OVHcloud (ADR 0007) qui fait tourner Caddy (ADR 0006) et l
 10. **Secrets** (mot de passe SMTP…) : **credentials systemd**, chiffrés sur disque avec une clé propre à la machine (`systemd-creds`), déchiffrés au démarrage et présentés au seul service dans un répertoire privé, lus comme un fichier par le programme. Jamais en variables d'environnement.
 11. **Activation de socket systemd** : systemd crée le socket Unix, accessible au seul groupe de Caddy, et le transmet au programme. Pendant un redémarrage, les requêtes attendent dans le socket au lieu d'échouer.
 12. **Confinement systemd** : aucun privilège ni capacité ; système de fichiers en lecture seule sauf le répertoire de données ; `/home` invisible, `/tmp` privé ; appels système limités (`@system-service`) ; familles réseau limitées à Unix, IPv4 et IPv6 (envoi SMTP). Objectif : la meilleure note possible à `systemd-analyze security`.
-13. **Commandes d'administration** (EF-08, EF-09) : script `tribe-menus-admin` qui lance la sous-commande `admin` sous l'utilisateur du service ; aucune manipulation directe des fichiers de base.
+13. **Commandes d'administration** (EF-08 à EF-11) : script `tribe-menus-admin` qui lance la sous-commande `admin` sous l'utilisateur du service ; aucune manipulation directe des fichiers de base.
 14. **Logs** : logs structurés (`log/slog`, JSON) sur la sortie standard, recueillis par journald.
 
 ### Supervision
