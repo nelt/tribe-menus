@@ -25,8 +25,8 @@ button{font-family:inherit}
 <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px; border-radius: 20px; border: 2px solid #22193A">
 <button aria-label="Semaine précédente" style="width: 44px; height: 44px; border: none; border-radius: 14px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
 <div style="display: flex; flex-direction: column; align-items: center; gap: 2px">
-<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">6 – 12 octobre</span>
-<span style="font-size: 12px; font-weight: 700; color: #C63D24">Les 7 prochains jours</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">5 – 11 octobre</span>
+<span style="font-size: 12px; font-weight: 700; color: #C63D24">À partir d'aujourd'hui</span>
 </div>
 <button aria-label="Semaine suivante" style="width: 44px; height: 44px; border: none; border-radius: 14px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button>
 </div>
@@ -39,6 +39,9 @@ button{font-family:inherit}
 <div style="display: flex; align-items: baseline; gap: 8px; padding: 0 4px">
 <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">{{day.name}}</span>
 <span style="font-size: 14px; font-weight: 600; color: #5E5470">{{day.date}}</span>
+<sc-if value="{{day.today}}" hint-placeholder-val="{{false}}">
+<span style="margin-left: auto; padding: 2px 10px; border-radius: 999px; border: 1.5px solid #E39A89; font-size: 12px; font-weight: 800; color: #C63D24">Aujourd'hui</span>
+</sc-if>
 </div>
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
 <sc-for list="{{day.meals}}" as="meal" hint-placeholder-count="2">
@@ -96,10 +99,10 @@ class Component extends DCLogic {
     };
     return {
       days: [
+        { name: 'Lundi', date: '5 oct.', today: true, meals: [meal('midi', [d('Restes', 4, '#6E6680')]), meal('soir', [d('Ratatouille', 4, '#B36A0B')])] },
         { name: 'Mardi', date: '6 oct.', meals: [meal('midi', [d('Pâtes pesto', 4, '#2E8A6E')]), meal('soir', [d('Chili con carne', 3, '#C2502E'), d('Chili végétarien', 1, '#3F7F25')])] },
         { name: 'Mercredi', date: '7 oct.', meals: [meal('midi', []), meal('soir', [d("Soupe à l'oignon", 4, '#8A45B3')])] },
-        { name: 'Jeudi', date: '8 oct.', meals: [meal('midi', [d('Chili con carne', 4, '#C2502E')]), meal('soir', [d('Gratin de courgettes', 4, '#2F6FB0')])] },
-        { name: 'Vendredi', date: '9 oct.', meals: [meal('midi', [d('Restes', 4, '#6E6680')]), meal('soir', [d('Pizza maison', 5, '#9C7400')])] }
+        { name: 'Jeudi', date: '8 oct.', meals: [meal('midi', [d('Chili con carne', 4, '#C2502E')]), meal('soir', [d('Gratin de courgettes', 4, '#2F6FB0')])] }
       ]
     };
   }

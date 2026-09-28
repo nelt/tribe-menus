@@ -36,7 +36,7 @@ button{font-family:inherit}
 <span style="{{dish.avatarStyle}}">{{dish.initial}}</span>
 <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
 <span style="font-weight: 700; font-size: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{dish.name}}</span>
-<span style="font-size: 12px; font-weight: 600; color: #5E5470">Défini pour 4 parts</span>
+<span style="font-size: 12px; font-weight: 600; color: #5E5470">{{dish.refLabel}}</span>
 </div>
 <div style="display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 14px; border: 1.5px solid #22193A">
 <button aria-label="Une part de moins" onClick="{{dish.dec}}" style="width: 36px; height: 42px; border: none; border-radius: 11px; background: transparent; color: #22193A; font-size: 22px; font-weight: 700; cursor: pointer">−</button>
@@ -58,6 +58,7 @@ button{font-family:inherit}
 <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Rechercher un plat</span>
 <input type="search" placeholder="Nom du plat ou ingrédient" style="flex-grow: 1; border: none; outline: none; background: transparent; font-family: inherit; font-size: 15px; color: #22193A">
 </label>
+<span style="font-size: 13px; font-weight: 600; color: #5E5470">Les plats déjà servis dans ce repas ne sont pas proposés : réglez leurs parts ci-dessus.</span>
 <sc-for list="{{suggestions}}" as="s" hint-placeholder-count="3">
 <button onClick="{{s.add}}" style="display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 10px; border: 1.5px solid #E7E1EE; border-radius: 16px; background: #FFFFFF; text-align: left; cursor: pointer; color: #22193A">
 <span style="{{s.avatarStyle}}">{{s.initial}}</span>
@@ -77,24 +78,27 @@ button{font-family:inherit}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"tailleTribu":{"editor":"int","default":4,"min":1,"max":12}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
     this.state = {
       served: [
-        { id: 'chili', name: 'Chili con carne', color: '#C2502E', parts: 3 },
-        { id: 'vege', name: 'Chili végétarien', color: '#3F7F25', parts: 1 }
+        { id: 'chili', name: 'Chili con carne', color: '#C2502E', parts: 3, ref: 4 },
+        { id: 'vege', name: 'Chili végétarien', color: '#3F7F25', parts: 1, ref: 4 }
       ]
     };
   }
   renderVals() {
     var tint = function (h) { var n = parseInt(h.slice(1), 16), f = function (c) { return Math.round(c + (255 - c) * 0.6); }; return 'rgb(' + f(n >> 16) + ', ' + f((n >> 8) & 255) + ', ' + f(n & 255) + ')'; };
     var self = this;
+    var tribeSize = this.props.tailleTribu ?? 4;
     var catalog = [
-      { id: 'ratatouille', name: 'Ratatouille', color: '#B36A0B' },
-      { id: 'gratin', name: 'Gratin de courgettes', color: '#2F6FB0' },
-      { id: 'pesto', name: 'Pâtes pesto', color: '#2E8A6E' }
+      { id: 'chili', name: 'Chili con carne', color: '#C2502E', ref: 4 },
+      { id: 'vege', name: 'Chili végétarien', color: '#3F7F25', ref: 4 },
+      { id: 'ratatouille', name: 'Ratatouille', color: '#B36A0B', ref: 4 },
+      { id: 'gratin', name: 'Gratin dauphinois', color: '#B0306A', ref: 6 },
+      { id: 'pesto', name: 'Pâtes pesto', color: '#2E8A6E', ref: 4 }
     ];
     var avatar = function (c) {
       return 'flex-shrink: 0; width: 40px; height: 40px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid ' + tint(c) + '; display: flex; align-items: center; justify-content: center; font-family: Bricolage Grotesque, sans-serif; font-weight: 800; font-size: 18px; color: ' + c;
@@ -109,7 +113,7 @@ class Component extends DCLogic {
       noDish: served.length === 0,
       dishes: served.map(function (x) {
         return {
-          name: x.name, parts: x.parts, initial: x.name.charAt(0), avatarStyle: avatar(x.color),
+          name: x.name, parts: x.parts, initial: x.name.charAt(0), avatarStyle: avatar(x.color), refLabel: 'Défini pour ' + x.ref + ' parts',
           inc: function () { update(x.id, function (p) { return p + 1; }); },
           dec: function () { update(x.id, function (p) { return Math.max(1, p - 1); }); },
           remove: function () { self.setState({ served: self.state.served.filter(function (y) { return y.id !== x.id; }) }); }
@@ -118,7 +122,7 @@ class Component extends DCLogic {
       suggestions: catalog.filter(function (c) { return !served.some(function (x) { return x.id === c.id; }); }).map(function (c) {
         return {
           name: c.name, initial: c.name.charAt(0), avatarStyle: avatar(c.color),
-          add: function () { self.setState({ served: self.state.served.concat([{ id: c.id, name: c.name, color: c.color, parts: 4 }]) }); }
+          add: function () { self.setState({ served: self.state.served.concat([{ id: c.id, name: c.name, color: c.color, parts: tribeSize, ref: c.ref }]) }); }
         };
       })
     };

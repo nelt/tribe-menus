@@ -2,7 +2,7 @@
 
 - **Date** : 2026-09-28
 - **Origine** : analyse de cohérence des specs, du design et des ADR.
-- **Statut** : tous les points tranchés le 2026-09-28 ; restent à reprendre les maquettes listées dans `design/README.md` (écarts connus).
+- **Statut** : tous les points tranchés le 2026-09-28 ; maquettes `Doux-Main`, `Doux-Tribu` et `Doux-Repas` reprises en conséquence.
 
 Chaque point est à décider puis reporté dans le document de référence cité (specs, `.feature`, glossaire, ADR ou maquette). Un point tranché est coché, avec la décision en une ligne et le lien vers la modification.
 
