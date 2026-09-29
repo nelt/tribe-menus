@@ -7,8 +7,8 @@ Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Elles son
 - [ ] Double authentification sur le compte GitHub, par clé de sécurité ou passkey (pas de SMS).
 - [ ] Aucun jeton « classique » : uniquement des jetons à portée fine (*fine-grained*), limités au dépôt `tribe-menus`, avec les seuls droits nécessaires et une date d'expiration.
 - [ ] Jeton dédié pour le Dev Container (ADR 0009), distinct de tout autre usage.
+- [ ] Jeton dédié au poste de développement (commits et pushes depuis l'hôte, en HTTPS), distinct du jeton du Dev Container ; conservé par le gestionnaire d'identifiants du système, jamais en clair (`credential.helper store` proscrit).
 - [ ] Git configuré avec l'adresse « noreply » de GitHub, et option « Block command line pushes that expose my email » activée.
-- [ ] Signature des commits locaux par clé SSH, et « vigilant mode » activé (les commits non signés apparaissent comme non vérifiés).
 - [ ] Revue périodique des applications GitHub et OAuth autorisées sur le compte.
 
 ## 2. Branches et étiquettes (rulesets)
@@ -18,7 +18,7 @@ Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Elles son
 - [ ] modification uniquement par PR ; aucun push direct, y compris pour l'administrateur ;
 - [ ] vérification `ci` (le job qui lance `make ci`) obligatoire et à jour avec `main` avant fusion ;
 - [ ] fusion par *squash* uniquement, historique linéaire ;
-- [ ] commits signés exigés (les commits de fusion créés par GitHub le sont) ;
+- [ ] commits signés exigés : satisfait par la fusion *squash*, dont le commit est créé et signé par GitHub, les commits des branches pouvant rester non signés ;
 - [ ] conversations de revue résolues avant fusion ;
 - [ ] ni force push, ni suppression.
 
@@ -66,6 +66,7 @@ Réglages sans enjeu de sécurité, faits au même moment parce que certains n'e
 
 ## 7. Plus tard
 
+- Signature des commits locaux par clé SSH (clé dédiée à la signature, protégée par une phrase de passe) et « vigilant mode » activé. Reportée le 2026-09-29 : la signature par GitHub des commits de fusion *squash* suffit pour `main` au démarrage. Le vigilant mode ne s'active qu'avec la signature, sinon tous les commits du compte apparaissent non vérifiés.
 - Attestation de provenance des archives de release (ADR 0012).
 - Score OpenSSF Scorecard publié.
 - Clé de déploiement restreinte côté serveur (commande forcée), si le déploiement tiré par le serveur (alternative reportée de l'ADR 0016) est retenu.
