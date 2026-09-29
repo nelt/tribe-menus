@@ -1,0 +1,48 @@
+// Dev Container de référence (ADR 0009, 0018).
+// Toute extension ajoutée ou mise à jour passe par une PR qui modifie ce fichier.
+{
+  "name": "tribe-menus",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+
+  // Claude Code : configuration et connexion conservées dans un volume ;
+  // mises à jour automatiques, télémétrie et rapports d'erreur désactivés.
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
+  "mounts": [
+    "source=tribe-menus-claude,target=/home/vscode/.claude,type=volume"
+  ],
+
+  // Pas d'agent SSH de l'hôte dans le conteneur : le push se fait depuis l'hôte.
+  "remoteEnv": {
+    "SSH_AUTH_SOCK": ""
+  },
+
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": { "label": "tribe-menus (make dev)" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go@0.56.1",
+        "ms-playwright.playwright@1.1.19",
+        "anthropic.claude-code@2.1.284"
+      ],
+      "settings": {
+        "extensions.autoUpdate": false,
+        "extensions.autoCheckUpdates": false,
+        "telemetry.telemetryLevel": "off",
+        "go.toolsManagement.autoUpdate": false,
+        "go.toolsManagement.checkForUpdates": "off"
+      }
+    }
+  }
+}

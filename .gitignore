@@ -1,0 +1,19 @@
+# Build
+/bin/
+/web/dist/*
+!/web/dist/.gitkeep
+
+# Dépendances et résultats de tests du front
+/web/node_modules/
+/web/test-results/
+/web/playwright-report/
+/web/blob-report/
+
+# Données locales (bases SQLite de développement)
+/data/
+
+# Réglages personnels
+/.claude/settings.local.json
+/.vscode/
+.env
+.env.*
