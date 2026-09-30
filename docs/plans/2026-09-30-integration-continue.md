@@ -46,17 +46,17 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 
 ## Étapes
 
-- [ ] **1. actionlint dans `make lint`.**
+- [x] **1. actionlint dans `make lint`.**
   - Ajouter actionlint comme directive `tool` dans `go.mod`, puis `go tool actionlint` en dernière ligne de la cible `lint`. Sans fichier dans `.github/workflows/`, la commande doit passer ; sinon, ne l'ajouter qu'à l'étape 3.
   - `make lint`. Commit.
 
-- [ ] **2. Contrôle DCO : `internal/tools/dcocheck`.**
+- [x] **2. Contrôle DCO : `internal/tools/dcocheck`.**
   - Programme Go qui lit les commits d'un intervalle (`dcocheck <base>..<head>`, via `git log --format=...`) et échoue en listant ceux qui n'ont pas de ligne `Signed-off-by:` correspondant à l'auteur (nom et adresse). Les commits de fusion et ceux de `dependabot[bot]` sont ignorés : un bot qui monte une version n'a rien à certifier (écart assumé à l'ADR 0011, à noter dans `CONTRIBUTING.md`).
   - Logique pure (analyse d'un message et de l'auteur) séparée de l'appel à `git`, testée en tableau de cas : ligne présente, absente, adresse différente, plusieurs lignes, fusion, Dependabot.
   - Ajouter `CONTRIBUTING.md` (ADR 0011, point 7) : licence, DCO, `git commit -s`, `make ci` avant de pousser. Court, en français.
   - `make lint test`. Commit.
 
-- [ ] **3. `.github/workflows/ci.yml`.**
+- [x] **3. `.github/workflows/ci.yml`.**
   - Déclencheurs : `pull_request`, `push` sur `main`, `workflow_dispatch`, `schedule` hebdomadaire (lundi, heure creuse).
   - `concurrency` : groupe `ci-${{ github.ref }}`, `cancel-in-progress` pour les PR seulement.
   - Un job `ci` sur `ubuntu-24.04`, `timeout-minutes: 20` :
@@ -70,23 +70,23 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
     8. en cas d'échec : artefact `playwright-report` (`web/playwright-report/`, `web/test-results/`), conservé 3 jours.
   - `make lint` (actionlint). Commit.
 
-- [ ] **4. `.github/workflows/devcontainer.yml`.**
+- [x] **4. `.github/workflows/devcontainer.yml`.**
   - Déclencheurs : `schedule` hebdomadaire, `workflow_dispatch`, `pull_request` avec `paths: .devcontainer/**`.
   - Job `devcontainer`, `timeout-minutes: 30` : checkout, `setup-node`, puis `npx --yes @devcontainers/cli@0.89.0 up --workspace-folder .`. `postCreateCommand` lance `make tools`, dont l'échec fait échouer l'étape. Ensuite, `devcontainer exec ... go version` et `node --version` pour la trace.
   - `make lint`. Commit.
 
-- [ ] **5. `.github/workflows/dependency-review.yml`.**
+- [x] **5. `.github/workflows/dependency-review.yml`.**
   - Sur `pull_request`. Job conditionné à un dépôt public (voir « Dépôt privé ») ; `permissions: contents: read`.
   - `fail-on-severity: moderate` ; licences : liste d'autorisation (`allow-licenses`) compatible AGPL-3.0-or-later : MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, 0BSD, MPL-2.0, LGPL-2.1-or-later, LGPL-3.0, GPL-3.0, AGPL-3.0, Unlicense, CC0-1.0, BlueOak-1.0.0. Toute autre licence, ou une licence non reconnue, bloque ; les exceptions se font paquet par paquet (`allow-dependencies-licenses`), avec un commentaire qui les justifie.
   - `make lint`. Commit.
 
-- [ ] **6. `.github/dependabot.yml`** (ADR 0004, `securite-depot.md` §5).
+- [x] **6. `.github/dependabot.yml`** (ADR 0004, `securite-depot.md` §5).
   - Mises à jour de versions **mensuelles**, une PR groupée par écosystème : `github-actions` (`/`), `gomod` (`/`), `npm` (`/web`), `docker` (`/.devcontainer`, image de base du `Dockerfile`).
   - Les mises à jour de sécurité ne suivent pas ce calendrier : Dependabot les propose dès qu'une alerte est publiée.
   - Hors de portée de Dependabot, à suivre à la main : `CLAUDE_CODE_VERSION` dans le `Dockerfile`, `.nvmrc`, les extensions VS Code épinglées.
   - `make lint`. Commit.
 
-- [ ] **7. Documentation.**
+- [x] **7. Documentation.**
   - `docs/securite-depot.md` :
     - §5, Dependabot : « hebdomadaires » devient « mensuelles » (décision du 2026-09-30) ;
     - CodeQL et dependency review : préciser qu'ils ne sont disponibles qu'une fois le dépôt public (Code Security sinon).
@@ -97,6 +97,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 - [ ] **8. Validation par le développeur**, depuis l'hôte :
   - Settings > Code security : activer le graphe des dépendances, les alertes Dependabot et les mises à jour de sécurité (disponibles sur un dépôt privé) ;
   - `git push`, puis ouverture de la PR ;
+  - Dependabot : pas d'erreur de configuration signalée ;
   - `ci` au vert ; noter sa durée (à froid, puis avec caches) dans les notes d'exécution ;
   - lancer `devcontainer.yml` à la main (`workflow_dispatch`) : au vert ;
   - `dependency-review` apparaît comme ignoré (dépôt privé) ;
@@ -104,7 +105,15 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 
 ## Notes d'exécution
 
-- ...
+- **actionlint** : sans dossier `.github/workflows`, il échoue (« no project was found ») ; ajouté à `go.mod` à l'étape 1, à `make lint` à l'étape 3. Lancé avec `-shellcheck= -pyflakes=` : shellcheck est présent sur le runner mais pas dans le Dev Container, et `make lint` doit donner le même résultat partout. La détection d'injection d'expressions dans les `run:` est propre à actionlint et reste active (vérifiée sur un workflow de test).
+- **dcocheck** : sortie `<hash> <sujet>: missing "Signed-off-by: Nom <adresse>"`. Codes de retour 0, 1 (commit non signé), 2 (usage ou erreur git) ; `go run` ramène 2 à 1. Vérifié sur un commit non signé hors branche.
+- **ci.yml** : sur une PR, `COMMIT` est celui du commit de fusion préparé par GitHub, pas celui de la branche. `VERSION` vaut `pr-<numéro>` sur une PR, `dev` ailleurs.
+- **Artefact de PR** : les artefacts GitHub ne conservent pas le bit d'exécution ; le script de déploiement en recette devra faire un `chmod +x` (ADR 0016). Binaire de 14 Mo.
+- **devcontainer.yml** : `up --skip-post-create`, puis `make tools` par `devcontainer exec`. Le code de retour de `up` quand `postCreateCommand` échoue n'est pas documenté. Le workflow se déclenche aussi quand il est lui-même modifié.
+- **dependency-review.yml** : liste de licences en identifiants SPDX, variantes `-only` et `-or-later` ; MIT-0 ajoutée (permissive, équivalente à MIT sans condition).
+- **dependabot.yml** : pour Go, `dependency-type: all`, parce que le module ne requiert que des outils, tous en `// indirect`, que Dependabot ignorerait sinon. Montées de version mineure et majeure de l'image `golang` ignorées : un changement de version de Go se fait avec `go.mod`. Pas de validateur local : GitHub signale une erreur de configuration après le push (Insights > Dependency graph > Dependabot).
+- **`make ci VERSION=pr-0`** : passe en local en 18 s (caches chauds).
+- **Hors plan, à traiter** : le dépôt n'a pas de fichier `LICENSE` (texte de l'AGPL-3.0, ADR 0011).
 
 ## Critères de validation
 
