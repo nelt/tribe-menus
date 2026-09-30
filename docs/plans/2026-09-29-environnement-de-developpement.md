@@ -120,7 +120,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
 - Serveur : la redirection vers `/tribes/<identifiant>/` conserve la chaîne de requête ; sous-commande `help` en plus de `version` et `serve`.
 - `webcheck` : tests complétés par deux petits dossiers `testdata/` (dont un avec un `innerHTML` volontaire) pour vérifier la sortie et le code de retour.
 - Playwright : intitulés des tests en anglais (ADR 0008), `reuseExistingServer` et `forbidOnly` selon `CI`.
-- Makefile : textes de `make help` en anglais ; `make dev` arrêté par Ctrl-C affiche `Error 1`, sans conséquence.
+- Makefile : textes de `make help` en anglais. `make dev` compile le serveur (`bin/tribe-menus-dev`) avant de lancer la surveillance esbuild, au lieu de `go run` en parallèle : sinon `//go:embed` peut lister un fichier de `web/dist` que la surveillance supprime au démarrage (erreur rencontrée à la validation).
 - `CHANGELOG.md` : la ligne de la PR, déjà présente, a été complétée plutôt que doublée.
 
 ## Critères de validation

@@ -16,8 +16,8 @@ tools: ## Install dependencies, Playwright browsers and their system libraries (
 	cd web && npm ci --ignore-scripts && npx playwright install --with-deps chromium webkit
 
 dev: ## Rebuild the front end on change and serve on http://localhost:8080 (Ctrl-C stops both)
-	npm --prefix web run watch & pid=$$!; trap 'kill $$pid 2>/dev/null' EXIT INT TERM; \
-	go run ./cmd/tribe-menus serve -dev
+	go build -o bin/tribe-menus-dev ./cmd/tribe-menus
+	npm --prefix web run watch & pid=$$!; trap 'kill $$pid 2>/dev/null' EXIT INT TERM; bin/tribe-menus-dev serve -dev
 
 lint: ## gofmt, go vet, staticcheck, tsc and webcheck
 	@unformatted=$$(gofmt -l .); test -z "$$unformatted" || { echo "gofmt needed:"; echo "$$unformatted"; exit 1; }
