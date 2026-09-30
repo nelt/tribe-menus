@@ -23,7 +23,7 @@ Application **Melting Tribe** (menus de la semaine, en tribu), dépôt public so
 
 ## Stack
 
-Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
+Décidée (voir `docs/adr/`).
 
 - **Back-end** : Go, monolithe modulaire, bibliothèque standard d'abord, sqlc pour l'accès aux données (ADR 0002).
 - **Données** : SQLite, un fichier par tribu plus un registre global (ADR 0003). Réplication hors site par Litestream reportée à une version ultérieure (ADR 0007).
@@ -34,8 +34,9 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Dépôt** : `tribe-menus`, module `github.com/nelt/tribe-menus`, un paquet Go par domaine dans `internal/`, front dans `web/`, site public dans `site/` (ADR 0008).
 - **Nom** : marque « Melting Tribe » côté utilisateurs ; `tribe-menus` reste le nom technique (dépôt, module, service) (ADR 0017).
 - **Langue** : code entièrement en anglais ; specs en français ; traduction des termes métier fixée par `docs/specs/glossaire.md` (ADR 0008).
-- **Environnement de développement** : Dev Container de référence ; versions épinglées dans `go.mod` (`toolchain`, `tool`), `.nvmrc` et `web/package.json` ; serveur local sur `http://localhost:8080` ; VS Code avec une liste courte d'extensions épinglées (ADR 0009).
-- **Commandes** : Makefile sommaire, toujours passer par ses cibles (ADR 0010) : `make tools`, `dev`, `seed`, `generate`, `lint`, `test`, `acceptance`, `e2e`, `vuln`, `build`, et `make ci` avant de pousser (c'est ce que lance la CI).
+- **Environnement de développement** : Dev Container de référence ; versions épinglées dans `go.mod` (Go 1.27.1 ; sqlc, staticcheck, govulncheck par `go tool`), `.nvmrc` (Node 24.21.0) et `web/package.json` (Lit, TypeScript 6, esbuild, Playwright) ; serveur local sur `http://localhost:8080` (`make dev`) ; VS Code avec une liste courte d'extensions épinglées (ADR 0009).
+- **Claude Code** : s'exécute dans le Dev Container (version épinglée) ; peut commiter mais ne pousse jamais, le push se fait depuis l'hôte ; autorisations partagées dans `.claude/settings.json`, réglages personnels dans `.claude/settings.local.json` (ADR 0018). Préparation du poste : `docs/poste-de-developpement.md`.
+- **Commandes** : Makefile sommaire, toujours passer par ses cibles (ADR 0010), `make help` les liste. Disponibles : `make tools`, `dev`, `lint`, `test`, `e2e`, `vuln`, `build`, et `make ci` avant de pousser (c'est ce que lancera la CI). À venir avec la première story qui leur donne un contenu : `seed`, `generate`, `acceptance` ; `actionlint` rejoindra `lint` avec la CI.
 - **Build et release** : build uniquement en CI ; archive (binaire `linux/amd64` avec front embarqué, `site/`, `deploy/`) ; versions sémantiques par étiquette manuelle `vX.Y.Z` ; chaque PR ajoute une ligne à `CHANGELOG.md` ; procédure dans `RELEASING.md` (ADR 0012).
 - **E-mails** : code de connexion envoyé par le SMTP du MX Plan OVHcloud (`no-reply@codingmatters.org`) via `net/smtp`, derrière une interface `Mailer` ; SPF, DKIM, DMARC (ADR 0014).
 - **CI** : GitHub Actions, runner `ubuntu-24.04` avec `setup-go` et `setup-node` ; un job `ci` qui lance `make tools` puis `make ci`, obligatoire pour fusionner ; revue des dépendances et CodeQL sur les PR ; construction hebdomadaire du Dev Container (ADR 0013).
@@ -43,4 +44,9 @@ Décidée (voir `docs/adr/`) ; le projet n'est pas encore initialisé.
 - **Déploiement** : manuel par SSH (`sudo tribe-menus-deploy <version>`), instantané des bases et retour arrière automatique ; environnement de recette `recette.meltingtribe.codingmatters.org` alimenté par les archives de PR (ADR 0016).
 - **Dépôt public, licence `AGPL-3.0-or-later` pour tout le dépôt** (documentation comprise, polices exceptées) ; contributions sous DCO (`git commit -s`) ; aucun secret ni valeur propre à l'instance dans le dépôt ; protections du dépôt listées dans `docs/securite-depot.md` (ADR 0011).
 
-Mettre à jour cette section à l'initialisation du projet (commandes réelles, versions).
+## Conventions Go
+
+- Erreurs retournées, jamais ignorées, et enveloppées avec leur contexte (`fmt.Errorf("...: %w", err)`).
+- Pas de `panic` hors de `main`.
+- Tests en tableaux de cas (`go test`, `httptest`, `fstest.MapFS`).
+- Logique métier pure, sans HTTP ni SQL ; handlers et accès aux données sont des adaptateurs minces (ADR 0002).

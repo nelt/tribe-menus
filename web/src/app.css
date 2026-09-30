@@ -1,0 +1,15 @@
+/* Design tokens (docs/design/README.md), visible inside shadow roots. */
+:root {
+  --color-background: #ffffff;
+  --color-text: #22193a;
+  --color-text-secondary: #5e5470;
+  --color-border: #e7e1ee;
+  --color-action: #c63d24;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: system-ui, sans-serif;
+}
