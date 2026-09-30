@@ -51,8 +51,8 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
   - `make lint`. Commit.
 
 - [ ] **2. Contrôle DCO : `internal/tools/dcocheck`.**
-  - Programme Go qui lit les commits d'un intervalle (`dcocheck <base>..<head>`, via `git log --format=...`) et échoue en listant ceux qui n'ont pas de ligne `Signed-off-by:` correspondant à l'auteur (nom et adresse). Les commits de fusion sont ignorés.
-  - Logique pure (analyse d'un message et de l'auteur) séparée de l'appel à `git`, testée en tableau de cas : ligne présente, absente, adresse différente, plusieurs lignes, fusion.
+  - Programme Go qui lit les commits d'un intervalle (`dcocheck <base>..<head>`, via `git log --format=...`) et échoue en listant ceux qui n'ont pas de ligne `Signed-off-by:` correspondant à l'auteur (nom et adresse). Les commits de fusion et ceux de `dependabot[bot]` sont ignorés : un bot qui monte une version n'a rien à certifier (écart assumé à l'ADR 0011, à noter dans `CONTRIBUTING.md`).
+  - Logique pure (analyse d'un message et de l'auteur) séparée de l'appel à `git`, testée en tableau de cas : ligne présente, absente, adresse différente, plusieurs lignes, fusion, Dependabot.
   - Ajouter `CONTRIBUTING.md` (ADR 0011, point 7) : licence, DCO, `git commit -s`, `make ci` avant de pousser. Court, en français.
   - `make lint test`. Commit.
 
@@ -77,16 +77,25 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 
 - [ ] **5. `.github/workflows/dependency-review.yml`.**
   - Sur `pull_request`. Job conditionné à un dépôt public (voir « Dépôt privé ») ; `permissions: contents: read`.
-  - `fail-on-severity: moderate` ; licences : liste `allow-licenses` compatible AGPL-3.0-or-later (MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, 0BSD, MPL-2.0, LGPL, GPL-3.0, AGPL-3.0, Unlicense, CC0-1.0, BlueOak-1.0.0). La liste est à valider par le développeur.
+  - `fail-on-severity: moderate` ; licences : liste d'autorisation (`allow-licenses`) compatible AGPL-3.0-or-later : MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, 0BSD, MPL-2.0, LGPL-2.1-or-later, LGPL-3.0, GPL-3.0, AGPL-3.0, Unlicense, CC0-1.0, BlueOak-1.0.0. Toute autre licence, ou une licence non reconnue, bloque ; les exceptions se font paquet par paquet (`allow-dependencies-licenses`), avec un commentaire qui les justifie.
   - `make lint`. Commit.
 
-- [ ] **6. Documentation.**
-  - `docs/securite-depot.md` : ajouter à la liste du passage en public l'activation de CodeQL (configuration par défaut) et la vérification que `dependency-review` s'exécute.
+- [ ] **6. `.github/dependabot.yml`** (ADR 0004, `securite-depot.md` §5).
+  - Mises à jour de versions **mensuelles**, une PR groupée par écosystème : `github-actions` (`/`), `gomod` (`/`), `npm` (`/web`), `docker` (`/.devcontainer`, image de base du `Dockerfile`).
+  - Les mises à jour de sécurité ne suivent pas ce calendrier : Dependabot les propose dès qu'une alerte est publiée.
+  - Hors de portée de Dependabot, à suivre à la main : `CLAUDE_CODE_VERSION` dans le `Dockerfile`, `.nvmrc`, les extensions VS Code épinglées.
+  - `make lint`. Commit.
+
+- [ ] **7. Documentation.**
+  - `docs/securite-depot.md` :
+    - §5, Dependabot : « hebdomadaires » devient « mensuelles » (décision du 2026-09-30) ;
+    - CodeQL et dependency review : préciser qu'ils ne sont disponibles qu'une fois le dépôt public (Code Security sinon).
   - `CLAUDE.md` : retirer « `actionlint` rejoindra `lint` avec la CI » ; mentionner les workflows et `dcocheck`.
   - `CHANGELOG.md` : ligne de la PR sous « Non publié ».
   - Cocher les étapes de ce plan, noter les écarts. Commit.
 
-- [ ] **7. Validation par le développeur**, depuis l'hôte :
+- [ ] **8. Validation par le développeur**, depuis l'hôte :
+  - Settings > Code security : activer le graphe des dépendances, les alertes Dependabot et les mises à jour de sécurité (disponibles sur un dépôt privé) ;
   - `git push`, puis ouverture de la PR ;
   - `ci` au vert ; noter sa durée (à froid, puis avec caches) dans les notes d'exécution ;
   - lancer `devcontainer.yml` à la main (`workflow_dispatch`) : au vert ;
@@ -109,7 +118,10 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 ## Questions ouvertes
 
 - **Artefact de PR** : binaire et `site/` pour l'instant, sans `deploy/` ni empreinte. L'archive complète de l'ADR 0012 viendrait avec `release.yml` et une cible `make dist` (ou `make archive`) à créer à ce moment-là. D'accord pour ce découpage ?
-- **Mise à jour des actions épinglées** : sans Dependabot (version updates pour `github-actions`), les empreintes vieilliront sans alerte. L'ADR 0013 n'en parle pas. Ajouter `.github/dependabot.yml` (actions, Go, npm), avec un ADR ou une note à l'ADR 0013 ?
-- **Workflows planifiés** : GitHub les désactive après 60 jours sans activité sur un dépôt public. Acceptable pour ce projet ?
-- **Liste de licences** de `dependency-review` : à valider.
-- **Formule GitHub** : Free ou Pro ? Avec Pro, les rulesets de `main` peuvent être appliqués dès maintenant, en privé.
+
+## Décisions prises
+
+- **Formule GitHub Free** (2026-09-30) : pas de rulesets tant que le dépôt est privé. D'ici là, la règle « jamais de push direct sur `main`, fusion par PR avec `ci` au vert » repose sur la discipline du développeur.
+- **Dependabot** (2026-09-30) : alertes et mises à jour de sécurité activées ; mises à jour de versions mensuelles plutôt qu'hebdomadaires, comme le prévoyait `securite-depot.md`. Déjà décidé par l'ADR 0004, donc pas de nouvel ADR.
+- **Licences** (2026-09-30) : liste d'autorisation, et non liste d'interdiction.
+- **Workflows planifiés** (2026-09-30) : sur un dépôt public, GitHub les désactive après 60 jours sans activité. C'est accepté. Pour les réactiver : onglet Actions > workflow > « Enable workflow », ou `gh workflow enable ci.yml` (idem pour `devcontainer.yml`). La procédure est à reprendre dans `RELEASING.md` quand il existera.
