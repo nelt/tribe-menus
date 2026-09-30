@@ -1,7 +1,7 @@
 # Plan : intégration continue (GitHub Actions)
 
 - **Date** : 2026-09-30
-- **Statut** : brouillon
+- **Statut** : en cours
 
 ## Objectif
 
@@ -117,9 +117,11 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 
 ## Questions ouvertes
 
-- **Artefact de PR** : binaire et `site/` pour l'instant, sans `deploy/` ni empreinte. L'archive complète de l'ADR 0012 viendrait avec `release.yml` et une cible `make dist` (ou `make archive`) à créer à ce moment-là. D'accord pour ce découpage ?
+- Aucune.
 
 ## Décisions prises
+
+- **Artefact de PR** (2026-09-30) : binaire et `site/` pour l'instant, sans `deploy/` ni empreinte. L'archive complète de l'ADR 0012 viendra avec `release.yml` et une cible à créer à ce moment-là (`make dist` ou `make archive`).
 
 - **Formule GitHub Free** (2026-09-30) : pas de rulesets tant que le dépôt est privé. D'ici là, la règle « jamais de push direct sur `main`, fusion par PR avec `ci` au vert » repose sur la discipline du développeur.
 - **Dependabot** (2026-09-30) : alertes et mises à jour de sécurité activées ; mises à jour de versions mensuelles plutôt qu'hebdomadaires, comme le prévoyait `securite-depot.md`. Déjà décidé par l'ADR 0004, donc pas de nouvel ADR.
