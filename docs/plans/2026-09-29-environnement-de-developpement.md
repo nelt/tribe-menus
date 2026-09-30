@@ -1,7 +1,7 @@
 # Plan : environnement de développement sur le poste
 
 - **Date** : 2026-09-29
-- **Statut** : prêt
+- **Statut** : en cours (étape 10, validation par le développeur)
 
 ## Objectif
 
@@ -36,23 +36,23 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
 
 ## Étapes
 
-- [ ] **0. Vérifier le socle** (sans commit). `go version` affiche `go1.27.x`, `node --version` `v24.21.0`, `claude --version` `2.1.284`, `sqlite3 --version` répond. `ssh-add -l` ne trouve pas d'agent. Signaler tout écart avant de continuer.
+- [x] **0. Vérifier le socle** (sans commit). `go version` affiche `go1.27.x`, `node --version` `v24.21.0`, `claude --version` `2.1.284`, `sqlite3 --version` répond. `ssh-add -l` ne trouve pas d'agent. Signaler tout écart avant de continuer.
 
-- [ ] **1. Module Go et outils.**
+- [x] **1. Module Go et outils.**
   - `go mod init github.com/nelt/tribe-menus`, puis `go 1.27` et `toolchain go1.27.1`.
   - `go get -tool` pour sqlc, staticcheck et govulncheck, aux versions du tableau.
   - Directive `ignore ./web/node_modules` (Go 1.25+), pour que `./...` ne parcoure pas les dépendances npm.
   - Vérifier : `go tool sqlc version`, `go tool staticcheck -version`, `go tool govulncheck -version`.
   - Commit : `go.mod`, `go.sum`.
 
-- [ ] **2. Front : dépendances et construction.**
+- [x] **2. Front : dépendances et construction.**
   - `web/package.json` : `private`, `"type": "module"`, licence `AGPL-3.0-or-later`, versions exactes (`npm install --save-exact --ignore-scripts`). Scripts : `build` (`node scripts/build.mjs`), `watch` (`node scripts/build.mjs --watch`), `typecheck` (`tsc --noEmit`), `test` (`node --test "src/**/*.test.ts"`, Node 24 exécute le TypeScript sans étape de build), `e2e` (`playwright test`).
   - `web/tsconfig.json` : `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `exactOptionalPropertyTypes`, `moduleResolution: Bundler`, `allowImportingTsExtensions` (imports en `.ts`, exigés par Node), `verbatimModuleSyntax`, `useDefineForClassFields: false` (recommandé par Lit sans décorateurs), `noEmit`. Inclut `src`, `e2e`, `playwright.config.ts`.
   - `web/scripts/build.mjs` (API esbuild) : vide `web/dist` sauf `.gitkeep`, assemble `src/main.ts` en ESM, copie `src/index.html` et `src/app.css` ; `--watch` : contexte esbuild en surveillance, sourcemaps en ligne, sans minification.
   - `web/dist/.gitkeep` versionné, le reste de `web/dist` ignoré (ADR 0008, point 4 ; `.gitignore` déjà prêt).
   - Commit : `web/package.json`, `web/package-lock.json`, `web/tsconfig.json`, `web/scripts/`.
 
-- [ ] **3. Front : squelette.**
+- [x] **3. Front : squelette.**
   - `web/src/index.html` : gabarit `html/template` (rendu par le serveur) avec `<base href="{{.Base}}">`, feuille `app.css` et `<script type="module" src="main.js">` ; aucun script en ligne (CSP, ADR 0004).
   - `web/src/route.ts` : module pur, `tribeIdFromPath(pathname)` qui extrait l'identifiant de `/tribes/<identifiant>/…` (décodé), `undefined` sinon.
   - `web/src/route.test.ts` : tests `node:test` en tableau de cas (racine, sans barre finale, sous-chemin, identifiant encodé, `/tribes/`, `/`, `/tribesx/…`).
@@ -60,7 +60,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
   - Vérifier : `npm run typecheck`, `npm test`, `npm run build`.
   - Commit.
 
-- [ ] **4. Serveur Go.**
+- [x] **4. Serveur Go.**
   - `web/embed.go`, paquet `web` : `//go:embed all:dist` et `Dist() (fs.FS, error)`.
   - `internal/server` : `New(Config) (http.Handler, error)`, avec `Config{Web fs.FS; Site fs.FS; Dev bool; Logger *slog.Logger}`.
     - `GET /tribes/{tribe}` redirige (301) vers `/tribes/{tribe}/` ;
@@ -74,17 +74,17 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
   - `site/index.html` (page provisoire, titre « Melting Tribe ») et `site/robots.txt` (`Disallow: /tribes/`).
   - Commit.
 
-- [ ] **5. Contrôle `webcheck`** (ADR 0004, point 9 ; PT-13).
+- [x] **5. Contrôle `webcheck`** (ADR 0004, point 9 ; PT-13).
   - `internal/tools/webcheck` : programme qui parcourt `web/src` (ou le dossier passé en argument), fichiers `.ts`, `.js`, `.mjs`, `.html`, et signale `fichier:ligne` pour `unsafeHTML`, `unsafeSVG`, `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`/`writeln` (mots entiers). Code de sortie 1 s'il trouve quelque chose.
   - Test sur un `fstest.MapFS` (cas positifs, faux positifs évités, extensions ignorées).
   - Commit.
 
-- [ ] **6. Scénario Playwright de fumée.**
+- [x] **6. Scénario Playwright de fumée.**
   - `web/playwright.config.ts` : projets `chromium` (appareil « Pixel 7 ») et `webkit` (« iPhone 15 ») ; `webServer` qui construit le front puis lance `go run ../cmd/tribe-menus serve -dev -root .. -addr localhost:8090` ; rapport HTML jamais ouvert automatiquement.
   - `web/e2e/squelette.spec.ts` : la racine affiche le titre du site public ; `/tribes/demo/planning` affiche l'application avec « tribu demo ». Le contenu étant dans un shadow root, passer par `getByText`/`getByRole` (qui traversent les shadow roots ouverts).
   - Commit.
 
-- [ ] **7. Makefile** (ADR 0010) : `.PHONY`, commentaire `##` par cible, `help` par défaut.
+- [x] **7. Makefile** (ADR 0010) : `.PHONY`, commentaire `##` par cible, `help` par défaut.
 
   | Cible | Contenu |
   | --- | --- |
@@ -100,9 +100,9 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
 
   Lancer chaque cible, puis `make ci`. Commit.
 
-- [ ] **8. Dev Container : installation à la création.** Ajouter `"postCreateCommand": "make tools"` dans `.devcontainer/devcontainer.json`. Commit. La vérification se fait à l'étape 10 (reconstruction par le développeur).
+- [x] **8. Dev Container : installation à la création.** Ajouter `"postCreateCommand": "make tools"` dans `.devcontainer/devcontainer.json`. Commit. La vérification se fait à l'étape 10 (reconstruction par le développeur).
 
-- [ ] **9. Documentation.**
+- [x] **9. Documentation.**
   - `CLAUDE.md`, section Stack : retirer « le projet n'est pas encore initialisé », lister les cibles réellement disponibles et celles à venir, ajouter une section « Conventions Go » courte (erreurs retournées et enveloppées avec `%w`, pas de `panic` hors `main`, tests en tableaux de cas, logique métier sans HTTP ni SQL).
   - `CHANGELOG.md` : ajouter la ligne de cette PR sous « Non publié ».
   - Cocher les étapes de ce plan et passer son statut à « terminé » une fois l'étape 10 validée.
@@ -112,6 +112,16 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
   - depuis l'hôte : `git push`, puis ouverture de la PR ;
   - « Rebuild Container » : `make tools` s'exécute sans erreur à la création ;
   - critères de validation ci-dessous.
+
+## Notes d'exécution
+
+- `@types/node` : 24.19.0. TypeScript 6 ne charge plus les `@types` implicitement : `"types": ["node"]` ajouté à `web/tsconfig.json`.
+- Build de production : sourcemap dans un fichier séparé (ADR 0012) ; noms de fichiers sans empreinte pour l'instant (`main.js`), à reprendre avec le service worker. En surveillance, `index.html` et `app.css` sont recopiés à chaque reconstruction, mais leur modification seule n'en déclenche pas.
+- Serveur : la redirection vers `/tribes/<identifiant>/` conserve la chaîne de requête ; sous-commande `help` en plus de `version` et `serve`.
+- `webcheck` : tests complétés par deux petits dossiers `testdata/` (dont un avec un `innerHTML` volontaire) pour vérifier la sortie et le code de retour.
+- Playwright : intitulés des tests en anglais (ADR 0008), `reuseExistingServer` et `forbidOnly` selon `CI`.
+- Makefile : textes de `make help` en anglais ; `make dev` arrêté par Ctrl-C affiche `Error 1`, sans conséquence.
+- `CHANGELOG.md` : la ligne de la PR, déjà présente, a été complétée plutôt que doublée.
 
 ## Critères de validation
 
