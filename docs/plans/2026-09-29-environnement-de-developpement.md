@@ -1,7 +1,7 @@
 # Plan : environnement de développement sur le poste
 
 - **Date** : 2026-09-29
-- **Statut** : en cours (étape 10, validation par le développeur)
+- **Statut** : terminé
 
 ## Objectif
 
@@ -108,7 +108,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, sur le poste. L
   - Cocher les étapes de ce plan et passer son statut à « terminé » une fois l'étape 10 validée.
   - Commit.
 
-- [ ] **10. Validation par le développeur**, hors de Claude Code :
+- [x] **10. Validation par le développeur**, hors de Claude Code :
   - depuis l'hôte : `git push`, puis ouverture de la PR ;
   - « Rebuild Container » : `make tools` s'exécute sans erreur à la création ;
   - critères de validation ci-dessous.
