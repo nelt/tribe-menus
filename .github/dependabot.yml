@@ -1,0 +1,45 @@
+# Monthly version updates, one grouped pull request per ecosystem (ADR 0004,
+# docs/securite-depot.md). Security updates do not wait for this schedule.
+# Not covered, to follow by hand: CLAUDE_CODE_VERSION in the Dockerfile,
+# .nvmrc and the VS Code extensions pinned in devcontainer.json.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: monthly
+    # The module only requires tools (sqlc, staticcheck, govulncheck,
+    # actionlint), all marked indirect.
+    allow:
+      - dependency-type: all
+    groups:
+      go:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /.devcontainer
+    schedule:
+      interval: monthly
+    ignore:
+      # A new Go release goes with go.mod, in a deliberate pull request.
+      - dependency-name: golang
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      devcontainer:
+        patterns: ["*"]
