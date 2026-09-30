@@ -19,12 +19,13 @@ dev: ## Rebuild the front end on change and serve on http://localhost:8080 (Ctrl
 	go build -o bin/tribe-menus-dev ./cmd/tribe-menus
 	npm --prefix web run watch & pid=$$!; trap 'kill $$pid 2>/dev/null' EXIT INT TERM; bin/tribe-menus-dev serve -dev
 
-lint: ## gofmt, go vet, staticcheck, tsc and webcheck
+lint: ## gofmt, go vet, staticcheck, tsc, webcheck and actionlint
 	@unformatted=$$(gofmt -l .); test -z "$$unformatted" || { echo "gofmt needed:"; echo "$$unformatted"; exit 1; }
 	go vet ./...
 	go tool staticcheck ./...
 	cd web && npm run typecheck
 	go run ./internal/tools/webcheck
+	go tool actionlint -shellcheck= -pyflakes=
 
 test: ## Go and TypeScript unit tests
 	go test ./...

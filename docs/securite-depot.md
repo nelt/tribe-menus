@@ -50,9 +50,9 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 ## 5. Sécurité du code et des dépendances
 
 - [ ] Détection de secrets (*secret scanning*) et blocage des pushes qui en contiennent (*push protection*).
-- [ ] Analyse de code **CodeQL** (Go, JavaScript/TypeScript, workflows Actions) sur chaque PR.
-- [ ] **Dependabot** : alertes, mises à jour de sécurité, et mises à jour de versions groupées (Go, npm, actions, Dev Container), hebdomadaires.
-- [ ] **Dependency review** sur chaque PR : bloque l'ajout d'une dépendance vulnérable ou sous une licence incompatible avec l'AGPL.
+- [ ] Analyse de code **CodeQL** (Go, JavaScript/TypeScript, workflows Actions) sur chaque PR, en configuration par défaut. Disponible une fois le dépôt public seulement (GitHub Code Security sinon).
+- [ ] **Dependabot** : alertes, mises à jour de sécurité, et mises à jour de versions groupées (Go, npm, actions, Dev Container), mensuelles (`.github/dependabot.yml`, 2026-09-30).
+- [ ] **Dependency review** sur chaque PR : bloque l'ajout d'une dépendance vulnérable ou sous une licence incompatible avec l'AGPL (`.github/workflows/dependency-review.yml`). Le job ne s'exécute qu'une fois le dépôt public ; vérifier alors qu'il passe.
 - [ ] `govulncheck` et audit npm dans `make ci` (ADR 0010).
 - [ ] npm : `npm ci --ignore-scripts`, versions exactes, fichier de verrouillage versionné (ADR 0004).
 - [ ] Signalement privé des vulnérabilités activé.

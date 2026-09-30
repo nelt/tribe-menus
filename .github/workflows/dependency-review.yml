@@ -1,0 +1,30 @@
+# Blocks a pull request that adds a vulnerable dependency or one under a
+# license that cannot be combined with AGPL-3.0-or-later (ADR 0011, 0013).
+#
+# Dependency review needs GitHub Code Security on a private repository: the
+# job only runs once the repository is public.
+name: dependency-review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          # Allow list: any other license, or an unrecognised one, blocks.
+          # Exceptions go in allow-dependencies-licenses, one package URL at
+          # a time, each with a comment explaining why.
+          allow-licenses: >-
+            MIT, MIT-0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Apache-2.0,
+            Unlicense, CC0-1.0, BlueOak-1.0.0, MPL-2.0,
+            LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later,
+            GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later

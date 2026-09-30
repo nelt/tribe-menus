@@ -1,6 +1,6 @@
 # Préparer un poste de développement
 
-Mise en route d'un poste Linux pour travailler sur Melting Tribe (ADR 0009, 0018). Sur l'hôte ne tournent que Docker, l'interface de VS Code et Git avec identifiants ; tout le reste (Go, Node, outils, Claude Code) tourne dans le Dev Container.
+Mise en route d'un poste Linux pour travailler sur Melting Tribe (ADR 0009, 0018). Sur l'hôte ne tournent que Docker, l'interface de VS Code, Git et GitHub CLI avec identifiants ; tout le reste (Go, Node, outils, Claude Code) tourne dans le Dev Container.
 
 ```
 Hôte                              Dev Container
@@ -8,7 +8,7 @@ Hôte                              Dev Container
 VS Code (interface)  ◄──────────► extensions, terminaux, Claude Code
 navigateur :8080     ◄── port ──► make dev (esbuild + serveur Go)
 tribe-menus/         ◄─ partagé ─► /workspaces/tribe-menus
-git push (jeton)                  git commit, make ci
+git push, gh (jeton)              git commit, make ci
 ```
 
 ## 1. Compte GitHub
@@ -24,7 +24,8 @@ Réglages du compte, décrits dans `docs/securite-depot.md` (section 1) :
 - **git** ;
 - **Docker Engine** (paquets de la distribution ou dépôt officiel Docker) ; ajouter son utilisateur au groupe `docker`, puis se reconnecter ;
 - **VS Code**, distribution officielle, avec la seule extension **Dev Containers** (Microsoft) ;
-- un **trousseau** pour les identifiants Git : `git-credential-libsecret` (souvent dans le paquet `git` ou `libsecret`, selon la distribution).
+- **GitHub CLI** (`gh`), pour ouvrir les PR et suivre la CI depuis le terminal ;
+- un **trousseau** pour les identifiants Git et `gh` : `git-credential-libsecret` (souvent dans le paquet `git` ou `libsecret`, selon la distribution).
 
 ## 3. Profil VS Code
 
@@ -60,11 +61,24 @@ git config --add credential.helper /usr/lib/git-core/git-credential-libsecret
 git ls-remote origin      # coller le jeton comme mot de passe, une seule fois
 ```
 
-Pour remplacer le jeton (expiration, nouvelles permissions) :
+`gh` ne lit pas les identifiants de Git : il a sa propre entrée dans le trousseau. On lui donne le même jeton, repris du trousseau sans passer par le presse-papiers :
+
+```bash
+printf "protocol=https\nhost=github.com\npath=nelt/tribe-menus.git\n\n" | git credential fill | sed -n 's/^password=//p' | gh auth login --with-token
+gh auth status            # doit indiquer le compte nelt et un jeton rangé dans le trousseau (keyring)
+```
+
+Si `gh auth status` ne mentionne pas le trousseau, le jeton a été écrit en clair dans `~/.config/gh/hosts.yml` (aucun trousseau disponible) : le retirer par `gh auth logout` et installer le trousseau d'abord.
+
+Ne pas utiliser `gh auth login` par le navigateur : il crée un jeton OAuth valable sur tout le compte, contraire à `docs/securite-depot.md` (section 1).
+
+Pour remplacer le jeton (expiration, nouvelles permissions), mettre à jour les deux copies :
 
 ```bash
 printf "protocol=https\nhost=github.com\npath=nelt/tribe-menus.git\n\n" | git credential reject
-git ls-remote origin
+git ls-remote origin      # coller le nouveau jeton
+gh auth logout --hostname github.com
+printf "protocol=https\nhost=github.com\npath=nelt/tribe-menus.git\n\n" | git credential fill | sed -n 's/^password=//p' | gh auth login --with-token
 ```
 
 Les commits portent la ligne DCO : `git commit -s` (ADR 0011).
@@ -81,4 +95,4 @@ Tant que le projet n'est pas initialisé, suivre `docs/plans/2026-09-29-environn
 
 - Dans le conteneur : `make dev` (application sur `http://localhost:8080`), `make test`, `make ci` avant de pousser. `make help` liste les cibles.
 - Claude Code travaille dans le conteneur et peut commiter ; il ne pousse pas.
-- Depuis un terminal **de l'hôte** : `git push`, puis PR sur GitHub.
+- Depuis un terminal **de l'hôte** : `git push`, puis `gh pr create` (ou l'interface de GitHub) ; `gh pr checks` suit la CI.
