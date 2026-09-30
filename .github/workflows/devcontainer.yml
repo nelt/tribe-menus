@@ -1,0 +1,46 @@
+# Builds the reference Dev Container and runs make tools in it, as its
+# postCreateCommand does, to check that it still works (ADR 0009, 0013).
+name: devcontainer
+
+on:
+  pull_request:
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "43 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devcontainer-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  devcontainer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Build and start the Dev Container
+        run: npx --yes @devcontainers/cli@0.89.0 up --workspace-folder . --skip-post-create
+
+      # Run explicitly rather than through up, whose exit code on a failed
+      # postCreateCommand is not documented.
+      - name: make tools in the Dev Container
+        run: npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . make tools
+
+      - name: Show tool versions
+        run: |
+          npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . go version
+          npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . node --version
+          npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . claude --version
