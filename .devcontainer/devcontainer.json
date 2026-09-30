@@ -24,6 +24,9 @@
     "SSH_AUTH_SOCK": ""
   },
 
+  // Installation des dépendances et des navigateurs Playwright (ADR 0009).
+  "postCreateCommand": "make tools",
+
   "forwardPorts": [8080],
   "portsAttributes": {
     "8080": { "label": "tribe-menus (make dev)" }
