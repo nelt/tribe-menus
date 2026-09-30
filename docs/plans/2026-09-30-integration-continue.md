@@ -113,6 +113,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 - **dependency-review.yml** : liste de licences en identifiants SPDX, variantes `-only` et `-or-later` ; MIT-0 ajoutée (permissive, équivalente à MIT sans condition).
 - **dependabot.yml** : pour Go, `dependency-type: all`, parce que le module ne requiert que des outils, tous en `// indirect`, que Dependabot ignorerait sinon. Montées de version mineure et majeure de l'image `golang` ignorées : un changement de version de Go se fait avec `go.mod`. Pas de validateur local : GitHub signale une erreur de configuration après le push (Insights > Dependency graph > Dependabot).
 - **`make ci VERSION=pr-0`** : passe en local en 18 s (caches chauds).
+- **Première exécution sur GitHub** (PR #11) : `ci` au vert en 3 min 37 s à froid, `devcontainer` au vert en 3 min 08 s, `dependency-review` ignoré (dépôt privé). L'activation du graphe des dépendances ajoute un workflow géré par GitHub, « Dependency Graph » (soumission automatique des dépendances Go, environ 1 minute à chaque changement de `go.mod` sur `main`).
 - **Hors plan, à traiter** : le dépôt n'a pas de fichier `LICENSE` (texte de l'AGPL-3.0, ADR 0011).
 
 ## Critères de validation
