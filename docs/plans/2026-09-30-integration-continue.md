@@ -1,7 +1,7 @@
 # Plan : intégration continue (GitHub Actions)
 
 - **Date** : 2026-09-30
-- **Statut** : en cours
+- **Statut** : terminé
 
 ## Objectif
 
@@ -94,7 +94,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
   - `CHANGELOG.md` : ligne de la PR sous « Non publié ».
   - Cocher les étapes de ce plan, noter les écarts. Commit.
 
-- [ ] **8. Validation par le développeur**, depuis l'hôte :
+- [x] **8. Validation par le développeur**, depuis l'hôte :
   - Settings > Code security : activer le graphe des dépendances, les alertes Dependabot et les mises à jour de sécurité (disponibles sur un dépôt privé) ;
   - `git push`, puis ouverture de la PR ;
   - Dependabot : pas d'erreur de configuration signalée ;
@@ -114,6 +114,8 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**. La validation (
 - **dependabot.yml** : pour Go, `dependency-type: all`, parce que le module ne requiert que des outils, tous en `// indirect`, que Dependabot ignorerait sinon. Montées de version mineure et majeure de l'image `golang` ignorées : un changement de version de Go se fait avec `go.mod`. Pas de validateur local : GitHub signale une erreur de configuration après le push (Insights > Dependency graph > Dependabot).
 - **`make ci VERSION=pr-0`** : passe en local en 18 s (caches chauds).
 - **Première exécution sur GitHub** (PR #11) : `ci` au vert en 3 min 37 s à froid, `devcontainer` au vert en 3 min 08 s, `dependency-review` ignoré (dépôt privé). L'activation du graphe des dépendances ajoute un workflow géré par GitHub, « Dependency Graph » (soumission automatique des dépendances Go, environ 1 minute à chaque changement de `go.mod` sur `main`).
+- **Deuxième exécution** (push sur la PR #11) : `ci` en 2 min 47 s avec les caches. `devcontainer` relancé aussi : sur une PR, le filtre `paths` porte sur tous les fichiers modifiés par la PR, et celle-ci modifie `devcontainer.yml`.
+- **Dependabot** : il ne lit `.github/dependabot.yml` que sur la branche par défaut ; avant la fusion, Insights affiche « Dependabot version updates aren't configured yet ». **Après la fusion** : vérifier dans Insights > Dependency graph > Dependabot que les quatre écosystèmes apparaissent sans erreur.
 - **Hors plan, à traiter** : le dépôt n'a pas de fichier `LICENSE` (texte de l'AGPL-3.0, ADR 0011).
 
 ## Critères de validation
