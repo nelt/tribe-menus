@@ -2,7 +2,7 @@
 
 - **Date** : 2026-09-28
 - **Origine** : analyse de cohérence des specs, du design et des ADR.
-- **Statut** : tous les points tranchés le 2026-09-28 ; maquettes `Doux-Main`, `Doux-Tribu` et `Doux-Repas` reprises en conséquence.
+- **Statut** : tous les points tranchés le 2026-09-28 ; maquettes `Doux-Main`, `Doux-Tribu` et `Doux-Repas` reprises en conséquence. PT-17 ouvert le 2026-10-01 (refonte des listes de courses).
 
 Chaque point est à décider puis reporté dans le document de référence cité (specs, `.feature`, glossaire, ADR ou maquette). Un point tranché est coché, avec la décision en une ligne et le lien vers la modification.
 
@@ -65,5 +65,6 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - **Fait (2026-09-28)** : conventions écrites dans `conventions-gherkin.md` ; scénarios alignés (dates avec l'année, périodes de liste sans jour de la semaine, connexion sous forme de référence, `Plan du scénario`).
 - [x] **PT-15. Scénarios non automatisables tels quels** (ADR 0005) : scénarios négatifs (« aucune action ne permet de supprimer le plat », « aucune fonction … ne permet de modifier le journal »), survie de la session après fermeture de l'app installée. Décider de leur preuve (absence de route dans l'API, test manuel en recette…).
   - **Décision (2026-09-28)** : scénarios négatifs prouvés contre l'API (route absente, requête refusée) ; survie de session taguée `@manuel`, exclue de `make ci`, vérifiée sur téléphone en recette sur la PR de release. Reporté dans `authentification.feature` et les ADR 0005 et 0012.
+- [ ] **PT-17. Maquettes des listes de courses** (C1 à C12, refonte du 2026-10-01) : les maquettes `Doux-ListesCourses`, `Doux-NouvelleListe`, `Doux-Courses`, `Doux-CoursesFaite` et `Doux-Historique` décrivent l'ancien modèle (liste par période, historique). À reprendre : choix de la liste et liste principale, ajout des courses d'une période vers une liste, sélection d'articles et ses deux actions, courses faites sans historique, suppression d'une liste vide. Les identifiants C cités par les points ci-dessus sont ceux d'avant la refonte.
 - [x] **PT-16. Glossaire** : ajouter nom de session (EF-04), tentative et limitation (ENF-01), noms des opérations d'audit (EF-07), provenance d'un article et quantité apportée (C9).
   - **Fait (2026-09-28)** : termes ajoutés au glossaire (session, essai, limitation, opérations d'audit, provenance et quantité apportée, anonymisation).
