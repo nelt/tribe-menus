@@ -16,10 +16,17 @@ updates:
     directory: /
     schedule:
       interval: monthly
-    # The module only requires tools (sqlc, staticcheck, govulncheck,
-    # actionlint), all marked indirect.
+    # Only the tools and the application's direct dependencies. The tools'
+    # own dependencies follow the versions each tool requires: bumped one by
+    # one, they can break a tool (yaml/v4 rc.6 broke actionlint 1.7.12).
+    # allow also applies to security updates; Dependabot alerts still cover
+    # every dependency, and govulncheck checks the application code.
     allow:
-      - dependency-type: all
+      - dependency-type: direct
+      - dependency-name: github.com/rhysd/actionlint
+      - dependency-name: github.com/sqlc-dev/sqlc
+      - dependency-name: golang.org/x/vuln
+      - dependency-name: honnef.co/go/tools
     groups:
       go:
         patterns: ["*"]
@@ -28,6 +35,13 @@ updates:
     directory: /web
     schedule:
       interval: monthly
+    ignore:
+      # @types/node follows the Node major version set in .nvmrc.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # A new TypeScript major version is evaluated in a dedicated pull request.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       npm:
         patterns: ["*"]
