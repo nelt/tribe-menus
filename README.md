@@ -2,7 +2,7 @@
 
 # Melting Tribe
 
-Les menus de la semaine, en tribu : chacun ajoute ses plats au planning, la liste de courses se fait toute seule. Application web progressive, logiciel libre sous licence AGPL-3.0, servie sur `meltingtribe.codingmatters.org` (ADR 0017).
+Les menus de la semaine, en tribu : chacun ajoute ses plats au planning, la liste de courses se fait toute seule. Application web progressive, logiciel libre sous licence AGPL-3.0-or-later ([`LICENSE`](LICENSE)), servie sur `meltingtribe.codingmatters.org` (ADR 0017).
 
 Le projet sert aussi à expérimenter un flux de travail hybride avec Claude :
 
@@ -25,3 +25,11 @@ Le projet sert aussi à expérimenter un flux de travail hybride avec Claude :
 2. Consigner toute décision structurante dans un ADR (`docs/adr/NNNN-titre.md`, modèle `docs/adr/0000-template.md`).
 3. Dans Claude Code : « lis `docs/plans/<fichier>.md` et implémente l'étape 1 ».
 4. Travailler sur une branche dédiée, puis revue via pull request.
+
+## Licence
+
+Copyright © 2026 Nel Taurisson et les contributeurs de Melting Tribe.
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU Affero General Public License publiée par la Free Software Foundation, en version 3 ou (à votre choix) toute version ultérieure. Il est distribué sans aucune garantie ; voir [`LICENSE`](LICENSE). Les polices, quand le dépôt en contiendra, restent sous leur propre licence (OFL), dans leur dossier.
+
+Contribuer : [`CONTRIBUTING.md`](CONTRIBUTING.md). Signaler une vulnérabilité : [`SECURITY.md`](SECURITY.md).
