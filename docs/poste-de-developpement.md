@@ -17,7 +17,7 @@ Réglages du compte, décrits dans `docs/securite-depot.md` (section 1) :
 
 - double authentification par passkey ou clé de sécurité ;
 - adresse e-mail privée et blocage des pushes qui l'exposent (Settings › Emails) ; noter l'adresse `ID+nelt@users.noreply.github.com` ;
-- un jeton à portée fine **dédié au poste**, limité au dépôt `tribe-menus`, avec une date d'expiration. Permissions : *Contents*, *Pull requests* et *Workflows* en lecture et écriture.
+- un jeton à portée fine **dédié au poste**, limité au dépôt `tribe-menus`, avec une date d'expiration. Permissions : *Contents*, *Pull requests* et *Workflows* en lecture et écriture ; *Actions* en lecture seule (suivi de la CI avec `gh`).
 
 ## 2. Logiciels de l'hôte
 
@@ -95,4 +95,23 @@ Tant que le projet n'est pas initialisé, suivre `docs/plans/2026-09-29-environn
 
 - Dans le conteneur : `make dev` (application sur `http://localhost:8080`), `make test`, `make ci` avant de pousser. `make help` liste les cibles.
 - Claude Code travaille dans le conteneur et peut commiter ; il ne pousse pas.
-- Depuis un terminal **de l'hôte** : `git push`, puis `gh pr create` (ou l'interface de GitHub) ; `gh pr checks` suit la CI.
+- Depuis un terminal **de l'hôte** : `git push`, puis `gh pr create` (ou l'interface de GitHub).
+
+### Suivre la CI depuis le terminal
+
+Un jeton à portée fine ne peut pas lire les *check runs* : il n'existe pas de permission *Checks* pour ce type de jeton. `gh pr checks`, et `gh run view` sans option, échouent donc (« Resource not accessible by personal access token »). `gh run view --log-failed` renvoie parfois une sortie vide. Ce qui fonctionne passe par l'API d'Actions :
+
+```bash
+# Runs ci d'une PR
+gh run list --workflow ci --branch "$(gh pr view <numéro> --json headRefName -q .headRefName)"
+
+# Étapes d'un run et leur résultat
+gh api repos/nelt/tribe-menus/actions/runs/<id>/jobs --jq '.jobs[0].steps[] | "\(.number) \(.conclusion) \(.name)"'
+
+# Journal du job
+job=$(gh api repos/nelt/tribe-menus/actions/runs/<id>/jobs --jq '.jobs[0].id')
+gh api repos/nelt/tribe-menus/actions/jobs/$job/logs | tail -80
+
+# Artefact d'une PR
+gh run download <id> --name tribe-menus-pr-<numéro> --dir bin/
+```
