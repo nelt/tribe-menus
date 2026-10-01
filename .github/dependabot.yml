@@ -1,6 +1,6 @@
 # Monthly version updates, one grouped pull request per ecosystem (ADR 0004,
 # docs/securite-depot.md). Security updates do not wait for this schedule.
-# Not covered, to follow by hand: CLAUDE_CODE_VERSION in the Dockerfile,
+# Not covered, to follow by hand: CLAUDE_CODE_VERSION and GH_VERSION in the Dockerfile,
 # .nvmrc and the VS Code extensions pinned in devcontainer.json.
 version: 2
 updates:

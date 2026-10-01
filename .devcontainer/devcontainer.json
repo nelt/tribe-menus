@@ -9,14 +9,18 @@
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
 
-  // Claude Code : configuration et connexion conservées dans un volume ;
-  // mises à jour automatiques, télémétrie et rapports d'erreur désactivés.
+  // Claude Code et GitHub CLI : configuration et connexion conservées dans
+  // des volumes ; mises à jour automatiques, télémétrie et rapports d'erreur
+  // désactivés. Le jeton de gh est en lecture seule (ADR 0019).
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "GH_TELEMETRY": "0",
+    "GH_NO_UPDATE_NOTIFIER": "1"
   },
   "mounts": [
-    "source=tribe-menus-claude,target=/home/vscode/.claude,type=volume"
+    "source=tribe-menus-claude,target=/home/vscode/.claude,type=volume",
+    "source=tribe-menus-gh,target=/home/vscode/.config/gh,type=volume"
   ],
 
   // Pas d'agent SSH de l'hôte dans le conteneur : le push se fait depuis l'hôte.

@@ -1,7 +1,7 @@
 # 0018. Claude Code et Git dans l'environnement de développement
 
 - **Date** : 2026-09-29
-- **Statut** : accepté
+- **Statut** : accepté ; complété par 0019 (GitHub CLI en lecture seule dans le conteneur)
 
 ## Contexte
 
@@ -25,7 +25,7 @@ Claude Code lit et écrit des fichiers et lance des commandes : le même raisonn
 
 ## Alternatives envisagées
 
-- **Push depuis le conteneur avec le jeton « devcontainer »** : pratique depuis le terminal de VS Code, mais met un jeton en écriture à portée de toute extension et de Claude Code. Écarté ; le jeton reste possible plus tard si le besoin apparaît.
+- **Push depuis le conteneur avec le jeton « devcontainer »** : pratique depuis le terminal de VS Code, mais met un jeton en écriture à portée de toute extension et de Claude Code. Écarté ; le jeton reste possible plus tard si le besoin apparaît. *Le besoin est apparu en lecture : jeton en lecture seule dans le conteneur, ADR 0019 ; l'écriture reste écartée.*
 - **Claude Code sur l'hôte** : installation plus simple, mais accès à tout le dossier personnel, et versions d'outils différentes de celles du conteneur. Écarté.
 - **Fonctionnalité Dev Container de Claude Code** (`ghcr.io/anthropics/devcontainer-features/claude-code`) : installe par npm une version non épinglée par défaut. L'installateur officiel avec numéro de version suffit.
 - **Image `mcr.microsoft.com/devcontainers/go` et fonctionnalité Node** : fonctionne, mais la version de Node serait dupliquée hors de `.nvmrc`.

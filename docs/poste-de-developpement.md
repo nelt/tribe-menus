@@ -17,6 +17,7 @@ Réglages du compte, décrits dans `docs/securite-depot.md` (section 1) :
 
 - double authentification par passkey ou clé de sécurité ;
 - adresse e-mail privée et blocage des pushes qui l'exposent (Settings › Emails) ; noter l'adresse `ID+nelt@users.noreply.github.com` ;
+- un second jeton à portée fine, **`tribe-menus-devcontainer`**, pour GitHub CLI dans le Dev Container (ADR 0019) : limité au dépôt `tribe-menus`, avec une date d'expiration, **en lecture seule** : *Actions*, *Contents*, *Pull requests* et *Metadata*. Aucune permission en écriture : le push reste sur l'hôte ;
 - un jeton à portée fine **dédié au poste**, limité au dépôt `tribe-menus`, avec une date d'expiration. Permissions : *Contents*, *Pull requests* et *Workflows* en lecture et écriture ; *Actions* en lecture seule (suivi de la CI avec `gh`).
 
 ## 2. Logiciels de l'hôte
@@ -88,6 +89,14 @@ Les commits portent la ligne DCO : `git commit -s` (ADR 0011).
 1. Ouvrir le dossier `tribe-menus` dans VS Code, avec le profil « Melting Tribe ».
 2. « Reopen in Container ». La première construction télécharge l'image Go, Node et Claude Code : compter quelques minutes.
 3. Dans un terminal du conteneur, lancer `claude` une première fois pour se connecter à son compte. La connexion est conservée dans le volume `tribe-menus-claude`.
+4. Toujours dans le conteneur, donner à GitHub CLI le jeton `tribe-menus-devcontainer` (lecture seule, ADR 0019) :
+
+   ```bash
+   gh auth login --with-token   # coller le jeton, Entrée, puis Ctrl-D
+   gh auth status               # compte nelt ; jeton dans /home/vscode/.config/gh/hosts.yml
+   ```
+
+   Le jeton n'apparaît ni dans la ligne de commande ni dans l'historique. Il est conservé dans le volume `tribe-menus-gh` et survit à la reconstruction du conteneur. Pour le remplacer : `gh auth logout`, puis la même commande. Pour l'effacer tout à fait : `docker volume rm tribe-menus-gh` depuis l'hôte, conteneur arrêté.
 
 Tant que le projet n'est pas initialisé, suivre `docs/plans/2026-09-29-environnement-de-developpement.md`, par exemple en demandant à Claude Code : « lis `docs/plans/2026-09-29-environnement-de-developpement.md` et exécute-le étape par étape ».
 

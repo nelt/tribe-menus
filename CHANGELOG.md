@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- GitHub CLI en lecture seule dans le Dev Container : `gh` dans l'image, jeton dans le volume `tribe-menus-gh` (ADR 0019).
 - `LICENSE` (texte de l'AGPL-3.0) et `SECURITY.md` (signalement privé des vulnérabilités) (ADR 0011).
 - Suivi de la CI : Dependabot limité aux outils Go et aux dépendances directes, sans version majeure de `@types/node` ni de TypeScript ; suivi de la CI avec `gh` documenté pour un jeton à portée fine.
 - Intégration continue : workflows `ci` (`make tools` puis `make ci`, contrôle DCO, artefact de PR), `devcontainer` (construction hebdomadaire) et `dependency-review` ; Dependabot mensuel ; actionlint dans `make lint` ; `CONTRIBUTING.md` (ADR 0011, 0013).
