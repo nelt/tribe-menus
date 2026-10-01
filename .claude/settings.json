@@ -23,10 +23,21 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git switch:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(gh auth status)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run download:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh api:*)"
+
     ],
     "deny": [
       "Bash(git push:*)",
+      "Bash(gh auth token:*)",
+      "Read(~/.config/gh/**)",
       "Read(./.env)",
       "Read(./.env.*)"
     ]
