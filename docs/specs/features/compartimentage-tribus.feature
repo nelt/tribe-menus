@@ -55,7 +55,7 @@ Fonctionnalité: Compartimentage des données entre tribus
       | donnée                  |
       | la bibliothèque de plats |
       | le planning             |
-      | la liste de courses     |
+      | les listes de courses   |
       | la liste des membres    |
       | mes sessions            |
 

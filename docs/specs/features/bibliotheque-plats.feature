@@ -47,7 +47,8 @@ Fonctionnalité: Bibliothèque de plats
     Étant donné le plat "Chili con carne" défini pour 4 parts avec 500 g de "bœuf haché"
     Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Quand je modifie la quantité de "bœuf haché" du plat "Chili con carne" à 600 g
-    Alors la liste de courses du 6 au 6 octobre 2026 contient 600 g de "bœuf haché"
+    Et j'ajoute les courses des repas du 6 au 6 octobre 2026 à la liste "Courses"
+    Alors la liste "Courses" contient 600 g de "bœuf haché"
 
   @P2
   Scénario: Un plat ne peut pas être supprimé de la bibliothèque
