@@ -6,7 +6,7 @@ Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Elles son
 
 - [ ] Double authentification sur le compte GitHub, par clé de sécurité ou passkey (pas de SMS).
 - [ ] Aucun jeton « classique » : uniquement des jetons à portée fine (*fine-grained*), limités au dépôt `tribe-menus`, avec les seuls droits nécessaires et une date d'expiration.
-- [ ] Jeton dédié pour le Dev Container (ADR 0009), distinct de tout autre usage.
+- [ ] Jeton dédié pour le Dev Container (ADR 0009, 0019), distinct de tout autre usage, **en lecture seule** : *Actions*, *Contents*, *Pull requests* et *Metadata*. Rangé dans le volume Docker `tribe-menus-gh`.
 - [ ] Jeton dédié au poste de développement (commits et pushes depuis l'hôte, en HTTPS), distinct du jeton du Dev Container ; conservé par le gestionnaire d'identifiants du système, jamais en clair (`credential.helper store` proscrit).
 - [ ] Git configuré avec l'adresse « noreply » de GitHub, et option « Block command line pushes that expose my email » activée.
 - [ ] Revue périodique des applications GitHub et OAuth autorisées sur le compte.
