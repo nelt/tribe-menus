@@ -12,7 +12,7 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
 1. **Les fichiers `.feature` sont la source unique des critères d'acceptation** et sont exécutés tels quels ; ils ne sont pas recopiés dans le code de test. Un scénario modifié dans la spec change le test.
 2. **Chaque scénario est exécuté au niveau le plus bas qui le prouve** :
    - **par défaut, contre l'API** avec **godog** (Gherkin officiel pour Go, compatible `# language: fr`). Le serveur tourne dans le processus de test (`httptest`), sur des bases SQLite temporaires. Les règles métier (calculs, recalcul, compartimentage, sessions) sont prouvées à ce niveau ;
-   - **dans le navigateur** avec **Playwright**, pour les seuls scénarios dont le sens tient à l'interface : hors-ligne (C4), dépliage d'un article (C9), bandeaux, parcours de connexion dans la PWA. Ces scénarios portent le tag `@ui`. Playwright pilote aussi WebKit, moteur proche de Safari sur iOS.
+   - **dans le navigateur** avec **Playwright**, pour les seuls scénarios dont le sens tient à l'interface : hors-ligne (C7), dépliage d'un article (C5), mode sélection (C9, C10), bandeaux, parcours de connexion dans la PWA. Ces scénarios portent le tag `@ui`. Playwright pilote aussi WebKit, moteur proche de Safari sur iOS.
 3. **Tests unitaires** :
    - Go : `go test`, tests en tableaux de cas, sur la logique métier pure de chaque domaine (conversion et agrégation des quantités, règles de recalcul…) ;
    - TypeScript : `node:test`, sur les modules purs sans DOM (file d'opérations hors-ligne, fusion des coches, formatage des quantités).

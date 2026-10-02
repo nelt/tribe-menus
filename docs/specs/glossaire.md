@@ -64,20 +64,24 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | Français | Anglais | Remarque |
 | --- | --- | --- |
 | liste de courses | shopping list | |
-| période (début, fin) | period (start, end) | bornes incluses |
+| liste principale | main list | une seule par tribu, C1 |
+| nom (d'une liste) | name | |
+| ajouter les courses des repas | add meal shopping | C4 |
+| période (début, fin) | period (start, end) | bornes incluses, celle de l'ajout des courses |
+| plats servis reçus | received served dishes | plats servis dont une liste a reçu les courses, Q22 |
 | article | item | |
 | article calculé | computed item | |
 | article ajouté | manual item | saisi à la main, hors planning |
 | cocher / coché | check / checked | |
-| en cours / faite | open / completed | état d'une liste |
-| déclarer les courses faites | complete | |
-| abandonner | discard | supprime la liste |
+| déclarer les courses faites | check out | retire les articles cochés, C11 |
+| supprimer (une liste) | delete | liste vide et non principale, C12 |
 | recalculer / recalcul | recompute / recomputation | |
 | périmée | stale | |
-| provenance (d'un article calculé) | item source | un repas et un plat servi, C9 |
-| quantité apportée | contributed quantity | part d'une provenance, C9 |
-| nombre de repas (d'un article) | meal count | C9 |
-| historique | history | |
+| sélection | selection | C9, C10 |
+| déplacer | move | C9 |
+| provenance (d'un article calculé) | item source | un plat servi, C5 |
+| quantité apportée | contributed quantity | part d'une provenance, C5 |
+| nombre de plats servis (d'un article) | source count | C5 |
 
 ## Quantités
 

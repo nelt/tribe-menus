@@ -5,7 +5,7 @@
 
 ## Contexte
 
-L'application est une PWA utilisée surtout sur téléphone, y compris installée sur iOS. Les maquettes (`docs/design/`) sont riches en interactions : stepper de parts, autocomplétion des ingrédients, calendrier de période, articles dépliables, feuilles de confirmation, bandeaux (liste périmée, hors-ligne). La liste de courses doit rester consultable et cochable sans réseau (C4, Q16).
+L'application est une PWA utilisée surtout sur téléphone, y compris installée sur iOS. Les maquettes (`docs/design/`) sont riches en interactions : stepper de parts, autocomplétion des ingrédients, calendrier de période, articles dépliables, feuilles de confirmation, bandeaux (liste périmée, hors-ligne). La liste de courses doit rester consultable et cochable sans réseau (C7, Q16).
 
 Critères retenus : une surface d'attaque réduite, peu de dépendances, pas de framework englobant exposé aux ruptures de compatibilité, et un code pérenne.
 
@@ -22,7 +22,7 @@ Critères retenus : une surface d'attaque réduite, peu de dépendances, pas de 
 6. **Routage** : un petit routeur écrit dans le projet, fondé sur l'API History, avec le préfixe de tribu (`/tribes/<identifiant>/…`).
 7. **Hors-ligne** :
    - **service worker écrit dans le projet** : pré-cache des ressources versionnées, cache d'abord pour les ressources statiques, réseau d'abord pour l'API ;
-   - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ; un ingrédient créé hors ligne est transmis par son nom et rapproché côté serveur d'un ingrédient existant de même nom normalisé ; les opérations devenues sans objet (liste close, article retiré par un recalcul) sont ignorées et signalées (Q18) ;
+   - **IndexedDB** pour les listes de courses affichées et pour une **file d'opérations** (coches, articles ajoutés) rejouée au retour du réseau. Les opérations sont idempotentes : identifiants générés côté client pour les articles ajoutés, état final plutôt que bascule pour les coches ; un ingrédient créé hors ligne est transmis par son nom et rapproché côté serveur d'un ingrédient existant de même nom normalisé ; les opérations devenues sans objet (liste supprimée, article retiré par un recalcul) sont ignorées et signalées ; la coche d'un article déplacé vers une autre liste le suit (Q18, révisé le 2026-10-01) ;
    - l'écran de liste s'affiche à partir de ces données locales, jamais d'un HTML en cache ;
    - le planning, la bibliothèque de plats et le référentiel d'ingrédients restent consultables hors ligne grâce au cache des réponses de l'API (réseau d'abord) ; leurs modifications exigent le réseau (ENF-01, PT-04) ;
    - caches et IndexedDB de la tribu sont effacés à la déconnexion et dès qu'une réponse de l'API signale une session invalide.

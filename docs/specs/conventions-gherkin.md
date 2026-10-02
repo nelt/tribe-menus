@@ -33,9 +33,16 @@ Les scénarios de `features/` sont exécutés tels quels (ADR 0005). Pour que ch
 
 - Un jour s'écrit avec le jour de la semaine et l'année : `le mardi 6 octobre 2026`.
 - Un repas : `le mardi 6 octobre 2026 à midi` ou `le mardi 6 octobre 2026 au soir` ; `le repas du mardi 6 octobre 2026 au soir`.
-- Une période de liste de courses s'écrit sans jour de la semaine : `du 6 au 12 octobre 2026`. Les jours affichés par le planning gardent le jour de la semaine (`du lundi 5 au dimanche 11 octobre 2026`), puisque c'est ce que montre l'écran.
-- `dans la période` et `de la période` désignent la période de la liste créée dans le même scénario ; sans date précisée, c'est la période par défaut (C1) relative à la date du `Contexte`.
-- Les libellés d'affichage abrégés (`mardi 6 oct., soir`, `« 6 → 8 oct. »`) ne figurent que là où le scénario vérifie ce qui est affiché.
+- La période dont on ajoute les courses s'écrit sans jour de la semaine : `du 6 au 12 octobre 2026`. Les jours affichés par le planning gardent le jour de la semaine (`du lundi 5 au dimanche 11 octobre 2026`), puisque c'est ce que montre l'écran.
+- `dans la période` et `de la période` désignent la période dont le même scénario ajoute les courses ; sans date précisée, c'est la période par défaut (C4) relative à la date du `Contexte`.
+- Les libellés d'affichage abrégés (`mardi 6 oct., soir`) ne figurent que là où le scénario vérifie ce qui est affiché.
+
+## Listes de courses
+
+- Une liste est désignée par son nom entre guillemets : `la liste "Courses"`. La liste principale du `Contexte` s'appelle `"Courses"`.
+- Ajout des courses : `j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"`.
+- Article calculé posé directement : `la liste "Courses" contenant 500 g de "bœuf haché" provenant du "Chili con carne" du mardi 6 octobre 2026 au soir`.
+- Coche : `"pain" est coché dans la liste "Courses"` (état), `je coche "pain" dans la liste "Courses"` (action), `"pain" apparaît comme coché dans la liste "Courses"` (vérification).
 
 ## Quantités
 

@@ -21,7 +21,7 @@ Le projet réunit un back-end Go (ADR 0002), un front-end TypeScript (ADR 0004),
      tribe/             membres, sessions, connexion, audit
      dish/              plats et référentiel d'ingrédients
      mealplan/          repas et plats servis
-     shopping/          listes de courses, articles, recalcul
+     shopping/          listes de courses, liste principale, articles, recalcul, déplacement
      quantity/          unités, conversions, arrondis
      storage/           registre, ouverture des bases, migrations SQL embarquées
      server/            routage HTTP, middlewares, résolution de la tribu
@@ -42,7 +42,7 @@ Le projet réunit un back-end Go (ADR 0002), un front-end TypeScript (ADR 0004),
    - **un paquet par domaine métier**, pas par couche technique ; pas de `utils/`, `common/` ni `pkg/` ;
    - **`internal/`** pour tout le code Go hors point d'entrée : le compilateur interdit son import depuis l'extérieur du module ;
    - **noms de paquets** courts, en minuscules et au singulier ;
-   - **`quantity/`** est un paquet à part : logique pure utilisée par plusieurs domaines (calcul C2) ;
+   - **`quantity/`** est un paquet à part : logique pure utilisée par plusieurs domaines (calcul C4) ;
    - **`acceptance/`** est à la racine : les scénarios traversent tout le système via l'API.
 4. **`web/dist/`** n'est pas versionné, à l'exception d'un fichier témoin : `//go:embed` exige que le dossier existe à la compilation, y compris sur un poste où le front n'a jamais été construit.
 
