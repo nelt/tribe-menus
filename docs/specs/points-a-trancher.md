@@ -14,7 +14,7 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Conséquence : règle « encore présent = même famille » du recalcul, unité de base de stockage, scénarios C2.
   - **Décision (2026-09-28)** : pièce, cuillère à soupe, cuillère à café et pincée forment chacune leur propre famille, sans conversion ; toutes sont arrondies à l'entier supérieur après agrégation. Reporté dans `fonctionnalites.md` (unités, Q3, Q4), `glossaire.md`, ADR 0003 point 7 et `liste-courses.feature` (C2).
 
-- [x] **PT-02. Paramètres de connexion et limitation des demandes** (ENF-01, `authentification.feature`, ADR 0006 point 7, ADR 0014 point 5, `identite.md`)
+- [x] **PT-02. Paramètres de connexion et limitation des demandes** (ENF-01, `authentification.feature`, ADR 0006 point 7, ADR 0014 point 5, `design/README.md`)
   - Valeurs absentes : durée de validité du code, nombre d'essais, seuils de limitation des demandes.
   - Les ADR 0006 et 0014 renvoient à une limitation « par adresse, par IP et par tribu » prévue par ENF-01, qui ne la décrit pas ; l'état « trop de demandes » des maquettes n'a pas de scénario.
   - À décider aussi : une nouvelle demande invalide-t-elle le code précédent ? La limitation par adresse s'applique-t-elle de la même façon aux adresses inconnues (pour ne rien révéler, ENF-02) ?
@@ -25,7 +25,7 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Un article ajouté hors ligne peut créer un ingrédient (C8, Q13) : l'ADR 0004 ne prévoit d'identifiants générés côté client que pour les articles ; risque de doublons dans le référentiel si deux membres créent le même ingrédient.
   - **Décision (2026-09-28)** : liste faite ou abandonnée entre-temps → modifications ignorées et signalées ; article retiré par un recalcul → coche ignorée et signalée ; ingrédient créé hors ligne → rapproché par nom normalisé (normalisation fixée par PT-06). Reporté dans `fonctionnalites.md` (Q18), `liste-courses.feature` (C4) et ADR 0004 point 7.
 
-- [x] **PT-04. Périmètre du hors-ligne hors listes de courses** (ENF-01, `identite.md` écran de chargement, ADR 0004)
+- [x] **PT-04. Périmètre du hors-ligne hors listes de courses** (ENF-01, `design/README.md` écran de chargement, ADR 0004)
   - ENF-01 promet le planning en cache ; l'ADR 0004 ne stocke que les listes en IndexedDB (le reste via le cache du service worker).
   - À préciser : écrans consultables sans réseau (planning, plats, autocomplétion), comportement d'une modification du planning ou d'un plat hors ligne (refus avec message, comme C4 ?).
   - À préciser : purge des données locales (IndexedDB, caches) à la déconnexion, à la révocation d'une session ou d'un membre (EF-03, EF-05).
@@ -42,10 +42,10 @@ Chaque point est à décider puis reporté dans le document de référence cité
   - Correction d'une faute de frappe ou fusion de doublons : hors périmètre V1 à acter, ou story à ajouter.
   - **Décision (2026-09-28)** : unité par défaut = première unité saisie, proposée ensuite ; création seulement en saisissant un plat ou un article ; noms rapprochés sans casse, accents ni espaces superflus (autocomplétion comprise) ; renommage et fusion hors périmètre V1. Reporté dans `fonctionnalites.md` (concepts, P4, Q20, hors périmètre), `bibliotheque-plats.feature` (P4), `tribu.feature` (T1) et `compartimentage-tribus.feature`.
 
-- [x] **PT-07. Conservation et effacement des données** (EF-03, EF-07, `identite.md` page Confidentialité)
+- [x] **PT-07. Conservation et effacement des données** (EF-03, EF-07, `design/README.md` page Confidentialité)
   - La page Confidentialité exige des durées de conservation et une modalité de suppression sur demande.
   - Or le journal d'audit est en ajout seul et un membre révoqué n'est jamais supprimé : son e-mail est conservé sans limite. Codes expirés et sessions expirées : purge non spécifiée.
-  - **Décision (2026-09-28)** : codes et sessions expirés effacés automatiquement ; journal d'audit conservé 12 mois ; anonymisation d'un membre révoqué sur demande (EF-11) ; suppression d'une tribu par commande d'administration (EF-10) ; journaux du serveur conservés 1 mois. Reporté dans `gestion-membres-et-sessions.md`, `administration.feature`, `membres-et-sessions.feature`, `glossaire.md`, `identite.md`, la maquette `Confidentialite.dc.html` et les ADR 0002 et 0015.
+  - **Décision (2026-09-28)** : codes et sessions expirés effacés automatiquement ; journal d'audit conservé 12 mois ; anonymisation d'un membre révoqué sur demande (EF-11) ; suppression d'une tribu par commande d'administration (EF-10) ; journaux du serveur conservés 1 mois. Reporté dans `gestion-membres-et-sessions.md`, `administration.feature`, `membres-et-sessions.feature`, `glossaire.md`, `design/README.md`, la maquette `Confidentialite.dc.html` et les ADR 0002 et 0015.
 
 ## Mineurs
 

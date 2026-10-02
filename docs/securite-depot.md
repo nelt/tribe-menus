@@ -62,7 +62,7 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 Réglages sans enjeu de sécurité, faits au même moment parce que certains n'existent que pour un dépôt public.
 
 - [ ] Description « Melting Tribe : les menus de la semaine, en tribu » et site `https://meltingtribe.codingmatters.org` (ADR 0017).
-- [ ] Aperçu social (Settings › General › Social preview) : `docs/design/identite/partage.png` (`identite.md`). Réservé aux dépôts publics.
+- [ ] Aperçu social (Settings › General › Social preview) : `docs/design/identite/partage.png` (`docs/design/README.md`). Réservé aux dépôts publics.
 
 ## 7. Plus tard
 
