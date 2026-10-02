@@ -19,10 +19,10 @@ L'identité visuelle (nom **Melting Tribe**, symbole, logotype, icônes), qui s'
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
 | Création / édition d'un plat | `maquettes/Doux-Plat.dc.html` | P1, P4 |
-| Choix de la liste (onglet Courses) | `maquettes/Doux-ListesCourses.dc.html`, à reprendre (PT-17) | C1, C2, C12 |
-| Ajouter les courses des repas (période et liste) | `maquettes/Doux-NouvelleListe.dc.html`, à reprendre (PT-17) | C4 |
-| Liste de courses | `maquettes/Doux-Courses.dc.html` (réglage `etat` : périmée, à jour, hors ligne), à reprendre (PT-17) | C3, C5, C6, C7, C8, C9, C10, C11 |
-| ~~Historique~~, ~~Liste faite~~ | `maquettes/Doux-Historique.dc.html`, `maquettes/Doux-CoursesFaite.dc.html` : écrans supprimés par la refonte du 2026-10-01, fichiers conservés jusqu'à la reprise des maquettes (PT-17) | — |
+| Liste de courses (onglet Courses) | `maquettes/Doux-Courses.dc.html` (réglage `etat` : périmée, à jour, hors ligne, sélection) | C1, C3, C5, C6, C7, C8, C11 |
+| Sélection d'articles | `maquettes/Doux-CoursesSelection.dc.html` (l'écran précédent, réglage `etat` sur sélection) | C9, C10 |
+| Choix des listes | `maquettes/Doux-ListesCourses.dc.html` | C1, C2, C12 |
+| Courses des repas (période et liste) | `maquettes/Doux-AjoutCourses.dc.html` | C4 |
 | Tribu : membres | `maquettes/Doux-Tribu.dc.html` | EF-02, EF-03 (quitter la tribu), EF-06, T3 |
 | Ajouter un membre | `maquettes/Doux-AjoutMembre.dc.html` | EF-01, EF-06 |
 | Fiche d'un membre | `maquettes/Doux-Membre.dc.html` | EF-03, EF-06 |
@@ -37,7 +37,9 @@ Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de des
 - Barre d'onglets en bas : **Planning**, **Plats**, **Courses**. Onglet actif en aplat rouge tomate, texte blanc.
 - Planning → toucher une case de repas ouvre le détail du repas.
 - Plats → « Nouveau » ouvre la création d'un plat.
-- Courses → l'onglet ouvre la liste principale. Son nom, en tête, ouvre le choix des listes (principale en premier), d'où l'on crée, renomme, supprime une liste vide ou désigne la principale. « Ajouter les courses des repas » ouvre le choix de la période et de la liste (principale par défaut). « Sélectionner » fait passer les articles en mode sélection, avec deux actions en bas d'écran : « Déplacer vers… » et « Nouvelle liste ». « Courses faites » retire les articles cochés, après confirmation. Parcours provisoire en attendant la reprise des maquettes (PT-17).
+- Courses → l'onglet ouvre la liste principale. Son nom, en tête, ouvre le choix des listes ; « Ajouter les courses des repas » ouvre le choix de la période et de la liste ; « Sélectionner » fait passer la liste en mode sélection ; « Courses faites » retire les articles cochés, après confirmation.
+- Choix des listes → toucher une liste l'ouvre ; le bouton « ⋮ » d'une liste ouvre ses actions (renommer, définir comme principale, supprimer) ; « Nouvelle liste » crée une liste vide.
+- Courses des repas → « Ajouter à « … » » revient à la liste.
 - Planning → la pastille de l'en-tête (nom de la tribu et nombre de membres) ouvre l'écran Tribu. Pas d'onglet dédié : la gestion de la tribu est occasionnelle.
 - Tribu → le réglage **Taille de la tribu** (stepper) fixe les parts proposées pour les plats servis ajoutés et les nouveaux plats (T3).
 - Tribu → toucher un membre ouvre sa fiche ; « Ajouter un membre » ouvre l'ajout ; « Mes appareils » ouvre la liste des sessions.
@@ -98,8 +100,11 @@ Liseré = `c + (255 − c) × 0,6` sur chaque composante RVB.
 - **Article calculé / ajouté** (C3, C5) : la case à cocher et la ligne sont deux cibles distinctes. Un article calculé porte une pastille neutre « N plats » et un chevron ; toucher la ligne la déplie : initiale du plat, plat et parts, jour et moment (couleurs midi/soir), quantité apportée. Un article ajouté porte une pastille en pointillé « ajouté », une croix pour le retirer, et ne se déplie pas.
 - **Ajout d'un article hors repas** (C3) : bouton en pointillé en bas de la liste, qui s'ouvre en formulaire (article, quantité facultative) au liseré de saisie `#E39A89`.
 - **Calendrier de période** (C4) : grille du mois, lundi en premier ; bornes au contour rouge tomate 2 px, jours intermédiaires au liseré `#E39A89`, aujourd'hui en pointillé, point sous les jours ayant des repas. Date de fin avant la date de début : message au liseré `#E39A89` et bouton désactivé en pointillé.
-- **Courses faites** (C11) : retire les articles cochés, confirmé par la feuille de confirmation. **Suppression d'une liste** (C12) : proposée seulement pour une liste vide et non principale, sans confirmation.
-- **Mode sélection** (C9, C10) : à dessiner (PT-17) ; la case de sélection doit se distinguer de la case à cocher des courses.
+- **Courses faites** (C11) : bouton en aplat en bas de la liste, en pointillé et inactif tant qu'aucun article n'est coché ; confirmé par la feuille de confirmation, qui dit combien d'articles partent et combien restent. Un message au liseré vert confirme ensuite le retrait.
+- **Pastille « principale »** (C1) : contour foncé `#22193A`, à côté du nom de la liste (en-tête, choix des listes, choix de la destination). Dans le choix des listes, la carte de la liste principale a un liseré foncé.
+- **Mode sélection** (C9, C10) : la case à cocher laisse place à une pastille ronde au contour foncé, pleine `#22193A` quand l'article est sélectionné ; la carte sélectionnée prend un liseré foncé de 2 px. L'en-tête devient « Annuler », le nombre d'articles sélectionnés, « Tout ». La barre d'onglets laisse place à deux actions : « Déplacer vers… » (aplat) et « Nouvelle liste » (contour foncé), en pointillé tant que rien n'est sélectionné. Chacune ouvre une feuille : choix de la liste d'arrivée, ou nom de la nouvelle liste.
+- **Actions d'une liste** (C2, C12) : feuille ouverte par « ⋮ ». « Supprimer la liste » est en contour rouge tomate, sans confirmation, pour une liste vide et non principale ; sinon en pointillé, avec la raison.
+- **Destination des courses** (C4) : champ au contour foncé « Ajouter à la liste », qui ouvre une feuille de choix ; sous le champ, une ligne indique les plats servis déjà passés par la liste, qui seront ignorés (Q22).
 - **Bandeau hors ligne** : liseré indigo adouci, icône et texte indigo.
 - **Avatar de membre** : rond 40 px (72 px sur la fiche), liseré adouci et initiale dans la teinte soutenue, comme l'initiale de plat. Membre révoqué : liseré en pointillé `#CFC6DE`, initiale `#6E6680`.
 - **Statut de membre** : pastille « Actif » (liseré `#A9D3B1`, texte `#2F7A3E`) ou « Révoqué » (pointillé `#CFC6DE`, texte `#6E6680`). La carte d'un membre révoqué est en pointillé.

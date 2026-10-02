@@ -18,22 +18,39 @@ button,input{font-family:inherit}
 <div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
 
 <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 84px; overflow-y: auto">
-<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 28px">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px 20px 28px">
 
-<a href="Doux-ListesCourses.dc.html" style="display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 700; color: #22193A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Listes</a>
-
-<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px">6 → 12 oct.</h1>
-
-<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
-<a href="Doux-NouvelleListe.dc.html" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; box-sizing: border-box; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-decoration: none"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Du</span><span style="font-size: 16px; font-weight: 800">mar. 6 oct.</span></a>
-<a href="Doux-NouvelleListe.dc.html" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; box-sizing: border-box; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-decoration: none"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Au</span><span style="font-size: 16px; font-weight: 800">lun. 12 oct.</span></a>
+<sc-if value="{{browsing}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 8px">
+<h1 style="margin: 0; flex-grow: 1; min-width: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px"><a href="Doux-ListesCourses.dc.html" aria-label="Courses, liste principale. Changer de liste" style="display: flex; align-items: center; gap: 8px; min-height: 48px; color: #22193A; text-decoration: none"><span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Courses</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M6 9l6 6 6-6"></path></svg><span style="flex-shrink: 0; padding: 3px 10px; border-radius: 999px; border: 1.5px solid #22193A; font-family: 'Figtree', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0">principale</span></a></h1>
+<button onClick="{{startSelect}}" style="flex-shrink: 0; height: 44px; padding: 0 6px; border: none; border-radius: 12px; background: transparent; color: #22193A; font-size: 15px; font-weight: 800; cursor: pointer">Sélectionner</button>
 </div>
+
+<a href="Doux-AjoutCourses.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 54px; box-sizing: border-box; padding: 0 14px; border-radius: 16px; border: 2px solid #22193A; color: #22193A; text-decoration: none; font-size: 16px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"></path></svg><span style="flex-grow: 1">Ajouter les courses des repas</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M9 18l6-6-6-6"></path></svg></a>
+</sc-if>
+
+<sc-if value="{{selecting}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 8px; min-height: 48px">
+<button onClick="{{cancelSelect}}" style="flex-shrink: 0; height: 44px; padding: 0 6px 0 0; border: none; border-radius: 12px; background: transparent; color: #22193A; font-size: 15px; font-weight: 700; cursor: pointer">Annuler</button>
+<h1 aria-live="polite" style="margin: 0; flex-grow: 1; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">{{selectionLabel}}</h1>
+<button onClick="{{selectAll}}" style="flex-shrink: 0; height: 44px; padding: 0 0 0 6px; border: none; border-radius: 12px; background: transparent; color: #22193A; font-size: 15px; font-weight: 800; cursor: pointer">{{selectAllLabel}}</button>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.4; color: #5E5470">Choisissez les articles à sortir de « Courses ». Ils gardent leur coche et leurs plats.</p>
+</sc-if>
+
+<sc-if value="{{hasNotice}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; padding: 10px 6px 10px 14px; border-radius: 16px; border: 1.5px solid #A9D3B1; color: #2F7A3E">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+<span style="flex-grow: 1; font-size: 14px; font-weight: 700; line-height: 1.35">{{notice}}</span>
+<button onClick="{{closeNotice}}" aria-label="Fermer le message" style="width: 40px; height: 40px; flex-shrink: 0; border: none; border-radius: 10px; background: transparent; color: #2F7A3E; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-if>
 
 <sc-if value="{{stale}}" hint-placeholder-val="{{true}}">
 <div role="status" style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid #F2D27A">
 <div style="display: flex; align-items: flex-start; gap: 10px; color: #8A6100">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg>
-<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Les repas ont changé depuis le calcul de cette liste.</span>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Des repas ont changé depuis l’ajout de leurs courses à cette liste.</span>
 </div>
 <button onClick="{{recalc}}" style="align-self: flex-start; height: 44px; padding: 0 18px; border: none; border-radius: 14px; background: #C63D24; color: #FFFFFF; font-size: 15px; font-weight: 800; cursor: pointer">Recalculer</button>
 </div>
@@ -42,29 +59,50 @@ button,input{font-family:inherit}
 <sc-if value="{{offline}}" hint-placeholder-val="{{false}}">
 <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #BDBAF0; color: #3D3A8C">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F5BD0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M2 8.8a15 15 0 0 1 4.2-2.6M9.5 5.1A15 15 0 0 1 22 8.8"></path><path d="M5 12.6a10 10 0 0 1 3.6-2M16.4 11a10 10 0 0 1 2.6 1.6"></path><path d="M8.5 16.2a5 5 0 0 1 7 0"></path><circle cx="12" cy="20" r="1"></circle><path d="M3 3l18 18"></path></svg>
-<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Hors ligne · vos coches et ajouts seront synchronisés au retour du réseau</span>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Hors ligne · vos coches et ajouts seront synchronisés au retour du réseau. Les autres actions attendent le réseau.</span>
 </div>
 </sc-if>
 
+<sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
 <div style="display: flex; flex-direction: column; gap: 6px">
 <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700"><span>{{progressLabel}}</span><span style="color: #5E5470">{{remainingLabel}}</span></div>
 <div style="height: 10px; box-sizing: border-box; border-radius: 999px; border: 1.5px solid #A9D3B1; overflow: hidden"><div style="{{barStyle}}"></div></div>
 </div>
+</sc-if>
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+<div style="padding: 22px 18px; border-radius: 20px; border: 2px dashed #CFC6DE; text-align: center; font-size: 15px; font-weight: 600; line-height: 1.4; color: #5E5470">La liste est vide. Ajoutez les courses des repas ou un article à la main.</div>
+</sc-if>
 
 <div style="display: flex; flex-direction: column; gap: 6px">
 <sc-for list="{{items}}" as="it" hint-placeholder-count="11">
 <div style="{{it.cardStyle}}">
+
+<sc-if value="{{it.pickable}}" hint-placeholder-val="{{false}}">
+<button onClick="{{it.pick}}" aria-pressed="{{it.picked}}" style="display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 14px; border: none; border-radius: 16px; background: transparent; color: inherit; text-align: left; cursor: pointer">
+<span style="{{it.pickStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+<span style="{{it.nameStyle}}">{{it.name}}</span>
+<sc-if value="{{it.isComputed}}" hint-placeholder-val="{{true}}">
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px solid #E7E1EE; font-size: 12px; font-weight: 700; color: #5E5470">{{it.dishesLabel}}</span>
+</sc-if>
+<sc-if value="{{it.isManual}}" hint-placeholder-val="{{false}}">
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px dashed #CFC6DE; font-size: 12px; font-weight: 700; color: #5E5470">ajouté</span>
+</sc-if>
+<span style="{{it.qtyStyle}}">{{it.qty}}</span>
+</button>
+</sc-if>
+
+<sc-if value="{{it.checkable}}" hint-placeholder-val="{{true}}">
 <div style="display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 6px 0 14px">
 <input type="checkbox" aria-label="{{it.checkLabel}}" checked="{{it.checked}}" onChange="{{it.toggle}}" style="width: 24px; height: 24px; margin: 0; flex-shrink: 0; accent-color: #2F7A3E; cursor: pointer">
-<sc-if value="{{it.computed}}" hint-placeholder-val="{{true}}">
+<sc-if value="{{it.isComputed}}" hint-placeholder-val="{{true}}">
 <button onClick="{{it.expand}}" aria-expanded="{{it.open}}" style="flex-grow: 1; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 4px 0 0; border: none; background: transparent; color: inherit; text-align: left; cursor: pointer">
 <span style="{{it.nameStyle}}">{{it.name}}</span>
-<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px solid #E7E1EE; font-size: 12px; font-weight: 700; color: #5E5470">{{it.mealsLabel}}</span>
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px solid #E7E1EE; font-size: 12px; font-weight: 700; color: #5E5470">{{it.dishesLabel}}</span>
 <span style="{{it.qtyStyle}}">{{it.qty}}</span>
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="{{it.chevronStyle}}"><path d="M6 9l6 6 6-6"></path></svg>
 </button>
 </sc-if>
-<sc-if value="{{it.added}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{it.isManual}}" hint-placeholder-val="{{false}}">
 <div style="flex-grow: 1; display: flex; align-items: center; gap: 8px; min-height: 48px">
 <span style="{{it.nameStyle}}">{{it.name}}</span>
 <span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px dashed #CFC6DE; font-size: 12px; font-weight: 700; color: #5E5470">ajouté</span>
@@ -73,6 +111,8 @@ button,input{font-family:inherit}
 </div>
 </sc-if>
 </div>
+</sc-if>
+
 <sc-if value="{{it.open}}" hint-placeholder-val="{{false}}">
 <div style="display: flex; flex-direction: column; margin: 0 10px 10px; border-top: 1.5px solid #E7E1EE">
 <sc-for list="{{it.sources}}" as="s" hint-placeholder-count="2">
@@ -87,9 +127,13 @@ button,input{font-family:inherit}
 </sc-for>
 </div>
 </sc-if>
+
 </div>
 </sc-for>
 </div>
+
+<sc-if value="{{browsing}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
 
 <sc-if value="{{adding}}" hint-placeholder-val="{{false}}">
 <div style="display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 1.5px solid #E39A89">
@@ -106,40 +150,91 @@ button,input{font-family:inherit}
 </div>
 </sc-if>
 <sc-if value="{{notAdding}}" hint-placeholder-val="{{true}}">
-<button onClick="{{startAdd}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 48px; border: 2px dashed #CFC6DE; border-radius: 16px; background: transparent; font-size: 15px; font-weight: 700; color: #22193A; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un article hors repas</button>
+<button onClick="{{startAdd}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 48px; border: 2px dashed #CFC6DE; border-radius: 16px; background: transparent; font-size: 15px; font-weight: 700; color: #22193A; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un article à la main</button>
 </sc-if>
 
 <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px">
+<sc-if value="{{canFinish}}" hint-placeholder-val="{{true}}">
 <button onClick="{{askDone}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 54px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 16px; font-weight: 800; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Courses faites</button>
-<button onClick="{{askAbandon}}" style="height: 48px; border: none; border-radius: 16px; background: transparent; color: #C63D24; font-size: 15px; font-weight: 800; cursor: pointer">Abandonner la liste</button>
+</sc-if>
+<sc-if value="{{cannotFinish}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="height: 54px; border: 2px dashed #CFC6DE; border-radius: 18px; background: #FFFFFF; color: #6E6680; font-size: 16px; font-weight: 800">Courses faites</button>
+</sc-if>
+<p style="margin: 0; text-align: center; font-size: 13px; line-height: 1.4; color: #5E5470">{{finishHint}}</p>
 </div>
+
+</div>
+</sc-if>
 
 </div>
 </div>
 
+<sc-if value="{{browsing}}" hint-placeholder-val="{{true}}">
 <nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 10px 16px 18px; background: #FFFFFF; border-top: 1.5px solid #E7E1EE; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
 <a href="Doux-Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>Planning</a>
 <a href="Doux-Bibliotheque.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"></path><path d="M4 21V5"></path><path d="M9 8h6"></path></svg>Plats</a>
-<a href="Doux-ListesCourses.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 12px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"></path><circle cx="10" cy="20" r="1.3"></circle><circle cx="17" cy="20" r="1.3"></circle></svg>Courses</a>
+<a href="Doux-Courses.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 12px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"></path><circle cx="10" cy="20" r="1.3"></circle><circle cx="17" cy="20" r="1.3"></circle></svg>Courses</a>
 </nav>
+</sc-if>
+
+<sc-if value="{{selecting}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 10px 16px 18px; background: #FFFFFF; border-top: 1.5px solid #E7E1EE; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-if value="{{canAct}}" hint-placeholder-val="{{true}}">
+<button onClick="{{askMove}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 16px; background: #C63D24; color: #FFFFFF; font-size: 15px; font-weight: 800; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>Déplacer vers…</button>
+</sc-if>
+<sc-if value="{{canAct}}" hint-placeholder-val="{{true}}">
+<button onClick="{{askNewList}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; font-size: 15px; font-weight: 800; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Nouvelle liste</button>
+</sc-if>
+<sc-if value="{{cannotAct}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="border: 2px dashed #CFC6DE; border-radius: 16px; background: #FFFFFF; color: #6E6680; font-size: 15px; font-weight: 800">Déplacer vers…</button>
+</sc-if>
+<sc-if value="{{cannotAct}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="border: 2px dashed #CFC6DE; border-radius: 16px; background: #FFFFFF; color: #6E6680; font-size: 15px; font-weight: 800">Nouvelle liste</button>
+</sc-if>
+</div>
+</sc-if>
 
 <sc-if value="{{confirmingDone}}" hint-placeholder-val="{{false}}">
 <div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
 <div role="dialog" aria-modal="true" aria-labelledby="faites-titre" style="display: flex; flex-direction: column; gap: 12px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
 <h2 id="faites-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Courses faites ?</h2>
 <p style="margin: 0; font-size: 15px; line-height: 1.45">{{doneMessage}}</p>
-<a href="Doux-Historique.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 800">Courses faites</a>
+<button onClick="{{confirmDone}}" style="height: 54px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 16px; font-weight: 800; cursor: pointer">Retirer les articles cochés</button>
 <button onClick="{{closeSheet}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
 </div>
 </div>
 </sc-if>
 
-<sc-if value="{{confirmingAbandon}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{choosingTarget}}" hint-placeholder-val="{{false}}">
 <div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
-<div role="dialog" aria-modal="true" aria-labelledby="abandon-titre" style="display: flex; flex-direction: column; gap: 12px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
-<h2 id="abandon-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Abandonner cette liste ?</h2>
-<p style="margin: 0; font-size: 15px; line-height: 1.45">Elle sera supprimée définitivement, avec ses coches et ses articles ajoutés. Le planning n’est pas modifié.</p>
-<a href="Doux-ListesCourses.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 800">Abandonner</a>
+<div role="dialog" aria-modal="true" aria-labelledby="deplacer-titre" style="display: flex; flex-direction: column; gap: 10px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="deplacer-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">{{moveTitle}}</h2>
+<p style="margin: 0 0 2px; font-size: 15px; line-height: 1.45">Un article calculé rejoint la ligne du même ingrédient s’il y en a une ; un article ajouté à la main reste à part.</p>
+<sc-for list="{{targets}}" as="t" hint-placeholder-count="2">
+<button onClick="{{t.choose}}" style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 14px; border: 1.5px solid #E7E1EE; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer">
+<span style="flex-grow: 1; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">{{t.name}}</span>
+<span style="font-size: 14px; font-weight: 600; color: #5E5470">{{t.info}}</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+</button>
+</sc-for>
+<button onClick="{{closeSheet}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{namingList}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
+<div role="dialog" aria-modal="true" aria-labelledby="nouvelle-titre" style="display: flex; flex-direction: column; gap: 12px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="nouvelle-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Nouvelle liste</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.45">{{newListMessage}}</p>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5E5470">Nom de la liste
+<input type="text" value="{{newName}}" onChange="{{typeNewName}}" placeholder="ex. Marché, Boucherie" style="height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 16px; border: 2px solid #22193A; font-size: 17px; font-weight: 700; color: #22193A"></label>
+<sc-if value="{{canCreate}}" hint-placeholder-val="{{false}}">
+<button onClick="{{createList}}" style="height: 54px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 16px; font-weight: 800; cursor: pointer">Créer la liste</button>
+</sc-if>
+<sc-if value="{{cannotCreate}}" hint-placeholder-val="{{true}}">
+<button disabled="{{true}}" style="height: 54px; border: 2px dashed #CFC6DE; border-radius: 18px; background: #FFFFFF; color: #6E6680; font-size: 16px; font-weight: 800">Créer la liste</button>
+</sc-if>
 <button onClick="{{closeSheet}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
 </div>
 </div>
@@ -147,7 +242,7 @@ button,input{font-family:inherit}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"etat":{"editor":"enum","options":["périmée","à jour","hors ligne"],"default":"périmée"}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"etat":{"editor":"enum","options":["périmée","à jour","hors ligne","sélection"],"default":"périmée"}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -160,14 +255,20 @@ class Component extends DCLogic {
       adding: false,
       draftName: '',
       draftQty: '',
-      sheet: null
+      sheet: null,
+      selecting: null,
+      selected: null,
+      newName: '',
+      notice: ''
     };
   }
   renderVals() {
     var self = this;
     var st = this.state;
     var etat = this.props.etat || 'périmée';
-    var stale = etat === 'périmée' && !st.recalculated;
+    var selecting = st.selecting === null ? etat === 'sélection' : st.selecting;
+    var sel = st.selected === null ? (etat === 'sélection' ? { courgette: true, gruyere: true } : {}) : st.selected;
+    var stale = etat === 'périmée' && !st.recalculated && !selecting;
     var fresh = st.recalculated;
     var DISH = {
       chili: ['Chili con carne', '#C2502E', '#E7B9AB'],
@@ -177,6 +278,7 @@ class Component extends DCLogic {
       dauph: ['Gratin dauphinois', '#B0306A', '#DFACC3'],
       pesto: ['Pâtes pesto', '#2E8A6E', '#ABD0C5']
     };
+    var OTHERS = [{ name: 'Marché', info: '4 articles' }, { name: 'Drive', info: 'vide' }];
     var src = function (dish, day, moment, parts, qty) { return { dish: dish, day: day, moment: moment, parts: parts, qty: qty }; };
     var list = [
       { id: 'boeuf', name: 'Bœuf haché', qty: fresh ? '1 kg' : '875 g', sources: [src('chili', 'mar. 6 oct.', 'soir', 3, '375 g'), src('chili', 'jeu. 8 oct.', 'midi', fresh ? 5 : 4, fresh ? '625 g' : '500 g')] },
@@ -195,6 +297,9 @@ class Component extends DCLogic {
     var done = list.filter(function (x) { return c[x.id]; }).length;
     var left = list.length - done;
     var sorted = list.filter(function (x) { return !c[x.id]; }).concat(list.filter(function (x) { return c[x.id]; }));
+    var picked = list.filter(function (x) { return sel[x.id]; });
+    var nSel = picked.length;
+    var articles = function (n) { return n + (n > 1 ? ' articles' : ' article'); };
     var patch = function (key, id) {
       return function () {
         var next = Object.assign({}, self.state[key]);
@@ -204,31 +309,62 @@ class Component extends DCLogic {
       };
     };
     var set = function (s) { return function () { self.setState(s); }; };
+    var leave = function (notice) {
+      var r = Object.assign({}, self.state.removed);
+      picked.forEach(function (x) { r[x.id] = true; });
+      self.setState({ removed: r, selecting: false, selected: {}, sheet: null, newName: '', notice: notice });
+    };
+    var newName = (st.newName || '').trim();
     return {
+      browsing: !selecting,
+      selecting: selecting,
+      startSelect: set({ selecting: true, selected: {}, adding: false, notice: '' }),
+      cancelSelect: set({ selecting: false, selected: {} }),
+      selectionLabel: nSel === 0 ? 'Aucun article' : nSel + (nSel > 1 ? ' sélectionnés' : ' sélectionné'),
+      selectAllLabel: nSel === list.length ? 'Aucun' : 'Tout',
+      selectAll: function () {
+        var all = {};
+        if (nSel !== list.length) { list.forEach(function (x) { all[x.id] = true; }); }
+        self.setState({ selected: all });
+      },
+      canAct: nSel > 0,
+      cannotAct: nSel === 0,
+      hasNotice: !!st.notice,
+      notice: st.notice,
+      closeNotice: set({ notice: '' }),
       stale: stale,
       offline: etat === 'hors ligne',
       recalc: set({ recalculated: true }),
-      progressLabel: done + ' sur ' + list.length + ' articles',
+      hasItems: list.length > 0,
+      empty: list.length === 0,
+      progressLabel: done + ' sur ' + articles(list.length),
       remainingLabel: left + ' à prendre',
-      barStyle: 'height: 100%; border-radius: 999px; background: #2F7A3E; width: ' + Math.round(done * 100 / list.length) + '%',
+      barStyle: 'height: 100%; border-radius: 999px; background: #2F7A3E; width: ' + (list.length ? Math.round(done * 100 / list.length) : 0) + '%',
       items: sorted.map(function (x) {
         var on = !!c[x.id];
-        var open = !x.manual && !!st.open[x.id];
+        var isSel = !!sel[x.id];
+        var open = !selecting && !x.manual && !!st.open[x.id];
         var n = x.sources ? x.sources.length : 0;
+        var border = selecting ? (isSel ? '2px solid #22193A' : '1.5px solid ' + (on ? '#A9D3B1' : '#E7E1EE')) : '1.5px solid ' + (on ? '#A9D3B1' : (open ? '#CFC6DE' : '#E7E1EE'));
         return {
           name: x.name,
           qty: x.qty,
           checked: on,
-          computed: !x.manual,
-          added: !!x.manual,
+          pickable: selecting,
+          checkable: !selecting,
+          picked: isSel,
+          isComputed: !x.manual,
+          isManual: !!x.manual,
           open: open,
           checkLabel: 'Cocher ' + x.name,
           removeLabel: 'Retirer ' + x.name,
-          mealsLabel: n + (n > 1 ? ' repas' : ' repas'),
+          dishesLabel: n + (n > 1 ? ' plats' : ' plat'),
           toggle: patch('checked', x.id),
           expand: patch('open', x.id),
+          pick: function () { var next = Object.assign({}, sel); next[x.id] = !next[x.id]; self.setState({ selected: next, selecting: true }); },
           remove: function () { var r = Object.assign({}, self.state.removed); r[x.id] = true; self.setState({ removed: r }); },
-          cardStyle: 'display: flex; flex-direction: column; border-radius: 16px; background: #FFFFFF; border: 1.5px solid ' + (on ? '#A9D3B1' : (open ? '#CFC6DE' : '#E7E1EE')),
+          cardStyle: 'display: flex; flex-direction: column; box-sizing: border-box; border-radius: 16px; background: #FFFFFF; border: ' + border,
+          pickStyle: 'width: 24px; height: 24px; flex-shrink: 0; box-sizing: border-box; border-radius: 999px; border: 2px solid #22193A; display: flex; align-items: center; justify-content: center; background: ' + (isSel ? '#22193A' : '#FFFFFF'),
           nameStyle: 'flex-grow: 1; min-width: 0; font-size: 16px; font-weight: 700; ' + (on ? 'text-decoration: line-through; color: #5E5470' : 'color: #22193A'),
           qtyStyle: 'flex-shrink: 0; font-size: 15px; font-weight: 800; ' + (on ? 'color: #5E5470' : 'color: #C63D24'),
           chevronStyle: 'flex-shrink: 0; transition: transform .15s; transform: rotate(' + (open ? 180 : 0) + 'deg)',
@@ -262,14 +398,32 @@ class Component extends DCLogic {
         var item = { id: 'x' + Date.now(), name: name.charAt(0).toUpperCase() + name.slice(1), qty: (self.state.draftQty || '').trim(), manual: true };
         self.setState({ extra: self.state.extra.concat([item]), adding: false, draftName: '', draftQty: '' });
       },
+      canFinish: done > 0,
+      cannotFinish: done === 0,
+      finishHint: done > 0 ? 'Retire ' + (done > 1 ? 'les ' + done + ' articles cochés' : 'l’article coché') + ' de la liste ; les autres y restent.' : 'Cochez les articles achetés pour les retirer de la liste.',
       confirmingDone: st.sheet === 'done',
-      confirmingAbandon: st.sheet === 'abandon',
-      doneMessage: left > 0
-        ? 'Il reste ' + left + (left > 1 ? ' articles non cochés' : ' article non coché') + '. La liste passera dans l’historique et ne sera plus modifiable.'
-        : 'La liste passera dans l’historique et ne sera plus modifiable.',
+      doneMessage: (done > 1 ? 'Les ' + done + ' articles cochés seront retirés' : 'L’article coché sera retiré') + ' de la liste. ' + (left > 0 ? (left > 1 ? 'Les ' + left + ' articles non cochés y restent.' : 'L’article non coché y reste.') : 'La liste sera vide.'),
       askDone: set({ sheet: 'done' }),
-      askAbandon: set({ sheet: 'abandon' }),
-      closeSheet: set({ sheet: null })
+      confirmDone: function () {
+        var r = Object.assign({}, self.state.removed);
+        list.forEach(function (x) { if (c[x.id]) { r[x.id] = true; } });
+        self.setState({ removed: r, checked: {}, sheet: null, notice: (done > 1 ? done + ' articles retirés' : '1 article retiré') + ' de la liste.' });
+      },
+      closeSheet: set({ sheet: null }),
+      askMove: set({ sheet: 'move' }),
+      choosingTarget: st.sheet === 'move',
+      moveTitle: 'Déplacer ' + articles(nSel) + ' vers…',
+      targets: OTHERS.map(function (t) {
+        return { name: t.name, info: t.info, choose: function () { leave((nSel > 1 ? nSel + ' articles déplacés' : '1 article déplacé') + ' vers « ' + t.name + ' ».'); } };
+      }),
+      askNewList: set({ sheet: 'new' }),
+      namingList: st.sheet === 'new',
+      newListMessage: (nSel > 1 ? 'Les ' + nSel + ' articles sélectionnés quitteront' : 'L’article sélectionné quittera') + ' « Courses » pour cette nouvelle liste.',
+      newName: st.newName,
+      typeNewName: function (e) { self.setState({ newName: e.target.value }); },
+      canCreate: newName.length > 0,
+      cannotCreate: newName.length === 0,
+      createList: function () { leave('Liste « ' + newName + ' » créée avec ' + articles(nSel) + '.'); }
     };
   }
 }
