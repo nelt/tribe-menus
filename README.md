@@ -15,7 +15,7 @@ Le projet sert aussi à expérimenter un flux de travail hybride avec Claude :
 | --- | --- |
 | `CLAUDE.md` | Instructions chargées automatiquement par Claude Code à chaque session |
 | `docs/specs/` | Spécifications fonctionnelles (le *quoi*) |
-| `docs/design/` | Design retenu : tokens, composants, maquettes de référence |
+| `docs/design/` | Design dans son état actuel : identité, site public, connexion, application ; maquettes de référence |
 | `docs/plans/` | Plans de travail préparés en amont (un fichier par sujet) |
 | `docs/adr/` | Architecture Decision Records : décisions techniques et leur justification |
 

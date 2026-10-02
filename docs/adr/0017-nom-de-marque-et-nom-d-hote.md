@@ -5,7 +5,7 @@
 
 ## Contexte
 
-L'application a désormais un nom de marque, **Melting Tribe**, retenu avec son identité visuelle (`docs/design/identite.md`). Le nom d'hôte fixé par l'ADR 0006, `tribe-menus.codingmatters.org`, reprend le nom de travail du projet et ne correspond plus à ce que voient les utilisateurs (site public, écran de connexion, icône de l'application installée, e-mail du code).
+L'application a désormais un nom de marque, **Melting Tribe**, retenu avec son identité visuelle (`docs/design/README.md`). Le nom d'hôte fixé par l'ADR 0006, `tribe-menus.codingmatters.org`, reprend le nom de travail du projet et ne correspond plus à ce que voient les utilisateurs (site public, écran de connexion, icône de l'application installée, e-mail du code).
 
 Le changement est possible sans coût aujourd'hui : rien n'est encore déployé, aucun certificat n'a été émis et aucune application n'a été installée avec l'ancienne adresse.
 
