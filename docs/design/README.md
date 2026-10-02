@@ -11,12 +11,13 @@
 | `maquettes/` | Écrans de l'application. Le préfixe `Doux-` est le nom de la version graphique retenue ; il n'a pas d'autre sens. |
 | `maquettes/identite/` | Symbole, logotype, icônes, écrans de connexion et de chargement, pages du site public. |
 | `identite/` | Fichiers livrables de l'identité : symbole et logotype en SVG, image de partage. |
-| Canevas [Menus de la semaine](https://claude.ai/artifact/YFJvuxWWxS89coq6c5M6zH) (privé) | Écrans de l'application, y compris les versions écartées. |
-| Canevas [Melting Tribe, déclinaisons](https://claude.ai/artifact/PnDbsVYrEjfZondTPHUVe1) (privé) | Identité retenue et ses déclinaisons. |
+| Canevas [Melting Tribe · design V1 · 2026-10-02](https://claude.ai/artifact/XmpkhmHJCLzd3Eyp9piVxy) (privé) | **Référence visuelle** : toutes les maquettes retenues, et elles seules, à la date du titre. Copie datée ; elle est refaite, avec un nouveau titre, quand le design change. |
+| Canevas [Menus de la semaine](https://claude.ai/artifact/YFJvuxWWxS89coq6c5M6zH) (privé) | Canevas de travail des écrans de l'application, y compris les versions écartées. |
+| Canevas [Melting Tribe, déclinaisons](https://claude.ai/artifact/PnDbsVYrEjfZondTPHUVe1) (privé) | Canevas de travail de l'identité et de ses déclinaisons. |
 
 Les fichiers `.dc.html` sont les sources des maquettes (format de l'outil de design, pas du code de production). Ils font référence pour la structure, les styles, les textes et les comportements. Certains ont un réglage (`etat`, `mode`) qui montre leurs différents états.
 
-Une maquette est d'abord dessinée ou modifiée dans son canevas, validée, puis reportée ici ; ce document est mis à jour dans la même PR.
+Une maquette est d'abord dessinée ou modifiée dans son canevas de travail, validée, puis reportée ici ; ce document est mis à jour dans la même PR, et le canevas de référence est refait à partir du dépôt.
 
 ## Principes
 
