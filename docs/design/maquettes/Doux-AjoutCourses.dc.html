@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Dates d’une liste de courses</title>
+<title>Ajouter les courses des repas</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -17,20 +17,19 @@ button{font-family:inherit}
 </helmet>
 <div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
 
-<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 0">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 0">
 
-<a href="{{backHref}}" style="display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 700; color: #22193A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>{{backLabel}}</a>
+<a href="Doux-Courses.dc.html" style="display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 700; color: #22193A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Retour à la liste</a>
 
-<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px">{{title}}</h1>
-<p style="margin: 0; font-size: 15px; line-height: 1.4; color: #5E5470">Les repas de ces dates, incluses, seront pris en compte.</p>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px">Courses des repas</h1>
 
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
 <button onClick="{{editStart}}" aria-pressed="{{startActive}}" style="{{startFieldStyle}}"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Du</span><span style="font-size: 16px; font-weight: 800">{{startLabel}}</span></button>
 <button onClick="{{editEnd}}" aria-pressed="{{endActive}}" style="{{endFieldStyle}}"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Au</span><span style="font-size: 16px; font-weight: 800">{{endLabel}}</span></button>
 </div>
 
-<div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 10px; border-radius: 20px; border: 1.5px solid #E7E1EE">
-<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 6px 4px">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 12px; border-radius: 20px; border: 1.5px solid #E7E1EE">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 6px">
 <button aria-label="Mois précédent" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
 <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">Octobre 2026</span>
 <button aria-label="Mois suivant" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button>
@@ -46,7 +45,7 @@ button{font-family:inherit}
 </sc-if>
 </sc-for>
 </div>
-<div style="display: flex; align-items: center; gap: 6px; padding: 6px 6px 0; font-size: 12px; font-weight: 600; color: #5E5470"><span style="width: 5px; height: 5px; border-radius: 999px; background: #5E5470"></span>jour avec des repas planifiés</div>
+<div style="display: flex; align-items: center; gap: 6px; padding: 4px 6px 0; font-size: 12px; font-weight: 600; color: #5E5470"><span style="width: 5px; height: 5px; border-radius: 999px; background: #5E5470"></span>jour avec des repas planifiés</div>
 </div>
 
 <sc-if value="{{invalid}}" hint-placeholder-val="{{false}}">
@@ -56,10 +55,19 @@ button{font-family:inherit}
 </div>
 </sc-if>
 <sc-if value="{{valid}}" hint-placeholder-val="{{true}}">
-<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-size: 14px; font-weight: 700"><span>{{daysLabel}}</span><span style="color: #5E5470">{{mealsLabel}}</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-size: 14px; font-weight: 700"><span>{{daysLabel}}</span><span style="color: #5E5470">{{dishesLabel}}</span></div>
 </sc-if>
-<sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
-<p style="margin: 0; padding: 0 4px; font-size: 13px; line-height: 1.45; color: #5E5470">La liste sera recalculée. Les articles ajoutés à la main sont conservés, ainsi que les coches, sauf si la quantité d’un article augmente.</p>
+
+<button onClick="{{openTargets}}" aria-haspopup="dialog" style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer">
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Ajouter à la liste</span><span style="font-size: 16px; font-weight: 800; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{targetName}}</span></span>
+<sc-if value="{{targetMain}}" hint-placeholder-val="{{true}}">
+<span style="flex-shrink: 0; padding: 3px 10px; border-radius: 999px; border: 1.5px solid #22193A; font-size: 12px; font-weight: 800">principale</span>
+</sc-if>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+
+<sc-if value="{{hasSkipped}}" hint-placeholder-val="{{true}}">
+<p role="status" style="margin: 0; padding: 0 4px; font-size: 13px; font-weight: 600; line-height: 1.4; color: #5E5470">{{skippedLabel}}</p>
 </sc-if>
 
 </div>
@@ -73,22 +81,47 @@ button{font-family:inherit}
 </sc-if>
 </div>
 
+<sc-if value="{{choosing}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
+<div role="dialog" aria-modal="true" aria-labelledby="cible-titre" style="display: flex; flex-direction: column; gap: 10px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="cible-titre" style="margin: 0 0 2px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Ajouter à quelle liste ?</h2>
+<sc-for list="{{targets}}" as="t" hint-placeholder-count="3">
+<button onClick="{{t.choose}}" aria-pressed="{{t.current}}" style="{{t.style}}">
+<span style="{{t.dotStyle}}"><span style="{{t.dotInnerStyle}}"></span></span>
+<span style="flex-grow: 1; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">{{t.name}}</span>
+<sc-if value="{{t.main}}" hint-placeholder-val="{{false}}">
+<span style="padding: 3px 10px; border-radius: 999px; border: 1.5px solid #22193A; font-size: 12px; font-weight: 800">principale</span>
+</sc-if>
+<span style="font-size: 14px; font-weight: 600; color: #5E5470">{{t.info}}</span>
+</button>
+</sc-for>
+<button onClick="{{closeTargets}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"mode":{"editor":"enum","options":["création","modification"],"default":"création"}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { start: 6, end: 12, field: 'end' };
+    this.state = { start: 6, end: 12, field: 'end', target: 'courses', choosing: false };
   }
   renderVals() {
     var self = this;
     var st = this.state;
-    var edit = (this.props.mode || 'création') === 'modification';
     var DAYS = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
     var OFFSET = 3; // 1er octobre 2026 : jeudi
     var TODAY = 5;
-    var MEALS = { 6: 1, 7: 1, 8: 1, 9: 1, 10: 2, 11: 1, 12: 1, 13: 2, 14: 1 };
+    // Plats servis par jour, et ceux que chaque liste a déjà reçus (Q22).
+    var DISHES = { 6: 3, 7: 1, 8: 2, 9: 2, 10: 2, 11: 1, 12: 1, 13: 2, 14: 1 };
+    var LISTS = [
+      { id: 'courses', name: 'Courses', main: true, info: '11 articles', received: { 6: 3, 7: 1, 8: 2 } },
+      { id: 'marche', name: 'Marché', main: false, info: '4 articles', received: { 10: 1 } },
+      { id: 'drive', name: 'Drive', main: false, info: 'vide', received: {} }
+    ];
+    var target = LISTS.filter(function (l) { return l.id === st.target; })[0];
     var label = function (d) { return DAYS[(d - 1 + OFFSET) % 7] + ' ' + d + ' oct.'; };
     var invalid = st.end < st.start;
     var cells = [];
@@ -102,9 +135,9 @@ class Component extends DCLogic {
           blank: false,
           real: true,
           num: day,
-          aria: label(day) + (MEALS[day] ? ', repas planifiés' : ''),
+          aria: label(day) + (DISHES[day] ? ', repas planifiés' : ''),
           style: 'height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 12px; border: ' + border + '; background: #FFFFFF; font-size: 15px; cursor: pointer; font-weight: ' + (isEnd ? 800 : 600) + '; color: ' + (isEnd ? '#C63D24' : (day < TODAY ? '#6E6680' : '#22193A')),
-          dotStyle: 'width: 5px; height: 5px; border-radius: 999px; background: ' + (MEALS[day] ? (isEnd ? '#C63D24' : '#5E5470') : 'transparent'),
+          dotStyle: 'width: 5px; height: 5px; border-radius: 999px; background: ' + (DISHES[day] ? (isEnd ? '#C63D24' : '#5E5470') : 'transparent'),
           pick: function () {
             if (self.state.field === 'start') { self.setState({ start: day, field: 'end' }); }
             else { self.setState({ end: day }); }
@@ -113,17 +146,13 @@ class Component extends DCLogic {
       })(d);
     }
     var nbDays = st.end - st.start + 1;
-    var nbMeals = 0;
-    for (var k = st.start; k <= st.end; k++) { nbMeals += MEALS[k] || 0; }
+    var nbDishes = 0;
+    var nbSkipped = 0;
+    for (var k = st.start; k <= st.end; k++) { nbDishes += DISHES[k] || 0; nbSkipped += target.received[k] || 0; }
     var field = function (active, bad) {
       return 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: 7px 14px; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer; border: 2px solid ' + (bad ? '#C63D24' : (active ? '#22193A' : '#E7E1EE'));
     };
     return {
-      title: edit ? 'Modifier les dates' : 'Nouvelle liste',
-      backLabel: edit ? '6 → 12 oct.' : 'Listes',
-      backHref: edit ? 'Doux-Courses.dc.html' : 'Doux-ListesCourses.dc.html',
-      cta: edit ? 'Recalculer la liste' : 'Créer la liste',
-      isEdit: edit,
       startLabel: label(st.start),
       endLabel: label(st.end),
       startActive: st.field === 'start',
@@ -137,7 +166,28 @@ class Component extends DCLogic {
       invalid: invalid,
       valid: !invalid,
       daysLabel: nbDays + (nbDays > 1 ? ' jours' : ' jour'),
-      mealsLabel: nbMeals + (nbMeals > 1 ? ' repas planifiés' : ' repas planifié')
+      dishesLabel: nbDishes + (nbDishes > 1 ? ' plats servis' : ' plat servi'),
+      targetName: target.name,
+      targetMain: target.main,
+      hasSkipped: !invalid && nbSkipped > 0,
+      skippedLabel: (nbSkipped > 1 ? nbSkipped + ' plats servis sont déjà passés par cette liste : ils seront ignorés.' : '1 plat servi est déjà passé par cette liste : il sera ignoré.'),
+      cta: 'Ajouter à « ' + target.name + ' »',
+      choosing: st.choosing,
+      openTargets: function () { self.setState({ choosing: true }); },
+      closeTargets: function () { self.setState({ choosing: false }); },
+      targets: LISTS.map(function (l) {
+        var on = l.id === st.target;
+        return {
+          name: l.name,
+          main: l.main,
+          info: l.info,
+          current: on,
+          choose: function () { self.setState({ target: l.id, choosing: false }); },
+          style: 'display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 14px; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer; border: ' + (on ? '2px solid #22193A' : '1.5px solid #E7E1EE'),
+          dotStyle: 'width: 22px; height: 22px; flex-shrink: 0; box-sizing: border-box; border-radius: 999px; border: 2px solid #22193A; display: flex; align-items: center; justify-content: center',
+          dotInnerStyle: 'width: 10px; height: 10px; border-radius: 999px; background: ' + (on ? '#22193A' : 'transparent')
+        };
+      })
     };
   }
 }
