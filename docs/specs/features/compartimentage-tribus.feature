@@ -8,24 +8,26 @@ Fonctionnalité: Compartimentage des données entre tribus
     Étant donné les tribus "Les Martin" d'identifiant "martin" et "Les Durand" d'identifiant "durand"
     Et "alice@exemple.fr" est membre actif de la tribu "martin" uniquement
     Et "david@exemple.fr" est membre actif de la tribu "durand" uniquement
-    Et la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
 
   @ENF-02
   Scénario: La bibliothèque de plats est propre à la tribu
-    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand je consulte la bibliothèque de plats
     Alors je ne vois pas le plat "Tartiflette"
     Et une recherche sur "tartiflette" ne renvoie aucun résultat
 
   @ENF-02
   Scénario: Le référentiel d'ingrédients est propre à la tribu
-    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand je saisis "reb" comme ingrédient d'un plat
     Alors "reblochon" ne fait pas partie des propositions
 
   @ENF-02
   Scénario: Un même nom d'ingrédient est indépendant d'une tribu à l'autre
-    Étant donné l'ingrédient "reblochon" de la tribu "durand" a l'unité par défaut "g"
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et l'ingrédient "reblochon" de la tribu "durand" a l'unité par défaut "g"
     Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand j'ajoute 1 pièce de "reblochon" au plat "Raclette"
     Alors l'ingrédient "reblochon" est créé dans la tribu "martin" avec l'unité par défaut "pièce"
@@ -33,7 +35,8 @@ Fonctionnalité: Compartimentage des données entre tribus
 
   @ENF-02
   Plan du scénario: Accès croisé refusé
-    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand je tente de <action> une donnée de la tribu "durand" en utilisant son identifiant
     Alors la requête est refusée
     Et la réponse est la même que pour un identifiant qui n'existe pas
@@ -47,7 +50,8 @@ Fonctionnalité: Compartimentage des données entre tribus
 
   @ENF-02
   Plan du scénario: Toutes les données sont compartimentées
-    Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Quand je consulte <donnée>
     Alors je ne vois aucun élément de la tribu "durand"
 

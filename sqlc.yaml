@@ -17,3 +17,10 @@ sql:
       go:
         package: tribedb
         out: internal/storage/tribedb
+  - engine: sqlite
+    schema: internal/storage/migrations/ratelimit
+    queries: internal/storage/queries/ratelimit
+    gen:
+      go:
+        package: ratelimitdb
+        out: internal/storage/ratelimitdb

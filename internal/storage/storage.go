@@ -1,5 +1,5 @@
 // Package storage opens and migrates the SQLite databases: the registry of the tribes,
-// and one database per tribe (ADR 0003).
+// one database per tribe (ADR 0003) and the rate limit database (ADR 0021).
 package storage
 
 import (
@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	registryFile = "registry.db"
-	tribesDir    = "tribes"
-	tribeFileExt = ".db"
+	registryFile  = "registry.db"
+	rateLimitFile = "ratelimit.db"
+	tribesDir     = "tribes"
+	tribeFileExt  = ".db"
 
 	busyTimeoutMillis = 5000
 )
@@ -39,8 +40,9 @@ var embedded embed.FS
 
 // Migrations holds one series of migration files per kind of database.
 type Migrations struct {
-	Registry fs.FS
-	Tribe    fs.FS
+	Registry  fs.FS
+	Tribe     fs.FS
+	RateLimit fs.FS
 }
 
 // EmbeddedMigrations returns the migrations built into the binary.
@@ -53,7 +55,11 @@ func EmbeddedMigrations() (Migrations, error) {
 	if err != nil {
 		return Migrations{}, fmt.Errorf("storage: tribe migrations: %w", err)
 	}
-	return Migrations{Registry: registry, Tribe: tribe}, nil
+	rateLimit, err := fs.Sub(embedded, "migrations/ratelimit")
+	if err != nil {
+		return Migrations{}, fmt.Errorf("storage: rate limit migrations: %w", err)
+	}
+	return Migrations{Registry: registry, Tribe: tribe, RateLimit: rateLimit}, nil
 }
 
 // Store gives access to the registry and to the database of each tribe.
@@ -63,13 +69,14 @@ type Store struct {
 	migrations Migrations
 	registry   *sql.DB
 	queries    *registrydb.Queries
+	rateLimit  *sql.DB
 
 	mu     sync.Mutex
 	tribes map[string]*sql.DB // by file name
 }
 
 // Open opens the databases of the data directory, creating it if needed, and migrates
-// the registry and then every tribe database (ADR 0003, point 6).
+// the registry, the rate limit database and then every tribe database (ADR 0003, point 6).
 func Open(ctx context.Context, dir string, migrations Migrations) (*Store, error) {
 	if err := os.MkdirAll(filepath.Join(dir, tribesDir), 0o700); err != nil {
 		return nil, fmt.Errorf("storage: create data directory: %w", err)
@@ -83,6 +90,16 @@ func Open(ctx context.Context, dir string, migrations Migrations) (*Store, error
 		_ = s.Close()
 		return nil, fmt.Errorf("storage: registry: %w", err)
 	}
+	rateLimit, err := openDB(ctx, filepath.Join(dir, rateLimitFile), true)
+	if err != nil {
+		_ = s.Close()
+		return nil, fmt.Errorf("storage: rate limit database: %w", err)
+	}
+	s.rateLimit = rateLimit
+	if err := migrate(ctx, rateLimit, migrations.RateLimit); err != nil {
+		_ = s.Close()
+		return nil, fmt.Errorf("storage: rate limit database: %w", err)
+	}
 	if err := s.openAllTribes(ctx); err != nil {
 		_ = s.Close()
 		return nil, err
@@ -93,6 +110,20 @@ func Open(ctx context.Context, dir string, migrations Migrations) (*Store, error
 // Registry returns the registry database.
 func (s *Store) Registry() *sql.DB {
 	return s.registry
+}
+
+// RateLimit returns the rate limit database (ADR 0021).
+func (s *Store) RateLimit() *sql.DB {
+	return s.rateLimit
+}
+
+// Tribes returns the slugs of the tribes of the registry, in order.
+func (s *Store) Tribes(ctx context.Context) ([]string, error) {
+	slugs, err := s.queries.TribeSlugs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("storage: list tribes: %w", err)
+	}
+	return slugs, nil
 }
 
 // Tribe returns the database of the tribe with this slug, or ErrUnknownTribe.
@@ -156,6 +187,9 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	errs := []error{s.registry.Close()}
+	if s.rateLimit != nil {
+		errs = append(errs, s.rateLimit.Close())
+	}
 	for file, db := range s.tribes {
 		errs = append(errs, db.Close())
 		delete(s.tribes, file)

@@ -79,7 +79,7 @@ func initializeScenario(sc *godog.ScenarioContext, base string, results map[stri
 		if err != nil {
 			return ctx, err
 		}
-		w.dir = dir
+		w.reset(dir)
 		return ctx, nil
 	})
 	sc.After(func(ctx context.Context, s *godog.Scenario, err error) (context.Context, error) {

@@ -28,6 +28,9 @@ type AuditEntry struct {
 	MemberEmail Email
 	// AuthorID is the member who made the operation, 0 for the admin command.
 	AuthorID int64
+	// SessionID and DetectedDevice are set for an operation on a session.
+	SessionID      int64
+	DetectedDevice string
 }
 
 // ByAdminCommand reports whether the operation was made by the admin command.
@@ -131,12 +134,16 @@ func (s *Store) Member(ctx context.Context, email Email) (Member, error) {
 	if err != nil {
 		return Member{}, fmt.Errorf("member: %w", err)
 	}
+	return memberFromRow(row), nil
+}
+
+func memberFromRow(row tribedb.Member) Member {
 	return Member{
 		ID:          row.ID,
 		Email:       Email(row.Email.String),
 		DisplayName: row.DisplayName.String,
 		Status:      Status(row.Status),
-	}, nil
+	}
 }
 
 // AuditLog returns the audit log, oldest entry first.
@@ -152,10 +159,12 @@ func (s *Store) AuditLog(ctx context.Context) ([]AuditEntry, error) {
 			return nil, fmt.Errorf("audit log: entry %d: %w", row.ID, err)
 		}
 		entries = append(entries, AuditEntry{
-			At:          at,
-			Operation:   AuditOperation(row.Operation),
-			MemberEmail: Email(row.MemberEmail.String),
-			AuthorID:    row.AuthorID.Int64,
+			At:             at,
+			Operation:      AuditOperation(row.Operation),
+			MemberEmail:    Email(row.MemberEmail.String),
+			AuthorID:       row.AuthorID.Int64,
+			SessionID:      row.SessionID.Int64,
+			DetectedDevice: row.DetectedDevice.String,
 		})
 	}
 	return entries, nil

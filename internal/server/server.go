@@ -13,6 +13,8 @@ import (
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
 const (
@@ -31,6 +33,9 @@ type Config struct {
 	// Dev re-reads the index template on every request, so that the front end can be rebuilt while the server runs.
 	Dev    bool
 	Logger *slog.Logger
+	// Tribes and Login serve the API; without them, only the front end is served.
+	Tribes Tribes
+	Login  *tribe.Login
 }
 
 type server struct {
@@ -65,6 +70,9 @@ func New(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /tribes/{tribe}", redirectToTribeRoot)
 	mux.HandleFunc("GET /tribes/{tribe}/{rest...}", s.serveApp)
+	if cfg.Tribes != nil && cfg.Login != nil {
+		(&api{server: s, tribes: cfg.Tribes, login: cfg.Login}).routes(mux)
+	}
 	if cfg.Site != nil {
 		mux.Handle("GET /", http.FileServerFS(cfg.Site))
 	}

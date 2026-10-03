@@ -22,7 +22,12 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | nom (d'une session) | session label | nom donné par le membre, EF-04 |
 | appareil détecté | detected device | EF-04 |
 | essai (de code) | attempt | 3 par code, ENF-01 |
+| demande de code | code request | ENF-01 |
 | limitation des demandes | rate limit | ENF-01 |
+| base de limitation | rate limit database | ADR 0021 |
+| code fantôme | decoy code | tribu inexistante ou adresse non membre active : jamais envoyé, ne peut pas réussir, ADR 0021 |
+| app installée / onglet | installed app / tab | mode de la session, EF-04 |
+| effacement automatique | purge | PT-07 |
 | anonymisé | anonymized | EF-11 |
 | journal d'audit | audit log | |
 | opération d'audit | audit operation | valeurs ci-dessous |

@@ -72,3 +72,30 @@ func (q *Queries) TribeFiles(ctx context.Context) ([]string, error) {
 	}
 	return items, nil
 }
+
+const tribeSlugs = `-- name: TribeSlugs :many
+SELECT slug FROM tribes ORDER BY slug
+`
+
+func (q *Queries) TribeSlugs(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, tribeSlugs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		items = append(items, slug)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

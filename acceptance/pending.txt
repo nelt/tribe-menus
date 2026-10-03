@@ -15,24 +15,8 @@ administration.feature: Une adresse anonymisée peut être ajoutée de nouveau
 administration.feature: Une confirmation erronée annule la suppression
 authentification.feature: Consultation hors ligne
 authentification.feature: Consultation hors ligne de la bibliothèque de plats
-authentification.feature: Il reste des essais après un code erroné
-authentification.feature: L'expiration est glissante
 authentification.feature: La déconnexion efface les données de la tribu sur l'appareil
-authentification.feature: La limite par adresse ne révèle pas si l'adresse est membre
-authentification.feature: Le cookie de session n'est pas lisible par le code de la page
-authentification.feature: Le nombre de demandes de code par adresse est limité
-authentification.feature: Le nombre de demandes est aussi limité par IP et par tribu
-authentification.feature: Le nombre de tentatives est limité
 authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
-authentification.feature: Même réponse pour une adresse inconnue
-authentification.feature: Se connecter avec un code reçu par e-mail
-authentification.feature: Un code erroné est refusé
-authentification.feature: Un code expiré est refusé
-authentification.feature: Un code ne sert qu'une fois
-authentification.feature: Un membre d'une autre tribu ne reçoit pas de code
-authentification.feature: Un membre révoqué ne reçoit pas de code
-authentification.feature: Une nouvelle demande remplace le code précédent
-authentification.feature: Une session inutilisée expire
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 bibliotheque-plats.feature: Créer un nouvel ingrédient pendant la saisie d'un plat
 bibliotheque-plats.feature: Créer un plat avec ses ingrédients
@@ -49,17 +33,12 @@ bibliotheque-plats.feature: Un nouveau plat reçoit la teinte la moins utilisée
 bibliotheque-plats.feature: Un plat ne peut pas être supprimé de la bibliothèque
 bibliotheque-plats.feature: Un plat peut n'avoir aucun ingrédient
 compartimentage-tribus.feature: Accès croisé refusé
-compartimentage-tribus.feature: L'écran de connexion ne révèle pas la tribu
 compartimentage-tribus.feature: La bibliothèque de plats est propre à la tribu
-compartimentage-tribus.feature: La session d'une tribu ne donne pas accès à une autre tribu
 compartimentage-tribus.feature: La tribu d'une requête est celle de la session
-compartimentage-tribus.feature: Le journal d'audit est propre à la tribu
-compartimentage-tribus.feature: Le nom de la tribu apparaît une fois connecté
 compartimentage-tribus.feature: Le référentiel d'ingrédients est propre à la tribu
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
 compartimentage-tribus.feature: Un même nom d'ingrédient est indépendant d'une tribu à l'autre
-compartimentage-tribus.feature: Une même adresse a des sessions distinctes dans chaque tribu
 liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Ajouter un article à la main
 liste-courses.feature: Changer de liste principale

@@ -17,8 +17,10 @@ import (
 	"time"
 
 	"github.com/nelt/tribe-menus/internal/admin"
+	"github.com/nelt/tribe-menus/internal/mail"
 	"github.com/nelt/tribe-menus/internal/server"
 	"github.com/nelt/tribe-menus/internal/storage"
+	"github.com/nelt/tribe-menus/internal/tribe"
 	"github.com/nelt/tribe-menus/web"
 )
 
@@ -31,6 +33,9 @@ var (
 const (
 	readHeaderTimeout = 10 * time.Second
 	shutdownTimeout   = 10 * time.Second
+	// purgeInterval: login codes, sessions and rate limit rows are purged at startup, then
+	// at this interval (PT-07).
+	purgeInterval = 10 * time.Minute
 )
 
 const usage = `Usage: tribe-menus <command> [flags]
@@ -155,14 +160,54 @@ func migrateAndServe(ctx context.Context, data, addr string, dev bool, root stri
 		}
 	}()
 	logger.Info("databases migrated", "data", data)
-	return listenAndServe(ctx, addr, dev, root, logger)
+
+	// Sending email over SMTP comes with the deployment (ADR 0014): until then, the codes
+	// are written to the logs in development, and not sent otherwise.
+	var mailer mail.Mailer = mail.Unconfigured{}
+	if dev {
+		mailer = mail.LogMailer{Logger: logger}
+	}
+	outbox := mail.NewOutbox(mailer, tribe.LoginCodeValidity, logger)
+	// Deferred after store.Close, hence run before: the sendings in progress end first (D11).
+	defer outbox.Wait()
+	login := &tribe.Login{RateLimit: tribe.NewRateLimitDB(store.RateLimit()), Mailer: outbox, Now: time.Now}
+
+	purgeCtx, stopPurge := context.WithCancel(ctx)
+	purged := make(chan struct{})
+	go func() {
+		defer close(purged)
+		purgePeriodically(purgeCtx, login, store, logger)
+	}()
+	defer func() {
+		stopPurge()
+		<-purged
+	}()
+
+	return listenAndServe(ctx, addr, dev, root, logger, store, login)
 }
 
-func listenAndServe(ctx context.Context, addr string, dev bool, root string, logger *slog.Logger) error {
+// purgePeriodically purges at once, then at each interval until ctx is done.
+func purgePeriodically(ctx context.Context, login *tribe.Login, dbs tribe.Databases, logger *slog.Logger) {
+	ticker := time.NewTicker(purgeInterval)
+	defer ticker.Stop()
+	for {
+		if err := login.Purge(ctx, dbs); err != nil && ctx.Err() == nil {
+			logger.Error("purge failed", "error", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func listenAndServe(ctx context.Context, addr string, dev bool, root string, logger *slog.Logger, store *storage.Store, login *tribe.Login) error {
 	cfg, err := serverConfig(dev, root, logger)
 	if err != nil {
 		return err
 	}
+	cfg.Tribes, cfg.Login = store, login
 	handler, err := server.New(cfg)
 	if err != nil {
 		return err

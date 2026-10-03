@@ -1,7 +1,7 @@
 # Plan : socle de données et connexion (première tranche verticale)
 
 - **Date** : 2026-10-03
-- **Statut** : en cours (lot A fusionné ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
+- **Statut** : en cours (lot A fusionné, lot B en revue ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
 
 ## Objectif
 
@@ -80,18 +80,18 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ### Lot B : connexion et session, côté API (`feature/enf-01-connexion-et-session`)
 
-- [ ] **12. ADR 0021 : base de limitation des demandes** (D3). Troisième sorte de base, à côté du registre et des bases de tribu ; précise les ADR 0001 et 0003. Il consigne aussi la forme des empreintes (D10) et la source de vérité du nom de la tribu (D9). Terme « code fantôme » ajouté au glossaire avant d'apparaître dans le code.
-- [ ] **13. Schémas.**
+- [x] **12. ADR 0021 : base de limitation des demandes** (D3). Troisième sorte de base, à côté du registre et des bases de tribu ; précise les ADR 0001 et 0003. Il consigne aussi la forme des empreintes (D10) et la source de vérité du nom de la tribu (D9). Terme « code fantôme » ajouté au glossaire avant d'apparaître dans le code.
+- [x] **13. Schémas.**
   - Base de la tribu : `login_codes` (membre, empreinte du code, échéance, essais restants ; un seul code valable par membre) et `sessions` (empreinte SHA-256 du jeton, membre, dates d'ouverture, de dernière activité et d'expiration, appareil détecté, app installée ou onglet, nom de session).
   - Base de limitation (`migrations/ratelimit/`, migrée au démarrage comme les autres) : demandes de code horodatées et codes fantômes (échéance, essais restants). Adresses et IP stockées en empreinte SHA-256, jamais en clair ; l'empreinte d'une adresse est calculée avec l'identifiant d'URL de la tribu, pour qu'une même adresse ne soit pas reconnaissable d'une tribu à l'autre (D10). Troisième paquet généré dans `sqlc.yaml`.
-- [ ] **14. Logique pure de `internal/tribe`**, testée en tableaux de cas :
+- [x] **14. Logique pure de `internal/tribe`**, testée en tableaux de cas :
   - code à 6 chiffres tiré avec `crypto/rand` ; validité de 10 minutes ; 3 essais, invalidé au troisième échec ; usage unique ; une nouvelle demande invalide le précédent ; comparaison en temps constant ;
   - jeton de session opaque de 32 octets aléatoires ; expiration glissante de 90 jours ;
   - limitation des demandes : 3 par quart d'heure pour une adresse dans une tribu, 10 par heure pour une adresse IP, 30 par heure pour une tribu (ENF-01) ; la décision se calcule à partir des demandes passées, fournies par une interface de stockage ;
   - appareil détecté (D12) : type, système et navigateur déduits de l'en-tête `User-Agent` par une fonction pure, sans dépendance ; « app installée » ou « onglet » vient du client à l'ouverture de la session. Les User-Agent Client Hints attendent EF-04 ;
   - révocation d'un membre, dans l'adaptateur de la tribu, en avance sur EF-02 : le scénario « Un membre révoqué ne reçoit pas de code » en a besoin comme état de départ (même cas que l'ajout de membre du lot A).
-- [ ] **15. `Mailer`** (ADR 0014, point 4) : interface, implémentation qui écrit dans les logs pour le développement, implémentation de test qui enregistre les envois. Message en texte brut, en français, avec le code, sa durée de validité et « Melting Tribe » ; ni lien ni nom de tribu. L'envoi est fait hors de la requête, pour que le temps de réponse ne distingue pas une adresse membre d'une autre. Le serveur sait attendre la fin des envois en cours (D11) : à l'arrêt, avant de fermer les bases, et dans les tests, avant de vérifier qu'un e-mail est parti ou qu'aucun ne l'est.
-- [ ] **16. API sous `/tribes/<identifiant>/api/`.**
+- [x] **15. `Mailer`** (ADR 0014, point 4) : interface, implémentation qui écrit dans les logs pour le développement, implémentation de test qui enregistre les envois. Message en texte brut, en français, avec le code, sa durée de validité et « Melting Tribe » ; ni lien ni nom de tribu. L'envoi est fait hors de la requête, pour que le temps de réponse ne distingue pas une adresse membre d'une autre. Le serveur sait attendre la fin des envois en cours (D11) : à l'arrêt, avant de fermer les bases, et dans les tests, avant de vérifier qu'un e-mail est parti ou qu'aucun ne l'est.
+- [x] **16. API sous `/tribes/<identifiant>/api/`.**
   - `POST login-codes` (adresse) : toujours la même réponse, ou « trop de demandes » (429).
   - `POST sessions` (adresse, code, app installée ou non) : ouvre la session, pose le cookie, renvoie le nom de la tribu et le membre ; sinon code incorrect avec essais restants, ou code à redemander (expiré, essais épuisés).
   - `GET session` : nom de la tribu et membre, ou 401. `DELETE session` : déconnexion.
@@ -100,11 +100,11 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - Intergiciels : résolution de la tribu puis de la session dans la base de cette tribu (ADR 0003, point 3) ; vérification de l'en-tête `Origin` sur les méthodes autres que GET (ADR 0001) ; `Cache-Control: no-store` sur l'API.
   - Tribu inexistante et adresse non membre : un code fantôme, jamais envoyé et qui ne peut pas réussir, avec la même échéance et les mêmes 3 essais ; réponses identiques à celles d'un membre actif.
   - Audit : « ouverture de session » et « déconnexion ».
-- [ ] **17. Effacement automatique** (PT-07), au démarrage puis périodiquement : codes expirés ou utilisés et sessions expirées dans les bases de tribu ; dans la base de limitation, toute ligne sortie de sa fenêtre (une heure au plus).
-- [ ] **18. Scénarios ENF-01 (16) et ENF-02 (5)** : définitions d'étapes godog ; lignes retirées de `pending.txt`. Les états de départ (membre révoqué, session vieille de 80 jours, demandes de code déjà faites) sont posés par le code du domaine et l'horloge de test, les actions et les vérifications passent par l'API.
+- [x] **17. Effacement automatique** (PT-07), au démarrage puis périodiquement : codes expirés ou utilisés et sessions expirées dans les bases de tribu ; dans la base de limitation, toute ligne sortie de sa fenêtre (une heure au plus).
+- [x] **18. Scénarios ENF-01 (16) et ENF-02 (5)** : définitions d'étapes godog ; lignes retirées de `pending.txt`. Les états de départ (membre révoqué, session vieille de 80 jours, demandes de code déjà faites) sont posés par le code du domaine et l'horloge de test, les actions et les vérifications passent par l'API.
   - **`Contexte` de `compartimentage-tribus.feature`** (D8) : l'étape « la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon" » quitte le `Contexte` et passe en première étape des cinq scénarios qui s'en servent (bibliothèque de plats, référentiel d'ingrédients, même nom d'ingrédient, accès croisé refusé, toutes les données compartimentées). Sans cela, les 5 scénarios du lot dépendent des plats, qui n'existent pas encore.
   - **Harnais** (D13) : les étapes appellent le handler du serveur directement (`httptest.NewRequest` et `httptest.NewRecorder`), sans connexion réseau. Le test fixe ainsi l'adresse IP du client (`RemoteAddr`), ce qu'exige le scénario des limites par IP et par tribu, et reporte lui-même le cookie de session d'une requête à l'autre, un « appareil » du scénario étant un porte-cookie distinct.
-- [ ] **19. Documentation du lot.**
+- [x] **19. Documentation du lot.**
   - Conservation d'une heure des empreintes d'adresse et d'IP : à reporter dans `gestion-membres-et-sessions.md` (conservation, PT-07) et dans la page Confidentialité (`docs/design/README.md`, maquette `Confidentialite`).
   - `CHANGELOG.md`, cases cochées.
 
@@ -134,9 +134,19 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - **Étape 10** : la tribu `demo` est initialisée avec Alice, qui ajoute ensuite Bruno, Chloé et David ; d'où une méthode d'ajout de membre dans l'adaptateur de la tribu, en avance sur EF-01.
 - **Revue de la PR #26, points à reprendre plus tard** :
   - **Fichier de base orphelin** : si le processus meurt entre la création de la base et son inscription au registre (`CreateTribe`), le fichier reste dans `tribes/` avec l'adresse du premier membre, et rien ne le nettoie. À traiter avec EF-10 (suppression d'une tribu), par exemple par un balayage au démarrage des fichiers absents du registre.
-  - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion. *Tranché : D9.*
+  - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion. *Tranché : D9, consigné dans l'ADR 0021.*
   - **Une seule connexion par base, lectures comprises** (étape 1) : une requête lancée sur la base pendant qu'une transaction ou un curseur est ouvert attend indéfiniment. Règle pour le lot B : dans une transaction, tout passe par elle ; les curseurs sont fermés avant toute autre requête.
 - **Relecture du lot B après la fusion du lot A** (2026-10-03) : le code du lot A correspond à ce que le lot B suppose (colonnes `session_id` et `detected_device` du journal d'audit, sans clé étrangère, donc compatibles avec l'effacement des sessions ; opérations d'audit du glossaire ; format des dates). Deux points de l'étape 18 ne pouvaient pas passer tels qu'écrits (D8, D13) et quatre restaient implicites (D9 à D12). Le serveur ne reçoit pas encore le stockage, l'horloge ni le `Mailer` : câblage attendu de l'étape 16.
+
+- **Lot B, choix faits à l'implémentation** (2026-10-03) :
+  - **Contrat de l'API**, en JSON. `POST login-codes` : 202 sans corps, 400 `invalid_email`, 429 `too_many_requests`. `POST sessions` : 201 avec `tribe.name` et `member` (`email`, `displayName`), 400 `incorrect_code` avec `attemptsLeft` (0 : code invalidé), 400 `new_code_needed` (code expiré, épuisé, déjà utilisé, remplacé ou jamais demandé, sans distinction). `GET session` : 200 comme ci-dessus, 401 `no_session`. `DELETE session` : 204, 401 sans session. Corps illisible : 400 `bad_request` ; chemin inconnu sous `api/` : 404 `not_found`. Un cookie qui ne correspond à aucune session est effacé.
+  - **Vérification de l'origine** : `http.CrossOriginProtection` de la bibliothèque standard (Go 1.25), qui lit `Sec-Fetch-Site` puis `Origin` ; une requête sans ces en-têtes (client hors navigateur) passe, ce qui ne crée pas de risque CSRF.
+  - **Seules les demandes acceptées comptent** dans la limitation : une demande refusée n'est pas enregistrée, ce qui borne la taille de la base de limitation.
+  - **Hors `-dev`**, le serveur n'envoie aucun code (`Mailer` qui refuse, sans écrire le code dans les logs) jusqu'à l'envoi SMTP du déploiement.
+  - **Effacement automatique** au démarrage puis toutes les 10 minutes ; une session est aussi supprimée à la déconnexion.
+  - **Harnais** : une même formulation sert d'état de départ et de vérification (« … est membre actif de la tribu … ») ; l'étape lit le type de l'étape Gherkin (`Context` ou `Outcome`) pour savoir si elle pose l'état ou le vérifie. Les appareils sont des `cookiejar` sur une origine `https`, pour que le cookie `Secure` circule. « L'application affiche le même message que pour une adresse membre » rejoue la demande pour un membre actif depuis un autre appareil, et l'e-mail de cette référence n'est pas compté par « aucun e-mail n'est envoyé ».
+  - **Révocation d'un membre** (en avance sur EF-03) : elle ferme ses sessions (entrées « fermeture de session ») et invalide son code.
+  - **D12 reste à confirmer** par le développeur : l'appareil détecté est calculé et tracé comme prévu.
 
 ## Critères de validation
 
@@ -177,6 +187,6 @@ Le 2026-10-03, à la relecture du lot B après la fusion du lot A.
 
 ## Questions ouvertes
 
-- **Cookie `Secure` sur `http://localhost` avec WebKit** : Chromium et Firefox l'acceptent ; à vérifier pour WebKit dès l'étape 16, avant d'écrire les écrans. Si WebKit le refuse, il faudra soit du TLS local pour les tests Playwright, soit limiter le parcours de connexion à Chromium et couvrir WebKit en recette.
+- **Cookie `Secure` sur `http://localhost` avec WebKit** : Chromium et Firefox l'acceptent ; à vérifier pour WebKit dès l'étape 16, avant d'écrire les écrans. Si WebKit le refuse, il faudra soit du TLS local pour les tests Playwright, soit limiter le parcours de connexion à Chromium et couvrir WebKit en recette. *Vérifié le 2026-10-03 avec Playwright 1.63 : WebKit refuse le cookie, sur `localhost` comme sur `127.0.0.1`, en navigation comme par `fetch` ; Chromium l'accepte. À trancher avant le lot C (étape 24) ; même question pour `make dev` ouvert dans Safari.*
 - **Écriture de la dernière activité à chaque requête** : négligeable à cette échelle (ADR 0001) ; à espacer seulement si la mesure le justifie.
 - **Sessions cloud de Claude** : aujourd'hui elles n'atteignent pas `proxy.golang.org`, donc ni `make tools` ni `make ci`. Elles conviennent à la documentation ; le code de ce plan se fait dans le Dev Container, sauf à ouvrir cet accès dans les réglages réseau de l'environnement cloud.

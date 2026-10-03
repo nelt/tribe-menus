@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -295,6 +297,23 @@ func TestStore(t *testing.T) {
 		}
 	})
 
+	t.Run("tribes", func(t *testing.T) {
+		slugs, err := s.Tribes(ctx)
+		if err != nil || !slices.Equal(slugs, []string{"durand", "leroy", "martin"}) {
+			t.Errorf("Tribes = %q, %v", slugs, err)
+		}
+	})
+
+	t.Run("rate limit database is migrated", func(t *testing.T) {
+		var version int
+		if err := s.RateLimit().QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version == 0 {
+			t.Errorf("rate limit database version = %d, %v", version, err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, rateLimitFile)); err != nil {
+			t.Error(err)
+		}
+	})
+
 	t.Run("reopened store", func(t *testing.T) {
 		reopened := openStore(t, dir)
 		if got := tribeName(t, reopened, "martin"); got != "Les Martin" {
@@ -315,12 +334,19 @@ func TestOpenFailsOnBrokenTribe(t *testing.T) {
 	}
 
 	broken := testMigrations(t)
-	broken.Tribe = fstest.MapFS{
-		"0001_tribe.sql": sqlFile("SELECT 1;"),
-		"0002_bad.sql":   sqlFile("INSERT INTO missing VALUES (1);"),
+	applied, err := fs.Glob(broken.Tribe, "*.sql")
+	if err != nil {
+		t.Fatal(err)
 	}
-	_, err := Open(ctx, dir, broken)
-	if err == nil || !strings.Contains(err.Error(), "0002_bad.sql") {
+	tribe := fstest.MapFS{}
+	for _, name := range applied {
+		tribe[name] = sqlFile("SELECT 1;")
+	}
+	bad := fmt.Sprintf("%04d_bad.sql", len(applied)+1)
+	tribe[bad] = sqlFile("INSERT INTO missing VALUES (1);")
+	broken.Tribe = tribe
+	_, err = Open(ctx, dir, broken)
+	if err == nil || !strings.Contains(err.Error(), bad) {
 		t.Fatalf("Open error = %v, want the failed migration", err)
 	}
 }

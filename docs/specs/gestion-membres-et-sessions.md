@@ -16,7 +16,7 @@ Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07
 - **Tous les membres ont les mêmes droits** en v1 (voir « Hors périmètre »).
 - **Aucune notification par e-mail** n'est envoyée lors des opérations sur les membres. Le seul e-mail envoyé par l'application est le code de connexion (ENF-01).
 - Toutes les opérations sur les membres et les sessions sont tracées dans un **journal d'audit** en base (EF-07).
-- **Conservation** (PT-07, 2026-09-28) : les codes de connexion expirés ou utilisés et les sessions expirées ou révoquées sont effacés automatiquement ; les entrées du journal d'audit sont conservées 12 mois, puis effacées automatiquement ; les données d'une tribu sont conservées tant qu'elle existe.
+- **Conservation** (PT-07, 2026-09-28) : les codes de connexion expirés ou utilisés et les sessions expirées ou révoquées sont effacés automatiquement ; les entrées du journal d'audit sont conservées 12 mois, puis effacées automatiquement ; les données d'une tribu sont conservées tant qu'elle existe. Les demandes de code et les codes fantômes, qui ne portent que des empreintes d'adresse e-mail et d'IP, sont effacés au plus tard une heure après la demande (ENF-01, ADR 0021, 2026-10-03).
 
 ## EF-01. Ajouter un membre
 
