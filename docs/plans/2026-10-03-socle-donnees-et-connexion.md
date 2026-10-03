@@ -46,7 +46,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ### Lot A : stockage, harnais d'acceptation et initialisation d'une tribu (`feature/stockage-et-ef-08`)
 
-- [ ] **1. `internal/storage` : ouverture et migrations.**
+- [x] **1. `internal/storage` : ouverture et migrations.**
   - Dépendance `modernc.org/sqlite`. À chaque connexion : WAL, `foreign_keys = ON`, `busy_timeout` ; tables `STRICT` (ADR 0003, point 5).
   - Migrations en fichiers SQL embarqués, une série par sorte de base (`migrations/registry/`, `migrations/tribe/`), version suivie par `PRAGMA user_version`, chaque fichier appliqué dans une transaction.
   - Registre : identifiant d'URL, nom, fichier de la base. Le nom du fichier est un identifiant aléatoire, jamais dérivé de l'identifiant d'URL.
