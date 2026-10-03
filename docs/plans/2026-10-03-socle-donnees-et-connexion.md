@@ -84,7 +84,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - [x] **13. Schémas.**
   - Base de la tribu : `login_codes` (membre, empreinte du code, échéance, essais restants ; un seul code valable par membre) et `sessions` (empreinte SHA-256 du jeton, membre, dates d'ouverture, de dernière activité et d'expiration, appareil détecté, app installée ou onglet, nom de session).
   - Base de limitation (`migrations/ratelimit/`, migrée au démarrage comme les autres) : demandes de code horodatées et codes fantômes (échéance, essais restants). Adresses et IP stockées en empreinte SHA-256, jamais en clair ; l'empreinte d'une adresse est calculée avec l'identifiant d'URL de la tribu, pour qu'une même adresse ne soit pas reconnaissable d'une tribu à l'autre (D10). Troisième paquet généré dans `sqlc.yaml`.
-- [ ] **14. Logique pure de `internal/tribe`**, testée en tableaux de cas :
+- [x] **14. Logique pure de `internal/tribe`**, testée en tableaux de cas :
   - code à 6 chiffres tiré avec `crypto/rand` ; validité de 10 minutes ; 3 essais, invalidé au troisième échec ; usage unique ; une nouvelle demande invalide le précédent ; comparaison en temps constant ;
   - jeton de session opaque de 32 octets aléatoires ; expiration glissante de 90 jours ;
   - limitation des demandes : 3 par quart d'heure pour une adresse dans une tribu, 10 par heure pour une adresse IP, 30 par heure pour une tribu (ENF-01) ; la décision se calcule à partir des demandes passées, fournies par une interface de stockage ;
