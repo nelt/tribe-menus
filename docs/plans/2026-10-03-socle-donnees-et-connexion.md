@@ -1,7 +1,7 @@
 # Plan : socle de données et connexion (première tranche verticale)
 
 - **Date** : 2026-10-03
-- **Statut** : prêt (décisions D1 à D7 prises le 2026-10-03)
+- **Statut** : en cours (lot A fusionné ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
 
 ## Objectif
 
@@ -32,7 +32,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - **Rien n'est révélé avant connexion** (ENF-02, ADR 0006, point 9) : c'est la contrainte qui structure le lot B. Pour une tribu qui n'existe pas, une adresse inconnue, révoquée ou d'une autre tribu, les réponses de l'API (corps, code HTTP, essais restants, limitation) sont identiques à celles d'un membre actif.
 - **Rien d'essentiel dans la mémoire du processus** (D3) : compteurs de limitation et codes fantômes vivent dans une base SQLite dédiée, derrière une interface, pour garder ouverte la porte du multi-instance.
 - **Horloge injectée** : validité de 10 minutes, fenêtres de limitation et expiration à 90 jours se testent avec une horloge fournie par le test, jamais avec `time.Sleep`.
-- **Mode sans proxy** (ADR 0006, point 8) : seul mode de ce plan. L'adresse IP du client est celle de la connexion TCP.
+- **Mode sans proxy** (ADR 0006, point 8) : seul mode de ce plan. L'adresse IP du client est celle de la connexion TCP, lue en un seul endroit du serveur, pour que la lecture de `X-Forwarded-For` s'y ajoute plus tard.
 
 ### Scénarios couverts
 
@@ -80,25 +80,30 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ### Lot B : connexion et session, côté API (`feature/enf-01-connexion-et-session`)
 
-- [ ] **12. ADR 0021 : base de limitation des demandes** (D3). Troisième sorte de base, à côté du registre et des bases de tribu ; précise les ADR 0001 et 0003. Terme « code fantôme » ajouté au glossaire avant d'apparaître dans le code.
+- [ ] **12. ADR 0021 : base de limitation des demandes** (D3). Troisième sorte de base, à côté du registre et des bases de tribu ; précise les ADR 0001 et 0003. Il consigne aussi la forme des empreintes (D10) et la source de vérité du nom de la tribu (D9). Terme « code fantôme » ajouté au glossaire avant d'apparaître dans le code.
 - [ ] **13. Schémas.**
   - Base de la tribu : `login_codes` (membre, empreinte du code, échéance, essais restants ; un seul code valable par membre) et `sessions` (empreinte SHA-256 du jeton, membre, dates d'ouverture, de dernière activité et d'expiration, appareil détecté, app installée ou onglet, nom de session).
-  - Base de limitation (`migrations/ratelimit/`, migrée au démarrage comme les autres) : demandes de code horodatées et codes fantômes (échéance, essais restants). Adresses et IP stockées en empreinte SHA-256, jamais en clair.
+  - Base de limitation (`migrations/ratelimit/`, migrée au démarrage comme les autres) : demandes de code horodatées et codes fantômes (échéance, essais restants). Adresses et IP stockées en empreinte SHA-256, jamais en clair ; l'empreinte d'une adresse est calculée avec l'identifiant d'URL de la tribu, pour qu'une même adresse ne soit pas reconnaissable d'une tribu à l'autre (D10). Troisième paquet généré dans `sqlc.yaml`.
 - [ ] **14. Logique pure de `internal/tribe`**, testée en tableaux de cas :
   - code à 6 chiffres tiré avec `crypto/rand` ; validité de 10 minutes ; 3 essais, invalidé au troisième échec ; usage unique ; une nouvelle demande invalide le précédent ; comparaison en temps constant ;
   - jeton de session opaque de 32 octets aléatoires ; expiration glissante de 90 jours ;
-  - limitation des demandes : 3 par quart d'heure pour une adresse dans une tribu, 10 par heure pour une adresse IP, 30 par heure pour une tribu (ENF-01) ; la décision se calcule à partir des demandes passées, fournies par une interface de stockage.
-- [ ] **15. `Mailer`** (ADR 0014, point 4) : interface, implémentation qui écrit dans les logs pour le développement, implémentation de test qui enregistre les envois. Message en texte brut, en français, avec le code, sa durée de validité et « Melting Tribe » ; ni lien ni nom de tribu. L'envoi est fait hors de la requête, pour que le temps de réponse ne distingue pas une adresse membre d'une autre.
+  - limitation des demandes : 3 par quart d'heure pour une adresse dans une tribu, 10 par heure pour une adresse IP, 30 par heure pour une tribu (ENF-01) ; la décision se calcule à partir des demandes passées, fournies par une interface de stockage ;
+  - appareil détecté (D12) : type, système et navigateur déduits de l'en-tête `User-Agent` par une fonction pure, sans dépendance ; « app installée » ou « onglet » vient du client à l'ouverture de la session. Les User-Agent Client Hints attendent EF-04 ;
+  - révocation d'un membre, dans l'adaptateur de la tribu, en avance sur EF-02 : le scénario « Un membre révoqué ne reçoit pas de code » en a besoin comme état de départ (même cas que l'ajout de membre du lot A).
+- [ ] **15. `Mailer`** (ADR 0014, point 4) : interface, implémentation qui écrit dans les logs pour le développement, implémentation de test qui enregistre les envois. Message en texte brut, en français, avec le code, sa durée de validité et « Melting Tribe » ; ni lien ni nom de tribu. L'envoi est fait hors de la requête, pour que le temps de réponse ne distingue pas une adresse membre d'une autre. Le serveur sait attendre la fin des envois en cours (D11) : à l'arrêt, avant de fermer les bases, et dans les tests, avant de vérifier qu'un e-mail est parti ou qu'aucun ne l'est.
 - [ ] **16. API sous `/tribes/<identifiant>/api/`.**
   - `POST login-codes` (adresse) : toujours la même réponse, ou « trop de demandes » (429).
   - `POST sessions` (adresse, code, app installée ou non) : ouvre la session, pose le cookie, renvoie le nom de la tribu et le membre ; sinon code incorrect avec essais restants, ou code à redemander (expiré, essais épuisés).
   - `GET session` : nom de la tribu et membre, ou 401. `DELETE session` : déconnexion.
+  - Le nom de la tribu renvoyé est lu dans la base de la tribu, jamais dans le registre (D9).
   - Cookie `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/tribes/<identifiant>/`, 90 jours, renouvelé avec l'expiration glissante.
   - Intergiciels : résolution de la tribu puis de la session dans la base de cette tribu (ADR 0003, point 3) ; vérification de l'en-tête `Origin` sur les méthodes autres que GET (ADR 0001) ; `Cache-Control: no-store` sur l'API.
   - Tribu inexistante et adresse non membre : un code fantôme, jamais envoyé et qui ne peut pas réussir, avec la même échéance et les mêmes 3 essais ; réponses identiques à celles d'un membre actif.
   - Audit : « ouverture de session » et « déconnexion ».
 - [ ] **17. Effacement automatique** (PT-07), au démarrage puis périodiquement : codes expirés ou utilisés et sessions expirées dans les bases de tribu ; dans la base de limitation, toute ligne sortie de sa fenêtre (une heure au plus).
-- [ ] **18. Scénarios ENF-01 (16) et ENF-02 (5)** : définitions d'étapes godog ; lignes retirées de `pending.txt`. Les états de départ (membre révoqué, session vieille de 80 jours) sont posés par le code du domaine et l'horloge de test, les actions et les vérifications passent par l'API.
+- [ ] **18. Scénarios ENF-01 (16) et ENF-02 (5)** : définitions d'étapes godog ; lignes retirées de `pending.txt`. Les états de départ (membre révoqué, session vieille de 80 jours, demandes de code déjà faites) sont posés par le code du domaine et l'horloge de test, les actions et les vérifications passent par l'API.
+  - **`Contexte` de `compartimentage-tribus.feature`** (D8) : l'étape « la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon" » quitte le `Contexte` et passe en première étape des cinq scénarios qui s'en servent (bibliothèque de plats, référentiel d'ingrédients, même nom d'ingrédient, accès croisé refusé, toutes les données compartimentées). Sans cela, les 5 scénarios du lot dépendent des plats, qui n'existent pas encore.
+  - **Harnais** (D13) : les étapes appellent le handler du serveur directement (`httptest.NewRequest` et `httptest.NewRecorder`), sans connexion réseau. Le test fixe ainsi l'adresse IP du client (`RemoteAddr`), ce qu'exige le scénario des limites par IP et par tribu, et reporte lui-même le cookie de session d'une requête à l'autre, un « appareil » du scénario étant un porte-cookie distinct.
 - [ ] **19. Documentation du lot.**
   - Conservation d'une heure des empreintes d'adresse et d'IP : à reporter dans `gestion-membres-et-sessions.md` (conservation, PT-07) et dans la page Confidentialité (`docs/design/README.md`, maquette `Confidentialite`).
   - `CHANGELOG.md`, cases cochées.
@@ -129,8 +134,9 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - **Étape 10** : la tribu `demo` est initialisée avec Alice, qui ajoute ensuite Bruno, Chloé et David ; d'où une méthode d'ajout de membre dans l'adaptateur de la tribu, en avance sur EF-01.
 - **Revue de la PR #26, points à reprendre plus tard** :
   - **Fichier de base orphelin** : si le processus meurt entre la création de la base et son inscription au registre (`CreateTribe`), le fichier reste dans `tribes/` avec l'adresse du premier membre, et rien ne le nettoie. À traiter avec EF-10 (suppression d'une tribu), par exemple par un balayage au démarrage des fichiers absents du registre.
-  - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion.
+  - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion. *Tranché : D9.*
   - **Une seule connexion par base, lectures comprises** (étape 1) : une requête lancée sur la base pendant qu'une transaction ou un curseur est ouvert attend indéfiniment. Règle pour le lot B : dans une transaction, tout passe par elle ; les curseurs sont fermés avant toute autre requête.
+- **Relecture du lot B après la fusion du lot A** (2026-10-03) : le code du lot A correspond à ce que le lot B suppose (colonnes `session_id` et `detected_device` du journal d'audit, sans clé étrangère, donc compatibles avec l'effacement des sessions ; opérations d'audit du glossaire ; format des dates). Deux points de l'étape 18 ne pouvaient pas passer tels qu'écrits (D8, D13) et quatre restaient implicites (D9 à D12). Le serveur ne reçoit pas encore le stockage, l'horloge ni le `Mailer` : câblage attendu de l'étape 16.
 
 ## Critères de validation
 
@@ -159,6 +165,15 @@ Le 2026-10-03, avec le développeur.
 - **D5. Lien entre Playwright et les `.feature`** (ADR 0005, « à préciser ») : non tranché ici, à décider avec la première story dont un scénario ne se prouve que dans le navigateur (C7 ou C5). Écart assumé : le parcours de connexion, cité par l'ADR 0005 parmi les candidats au tag `@ui`, est couvert par Playwright sans être relié à un scénario Gherkin.
 - **D6. `Mailer` de développement lisible par Playwright** : option `-mail-file`, refusée sans `-dev`. Écartés : une route de test dans le serveur, un code fixe en développement.
 - **D7. Polices** : `woff2` variables des dépôts officiels, versionnés dans `web/src/fonts/`, sans paquet npm.
+
+Le 2026-10-03, à la relecture du lot B après la fusion du lot A.
+
+- **D8. `Contexte` de `compartimentage-tribus.feature`** : l'étape qui crée un plat et un ingrédient dans la tribu "durand" est déplacée dans les scénarios qui s'en servent (étape 18). Écartés : une définition d'étape vide en attendant les plats (un test qui ne prouve rien), le report des 5 scénarios ENF-02 à la story des plats (le compartimentage des sessions ne serait pas prouvé avec la connexion).
+- **D9. Nom de la tribu : la base de la tribu fait foi.** Une fois la session vérifiée, tout se lit dans la base de la tribu (ADR 0003, point 3). Le nom du registre ne sert qu'aux commandes d'administration, qui écriront les deux le jour où une story renommera une tribu.
+- **D10. Empreinte d'une adresse calculée avec l'identifiant d'URL de la tribu** dans la base de limitation. Avec l'adresse seule, une personne membre de deux tribus y aurait la même empreinte, alors que rien ne doit relier ses appartenances (ENF-02). L'empreinte d'une IP reste commune : la limite par IP vaut pour toute l'instance.
+- **D11. Fin des envois d'e-mail attendue** à l'arrêt du serveur et dans les tests. Écarté : un envoi dans la requête pendant les tests seulement (le test n'exercerait pas le code de production).
+- **D12. Appareil détecté dès le lot B**, par une fonction pure sur l'en-tête `User-Agent`, parce que l'entrée d'audit « ouverture de session » le porte (EF-07). Écarté : une colonne laissée vide jusqu'à EF-04, qui laisserait des entrées d'audit incomplètes. À confirmer par le développeur.
+- **D13. Harnais godog sans connexion réseau** : appel direct du handler. Un serveur `httptest.NewServer` ne voit que `127.0.0.1`, et le client HTTP de Go ne renvoie pas un cookie `Secure` sur `http://` (vérifié le 2026-10-03). Précise l'étape 4 et l'ADR 0005, point 2 : le serveur tourne toujours dans le processus de test. Écartés : `X-Forwarded-For` (hors périmètre, ADR 0006 point 7), un serveur de test en TLS (ne règle pas l'adresse IP).
 
 ## Questions ouvertes
 

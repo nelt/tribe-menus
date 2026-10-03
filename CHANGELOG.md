@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan de la première tranche verticale, lot B précisé après la fusion du lot A : `Contexte` de `compartimentage-tribus.feature`, harnais godog sans connexion réseau, source du nom de la tribu, empreintes par tribu, fin des envois d'e-mail, appareil détecté (D8 à D13).
 - Protocole de revue de PR entre sessions Claude (`docs/revue-de-pr.md`) : un commentaire de revue structuré, corrections par l'auteur, clôture par le relecteur ; `gh pr comment` autorisé sans confirmation (ADR 0020).
 - Stockage et initialisation d'une tribu : bases SQLite (registre et une base par tribu, migrations au démarrage, `/healthz`), code sqlc, sous-commandes `admin init` (EF-08) et `admin seed`, harnais godog avec liste des scénarios en attente ; cibles `make generate`, `acceptance` et `seed` ; format de l'identifiant d'URL dans les specs.
 - Plan de la première tranche verticale : stockage SQLite par tribu, harnais godog, initialisation d'une tribu (EF-08), connexion et session (ENF-01, ENF-02), écrans de connexion ; trois PR à venir.
