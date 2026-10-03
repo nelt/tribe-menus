@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -61,6 +62,7 @@ func New(cfg Config) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /tribes/{tribe}", redirectToTribeRoot)
 	mux.HandleFunc("GET /tribes/{tribe}/{rest...}", s.serveApp)
 	if cfg.Site != nil {
@@ -92,6 +94,14 @@ func withCommonHeaders(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// healthz answers once the server is up, which happens only after every database
+// has been migrated (ADR 0016, point 1.6). Caddy does not forward it.
+func healthz(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = io.WriteString(w, "ok\n")
 }
 
 func tribeBase(tribe string) string {

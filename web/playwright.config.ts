@@ -15,7 +15,8 @@ export default defineConfig({
     { name: "webkit", use: { ...devices["iPhone 15"] } },
   ],
   webServer: {
-    command: `npm run build && go run ../cmd/tribe-menus serve -dev -root .. -addr localhost:${port}`,
+    // Databases in a fresh temporary directory, apart from those of make dev.
+    command: `npm run build && go run ../cmd/tribe-menus serve -dev -root .. -data "$(mktemp -d)" -addr localhost:${port}`,
     url: `http://localhost:${port}/`,
     reuseExistingServer: !process.env["CI"],
     timeout: 120_000,

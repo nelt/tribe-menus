@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Stockage et initialisation d'une tribu : bases SQLite (registre et une base par tribu, migrations au démarrage, `/healthz`), code sqlc, sous-commandes `admin init` (EF-08) et `admin seed`, harnais godog avec liste des scénarios en attente ; cibles `make generate`, `acceptance` et `seed` ; format de l'identifiant d'URL dans les specs.
 - Plan de la première tranche verticale : stockage SQLite par tribu, harnais godog, initialisation d'une tribu (EF-08), connexion et session (ENF-01, ENF-02), écrans de connexion ; trois PR à venir.
 - Autorisations de Claude Code : la suppression d'une branche distante n'est plus refusée mais soumise à confirmation, comme la fermeture d'une PR (ADR 0020).
 - Claude pousse les branches `feature/…` et ouvre les PR, depuis le Dev Container (jeton en écriture sans *Workflows*, Git authentifié par `gh`) comme depuis une session cloud ; Remote Control connecté par défaut dans le Dev Container, où seules les mises à jour automatiques de Claude Code restent coupées ; avertissement hebdomadaire quand une version plus récente est publiée ; dépôt public, ruleset `main` actif (ADR 0020).

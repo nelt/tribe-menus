@@ -166,6 +166,20 @@ func TestFrontEndNotBuilt(t *testing.T) {
 	})
 }
 
+func TestHealthz(t *testing.T) {
+	for _, dev := range []bool{false, true} {
+		t.Run(modeName(dev), func(t *testing.T) {
+			rec := get(newHandler(t, Config{Web: webFS(), Dev: dev}), "/healthz")
+			if rec.Code != http.StatusOK || rec.Body.String() != "ok\n" {
+				t.Errorf("status = %d, body = %q", rec.Code, rec.Body.String())
+			}
+			if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+				t.Errorf("Cache-Control = %q, want no-store", got)
+			}
+		})
+	}
+}
+
 func TestNoFrontEnd(t *testing.T) {
 	if _, err := New(Config{}); err == nil {
 		t.Fatal("New without front end: want an error")
