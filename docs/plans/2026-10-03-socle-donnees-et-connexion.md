@@ -63,7 +63,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - Scénarios `@manuel` et `@ui` exclus (ADR 0005).
   - `acceptance/pending.txt` (D2) : un scénario attendu comme non implémenté par ligne (fichier et titre). L'exécution échoue si un scénario hors liste échoue ou a une étape non définie, et si un scénario de la liste passe. La comparaison est une fonction pure, testée en tableau de cas.
   - Cible `make acceptance`, ajoutée à `make ci` entre `test` et `e2e`.
-- [ ] **5. Format de l'identifiant d'URL dans les specs** (D4).
+- [x] **5. Format de l'identifiant d'URL dans les specs** (D4).
   - `gestion-membres-et-sessions.md` (EF-08) : 3 à 40 caractères ; lettres minuscules sans accent, chiffres et tirets ; une lettre en premier, pas de tiret final ni de tirets consécutifs ; une saisie non conforme est refusée, pas convertie ; aucun mot réservé (ADR 0006) ; non modifiable en V1.
   - `administration.feature` : un `Plan du scénario` d'identifiants refusés (`Martin`, `les_durand`, `é-nous`, `42`, `-martin`, `ab`), selon `conventions-gherkin.md`.
 - [ ] **6. Schéma de la tribu, première migration** : `members` (adresse normalisée unique, nom d'affichage, statut, dates et auteurs d'ajout et de révocation), `audit_log` (EF-07 : date, opération, membre concerné, auteur, session et appareil détecté le cas échéant), nom de la tribu.
