@@ -25,6 +25,8 @@ La CI vérifie chaque commit d'une PR (`internal/tools/dcocheck`), sauf les comm
 - Ajouter une ligne à `CHANGELOG.md`, sous « Non publié » (ADR 0012).
 - Toute décision d'architecture significative fait l'objet d'un ADR dans `docs/adr/`.
 
+Les PR écrites avec Claude sont relues selon `docs/revue-de-pr.md`.
+
 L'environnement de développement de référence est le Dev Container décrit dans `docs/poste-de-developpement.md`.
 
 ## Signaler une vulnérabilité
