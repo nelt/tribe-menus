@@ -61,9 +61,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		defer stop()
 		return serve(ctx, args[1:], stderr)
 	case "admin":
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
-		return runAdmin(ctx, args[1:], stdin, stdout, stderr)
+		// Signals are not caught: reading an answer does not watch a context, and the default
+		// SIGINT stops the process. Nothing is written before the last answer.
+		return runAdmin(context.Background(), args[1:], stdin, stdout, stderr)
 	case "help", "-h", "-help", "--help":
 		fmt.Fprint(stdout, usage)
 		return 0
