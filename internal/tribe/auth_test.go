@@ -145,9 +145,11 @@ func TestRateLimits(t *testing.T) {
 			n:     EmailRequestLimit, slug: "martin", email: "inconnu@exemple.fr", ip: "192.0.2.2",
 		},
 		{
-			name:  "by IP",
-			prior: func(i int) (string, string, string) { return "dupont", string(rune('a'+i)) + "@exemple.fr", "192.0.2.1" },
-			n:     IPRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.1",
+			name: "by IP",
+			prior: func(i int) (string, string, string) {
+				return "dupont", string(rune('a'+i)) + "@exemple.fr", "192.0.2.1"
+			},
+			n: IPRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.1",
 		},
 		{
 			name: "by tribe",

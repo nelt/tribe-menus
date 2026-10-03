@@ -22,8 +22,8 @@ import (
 const (
 	registryFile  = "registry.db"
 	rateLimitFile = "ratelimit.db"
-	tribesDir    = "tribes"
-	tribeFileExt = ".db"
+	tribesDir     = "tribes"
+	tribeFileExt  = ".db"
 
 	busyTimeoutMillis = 5000
 )
