@@ -6,10 +6,10 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev lint test e2e vuln build ci
+.PHONY: help tools dev seed generate lint test acceptance e2e vuln build ci
 
 help: ## List the targets
-	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-8s %s\n", $$1, $$2}'
+	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
 
 tools: ## Install dependencies, Playwright browsers and their system libraries (idempotent)
 	go mod download
@@ -19,10 +19,17 @@ dev: ## Rebuild the front end on change and serve on http://localhost:8080 (Ctrl
 	go build -o bin/tribe-menus-dev ./cmd/tribe-menus
 	npm --prefix web run watch & pid=$$!; trap 'kill $$pid 2>/dev/null' EXIT INT TERM; bin/tribe-menus-dev serve -dev
 
-lint: ## gofmt, go vet, staticcheck, tsc, webcheck and actionlint
+seed: ## Create the demonstration tribe in data/ (http://localhost:8080/tribes/demo/)
+	go run ./cmd/tribe-menus admin seed
+
+generate: ## Generate the data access code from the SQL queries (sqlc)
+	go tool sqlc generate
+
+lint: ## gofmt, go vet, staticcheck, generated code up to date, tsc, webcheck and actionlint
 	@unformatted=$$(gofmt -l .); test -z "$$unformatted" || { echo "gofmt needed:"; echo "$$unformatted"; exit 1; }
 	go vet ./...
 	go tool staticcheck ./...
+	go tool sqlc diff
 	cd web && npm run typecheck
 	go run ./internal/tools/webcheck
 	go tool actionlint -shellcheck= -pyflakes=
@@ -30,6 +37,9 @@ lint: ## gofmt, go vet, staticcheck, tsc, webcheck and actionlint
 test: ## Go and TypeScript unit tests
 	go test ./...
 	cd web && npm test
+
+acceptance: ## Gherkin scenarios against the API (godog), compared with acceptance/pending.txt
+	go test ./acceptance -count=1 -acceptance
 
 e2e: ## Playwright scenarios
 	cd web && npm run e2e
@@ -42,4 +52,4 @@ build: ## Front end, then static binary in bin/ (VERSION, COMMIT)
 	cd web && npm run build
 	CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)" -o bin/tribe-menus ./cmd/tribe-menus
 
-ci: lint test e2e vuln build ## All checks required by the CI, in order
+ci: lint test acceptance e2e vuln build ## All checks required by the CI, in order

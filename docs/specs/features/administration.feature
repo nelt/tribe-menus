@@ -30,6 +30,21 @@ Fonctionnalité: Administration des tribus
     Alors le script refuse cet identifiant et m'en demande un autre
 
   @EF-08
+  Plan du scénario: L'identifiant d'URL doit respecter le format
+    Quand je lance le script d'initialisation
+    Et je réponds "<identifiant>" comme identifiant d'URL
+    Alors le script refuse cet identifiant et m'en demande un autre
+
+    Exemples:
+      | identifiant | raison                               |
+      | Martin      | majuscule                            |
+      | les_durand  | tiret bas                            |
+      | é-nous      | lettre accentuée                     |
+      | 42          | ne commence pas par une lettre       |
+      | -martin     | commence par un tiret                |
+      | ab          | moins de 3 caractères                |
+
+  @EF-08
   Scénario: Plusieurs tribus peuvent être créées
     Étant donné la tribu d'identifiant "martin" existe
     Quand j'initialise la tribu "Les Durand" d'identifiant "durand"

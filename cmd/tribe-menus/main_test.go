@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	data := t.TempDir()
 	cases := []struct {
 		name       string
 		args       []string
@@ -27,12 +29,12 @@ func TestRun(t *testing.T) {
 		{name: "no command", args: nil, wantCode: 2, wantStderr: "Usage: tribe-menus"},
 		{name: "unknown command", args: []string{"frobnicate"}, wantCode: 2, wantStderr: `unknown command "frobnicate"`},
 		{name: "unknown serve flag", args: []string{"serve", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
-		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
+		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-data", data, "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			code := run(tc.args, &stdout, &stderr)
+			code := run(tc.args, strings.NewReader(""), &stdout, &stderr)
 			if code != tc.wantCode {
 				t.Errorf("code = %d, want %d (stderr: %s)", code, tc.wantCode, stderr.String())
 			}
@@ -55,12 +57,16 @@ func TestServeDevAndShutdown(t *testing.T) {
 	defer cancel()
 	logs := &syncBuffer{}
 	done := make(chan int, 1)
-	go func() { done <- serve(ctx, []string{"-dev", "-root", root, "-addr", "localhost:0"}, logs) }()
+	data := filepath.Join(root, "data")
+	go func() {
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0"}, logs)
+	}()
 
 	base := waitForAddress(t, logs)
 	for path, want := range map[string]string{
 		"/":             "<title>Melting Tribe</title>",
 		"/tribes/demo/": `<base href="/tribes/demo/">`,
+		"/healthz":      "ok",
 	} {
 		resp, err := http.Get(base + path)
 		if err != nil {
@@ -73,6 +79,10 @@ func TestServeDevAndShutdown(t *testing.T) {
 		}
 	}
 
+	if _, err := os.Stat(filepath.Join(data, "registry.db")); err != nil {
+		t.Errorf("registry not created: %v", err)
+	}
+
 	cancel()
 	select {
 	case code := <-done:
@@ -81,6 +91,80 @@ func TestServeDevAndShutdown(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("server did not stop")
+	}
+}
+
+func TestAdmin(t *testing.T) {
+	data := t.TempDir()
+	cases := []struct {
+		name       string
+		args       []string
+		stdin      string
+		wantCode   int
+		wantStdout string
+		wantStderr string
+	}{
+		{name: "no subcommand", args: []string{"admin"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init|seed"},
+		{name: "unknown subcommand", args: []string{"admin", "frobnicate"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init|seed"},
+		{name: "unknown flag", args: []string{"admin", "init", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
+		{
+			name:       "init",
+			args:       []string{"admin", "init", "-data", data, "-base-url", "https://meltingtribe.example"},
+			stdin:      "Les Martin\nmartin\nalice@exemple.fr\n\n",
+			wantStdout: "https://meltingtribe.example/tribes/martin/",
+		},
+		{
+			name:       "init with default base URL",
+			args:       []string{"admin", "init", "-data", data},
+			stdin:      "Les Durand\ndurand\nalice@exemple.fr\n\n",
+			wantStdout: "http://localhost:8080/tribes/durand/",
+		},
+		{name: "seed", args: []string{"admin", "seed", "-data", data}, wantStdout: "http://localhost:8080/tribes/demo/"},
+		{name: "seed again", args: []string{"admin", "seed", "-data", data}, wantStdout: "existe déjà"},
+		{name: "input closed", args: []string{"admin", "init", "-data", data}, stdin: "Les Leroy\n", wantCode: 1, wantStderr: "tribe-menus admin init: input closed"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code := run(tc.args, strings.NewReader(tc.stdin), &stdout, &stderr)
+			if code != tc.wantCode {
+				t.Errorf("code = %d, want %d (stderr: %s)", code, tc.wantCode, stderr.String())
+			}
+			if !strings.Contains(stdout.String(), tc.wantStdout) {
+				t.Errorf("stdout = %q, want it to contain %q", stdout.String(), tc.wantStdout)
+			}
+			if !strings.Contains(stderr.String(), tc.wantStderr) {
+				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tc.wantStderr)
+			}
+		})
+	}
+}
+
+// A database newer than the binary cannot be migrated: the server must not start.
+func TestServeRefusesUnmigratedDatabases(t *testing.T) {
+	data := t.TempDir()
+	db, err := sql.Open("sqlite", filepath.Join(data, "registry.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec("PRAGMA user_version = 999"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	var stderr bytes.Buffer
+	code := run([]string{"serve", "-dev", "-data", data, "-addr", "localhost:0"}, strings.NewReader(""), io.Discard, &stderr)
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	logs := stderr.String()
+	if !strings.Contains(logs, "newer than this binary") {
+		t.Errorf("logs = %q, want the migration error", logs)
+	}
+	if strings.Contains(logs, "server started") {
+		t.Errorf("server started despite the failed migration: %q", logs)
 	}
 }
 

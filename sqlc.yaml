@@ -1,0 +1,19 @@
+# sqlc configuration (ADR 0002): one generated package per kind of database.
+# The schema is read from the migrations; run make generate after changing them
+# or the queries.
+version: "2"
+sql:
+  - engine: sqlite
+    schema: internal/storage/migrations/registry
+    queries: internal/storage/queries/registry
+    gen:
+      go:
+        package: registrydb
+        out: internal/storage/registrydb
+  - engine: sqlite
+    schema: internal/storage/migrations/tribe
+    queries: internal/storage/queries/tribe
+    gen:
+      go:
+        package: tribedb
+        out: internal/storage/tribedb

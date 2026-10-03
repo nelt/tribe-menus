@@ -46,37 +46,37 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ### Lot A : stockage, harnais d'acceptation et initialisation d'une tribu (`feature/stockage-et-ef-08`)
 
-- [ ] **1. `internal/storage` : ouverture et migrations.**
+- [x] **1. `internal/storage` : ouverture et migrations.**
   - Dépendance `modernc.org/sqlite`. À chaque connexion : WAL, `foreign_keys = ON`, `busy_timeout` ; tables `STRICT` (ADR 0003, point 5).
   - Migrations en fichiers SQL embarqués, une série par sorte de base (`migrations/registry/`, `migrations/tribe/`), version suivie par `PRAGMA user_version`, chaque fichier appliqué dans une transaction.
   - Registre : identifiant d'URL, nom, fichier de la base. Le nom du fichier est un identifiant aléatoire, jamais dérivé de l'identifiant d'URL.
   - Un type qui migre le registre puis toutes les bases au démarrage, ouvre la base d'une tribu par son identifiant d'URL et fait passer ses écritures par une seule connexion.
   - Tests en tableaux sur `t.TempDir()` : migration rejouée sans effet, migration en échec qui remonte l'erreur et laisse la version inchangée, identifiant inconnu.
-- [ ] **2. sqlc.**
+- [x] **2. sqlc.**
   - `sqlc.yaml` avec un paquet généré par sorte de base ; code généré versionné.
   - Cible `make generate` ; `go tool sqlc diff` dans `make lint`, pour refuser un code généré périmé.
-- [ ] **3. Serveur : répertoire de données et `/healthz`.**
+- [x] **3. Serveur : répertoire de données et `/healthz`.**
   - Option `-data` de `serve` (par défaut `data/`, déjà ignoré par Git) ; migrations appliquées avant d'écouter ; échec de migration : le serveur ne démarre pas (PT-12).
   - `GET /healthz` à la racine, qui ne répond qu'une fois les bases migrées (ADR 0016, point 1.6).
-- [ ] **4. `acceptance/` : harnais godog.**
+- [x] **4. `acceptance/` : harnais godog.**
   - Dépendance `github.com/cucumber/godog`. Lecture directe de `docs/specs/features/` (`# language: fr`), serveur dans le processus (`httptest`), bases dans un dossier temporaire par scénario, horloge et `Mailer` de test.
   - Scénarios `@manuel` et `@ui` exclus (ADR 0005).
   - `acceptance/pending.txt` (D2) : un scénario attendu comme non implémenté par ligne (fichier et titre). L'exécution échoue si un scénario hors liste échoue ou a une étape non définie, et si un scénario de la liste passe. La comparaison est une fonction pure, testée en tableau de cas.
   - Cible `make acceptance`, ajoutée à `make ci` entre `test` et `e2e`.
-- [ ] **5. Format de l'identifiant d'URL dans les specs** (D4).
+- [x] **5. Format de l'identifiant d'URL dans les specs** (D4).
   - `gestion-membres-et-sessions.md` (EF-08) : 3 à 40 caractères ; lettres minuscules sans accent, chiffres et tirets ; une lettre en premier, pas de tiret final ni de tirets consécutifs ; une saisie non conforme est refusée, pas convertie ; aucun mot réservé (ADR 0006) ; non modifiable en V1.
   - `administration.feature` : un `Plan du scénario` d'identifiants refusés (`Martin`, `les_durand`, `é-nous`, `42`, `-martin`, `ab`), selon `conventions-gherkin.md`.
-- [ ] **6. Schéma de la tribu, première migration** : `members` (adresse normalisée unique, nom d'affichage, statut, dates et auteurs d'ajout et de révocation), `audit_log` (EF-07 : date, opération, membre concerné, auteur, session et appareil détecté le cas échéant), nom de la tribu.
-- [ ] **7. `internal/tribe` : membres et audit.**
+- [x] **6. Schéma de la tribu, première migration** : `members` (adresse normalisée unique, nom d'affichage, statut, dates et auteurs d'ajout et de révocation), `audit_log` (EF-07 : date, opération, membre concerné, auteur, session et appareil détecté le cas échéant), nom de la tribu.
+- [x] **7. `internal/tribe` : membres et audit.**
   - Logique pure : normalisation de l'adresse (sans espaces, en minuscules), validation de l'identifiant d'URL, opérations d'audit nommées selon le glossaire.
   - Accès aux données par sqlc, en adaptateur mince.
-- [ ] **8. Sous-commande `tribe-menus admin init`** (EF-08).
+- [x] **8. Sous-commande `tribe-menus admin init`** (EF-08).
   - Questions sur l'entrée standard : nom, identifiant d'URL (redemandé s'il est invalide ou pris), adresse du premier membre, nom d'affichage facultatif.
   - Crée la base, la migre, inscrit la tribu au registre, ajoute le premier membre, trace « initialisation de la tribu » avec « script d'administration » comme auteur, affiche l'URL de la tribu (option `-base-url`, par défaut `http://localhost:8080`). Aucun e-mail.
   - En cas d'échec en cours de route, ni fichier ni entrée de registre ne restent.
-- [ ] **9. Scénarios EF-08** (4, plus celui de l'étape 5) : définitions d'étapes godog qui pilotent la sous-commande avec une entrée et une sortie simulées ; lignes retirées de `pending.txt`.
-- [ ] **10. `make seed`** : sous-commande `admin seed`, qui crée la tribu de démonstration `demo` (« Les Démo ») avec les membres des conventions Gherkin (Alice, Bruno, Chloé, David) ; sans effet si elle existe déjà. Elle s'enrichira avec les plats et le planning.
-- [ ] **11. Documentation du lot** : `CLAUDE.md` (cibles `generate`, `acceptance` et `seed` disponibles), `CHANGELOG.md`, cases cochées.
+- [x] **9. Scénarios EF-08** (4, plus celui de l'étape 5) : définitions d'étapes godog qui pilotent la sous-commande avec une entrée et une sortie simulées ; lignes retirées de `pending.txt`.
+- [x] **10. `make seed`** : sous-commande `admin seed`, qui crée la tribu de démonstration `demo` (« Les Démo ») avec les membres des conventions Gherkin (Alice, Bruno, Chloé, David) ; sans effet si elle existe déjà. Elle s'enrichira avec les plats et le planning.
+- [x] **11. Documentation du lot** : `CLAUDE.md` (cibles `generate`, `acceptance` et `seed` disponibles), `CHANGELOG.md`, cases cochées.
 
 ### Lot B : connexion et session, côté API (`feature/enf-01-connexion-et-session`)
 
@@ -122,7 +122,15 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ## Notes d'exécution
 
-- (à remplir au fil de l'avancement)
+- **Étape 1** : une seule connexion par base, pour les lectures comme pour les écritures, plutôt qu'une connexion d'écriture à côté d'un pool de lecture : plus simple, et suffisant à cette échelle. Une tribu créée par un autre processus (`admin init` pendant que le serveur tourne) est ouverte et migrée à sa première requête.
+- **Étape 4** : le harnais donne à chaque scénario son propre dossier de données. Le serveur `httptest`, l'horloge et le `Mailer` de test arrivent avec le lot B, qui les crée ; aucun scénario du lot A n'en a besoin. Le test `TestAcceptance` ne s'exécute qu'avec l'option `-acceptance` (cible `make acceptance`), pour que `make test` ne le lance pas une seconde fois, sans étiquette de build qui cacherait les étapes à `go vet` et `staticcheck`. `pending.txt` contient au départ les 173 scénarios exécutables (175 moins les 2 `@manuel`).
+- **Étape 6** : `members.email` peut être NULL, pour l'anonymisation (EF-11), sans recréer la table plus tard ; l'auteur « script d'administration » est un auteur NULL.
+- **Étape 9** : les scénarios EF-08 pilotent `admin init` question par question ; les questions que le scénario ne mentionne pas reçoivent une réponse par défaut. L'étape « aucun e-mail n'est envoyé » consulte les envois enregistrés, qu'aucun code n'alimente avant le lot B.
+- **Étape 10** : la tribu `demo` est initialisée avec Alice, qui ajoute ensuite Bruno, Chloé et David ; d'où une méthode d'ajout de membre dans l'adaptateur de la tribu, en avance sur EF-01.
+- **Revue de la PR #26, points à reprendre plus tard** :
+  - **Fichier de base orphelin** : si le processus meurt entre la création de la base et son inscription au registre (`CreateTribe`), le fichier reste dans `tribes/` avec l'adresse du premier membre, et rien ne le nettoie. À traiter avec EF-10 (suppression d'une tribu), par exemple par un balayage au démarrage des fichiers absents du registre.
+  - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion.
+  - **Une seule connexion par base, lectures comprises** (étape 1) : une requête lancée sur la base pendant qu'une transaction ou un curseur est ouvert attend indéfiniment. Règle pour le lot B : dans une transaction, tout passe par elle ; les curseurs sont fermés avant toute autre requête.
 
 ## Critères de validation
 

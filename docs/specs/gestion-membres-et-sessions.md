@@ -73,6 +73,7 @@ Scripts exécutés sur le serveur, hors de l'interface de l'application. Leurs o
 ### EF-08. Initialiser une tribu
 
 - Le script crée une nouvelle tribu et demande de manière interactive son nom et son identifiant d'URL (refusé s'il est déjà pris), puis l'adresse e-mail du premier membre (et, facultativement, son nom d'affichage).
+- **Format de l'identifiant d'URL** (2026-10-03) : 3 à 40 caractères ; lettres minuscules sans accent, chiffres et tirets ; une lettre en premier, pas de tiret final ni de tirets consécutifs. Une saisie non conforme est refusée, pas convertie (`Martin` n'est pas changé en `martin`). Aucun identifiant n'est réservé (ADR 0006). L'identifiant n'est pas modifiable en v1. Il n'a pas à être difficile à deviner : l'écran de connexion identique pour toute URL protège de l'énumération (ADR 0006, point 9).
 - Il peut être lancé autant de fois que nécessaire, chaque exécution créant une tribu distincte.
 - Il affiche l'URL de la tribu à transmettre au premier membre.
 - Le premier membre peut ensuite se connecter avec le code par e-mail et ajouter les autres membres (EF-01).
