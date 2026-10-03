@@ -1,4 +1,5 @@
--- Dates are UTC timestamps in RFC 3339 text, written by the application.
+-- Dates are UTC timestamps written by the application as fixed-width text with
+-- milliseconds (2006-01-02T15:04:05.000Z): they sort as text in chronological order.
 
 -- The tribe itself: a single row.
 CREATE TABLE tribe (

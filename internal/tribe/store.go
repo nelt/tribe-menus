@@ -147,7 +147,7 @@ func (s *Store) AuditLog(ctx context.Context) ([]AuditEntry, error) {
 	}
 	entries := make([]AuditEntry, 0, len(rows))
 	for _, row := range rows {
-		at, err := time.Parse(time.RFC3339Nano, row.At)
+		at, err := parseTime(row.At)
 		if err != nil {
 			return nil, fmt.Errorf("audit log: entry %d: %w", row.ID, err)
 		}
@@ -161,9 +161,20 @@ func (s *Store) AuditLog(ctx context.Context) ([]AuditEntry, error) {
 	return entries, nil
 }
 
-// formatTime is the storage format of dates: UTC, RFC 3339.
+// timeFormat is the storage format of dates: UTC, fixed width, milliseconds always
+// present, so that dates sort as text in chronological order.
+const timeFormat = "2006-01-02T15:04:05.000Z"
+
 func formatTime(t time.Time) string {
-	return t.UTC().Format(time.RFC3339Nano)
+	return t.UTC().Format(timeFormat)
+}
+
+func parseTime(s string) (time.Time, error) {
+	t, err := time.Parse(timeFormat, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("stored date %q: %w", s, err)
+	}
+	return t, nil
 }
 
 // nullString stores an empty string as NULL.
