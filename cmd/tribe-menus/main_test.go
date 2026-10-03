@@ -34,7 +34,7 @@ func TestRun(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			code := run(tc.args, &stdout, &stderr)
+			code := run(tc.args, strings.NewReader(""), &stdout, &stderr)
 			if code != tc.wantCode {
 				t.Errorf("code = %d, want %d (stderr: %s)", code, tc.wantCode, stderr.String())
 			}
@@ -94,6 +94,50 @@ func TestServeDevAndShutdown(t *testing.T) {
 	}
 }
 
+func TestAdmin(t *testing.T) {
+	data := t.TempDir()
+	cases := []struct {
+		name       string
+		args       []string
+		stdin      string
+		wantCode   int
+		wantStdout string
+		wantStderr string
+	}{
+		{name: "no subcommand", args: []string{"admin"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init"},
+		{name: "unknown subcommand", args: []string{"admin", "frobnicate"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init"},
+		{name: "unknown flag", args: []string{"admin", "init", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
+		{
+			name:       "init",
+			args:       []string{"admin", "init", "-data", data, "-base-url", "https://meltingtribe.example"},
+			stdin:      "Les Martin\nmartin\nalice@exemple.fr\n\n",
+			wantStdout: "https://meltingtribe.example/tribes/martin/",
+		},
+		{
+			name:       "init with default base URL",
+			args:       []string{"admin", "init", "-data", data},
+			stdin:      "Les Durand\ndurand\nalice@exemple.fr\n\n",
+			wantStdout: "http://localhost:8080/tribes/durand/",
+		},
+		{name: "input closed", args: []string{"admin", "init", "-data", data}, stdin: "Les Leroy\n", wantCode: 1, wantStderr: "tribe-menus admin init: input closed"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code := run(tc.args, strings.NewReader(tc.stdin), &stdout, &stderr)
+			if code != tc.wantCode {
+				t.Errorf("code = %d, want %d (stderr: %s)", code, tc.wantCode, stderr.String())
+			}
+			if !strings.Contains(stdout.String(), tc.wantStdout) {
+				t.Errorf("stdout = %q, want it to contain %q", stdout.String(), tc.wantStdout)
+			}
+			if !strings.Contains(stderr.String(), tc.wantStderr) {
+				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tc.wantStderr)
+			}
+		})
+	}
+}
+
 // A database newer than the binary cannot be migrated: the server must not start.
 func TestServeRefusesUnmigratedDatabases(t *testing.T) {
 	data := t.TempDir()
@@ -109,7 +153,7 @@ func TestServeRefusesUnmigratedDatabases(t *testing.T) {
 	}
 
 	var stderr bytes.Buffer
-	code := run([]string{"serve", "-dev", "-data", data, "-addr", "localhost:0"}, io.Discard, &stderr)
+	code := run([]string{"serve", "-dev", "-data", data, "-addr", "localhost:0"}, strings.NewReader(""), io.Discard, &stderr)
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}

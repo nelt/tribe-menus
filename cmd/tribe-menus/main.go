@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/nelt/tribe-menus/internal/admin"
 	"github.com/nelt/tribe-menus/internal/server"
 	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/web"
@@ -35,16 +36,17 @@ const (
 const usage = `Usage: tribe-menus <command> [flags]
 
 Commands:
-  serve     run the HTTP server
-  version   print the version
+  serve        run the HTTP server
+  admin init   create a tribe, interactively (EF-08)
+  version      print the version
 `
 
 func main() {
-	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
 // run executes the command line and returns the process exit code.
-func run(args []string, stdout, stderr io.Writer) int {
+func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		fmt.Fprint(stderr, usage)
 		return 2
@@ -57,6 +59,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		return serve(ctx, args[1:], stderr)
+	case "admin":
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		return runAdmin(ctx, args[1:], stdin, stdout, stderr)
 	case "help", "-h", "-help", "--help":
 		fmt.Fprint(stdout, usage)
 		return 0
@@ -64,6 +70,45 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "tribe-menus: unknown command %q\n\n%s", args[0], usage)
 		return 2
 	}
+}
+
+// runAdmin runs a subcommand of the admin command on the databases of the data directory.
+func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) == 0 || args[0] != "init" {
+		fmt.Fprint(stderr, "Usage: tribe-menus admin init [flags]\n")
+		return 2
+	}
+	flags := flag.NewFlagSet("admin "+args[0], flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	data := flags.String("data", "data", "directory of the databases")
+	baseURL := flags.String("base-url", "http://localhost:8080", "address of the instance, to show the URL of the tribe")
+	if err := flags.Parse(args[1:]); err != nil {
+		return 2
+	}
+
+	if err := adminInit(ctx, *data, *baseURL, stdin, stdout); err != nil {
+		fmt.Fprintf(stderr, "tribe-menus admin %s: %v\n", args[0], err)
+		return 1
+	}
+	return 0
+}
+
+func adminInit(ctx context.Context, data, baseURL string, stdin io.Reader, stdout io.Writer) (err error) {
+	migrations, err := storage.EmbeddedMigrations()
+	if err != nil {
+		return err
+	}
+	store, err := storage.Open(ctx, data, migrations)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := store.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close databases: %w", closeErr)
+		}
+	}()
+	cmd := &admin.Command{Store: store, In: stdin, Out: stdout, BaseURL: baseURL, Now: time.Now}
+	return cmd.Init(ctx)
 }
 
 // serve runs the HTTP server until ctx is done.

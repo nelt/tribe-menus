@@ -70,7 +70,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - [x] **7. `internal/tribe` : membres et audit.**
   - Logique pure : normalisation de l'adresse (sans espaces, en minuscules), validation de l'identifiant d'URL, opérations d'audit nommées selon le glossaire.
   - Accès aux données par sqlc, en adaptateur mince.
-- [ ] **8. Sous-commande `tribe-menus admin init`** (EF-08).
+- [x] **8. Sous-commande `tribe-menus admin init`** (EF-08).
   - Questions sur l'entrée standard : nom, identifiant d'URL (redemandé s'il est invalide ou pris), adresse du premier membre, nom d'affichage facultatif.
   - Crée la base, la migre, inscrit la tribu au registre, ajoute le premier membre, trace « initialisation de la tribu » avec « script d'administration » comme auteur, affiche l'URL de la tribu (option `-base-url`, par défaut `http://localhost:8080`). Aucun e-mail.
   - En cas d'échec en cours de route, ni fichier ni entrée de registre ne restent.

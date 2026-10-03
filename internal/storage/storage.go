@@ -112,7 +112,7 @@ func (s *Store) Tribe(ctx context.Context, slug string) (*sql.DB, error) {
 // then records the tribe in the registry. On failure, neither the file nor the registry
 // entry remains.
 func (s *Store) CreateTribe(ctx context.Context, slug, name string, setup func(context.Context, *sql.DB) error) (err error) {
-	taken, err := s.slugTaken(ctx, slug)
+	taken, err := s.SlugTaken(ctx, slug)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,8 @@ func (s *Store) Close() error {
 	return errors.Join(errs...)
 }
 
-func (s *Store) slugTaken(ctx context.Context, slug string) (bool, error) {
+// SlugTaken reports whether a tribe of the registry has this slug.
+func (s *Store) SlugTaken(ctx context.Context, slug string) (bool, error) {
 	n, err := s.queries.CountTribesWithSlug(ctx, slug)
 	if err != nil {
 		return false, fmt.Errorf("storage: look up slug: %w", err)
@@ -175,7 +176,7 @@ func (s *Store) register(ctx context.Context, slug, name, file string) error {
 	err := s.queries.InsertTribe(ctx, registrydb.InsertTribeParams{Slug: slug, Name: name, File: file})
 	if err != nil {
 		// Another process may have taken the slug since slugTaken.
-		if taken, lookupErr := s.slugTaken(ctx, slug); lookupErr == nil && taken {
+		if taken, lookupErr := s.SlugTaken(ctx, slug); lookupErr == nil && taken {
 			return ErrSlugTaken
 		}
 		return fmt.Errorf("storage: register tribe: %w", err)
