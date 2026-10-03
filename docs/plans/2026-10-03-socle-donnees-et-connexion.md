@@ -127,6 +127,10 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - **Étape 6** : `members.email` peut être NULL, pour l'anonymisation (EF-11), sans recréer la table plus tard ; l'auteur « script d'administration » est un auteur NULL.
 - **Étape 9** : les scénarios EF-08 pilotent `admin init` question par question ; les questions que le scénario ne mentionne pas reçoivent une réponse par défaut. L'étape « aucun e-mail n'est envoyé » consulte les envois enregistrés, qu'aucun code n'alimente avant le lot B.
 - **Étape 10** : la tribu `demo` est initialisée avec Alice, qui ajoute ensuite Bruno, Chloé et David ; d'où une méthode d'ajout de membre dans l'adaptateur de la tribu, en avance sur EF-01.
+- **Revue de la PR #26, points à reprendre plus tard** :
+  - **Fichier de base orphelin** : si le processus meurt entre la création de la base et son inscription au registre (`CreateTribe`), le fichier reste dans `tribes/` avec l'adresse du premier membre, et rien ne le nettoie. À traiter avec EF-10 (suppression d'une tribu), par exemple par un balayage au démarrage des fichiers absents du registre.
+  - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion.
+  - **Une seule connexion par base, lectures comprises** (étape 1) : une requête lancée sur la base pendant qu'une transaction ou un curseur est ouvert attend indéfiniment. Règle pour le lot B : dans une transaction, tout passe par elle ; les curseurs sont fermés avant toute autre requête.
 
 ## Critères de validation
 
