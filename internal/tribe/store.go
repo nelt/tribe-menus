@@ -80,6 +80,39 @@ func (s *Store) Initialize(ctx context.Context, name string, first Email, displa
 	return nil
 }
 
+// AddMember adds an active member, on behalf of the member addedBy, and traces it (EF-01).
+func (s *Store) AddMember(ctx context.Context, email Email, displayName string, addedBy int64, now time.Time) (Member, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Member{}, fmt.Errorf("add member: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	q := tribedb.New(tx)
+
+	at := formatTime(now)
+	id, err := q.InsertMember(ctx, tribedb.InsertMemberParams{
+		Email:       nullString(string(email)),
+		DisplayName: nullString(displayName),
+		AddedAt:     at,
+		AddedBy:     sql.NullInt64{Int64: addedBy, Valid: true},
+	})
+	if err != nil {
+		return Member{}, fmt.Errorf("add member: %w", err)
+	}
+	if err := q.InsertAuditEntry(ctx, tribedb.InsertAuditEntryParams{
+		At:        at,
+		Operation: string(MemberAdded),
+		MemberID:  id,
+		AuthorID:  sql.NullInt64{Int64: addedBy, Valid: true},
+	}); err != nil {
+		return Member{}, fmt.Errorf("add member: audit: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return Member{}, fmt.Errorf("add member: %w", err)
+	}
+	return Member{ID: id, Email: email, DisplayName: displayName, Status: Active}, nil
+}
+
 // Name returns the name of the tribe.
 func (s *Store) Name(ctx context.Context) (string, error) {
 	name, err := tribedb.New(s.db).TribeName(ctx)

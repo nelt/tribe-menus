@@ -6,7 +6,7 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev generate lint test acceptance e2e vuln build ci
+.PHONY: help tools dev seed generate lint test acceptance e2e vuln build ci
 
 help: ## List the targets
 	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -18,6 +18,9 @@ tools: ## Install dependencies, Playwright browsers and their system libraries (
 dev: ## Rebuild the front end on change and serve on http://localhost:8080 (Ctrl-C stops both)
 	go build -o bin/tribe-menus-dev ./cmd/tribe-menus
 	npm --prefix web run watch & pid=$$!; trap 'kill $$pid 2>/dev/null' EXIT INT TERM; bin/tribe-menus-dev serve -dev
+
+seed: ## Create the demonstration tribe in data/ (http://localhost:8080/tribes/demo/)
+	go run ./cmd/tribe-menus admin seed
 
 generate: ## Generate the data access code from the SQL queries (sqlc)
 	go tool sqlc generate

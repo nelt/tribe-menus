@@ -75,7 +75,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - Crée la base, la migre, inscrit la tribu au registre, ajoute le premier membre, trace « initialisation de la tribu » avec « script d'administration » comme auteur, affiche l'URL de la tribu (option `-base-url`, par défaut `http://localhost:8080`). Aucun e-mail.
   - En cas d'échec en cours de route, ni fichier ni entrée de registre ne restent.
 - [x] **9. Scénarios EF-08** (4, plus celui de l'étape 5) : définitions d'étapes godog qui pilotent la sous-commande avec une entrée et une sortie simulées ; lignes retirées de `pending.txt`.
-- [ ] **10. `make seed`** : sous-commande `admin seed`, qui crée la tribu de démonstration `demo` (« Les Démo ») avec les membres des conventions Gherkin (Alice, Bruno, Chloé, David) ; sans effet si elle existe déjà. Elle s'enrichira avec les plats et le planning.
+- [x] **10. `make seed`** : sous-commande `admin seed`, qui crée la tribu de démonstration `demo` (« Les Démo ») avec les membres des conventions Gherkin (Alice, Bruno, Chloé, David) ; sans effet si elle existe déjà. Elle s'enrichira avec les plats et le planning.
 - [ ] **11. Documentation du lot** : `CLAUDE.md` (cibles `generate`, `acceptance` et `seed` disponibles), `CHANGELOG.md`, cases cochées.
 
 ### Lot B : connexion et session, côté API (`feature/enf-01-connexion-et-session`)

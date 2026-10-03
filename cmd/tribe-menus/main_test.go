@@ -104,8 +104,8 @@ func TestAdmin(t *testing.T) {
 		wantStdout string
 		wantStderr string
 	}{
-		{name: "no subcommand", args: []string{"admin"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init"},
-		{name: "unknown subcommand", args: []string{"admin", "frobnicate"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init"},
+		{name: "no subcommand", args: []string{"admin"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init|seed"},
+		{name: "unknown subcommand", args: []string{"admin", "frobnicate"}, wantCode: 2, wantStderr: "Usage: tribe-menus admin init|seed"},
 		{name: "unknown flag", args: []string{"admin", "init", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
 		{
 			name:       "init",
@@ -119,6 +119,8 @@ func TestAdmin(t *testing.T) {
 			stdin:      "Les Durand\ndurand\nalice@exemple.fr\n\n",
 			wantStdout: "http://localhost:8080/tribes/durand/",
 		},
+		{name: "seed", args: []string{"admin", "seed", "-data", data}, wantStdout: "http://localhost:8080/tribes/demo/"},
+		{name: "seed again", args: []string{"admin", "seed", "-data", data}, wantStdout: "existe déjà"},
 		{name: "input closed", args: []string{"admin", "init", "-data", data}, stdin: "Les Leroy\n", wantCode: 1, wantStderr: "tribe-menus admin init: input closed"},
 	}
 	for _, tc := range cases {

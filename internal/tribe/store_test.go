@@ -75,3 +75,33 @@ func TestInitializeWithoutDisplayName(t *testing.T) {
 		t.Errorf("Member = %+v, %v; want no display name", member, err)
 	}
 }
+
+func TestAddMember(t *testing.T) {
+	ctx := context.Background()
+	now := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
+	s := newTribe(t, "martin", "Les Martin", "alice@exemple.fr", "Alice", now)
+	alice, err := s.Member(ctx, "alice@exemple.fr")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bruno, err := s.AddMember(ctx, "bruno@exemple.fr", "Bruno", alice.ID, now.Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.Member(ctx, "bruno@exemple.fr"); err != nil || got != bruno {
+		t.Errorf("Member(bruno) = %+v, %v; want %+v", got, err, bruno)
+	}
+	if _, err := s.AddMember(ctx, "bruno@exemple.fr", "", alice.ID, now); err == nil {
+		t.Error("AddMember of an existing address: want an error")
+	}
+
+	entries, err := s.AuditLog(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := AuditEntry{At: now.Add(time.Hour), Operation: MemberAdded, MemberEmail: "bruno@exemple.fr", AuthorID: alice.ID}
+	if len(entries) != 2 || entries[1] != want {
+		t.Errorf("AuditLog = %+v, want %+v last", entries, want)
+	}
+}

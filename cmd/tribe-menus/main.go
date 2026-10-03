@@ -38,6 +38,7 @@ const usage = `Usage: tribe-menus <command> [flags]
 Commands:
   serve        run the HTTP server
   admin init   create a tribe, interactively (EF-08)
+  admin seed   create the demonstration tribe "demo", if missing
   version      print the version
 `
 
@@ -74,8 +75,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 // runAdmin runs a subcommand of the admin command on the databases of the data directory.
 func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	if len(args) == 0 || args[0] != "init" {
-		fmt.Fprint(stderr, "Usage: tribe-menus admin init [flags]\n")
+	if len(args) == 0 || (args[0] != "init" && args[0] != "seed") {
+		fmt.Fprint(stderr, "Usage: tribe-menus admin init|seed [flags]\n")
 		return 2
 	}
 	flags := flag.NewFlagSet("admin "+args[0], flag.ContinueOnError)
@@ -86,14 +87,21 @@ func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stder
 		return 2
 	}
 
-	if err := adminInit(ctx, *data, *baseURL, stdin, stdout); err != nil {
+	err := withAdminCommand(ctx, *data, *baseURL, stdin, stdout, func(cmd *admin.Command) error {
+		if args[0] == "seed" {
+			return cmd.Seed(ctx)
+		}
+		return cmd.Init(ctx)
+	})
+	if err != nil {
 		fmt.Fprintf(stderr, "tribe-menus admin %s: %v\n", args[0], err)
 		return 1
 	}
 	return 0
 }
 
-func adminInit(ctx context.Context, data, baseURL string, stdin io.Reader, stdout io.Writer) (err error) {
+// withAdminCommand runs do with an admin command on the databases of the data directory.
+func withAdminCommand(ctx context.Context, data, baseURL string, stdin io.Reader, stdout io.Writer, do func(*admin.Command) error) (err error) {
 	migrations, err := storage.EmbeddedMigrations()
 	if err != nil {
 		return err
@@ -107,8 +115,7 @@ func adminInit(ctx context.Context, data, baseURL string, stdin io.Reader, stdou
 			err = fmt.Errorf("close databases: %w", closeErr)
 		}
 	}()
-	cmd := &admin.Command{Store: store, In: stdin, Out: stdout, BaseURL: baseURL, Now: time.Now}
-	return cmd.Init(ctx)
+	return do(&admin.Command{Store: store, In: stdin, Out: stdout, BaseURL: baseURL, Now: time.Now})
 }
 
 // serve runs the HTTP server until ctx is done.
