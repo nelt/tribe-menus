@@ -1,4 +1,4 @@
-// Dev Container de référence (ADR 0009, 0018).
+// Dev Container de référence (ADR 0009, 0018, 0020).
 // Toute extension ajoutée ou mise à jour passe par une PR qui modifie ce fichier.
 {
   "name": "tribe-menus",
@@ -10,20 +10,31 @@
   "updateRemoteUserUID": true,
 
   // Claude Code et GitHub CLI : configuration et connexion conservées dans
-  // des volumes ; mises à jour automatiques, télémétrie et rapports d'erreur
-  // désactivés. Le jeton de gh est en lecture seule (ADR 0019).
+  // des volumes. Seules les mises à jour automatiques de Claude Code sont
+  // coupées (version épinglée) : la variable globale
+  // CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC couperait aussi Remote Control
+  // (ADR 0020).
+  // Git pousse avec le jeton de gh (ADR 0020) : les deux réglages
+  // credential.helper passés par l'environnement s'appliquent après ceux de
+  // .git/config, écrits pour l'hôte (trousseau absent du conteneur).
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_AUTOUPDATER": "1",
     "GH_TELEMETRY": "0",
-    "GH_NO_UPDATE_NOTIFIER": "1"
+    "GH_NO_UPDATE_NOTIFIER": "1",
+    "GIT_CONFIG_COUNT": "2",
+    "GIT_CONFIG_KEY_0": "credential.helper",
+    "GIT_CONFIG_VALUE_0": "",
+    "GIT_CONFIG_KEY_1": "credential.helper",
+    "GIT_CONFIG_VALUE_1": "!gh auth git-credential"
   },
   "mounts": [
     "source=tribe-menus-claude,target=/home/vscode/.claude,type=volume",
     "source=tribe-menus-gh,target=/home/vscode/.config/gh,type=volume"
   ],
 
-  // Pas d'agent SSH de l'hôte dans le conteneur : le push se fait depuis l'hôte.
+  // Pas d'agent SSH de l'hôte dans le conteneur : le push passe par HTTPS,
+  // avec le jeton du conteneur (ADR 0020).
   "remoteEnv": {
     "SSH_AUTH_SOCK": ""
   },

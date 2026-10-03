@@ -1,26 +1,27 @@
 # Sécurité du dépôt GitHub
 
-Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Elles sont appliquées **avant** le passage en public, puis revues à chaque release majeure. Chaque case cochée correspond à un réglage vérifié.
+Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Le dépôt est public depuis le 2026-10-03. Les protections sont appliquées au passage en public (certaines, comme les rulesets, n'existent qu'ensuite sur un compte Free), puis revues à chaque release majeure. Chaque case cochée correspond à un réglage vérifié.
 
 ## 1. Compte et accès
 
 - [ ] Double authentification sur le compte GitHub, par clé de sécurité ou passkey (pas de SMS).
 - [ ] Aucun jeton « classique » : uniquement des jetons à portée fine (*fine-grained*), limités au dépôt `tribe-menus`, avec les seuls droits nécessaires et une date d'expiration.
-- [ ] Jeton dédié pour le Dev Container (ADR 0009, 0019), distinct de tout autre usage, **en lecture seule** : *Actions*, *Contents*, *Pull requests* et *Metadata*. Rangé dans le volume Docker `tribe-menus-gh`.
+- [ ] Jeton dédié pour le Dev Container (ADR 0019, 0020), distinct de tout autre usage : *Contents* et *Pull requests* en lecture et écriture, *Actions* et *Metadata* en lecture, **sans *Workflows***. À ne passer en écriture qu'une fois le ruleset de `main` actif (section 2). Rangé dans le volume Docker `tribe-menus-gh`.
 - [ ] Jeton dédié au poste de développement (commits et pushes depuis l'hôte, en HTTPS), distinct du jeton du Dev Container ; conservé par le gestionnaire d'identifiants du système, jamais en clair (`credential.helper store` proscrit).
 - [ ] Git configuré avec l'adresse « noreply » de GitHub, et option « Block command line pushes that expose my email » activée.
 - [ ] Revue périodique des applications GitHub et OAuth autorisées sur le compte.
+- [ ] Double authentification sur le compte claude.ai : il a accès au dépôt en écriture (sessions cloud) et, avec Remote Control, aux sessions du Dev Container (ADR 0020).
 
 ## 2. Branches et étiquettes (rulesets)
 
-**Branche `main`** :
+**Branche `main`** (ruleset `main`, actif depuis le 2026-10-03, liste de contournement vide) :
 
-- [ ] modification uniquement par PR ; aucun push direct, y compris pour l'administrateur ;
-- [ ] vérification `ci` (le job qui lance `make ci`) obligatoire et à jour avec `main` avant fusion ;
-- [ ] fusion par *squash* uniquement, historique linéaire ;
+- [x] modification uniquement par PR ; aucun push direct, y compris pour l'administrateur ;
+- [x] vérification `ci` (le job qui lance `make ci`) obligatoire et à jour avec `main` avant fusion ;
+- [x] fusion par *squash* uniquement, historique linéaire ;
 - [ ] commits signés exigés : satisfait par la fusion *squash*, dont le commit est créé et signé par GitHub, les commits des branches pouvant rester non signés ;
-- [ ] conversations de revue résolues avant fusion ;
-- [ ] ni force push, ni suppression.
+- [x] conversations de revue résolues avant fusion ;
+- [x] ni force push, ni suppression.
 
 Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver sa propre PR), mais la PR reste obligatoire, avec la CI au vert.
 

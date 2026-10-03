@@ -1,7 +1,7 @@
 # 0018. Claude Code et Git dans l'environnement de développement
 
 - **Date** : 2026-09-29
-- **Statut** : accepté ; complété par 0019 (GitHub CLI en lecture seule dans le conteneur)
+- **Statut** : accepté ; complété par 0019 (GitHub CLI en lecture seule dans le conteneur) ; amendé par 0020 (push et PR depuis le conteneur, Remote Control)
 
 ## Contexte
 

@@ -17,6 +17,7 @@ Application **Melting Tribe** (menus de la semaine, en tribu), dépôt public so
 ## Conventions
 
 - Travailler sur une branche dédiée (`feature/<sujet>`), jamais directement sur `main`.
+- Pousser la branche et ouvrir la PR soi-même (ADR 0020), avec `git commit -s` et une ligne dans `CHANGELOG.md` ; ne jamais fusionner une PR : la fusion revient au développeur.
 - Commits petits et explicites.
 - Toute nouvelle décision d'architecture significative donne lieu à un ADR (modèle : `docs/adr/0000-template.md`).
 - Mettre à jour le plan (cases cochées, notes) au fil de l'avancement.
@@ -35,7 +36,7 @@ Décidée (voir `docs/adr/`).
 - **Nom** : marque « Melting Tribe » côté utilisateurs ; `tribe-menus` reste le nom technique (dépôt, module, service) (ADR 0017).
 - **Langue** : code entièrement en anglais ; specs en français ; traduction des termes métier fixée par `docs/specs/glossaire.md` (ADR 0008).
 - **Environnement de développement** : Dev Container de référence ; versions épinglées dans `go.mod` (Go 1.27.1 ; sqlc, staticcheck, govulncheck par `go tool`), `.nvmrc` (Node 24.21.0) et `web/package.json` (Lit, TypeScript 6, esbuild, Playwright) ; serveur local sur `http://localhost:8080` (`make dev`) ; VS Code avec une liste courte d'extensions épinglées (ADR 0009).
-- **Claude Code** : s'exécute dans le Dev Container (version épinglée) ; peut commiter mais ne pousse jamais, le push se fait depuis l'hôte ; GitHub CLI en lecture seule pour suivre la CI (runs, journaux, artefacts, PR ; ADR 0019) ; autorisations partagées dans `.claude/settings.json`, réglages personnels dans `.claude/settings.local.json` (ADR 0018). Préparation du poste : `docs/poste-de-developpement.md`.
+- **Claude Code** : s'exécute dans le Dev Container (version épinglée) ou dans une session cloud ; pousse les branches `feature/…` et ouvre les PR, sans push forcé ni fusion ; les changements de `.github/workflows/` se poussent depuis l'hôte ; GitHub CLI pour les PR et le suivi de la CI (runs, journaux, artefacts ; ADR 0019) ; Remote Control connecté par défaut dans le Dev Container (ADR 0020) ; autorisations partagées dans `.claude/settings.json`, réglages personnels dans `.claude/settings.local.json` (ADR 0018). Préparation du poste : `docs/poste-de-developpement.md`.
 - **Commandes** : Makefile sommaire, toujours passer par ses cibles (ADR 0010), `make help` les liste. Disponibles : `make tools`, `dev`, `lint`, `test`, `e2e`, `vuln`, `build`, et `make ci` avant de pousser (c'est ce que lance la CI ; `lint` comprend actionlint). À venir avec la première story qui leur donne un contenu : `seed`, `generate`, `acceptance`.
 - **Build et release** : build uniquement en CI ; archive (binaire `linux/amd64` avec front embarqué, `site/`, `deploy/`) ; versions sémantiques par étiquette manuelle `vX.Y.Z` ; chaque PR ajoute une ligne à `CHANGELOG.md` ; procédure dans `RELEASING.md` (ADR 0012).
 - **E-mails** : code de connexion envoyé par le SMTP du MX Plan OVHcloud (`no-reply@codingmatters.org`) via `net/smtp`, derrière une interface `Mailer` ; SPF, DKIM, DMARC (ADR 0014).
