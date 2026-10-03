@@ -10,8 +10,8 @@
   "updateRemoteUserUID": true,
 
   // Claude Code et GitHub CLI : configuration et connexion conservées dans
-  // des volumes. Mises à jour automatiques, télémétrie, rapports d'erreur et
-  // commande /feedback désactivés un par un : la variable globale
+  // des volumes. Seules les mises à jour automatiques de Claude Code sont
+  // coupées (version épinglée) : la variable globale
   // CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC couperait aussi Remote Control
   // (ADR 0020).
   // Git pousse avec le jeton de gh (ADR 0020) : les deux réglages
@@ -20,9 +20,6 @@
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
     "DISABLE_AUTOUPDATER": "1",
-    "DISABLE_TELEMETRY": "1",
-    "DISABLE_ERROR_REPORTING": "1",
-    "DISABLE_FEEDBACK_COMMAND": "1",
     "GH_TELEMETRY": "0",
     "GH_NO_UPDATE_NOTIFIER": "1",
     "GIT_CONFIG_COUNT": "2",

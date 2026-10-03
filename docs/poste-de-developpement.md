@@ -115,7 +115,10 @@ Chaque session de Claude Code ouverte dans le conteneur se connecte à Remote Co
 
 - Vérifier : `claude doctor`, ou `/remote-control` dans une session.
 - S'en passer sur ce poste : `{ "remoteControlAtStartup": false }` dans `.claude/settings.local.json`.
-- Si l'option « Require trusted devices » du compte claude.ai est activée, retirer `DISABLE_TELEMETRY` de `devcontainer.json`.
+
+### Version de Claude Code
+
+La version est épinglée (`Dockerfile` et `devcontainer.json`) et ne se met pas à jour seule. Le workflow hebdomadaire `devcontainer` affiche un avertissement, dans le résumé de son exécution, quand une version plus récente est publiée. La montée de version se fait par PR, sur ces deux lignes.
 
 ### Suivre la CI depuis le terminal
 

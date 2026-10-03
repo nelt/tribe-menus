@@ -26,7 +26,8 @@ Par ailleurs, les sessions de Claude Code dans le Dev Container ne pouvaient pas
 5. **Sessions cloud** : le dépôt y est rattaché en écriture à la demande du développeur. Les commits portent l'identité « noreply » du développeur et sa ligne `Signed-off-by` (DCO, ADR 0011), comme ceux du poste.
 6. **Remote Control connecté par défaut dans le Dev Container** :
    - `remoteControlAtStartup: true` dans `/etc/claude-code/managed-settings.json`, copié dans l'image depuis `.devcontainer/claude-managed-settings.json`. Ce réglage est ignoré dans `.claude/settings.json` : un fichier versionné du projet ne peut pas l'activer pour qui ouvre le dépôt ; le fichier système de l'image le peut ;
-   - `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` est remplacée par les réglages unitaires `DISABLE_AUTOUPDATER`, `DISABLE_TELEMETRY`, `DISABLE_ERROR_REPORTING` et `DISABLE_FEEDBACK_COMMAND` ;
+   - `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` est remplacée par le seul `DISABLE_AUTOUPDATER`, qui préserve l'épinglage de la version. Télémétrie, rapports d'erreur et commande `/feedback` de Claude Code ne sont plus coupés : ils n'étaient désactivés que par effet de la variable globale, et `DISABLE_TELEMETRY` gêne Remote Control dans certains cas ;
+   - le workflow hebdomadaire `devcontainer` signale par un avertissement une version de Claude Code plus récente que la version épinglée, que Dependabot ne suit pas ;
    - pour s'en passer sur un poste : `"remoteControlAtStartup": false` dans `.claude/settings.local.json`.
 
 ## Alternatives envisagées
@@ -38,6 +39,7 @@ Par ailleurs, les sessions de Claude Code dans le Dev Container ne pouvaient pas
 - **`gh auth setup-git`** : écrit l'assistant d'identifiants dans le `~/.gitconfig` du conteneur, perdu à chaque reconstruction, et sans effet ici puisque `.git/config` vide la liste des assistants. Écarté au profit de l'environnement.
 - **Remote Control activé par `/config`** (réglage utilisateur, dans le volume `tribe-menus-claude`) : fonctionne, mais n'est ni versionné ni reproduit sur un autre poste. Écarté.
 - **Conserver `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` et renoncer à Remote Control** : écarté, c'est l'un des deux besoins.
+- **Reproduire son périmètre par des réglages unitaires** (`DISABLE_TELEMETRY`, `DISABLE_ERROR_REPORTING`, `DISABLE_FEEDBACK_COMMAND`) : écarté. Ces données ne contiennent pas le code d'un dépôt de toute façon public, et `DISABLE_TELEMETRY` rend Remote Control indisponible si l'option « Require trusted devices » du compte est activée.
 
 ## Conséquences
 
@@ -45,9 +47,8 @@ Par ailleurs, les sessions de Claude Code dans le Dev Container ne pouvaient pas
 - **Négatif, jeton** : un jeton en écriture est lisible par toute extension et par Claude Code dans le conteneur. En cas de fuite ou d'erreur, il permet de créer, modifier et supprimer des branches autres que `main`, et d'ouvrir ou de fusionner une PR dont la CI est verte. `main` reste protégée par le ruleset et par la CI, que ce jeton ne peut pas modifier.
 - **Négatif, fusion** : projet mené seul, aucune approbation ne peut être exigée ; rien, côté GitHub, n'empêche le jeton de fusionner une PR verte. Seul le refus de `gh pr merge` dans `.claude/settings.json` s'y oppose.
 - **Négatif, Remote Control** : pour le dépôt, aucun risque nouveau, le compte claude.ai y ayant déjà accès en écriture par les sessions cloud. Ce qui s'ajoute : qui accède à ce compte peut lancer des commandes dans le conteneur, sur le poste (dossier du dépôt, réseau local), ce qu'une session cloud ne permet pas. Tant que Remote Control est connecté, la transcription de la session est conservée sur les serveurs d'Anthropic. Le conteneur n'ouvre aucun port : seules des requêtes HTTPS sortantes.
-- **Négatif, trafic** : Claude Code interroge de nouveau les réglages de fonctionnalités d'Anthropic et affiche les notes de version ; mises à jour automatiques, télémétrie, rapports d'erreur et `/feedback` restent coupés.
+- **Négatif, trafic** : Claude Code envoie de nouveau ses métriques d'usage (sans code, prompts ni chemins) et ses rapports d'erreur internes à Anthropic, et interroge ses réglages de fonctionnalités ; seules les mises à jour automatiques restent coupées. La télémétrie de VS Code et de `gh` reste désactivée.
 - **Limites connues** :
-  - `DISABLE_TELEMETRY` est compatible avec Remote Control à partir de Claude Code 2.1.283 (version épinglée : 2.1.284), sauf si l'option « Require trusted devices » du compte est activée ; il faut alors retirer cette variable ;
   - Remote Control exige une connexion par compte claude.ai (pas de clé d'API) ;
   - les changements de `.github/workflows/` se poussent depuis l'hôte.
 - **À faire sur le poste** : modifier les permissions du jeton `tribe-menus-devcontainer` (sa valeur ne change pas, pas de nouvelle connexion de `gh`), puis reconstruire le conteneur (`docs/poste-de-developpement.md`).

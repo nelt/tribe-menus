@@ -44,3 +44,15 @@ jobs:
           npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . go version
           npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . node --version
           npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . claude --version
+
+      # Dependabot does not track the pinned Claude Code version, and its
+      # auto-updater is off (ADR 0018, 0020): warn, without failing, when a
+      # newer version is published.
+      - name: Check the pinned Claude Code version
+        run: |
+          pinned="$(sed -n 's/^ARG CLAUDE_CODE_VERSION=//p' .devcontainer/Dockerfile)"
+          latest="$(npm view @anthropic-ai/claude-code version)"
+          echo "Claude Code: pinned $pinned, latest $latest" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$pinned" != "$latest" ]; then
+            echo "::warning title=Claude Code $latest available::$pinned is pinned in .devcontainer/Dockerfile and devcontainer.json"
+          fi
