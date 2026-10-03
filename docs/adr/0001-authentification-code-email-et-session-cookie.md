@@ -1,7 +1,7 @@
 # 0001. Authentification par code e-mail et session par cookie serveur
 
 - **Date** : 2026-09-27
-- **Statut** : accepté
+- **Statut** : accepté ; précisé par 0021 (base de limitation des demandes de code)
 
 ## Contexte
 
