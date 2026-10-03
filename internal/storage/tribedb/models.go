@@ -18,6 +18,13 @@ type AuditLog struct {
 	DetectedDevice sql.NullString
 }
 
+type LoginCode struct {
+	MemberID     int64
+	CodeHash     []byte
+	ExpiresAt    string
+	AttemptsLeft int64
+}
+
 type Member struct {
 	ID          int64
 	Email       sql.NullString
@@ -27,6 +34,20 @@ type Member struct {
 	AddedBy     sql.NullInt64
 	RevokedAt   sql.NullString
 	RevokedBy   sql.NullInt64
+}
+
+type Session struct {
+	ID           int64
+	TokenHash    []byte
+	MemberID     int64
+	OpenedAt     string
+	LastActiveAt string
+	ExpiresAt    string
+	DeviceType   string
+	Os           string
+	Browser      string
+	InstalledApp int64
+	Label        sql.NullString
 }
 
 type Tribe struct {

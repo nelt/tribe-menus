@@ -54,3 +54,42 @@ func (q *Queries) MemberByEmail(ctx context.Context, email sql.NullString) (Memb
 	)
 	return i, err
 }
+
+const memberByID = `-- name: MemberByID :one
+SELECT id, email, display_name, status, added_at, added_by, revoked_at, revoked_by FROM members WHERE id = ?
+`
+
+func (q *Queries) MemberByID(ctx context.Context, id int64) (Member, error) {
+	row := q.db.QueryRowContext(ctx, memberByID, id)
+	var i Member
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.DisplayName,
+		&i.Status,
+		&i.AddedAt,
+		&i.AddedBy,
+		&i.RevokedAt,
+		&i.RevokedBy,
+	)
+	return i, err
+}
+
+const revokeMember = `-- name: RevokeMember :execrows
+UPDATE members SET status = 'revoked', revoked_at = ?, revoked_by = ?
+WHERE id = ? AND status = 'active'
+`
+
+type RevokeMemberParams struct {
+	RevokedAt sql.NullString
+	RevokedBy sql.NullInt64
+	ID        int64
+}
+
+func (q *Queries) RevokeMember(ctx context.Context, arg RevokeMemberParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, revokeMember, arg.RevokedAt, arg.RevokedBy, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}

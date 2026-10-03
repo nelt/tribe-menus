@@ -81,7 +81,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 ### Lot B : connexion et session, côté API (`feature/enf-01-connexion-et-session`)
 
 - [x] **12. ADR 0021 : base de limitation des demandes** (D3). Troisième sorte de base, à côté du registre et des bases de tribu ; précise les ADR 0001 et 0003. Il consigne aussi la forme des empreintes (D10) et la source de vérité du nom de la tribu (D9). Terme « code fantôme » ajouté au glossaire avant d'apparaître dans le code.
-- [ ] **13. Schémas.**
+- [x] **13. Schémas.**
   - Base de la tribu : `login_codes` (membre, empreinte du code, échéance, essais restants ; un seul code valable par membre) et `sessions` (empreinte SHA-256 du jeton, membre, dates d'ouverture, de dernière activité et d'expiration, appareil détecté, app installée ou onglet, nom de session).
   - Base de limitation (`migrations/ratelimit/`, migrée au démarrage comme les autres) : demandes de code horodatées et codes fantômes (échéance, essais restants). Adresses et IP stockées en empreinte SHA-256, jamais en clair ; l'empreinte d'une adresse est calculée avec l'identifiant d'URL de la tribu, pour qu'une même adresse ne soit pas reconnaissable d'une tribu à l'autre (D10). Troisième paquet généré dans `sqlc.yaml`.
 - [ ] **14. Logique pure de `internal/tribe`**, testée en tableaux de cas :
