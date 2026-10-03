@@ -50,6 +50,8 @@ func readMigrations(migrations fs.FS) ([]migration, error) {
 
 // migrate applies the migrations newer than the database version, each in its own transaction
 // with the version update, so that a failed migration leaves the version unchanged.
+// Another process may migrate the same file at the same time: each transaction reads the
+// version again and skips a migration already applied.
 func migrate(ctx context.Context, db *sql.DB, migrations fs.FS) error {
 	list, err := readMigrations(migrations)
 	if err != nil {
@@ -76,6 +78,14 @@ func apply(ctx context.Context, db *sql.DB, m migration) error {
 		return fmt.Errorf("migration %s: begin: %w", m.name, err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	// Transactions are immediate (openDB): the version read here cannot change before the commit.
+	var current int
+	if err := tx.QueryRowContext(ctx, "PRAGMA user_version").Scan(&current); err != nil {
+		return fmt.Errorf("migration %s: read schema version: %w", m.name, err)
+	}
+	if current >= m.version {
+		return nil
+	}
 	if _, err := tx.ExecContext(ctx, m.sql); err != nil {
 		return fmt.Errorf("migration %s: %w", m.name, err)
 	}

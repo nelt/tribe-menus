@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,6 +99,43 @@ func TestMigrate(t *testing.T) {
 				if tableExists(t, db, name) {
 					t.Errorf("table %s exists, want it rolled back", name)
 				}
+			}
+		})
+	}
+}
+
+// Two processes starting together on a new version (serve and an admin command) both
+// migrate the same file: each must see the migrations applied by the other.
+func TestConcurrentMigrations(t *testing.T) {
+	migrations := fstest.MapFS{}
+	for i := 1; i <= 20; i++ {
+		migrations[fmt.Sprintf("%04d_t.sql", i)] = sqlFile(fmt.Sprintf("CREATE TABLE t%d (x INTEGER) STRICT;", i))
+	}
+	for round := range 5 {
+		t.Run(fmt.Sprint(round), func(t *testing.T) {
+			ctx := context.Background()
+			path := filepath.Join(t.TempDir(), "test.db")
+			var dbs [2]*sql.DB
+			for i := range dbs {
+				db, err := openDB(ctx, path, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer db.Close()
+				dbs[i] = db
+			}
+
+			errs := make(chan error, len(dbs))
+			for _, db := range dbs {
+				go func() { errs <- migrate(ctx, db, migrations) }()
+			}
+			for range dbs {
+				if err := <-errs; err != nil {
+					t.Errorf("migrate: %v", err)
+				}
+			}
+			if got := userVersion(t, dbs[0]); got != len(migrations) {
+				t.Errorf("user_version = %d, want %d", got, len(migrations))
 			}
 		})
 	}
