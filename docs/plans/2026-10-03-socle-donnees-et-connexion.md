@@ -187,6 +187,6 @@ Le 2026-10-03, à la relecture du lot B après la fusion du lot A.
 
 ## Questions ouvertes
 
-- **Cookie `Secure` sur `http://localhost` avec WebKit** : Chromium et Firefox l'acceptent ; à vérifier pour WebKit dès l'étape 16, avant d'écrire les écrans. Si WebKit le refuse, il faudra soit du TLS local pour les tests Playwright, soit limiter le parcours de connexion à Chromium et couvrir WebKit en recette.
+- **Cookie `Secure` sur `http://localhost` avec WebKit** : Chromium et Firefox l'acceptent ; à vérifier pour WebKit dès l'étape 16, avant d'écrire les écrans. Si WebKit le refuse, il faudra soit du TLS local pour les tests Playwright, soit limiter le parcours de connexion à Chromium et couvrir WebKit en recette. *Vérifié le 2026-10-03 avec Playwright 1.63 : WebKit refuse le cookie, sur `localhost` comme sur `127.0.0.1`, en navigation comme par `fetch` ; Chromium l'accepte. À trancher avant le lot C (étape 24) ; même question pour `make dev` ouvert dans Safari.*
 - **Écriture de la dernière activité à chaque requête** : négligeable à cette échelle (ADR 0001) ; à espacer seulement si la mesure le justifie.
 - **Sessions cloud de Claude** : aujourd'hui elles n'atteignent pas `proxy.golang.org`, donc ni `make tools` ni `make ci`. Elles conviennent à la documentation ; le code de ce plan se fait dans le Dev Container, sauf à ouvrir cet accès dans les réglages réseau de l'environnement cloud.
