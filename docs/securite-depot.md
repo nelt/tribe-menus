@@ -10,7 +10,7 @@ Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Le dépô
 - [ ] Jeton dédié au poste de développement (commits et pushes depuis l'hôte, en HTTPS), distinct du jeton du Dev Container ; conservé par le gestionnaire d'identifiants du système, jamais en clair (`credential.helper store` proscrit).
 - [ ] Git configuré avec l'adresse « noreply » de GitHub, et option « Block command line pushes that expose my email » activée.
 - [ ] Revue périodique des applications GitHub et OAuth autorisées sur le compte.
-- [ ] Double authentification sur le compte claude.ai : avec Remote Control, il donne la main sur les sessions du Dev Container (ADR 0020).
+- [ ] Double authentification sur le compte claude.ai : il a accès au dépôt en écriture (sessions cloud) et, avec Remote Control, aux sessions du Dev Container (ADR 0020).
 
 ## 2. Branches et étiquettes (rulesets)
 
