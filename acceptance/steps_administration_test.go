@@ -8,7 +8,6 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/nelt/tribe-menus/internal/admin"
-	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
@@ -41,7 +40,7 @@ func (w *world) registerAdministrationSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^j'initialise la tribu "([^"]*)" d'identifiant "([^"]*)" avec le premier membre "([^"]*)"$`, w.initTribe)
 	sc.Step(`^les tribus "([^"]*)" et "([^"]*)" existent toutes les deux$`, w.bothTribesExist)
-	sc.Step(`^"([^"]*)" est membre actif de la tribu "([^"]*)"$`, w.givenActiveMember)
+	sc.Step(`^"([^"]*)" est membre actif de la tribu "([^"]*)"(?: uniquement)?$`, w.activeMember)
 	sc.Step(`^"([^"]*)" est membre actif des tribus "([^"]*)" et "([^"]*)"$`, w.activeMemberOfBoth)
 }
 
@@ -119,8 +118,8 @@ func (w *world) urlShown(slug string) error {
 }
 
 func (w *world) noMailSent(email string) error {
-	for _, m := range w.mails {
-		if m.to == tribe.Email(email) {
+	for _, m := range w.sentMails(0) {
+		if m.To == email {
 			return fmt.Errorf("a message was sent to %s", email)
 		}
 	}
@@ -177,25 +176,19 @@ func (w *world) bothTribesExist(ctx context.Context, first, second string) error
 	return nil
 }
 
-// givenActiveMember creates the tribe with this first member. Adding a member to an
-// existing tribe comes with EF-01.
-func (w *world) givenActiveMember(ctx context.Context, email, slug string) error {
-	store, err := w.openStore(ctx)
-	if err != nil {
-		return err
+// activeMember states that the address is an active member of the tribe, or checks it:
+// the same wording serves as context and as outcome.
+func (w *world) activeMember(ctx context.Context, email, slug string) error {
+	if !w.isContext() {
+		return w.isActiveMember(ctx, email, slug)
 	}
-	if _, err := store.Tribe(ctx, slug); !errors.Is(err, storage.ErrUnknownTribe) {
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("%w: adding a member to an existing tribe (EF-01)", godog.ErrPending)
-	}
-	return w.initTribe(ctx, "Tribu "+slug, slug, email)
+	_, err := w.ensureMember(ctx, email, slug)
+	return err
 }
 
 func (w *world) activeMemberOfBoth(ctx context.Context, email, first, second string) error {
 	for _, slug := range []string{first, second} {
-		if err := w.isActiveMember(ctx, email, slug); err != nil {
+		if err := w.activeMember(ctx, email, slug); err != nil {
 			return err
 		}
 	}
