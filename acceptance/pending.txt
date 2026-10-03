@@ -4,14 +4,9 @@
 
 administration.feature: Anonymiser un membre révoqué
 administration.feature: Débloquer une tribu sans membre actif
-administration.feature: Initialiser une tribu
-administration.feature: L'identifiant d'URL doit respecter le format
-administration.feature: L'identifiant d'URL doit être libre
 administration.feature: La réactivation ne touche que la tribu indiquée
 administration.feature: La suppression ne touche pas les autres tribus
-administration.feature: Le premier membre peut déjà appartenir à une autre tribu
 administration.feature: Le premier membre peut se connecter et ajouter des membres
-administration.feature: Plusieurs tribus peuvent être créées
 administration.feature: Refus de réactivation
 administration.feature: Réactiver un membre révoqué
 administration.feature: Supprimer une tribu
