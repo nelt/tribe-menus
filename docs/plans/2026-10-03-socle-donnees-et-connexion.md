@@ -52,7 +52,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - Registre : identifiant d'URL, nom, fichier de la base. Le nom du fichier est un identifiant aléatoire, jamais dérivé de l'identifiant d'URL.
   - Un type qui migre le registre puis toutes les bases au démarrage, ouvre la base d'une tribu par son identifiant d'URL et fait passer ses écritures par une seule connexion.
   - Tests en tableaux sur `t.TempDir()` : migration rejouée sans effet, migration en échec qui remonte l'erreur et laisse la version inchangée, identifiant inconnu.
-- [ ] **2. sqlc.**
+- [x] **2. sqlc.**
   - `sqlc.yaml` avec un paquet généré par sorte de base ; code généré versionné.
   - Cible `make generate` ; `go tool sqlc diff` dans `make lint`, pour refuser un code généré périmé.
 - [ ] **3. Serveur : répertoire de données et `/healthz`.**

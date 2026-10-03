@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/nelt/tribe-menus/internal/storage/registrydb"
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )
 
@@ -61,6 +62,7 @@ type Store struct {
 	dir        string
 	migrations Migrations
 	registry   *sql.DB
+	queries    *registrydb.Queries
 
 	mu     sync.Mutex
 	tribes map[string]*sql.DB // by file name
@@ -76,7 +78,7 @@ func Open(ctx context.Context, dir string, migrations Migrations) (*Store, error
 	if err != nil {
 		return nil, fmt.Errorf("storage: registry: %w", err)
 	}
-	s := &Store{dir: dir, migrations: migrations, registry: registry, tribes: map[string]*sql.DB{}}
+	s := &Store{dir: dir, migrations: migrations, registry: registry, queries: registrydb.New(registry), tribes: map[string]*sql.DB{}}
 	if err := migrate(ctx, registry, migrations.Registry); err != nil {
 		_ = s.Close()
 		return nil, fmt.Errorf("storage: registry: %w", err)
@@ -96,8 +98,7 @@ func (s *Store) Registry() *sql.DB {
 // Tribe returns the database of the tribe with this slug, or ErrUnknownTribe.
 // A tribe created by another process since Open is opened and migrated on first use.
 func (s *Store) Tribe(ctx context.Context, slug string) (*sql.DB, error) {
-	var file string
-	err := s.registry.QueryRowContext(ctx, "SELECT file FROM tribes WHERE slug = ?", slug).Scan(&file)
+	file, err := s.queries.TribeFile(ctx, slug)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUnknownTribe
 	}
@@ -163,15 +164,15 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) slugTaken(ctx context.Context, slug string) (bool, error) {
-	var n int
-	if err := s.registry.QueryRowContext(ctx, "SELECT count(*) FROM tribes WHERE slug = ?", slug).Scan(&n); err != nil {
+	n, err := s.queries.CountTribesWithSlug(ctx, slug)
+	if err != nil {
 		return false, fmt.Errorf("storage: look up slug: %w", err)
 	}
 	return n > 0, nil
 }
 
 func (s *Store) register(ctx context.Context, slug, name, file string) error {
-	_, err := s.registry.ExecContext(ctx, "INSERT INTO tribes (slug, name, file) VALUES (?, ?, ?)", slug, name, file)
+	err := s.queries.InsertTribe(ctx, registrydb.InsertTribeParams{Slug: slug, Name: name, File: file})
 	if err != nil {
 		// Another process may have taken the slug since slugTaken.
 		if taken, lookupErr := s.slugTaken(ctx, slug); lookupErr == nil && taken {
@@ -183,20 +184,8 @@ func (s *Store) register(ctx context.Context, slug, name, file string) error {
 }
 
 func (s *Store) openAllTribes(ctx context.Context) error {
-	rows, err := s.registry.QueryContext(ctx, "SELECT file FROM tribes ORDER BY slug")
+	files, err := s.queries.TribeFiles(ctx)
 	if err != nil {
-		return fmt.Errorf("storage: list tribes: %w", err)
-	}
-	var files []string
-	for rows.Next() {
-		var file string
-		if err := rows.Scan(&file); err != nil {
-			_ = rows.Close()
-			return fmt.Errorf("storage: list tribes: %w", err)
-		}
-		files = append(files, file)
-	}
-	if err := errors.Join(rows.Err(), rows.Close()); err != nil {
 		return fmt.Errorf("storage: list tribes: %w", err)
 	}
 	for _, file := range files {

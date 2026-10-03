@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/nelt/tribe-menus/internal/storage/tribedb"
 )
 
 func sqlFile(s string) *fstest.MapFile { return &fstest.MapFile{Data: []byte(s)} }
@@ -154,8 +156,7 @@ func openStore(t *testing.T, dir string) *Store {
 
 func setName(name string) func(context.Context, *sql.DB) error {
 	return func(ctx context.Context, db *sql.DB) error {
-		_, err := db.ExecContext(ctx, "INSERT INTO tribe (id, name) VALUES (1, ?)", name)
-		return err
+		return tribedb.New(db).InsertTribe(ctx, name)
 	}
 }
 
@@ -165,8 +166,8 @@ func tribeName(t *testing.T, s *Store, slug string) string {
 	if err != nil {
 		t.Fatalf("Tribe(%q): %v", slug, err)
 	}
-	var name string
-	if err := db.QueryRow("SELECT name FROM tribe").Scan(&name); err != nil {
+	name, err := tribedb.New(db).TribeName(context.Background())
+	if err != nil {
 		t.Fatal(err)
 	}
 	return name
