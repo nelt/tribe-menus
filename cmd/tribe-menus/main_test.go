@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	data := t.TempDir()
 	cases := []struct {
 		name       string
 		args       []string
@@ -27,7 +29,7 @@ func TestRun(t *testing.T) {
 		{name: "no command", args: nil, wantCode: 2, wantStderr: "Usage: tribe-menus"},
 		{name: "unknown command", args: []string{"frobnicate"}, wantCode: 2, wantStderr: `unknown command "frobnicate"`},
 		{name: "unknown serve flag", args: []string{"serve", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
-		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
+		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-data", data, "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -55,12 +57,16 @@ func TestServeDevAndShutdown(t *testing.T) {
 	defer cancel()
 	logs := &syncBuffer{}
 	done := make(chan int, 1)
-	go func() { done <- serve(ctx, []string{"-dev", "-root", root, "-addr", "localhost:0"}, logs) }()
+	data := filepath.Join(root, "data")
+	go func() {
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0"}, logs)
+	}()
 
 	base := waitForAddress(t, logs)
 	for path, want := range map[string]string{
 		"/":             "<title>Melting Tribe</title>",
 		"/tribes/demo/": `<base href="/tribes/demo/">`,
+		"/healthz":      "ok",
 	} {
 		resp, err := http.Get(base + path)
 		if err != nil {
@@ -73,6 +79,10 @@ func TestServeDevAndShutdown(t *testing.T) {
 		}
 	}
 
+	if _, err := os.Stat(filepath.Join(data, "registry.db")); err != nil {
+		t.Errorf("registry not created: %v", err)
+	}
+
 	cancel()
 	select {
 	case code := <-done:
@@ -81,6 +91,34 @@ func TestServeDevAndShutdown(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("server did not stop")
+	}
+}
+
+// A database newer than the binary cannot be migrated: the server must not start.
+func TestServeRefusesUnmigratedDatabases(t *testing.T) {
+	data := t.TempDir()
+	db, err := sql.Open("sqlite", filepath.Join(data, "registry.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec("PRAGMA user_version = 999"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	var stderr bytes.Buffer
+	code := run([]string{"serve", "-dev", "-data", data, "-addr", "localhost:0"}, io.Discard, &stderr)
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	logs := stderr.String()
+	if !strings.Contains(logs, "newer than this binary") {
+		t.Errorf("logs = %q, want the migration error", logs)
+	}
+	if strings.Contains(logs, "server started") {
+		t.Errorf("server started despite the failed migration: %q", logs)
 	}
 }
 

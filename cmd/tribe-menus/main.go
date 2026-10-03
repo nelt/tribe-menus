@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/nelt/tribe-menus/internal/server"
+	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/web"
 )
 
@@ -72,16 +73,37 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	addr := flags.String("addr", "localhost:8080", "TCP address to listen on")
 	dev := flags.Bool("dev", false, "development mode: read the front end and the public site from disk")
 	root := flags.String("root", ".", "repository root, used in development mode")
+	data := flags.String("data", "data", "directory of the databases")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
 
 	logger := slog.New(slog.NewTextHandler(stderr, nil))
-	if err := listenAndServe(ctx, *addr, *dev, *root, logger); err != nil {
+	if err := migrateAndServe(ctx, *data, *addr, *dev, *root, logger); err != nil {
 		logger.Error("server stopped", "error", err)
 		return 1
 	}
 	return 0
+}
+
+// migrateAndServe opens and migrates every database before listening, so that the server,
+// and its health check, never answer on a database left unmigrated (ADR 0003, point 6).
+func migrateAndServe(ctx context.Context, data, addr string, dev bool, root string, logger *slog.Logger) (err error) {
+	migrations, err := storage.EmbeddedMigrations()
+	if err != nil {
+		return err
+	}
+	store, err := storage.Open(ctx, data, migrations)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := store.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close databases: %w", closeErr)
+		}
+	}()
+	logger.Info("databases migrated", "data", data)
+	return listenAndServe(ctx, addr, dev, root, logger)
 }
 
 func listenAndServe(ctx context.Context, addr string, dev bool, root string, logger *slog.Logger) error {
