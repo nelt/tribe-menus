@@ -63,6 +63,17 @@ func TestServeDevAndShutdown(t *testing.T) {
 	}()
 
 	base := waitForAddress(t, logs)
+
+	// The API answers, and the development mailer writes nothing for an unknown tribe.
+	resp, err := http.Post(base+"/tribes/demo/api/login-codes", "application/json", strings.NewReader(`{"email":"alice@exemple.fr"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusAccepted {
+		t.Errorf("POST login-codes: status %d, want %d", resp.StatusCode, http.StatusAccepted)
+	}
+
 	for path, want := range map[string]string{
 		"/":             "<title>Melting Tribe</title>",
 		"/tribes/demo/": `<base href="/tribes/demo/">`,

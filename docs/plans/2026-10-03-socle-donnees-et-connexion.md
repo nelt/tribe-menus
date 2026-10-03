@@ -91,7 +91,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - appareil détecté (D12) : type, système et navigateur déduits de l'en-tête `User-Agent` par une fonction pure, sans dépendance ; « app installée » ou « onglet » vient du client à l'ouverture de la session. Les User-Agent Client Hints attendent EF-04 ;
   - révocation d'un membre, dans l'adaptateur de la tribu, en avance sur EF-02 : le scénario « Un membre révoqué ne reçoit pas de code » en a besoin comme état de départ (même cas que l'ajout de membre du lot A).
 - [x] **15. `Mailer`** (ADR 0014, point 4) : interface, implémentation qui écrit dans les logs pour le développement, implémentation de test qui enregistre les envois. Message en texte brut, en français, avec le code, sa durée de validité et « Melting Tribe » ; ni lien ni nom de tribu. L'envoi est fait hors de la requête, pour que le temps de réponse ne distingue pas une adresse membre d'une autre. Le serveur sait attendre la fin des envois en cours (D11) : à l'arrêt, avant de fermer les bases, et dans les tests, avant de vérifier qu'un e-mail est parti ou qu'aucun ne l'est.
-- [ ] **16. API sous `/tribes/<identifiant>/api/`.**
+- [x] **16. API sous `/tribes/<identifiant>/api/`.**
   - `POST login-codes` (adresse) : toujours la même réponse, ou « trop de demandes » (429).
   - `POST sessions` (adresse, code, app installée ou non) : ouvre la session, pose le cookie, renvoie le nom de la tribu et le membre ; sinon code incorrect avec essais restants, ou code à redemander (expiré, essais épuisés).
   - `GET session` : nom de la tribu et membre, ou 401. `DELETE session` : déconnexion.
