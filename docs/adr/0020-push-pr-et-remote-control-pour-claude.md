@@ -20,8 +20,8 @@ Par ailleurs, les sessions de Claude Code dans le Dev Container ne pouvaient pas
 3. **Git du conteneur authentifié par `gh`** : `devcontainer.json` passe par l'environnement (`GIT_CONFIG_COUNT`…) deux réglages `credential.helper` qui vident la liste héritée de `.git/config`, écrite pour le trousseau de l'hôte, puis désignent `gh auth git-credential`. Rien n'est écrit dans `.git/config` ni dans le dossier personnel du conteneur. Le conteneur ne reçoit toujours ni le jeton du poste, ni l'agent SSH, ni la configuration Git de l'hôte.
 4. **Autorisations de Claude Code** (`.claude/settings.json`) :
    - sans confirmation : `git fetch`, `git push` vers `origin feature/…`, `gh pr create`, `gh pr edit` ; `gh api` limité aux chemins `actions/` du dépôt (lecture de la CI) ;
-   - refusés : push forcé, suppression de branche distante, tout push qui nomme `main`, `gh pr merge` ;
-   - tout autre push ou appel `gh api` demande une confirmation.
+   - refusés : push forcé, tout push qui nomme `main`, `gh pr merge` ;
+   - sur confirmation : la fermeture d'une PR, la suppression d'une branche distante, tout autre push ou appel `gh api`. La suppression d'une branche était d'abord refusée ; le refus ne couvrait qu'une des façons de la faire (`git push --delete`, mais ni `gh pr close --delete-branch` ni `git push origin :branche`) et empêchait le ménage des branches fusionnées. Le ruleset interdit de toute façon la suppression de `main` (modifié le 2026-10-03, après le premier essai dans le conteneur).
    Ces motifs préviennent une erreur de Claude ; la garantie est le ruleset, qui s'applique quel que soit le client.
 5. **Sessions cloud** : le dépôt y est rattaché en écriture à la demande du développeur. Les commits portent l'identité « noreply » du développeur et sa ligne `Signed-off-by` (DCO, ADR 0011), comme ceux du poste.
 6. **Remote Control connecté par défaut dans le Dev Container** :

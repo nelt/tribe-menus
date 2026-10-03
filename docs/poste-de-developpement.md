@@ -106,7 +106,7 @@ Tant que le projet n'est pas initialisé, suivre `docs/plans/2026-09-29-environn
 ## 6. Au quotidien
 
 - Dans le conteneur : `make dev` (application sur `http://localhost:8080`), `make test`, `make ci` avant de pousser. `make help` liste les cibles.
-- Claude Code travaille dans le conteneur : il commite, pousse la branche `feature/…` et ouvre la PR (ADR 0020). Il ne fusionne pas : la fusion se fait dans l'interface de GitHub, une fois la CI au vert.
+- Claude Code travaille dans le conteneur : il commite, pousse la branche `feature/…` et ouvre la PR (ADR 0020). Il ne fusionne pas : la fusion se fait dans l'interface de GitHub, une fois la CI au vert. Il ferme une PR ou supprime une branche distante à la demande, après confirmation.
 - Depuis un terminal **de l'hôte** : les pushes qui modifient `.github/workflows/` (le jeton du conteneur n'a pas la permission *Workflows*), et tout ce qu'on préfère faire à la main.
 
 ### Remote Control

@@ -42,7 +42,6 @@
     "deny": [
       "Bash(git push *--force*)",
       "Bash(git push * -f*)",
-      "Bash(git push *--delete*)",
       "Bash(git push *main*)",
       "Bash(gh pr merge:*)",
       "Bash(gh auth token:*)",
