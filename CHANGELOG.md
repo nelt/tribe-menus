@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Test de bout en bout du push et de l'ouverture de PR par Claude (ADR 0020), PR à fermer sans fusion.
 - Claude pousse les branches `feature/…` et ouvre les PR, depuis le Dev Container (jeton en écriture sans *Workflows*, Git authentifié par `gh`) comme depuis une session cloud ; Remote Control connecté par défaut dans le Dev Container, où seules les mises à jour automatiques de Claude Code restent coupées ; avertissement hebdomadaire quand une version plus récente est publiée ; dépôt public, ruleset `main` actif (ADR 0020).
 - Design : `docs/design/README.md` devient la référence unique, à l'état actuel (identité, site public, connexion, application) ; `identite.md` y est fusionné ; anciennes maquettes d'accueil retirées.
 - Maquettes des listes de courses reprises pour le nouveau modèle : liste principale, sélection d'articles, choix des listes, courses des repas ; écrans d'historique retirés (PT-17).
