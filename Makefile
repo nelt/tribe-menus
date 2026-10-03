@@ -6,7 +6,7 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev generate lint test e2e vuln build ci
+.PHONY: help tools dev generate lint test acceptance e2e vuln build ci
 
 help: ## List the targets
 	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -35,6 +35,9 @@ test: ## Go and TypeScript unit tests
 	go test ./...
 	cd web && npm test
 
+acceptance: ## Gherkin scenarios against the API (godog), compared with acceptance/pending.txt
+	go test ./acceptance -count=1 -acceptance
+
 e2e: ## Playwright scenarios
 	cd web && npm run e2e
 
@@ -46,4 +49,4 @@ build: ## Front end, then static binary in bin/ (VERSION, COMMIT)
 	cd web && npm run build
 	CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)" -o bin/tribe-menus ./cmd/tribe-menus
 
-ci: lint test e2e vuln build ## All checks required by the CI, in order
+ci: lint test acceptance e2e vuln build ## All checks required by the CI, in order

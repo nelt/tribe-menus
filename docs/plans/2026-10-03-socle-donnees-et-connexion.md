@@ -58,7 +58,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - [x] **3. Serveur : répertoire de données et `/healthz`.**
   - Option `-data` de `serve` (par défaut `data/`, déjà ignoré par Git) ; migrations appliquées avant d'écouter ; échec de migration : le serveur ne démarre pas (PT-12).
   - `GET /healthz` à la racine, qui ne répond qu'une fois les bases migrées (ADR 0016, point 1.6).
-- [ ] **4. `acceptance/` : harnais godog.**
+- [x] **4. `acceptance/` : harnais godog.**
   - Dépendance `github.com/cucumber/godog`. Lecture directe de `docs/specs/features/` (`# language: fr`), serveur dans le processus (`httptest`), bases dans un dossier temporaire par scénario, horloge et `Mailer` de test.
   - Scénarios `@manuel` et `@ui` exclus (ADR 0005).
   - `acceptance/pending.txt` (D2) : un scénario attendu comme non implémenté par ligne (fichier et titre). L'exécution échoue si un scénario hors liste échoue ou a une étape non définie, et si un scénario de la liste passe. La comparaison est une fonction pure, testée en tableau de cas.
@@ -122,7 +122,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ## Notes d'exécution
 
-- (à remplir au fil de l'avancement)
+- **Étape 4** : le harnais donne à chaque scénario son propre dossier de données. Le serveur `httptest`, l'horloge et le `Mailer` de test arrivent avec le lot B, qui les crée ; aucun scénario du lot A n'en a besoin. Le test `TestAcceptance` ne s'exécute qu'avec l'option `-acceptance` (cible `make acceptance`), pour que `make test` ne le lance pas une seconde fois, sans étiquette de build qui cacherait les étapes à `go vet` et `staticcheck`. `pending.txt` contient au départ les 173 scénarios exécutables (175 moins les 2 `@manuel`).
 
 ## Critères de validation
 

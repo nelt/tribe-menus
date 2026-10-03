@@ -1,0 +1,177 @@
+# Scénarios pas encore implémentés (plan du 2026-10-03, D2), un par ligne :
+# « <fichier>: <titre du scénario> ». make acceptance échoue si un scénario hors
+# de cette liste échoue, et si un scénario de la liste passe : elle ne peut que se vider.
+
+administration.feature: Anonymiser un membre révoqué
+administration.feature: Débloquer une tribu sans membre actif
+administration.feature: Initialiser une tribu
+administration.feature: L'identifiant d'URL doit être libre
+administration.feature: La réactivation ne touche que la tribu indiquée
+administration.feature: La suppression ne touche pas les autres tribus
+administration.feature: Le premier membre peut déjà appartenir à une autre tribu
+administration.feature: Le premier membre peut se connecter et ajouter des membres
+administration.feature: Plusieurs tribus peuvent être créées
+administration.feature: Refus de réactivation
+administration.feature: Réactiver un membre révoqué
+administration.feature: Supprimer une tribu
+administration.feature: Un membre actif ne peut pas être anonymisé
+administration.feature: Une adresse anonymisée peut être ajoutée de nouveau
+administration.feature: Une confirmation erronée annule la suppression
+authentification.feature: Consultation hors ligne
+authentification.feature: Consultation hors ligne de la bibliothèque de plats
+authentification.feature: Il reste des essais après un code erroné
+authentification.feature: L'expiration est glissante
+authentification.feature: La déconnexion efface les données de la tribu sur l'appareil
+authentification.feature: La limite par adresse ne révèle pas si l'adresse est membre
+authentification.feature: Le cookie de session n'est pas lisible par le code de la page
+authentification.feature: Le nombre de demandes de code par adresse est limité
+authentification.feature: Le nombre de demandes est aussi limité par IP et par tribu
+authentification.feature: Le nombre de tentatives est limité
+authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
+authentification.feature: Même réponse pour une adresse inconnue
+authentification.feature: Se connecter avec un code reçu par e-mail
+authentification.feature: Un code erroné est refusé
+authentification.feature: Un code expiré est refusé
+authentification.feature: Un code ne sert qu'une fois
+authentification.feature: Un membre d'une autre tribu ne reçoit pas de code
+authentification.feature: Un membre révoqué ne reçoit pas de code
+authentification.feature: Une nouvelle demande remplace le code précédent
+authentification.feature: Une session inutilisée expire
+authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
+bibliotheque-plats.feature: Créer un nouvel ingrédient pendant la saisie d'un plat
+bibliotheque-plats.feature: Créer un plat avec ses ingrédients
+bibliotheque-plats.feature: Définir un plat pour un autre nombre de parts
+bibliotheque-plats.feature: L'autocomplétion ignore la casse et les accents
+bibliotheque-plats.feature: L'autocomplétion propose les ingrédients existants
+bibliotheque-plats.feature: L'unité par défaut est proposée à la saisie
+bibliotheque-plats.feature: La couleur d'un plat ne change pas quand on le modifie
+bibliotheque-plats.feature: La modification d'un plat s'applique aux repas où il est servi
+bibliotheque-plats.feature: Le nom d'un plat est obligatoire
+bibliotheque-plats.feature: Rechercher un plat par les mots de son nom ou par ses ingrédients
+bibliotheque-plats.feature: Un nom qui ne diffère que par la casse, les accents ou les espaces désigne le même ingrédient
+bibliotheque-plats.feature: Un nouveau plat reçoit la teinte la moins utilisée
+bibliotheque-plats.feature: Un plat ne peut pas être supprimé de la bibliothèque
+bibliotheque-plats.feature: Un plat peut n'avoir aucun ingrédient
+compartimentage-tribus.feature: Accès croisé refusé
+compartimentage-tribus.feature: L'écran de connexion ne révèle pas la tribu
+compartimentage-tribus.feature: La bibliothèque de plats est propre à la tribu
+compartimentage-tribus.feature: La session d'une tribu ne donne pas accès à une autre tribu
+compartimentage-tribus.feature: La tribu d'une requête est celle de la session
+compartimentage-tribus.feature: Le journal d'audit est propre à la tribu
+compartimentage-tribus.feature: Le nom de la tribu apparaît une fois connecté
+compartimentage-tribus.feature: Le référentiel d'ingrédients est propre à la tribu
+compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
+compartimentage-tribus.feature: Toutes les données sont compartimentées
+compartimentage-tribus.feature: Un même nom d'ingrédient est indépendant d'une tribu à l'autre
+compartimentage-tribus.feature: Une même adresse a des sessions distinctes dans chaque tribu
+liste-courses.feature: Ajouter un article sans réseau
+liste-courses.feature: Ajouter un article à la main
+liste-courses.feature: Changer de liste principale
+liste-courses.feature: Choisir la liste qui reçoit les courses
+liste-courses.feature: Cocher un article
+liste-courses.feature: Cocher un article sans réseau
+liste-courses.feature: Créer une liste vide
+liste-courses.feature: Créer une liste à partir d'une sélection
+liste-courses.feature: Déclarer les courses faites retire les articles cochés
+liste-courses.feature: Déplacer des articles sélectionnés vers une autre liste
+liste-courses.feature: Déplier un article pour voir les plats et repas concernés
+liste-courses.feature: Il y a toujours exactement une liste principale
+liste-courses.feature: L'arrondi s'applique après l'addition
+liste-courses.feature: L'article fusionné n'est coché que si les deux l'étaient
+liste-courses.feature: L'onglet Courses ouvre la liste principale
+liste-courses.feature: La coche d'un article déplacé entre-temps s'applique dans sa nouvelle liste
+liste-courses.feature: La coche d'un article supprimé par un recalcul est ignorée
+liste-courses.feature: La date de fin ne peut pas précéder la date de début
+liste-courses.feature: La liste principale ne peut pas être supprimée
+liste-courses.feature: La liste reste utilisable après les courses faites
+liste-courses.feature: La quantité d'un article ajouté est facultative
+liste-courses.feature: La sélection est impossible sans article sélectionné
+liste-courses.feature: Le nom d'une liste est obligatoire
+liste-courses.feature: Le recalcul ne recrée pas les articles déjà achetés
+liste-courses.feature: Les actions sur les listes elles-mêmes nécessitent le réseau
+liste-courses.feature: Les articles ajoutés hors ligne à une liste supprimée entre-temps sont ignorés
+liste-courses.feature: Les articles ajoutés à la main survivent au recalcul
+liste-courses.feature: Les changements qui rendent une liste périmée
+liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau
+liste-courses.feature: Les courses faites ne touchent pas au planning
+liste-courses.feature: Les courses s'ajoutent aux articles déjà présents
+liste-courses.feature: Les cuillères à soupe et à café ne sont pas converties entre elles
+liste-courses.feature: Les plats servis des articles déplacés restent reçus par la liste de départ
+liste-courses.feature: Les quantités d'un même ingrédient sont additionnées
+liste-courses.feature: Les quantités en cuillères sont arrondies à l'entier supérieur
+liste-courses.feature: Les quantités sont ajustées au nombre de parts
+liste-courses.feature: Les quantités à la pièce sont arrondies à l'entier supérieur
+liste-courses.feature: Les unités d'une même famille sont converties
+liste-courses.feature: Les unités de familles différentes restent sur des lignes distinctes
+liste-courses.feature: Ordre des listes
+liste-courses.feature: Période et liste par défaut
+liste-courses.feature: Recalculer met la liste à jour et fait disparaître le bandeau
+liste-courses.feature: Renommer une liste
+liste-courses.feature: Retirer un article ajouté
+liste-courses.feature: Seuls les repas de la période sont pris en compte
+liste-courses.feature: Supprimer une liste vide
+liste-courses.feature: Un article ajouté déplacé reste une ligne distincte
+liste-courses.feature: Un article ajouté n'est pas fusionné avec un article calculé
+liste-courses.feature: Un article ajouté ne se déplie pas
+liste-courses.feature: Un article calculé déplacé est fusionné avec le même ingrédient
+liste-courses.feature: Un article coché dont la quantité augmente est décoché
+liste-courses.feature: Un article dont tous les plats servis ont été retirés disparaît, même coché
+liste-courses.feature: Un article déplacé garde sa coche et ses provenances
+liste-courses.feature: Un article indique le nombre de plats servis dont il provient
+liste-courses.feature: Un bandeau signale que des plats servis ont changé
+liste-courses.feature: Un changement sans effet sur les articles ne rend pas la liste périmée
+liste-courses.feature: Un ingrédient créé hors ligne n'est pas dupliqué
+liste-courses.feature: Un même plat servi peut être reçu par deux listes
+liste-courses.feature: Un nouvel article enrichit le référentiel d'ingrédients
+liste-courses.feature: Un plat ajouté au planning ne rend pas la liste périmée
+liste-courses.feature: Un plat sans ingrédient n'ajoute rien à la liste
+liste-courses.feature: Un plat servi dont les articles ont été achetés n'est pas ajouté de nouveau
+liste-courses.feature: Un plat servi déjà présent dans la liste d'arrivée n'est pas compté deux fois
+liste-courses.feature: Un plat servi déjà reçu par la liste n'est pas ajouté une seconde fois
+liste-courses.feature: Une coche est conservée si la quantité n'augmente pas
+liste-courses.feature: Une coche est retirée si la quantité augmente
+liste-courses.feature: Une liste créée à partir d'une sélection garde les provenances
+liste-courses.feature: Une liste qui contient des articles ne peut pas être supprimée
+liste-courses.feature: Une tribu naît avec une liste principale
+membres-et-sessions.feature: Ajouter un membre
+membres-et-sessions.feature: Consulter les membres de sa tribu
+membres-et-sessions.feature: Consulter ses sessions
+membres-et-sessions.feature: Déconnecter tous les autres appareils
+membres-et-sessions.feature: L'adresse est normalisée
+membres-et-sessions.feature: L'ajout d'un membre révoqué propose sa réactivation
+membres-et-sessions.feature: La révocation d'un membre trace la fermeture de ses sessions
+membres-et-sessions.feature: La révocation ne concerne que la tribu courante
+membres-et-sessions.feature: Le dernier membre actif peut se révoquer
+membres-et-sessions.feature: Le journal d'audit est en ajout seul
+membres-et-sessions.feature: Les données d'un membre révoqué sont conservées
+membres-et-sessions.feature: Les entrées de plus de 12 mois sont effacées
+membres-et-sessions.feature: Les opérations sur les membres sont tracées
+membres-et-sessions.feature: Les opérations sur les sessions sont tracées
+membres-et-sessions.feature: Les sessions d'une autre tribu n'apparaissent pas
+membres-et-sessions.feature: Nommer une session
+membres-et-sessions.feature: Refuser une adresse déjà membre active
+membres-et-sessions.feature: Réactiver un membre révoqué
+membres-et-sessions.feature: Révoquer un autre membre
+membres-et-sessions.feature: Révoquer une autre de ses sessions
+membres-et-sessions.feature: Se déconnecter
+membres-et-sessions.feature: Se révoquer soi-même
+membres-et-sessions.feature: Un membre révoqué affiche l'auteur et la date de sa révocation
+membres-et-sessions.feature: Un membre révoqué est déconnecté à sa requête suivante
+membres-et-sessions.feature: Une adresse déjà membre d'une autre tribu peut être ajoutée
+planning-repas.feature: Afficher les repas de 7 jours à partir d'aujourd'hui
+planning-repas.feature: Ajouter un plat à un repas
+planning-repas.feature: Les repas passés restent modifiables
+planning-repas.feature: Modifier le nombre de parts d'un plat servi
+planning-repas.feature: Naviguer vers la semaine précédente
+planning-repas.feature: Naviguer vers la semaine suivante
+planning-repas.feature: Retirer un plat d'un repas
+planning-repas.feature: Servir plusieurs plats dans un même repas
+planning-repas.feature: Un même plat ne peut pas être ajouté deux fois à un repas
+planning-repas.feature: Un plat retiré puis ajouté de nouveau repart de 4 parts
+tribu.feature: La taille de la tribu est proposée pour un nouveau plat
+tribu.feature: La taille de la tribu fixe les parts des plats servis ajoutés ensuite
+tribu.feature: La taille de la tribu vaut 4 par défaut
+tribu.feature: Le planning est partagé entre membres
+tribu.feature: Le référentiel d'ingrédients est partagé entre membres
+tribu.feature: Les plats sont partagés entre membres
+tribu.feature: Tous les membres ont les mêmes droits
