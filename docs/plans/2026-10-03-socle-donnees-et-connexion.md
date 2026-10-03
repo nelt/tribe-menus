@@ -67,7 +67,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - `gestion-membres-et-sessions.md` (EF-08) : 3 à 40 caractères ; lettres minuscules sans accent, chiffres et tirets ; une lettre en premier, pas de tiret final ni de tirets consécutifs ; une saisie non conforme est refusée, pas convertie ; aucun mot réservé (ADR 0006) ; non modifiable en V1.
   - `administration.feature` : un `Plan du scénario` d'identifiants refusés (`Martin`, `les_durand`, `é-nous`, `42`, `-martin`, `ab`), selon `conventions-gherkin.md`.
 - [x] **6. Schéma de la tribu, première migration** : `members` (adresse normalisée unique, nom d'affichage, statut, dates et auteurs d'ajout et de révocation), `audit_log` (EF-07 : date, opération, membre concerné, auteur, session et appareil détecté le cas échéant), nom de la tribu.
-- [ ] **7. `internal/tribe` : membres et audit.**
+- [x] **7. `internal/tribe` : membres et audit.**
   - Logique pure : normalisation de l'adresse (sans espaces, en minuscules), validation de l'identifiant d'URL, opérations d'audit nommées selon le glossaire.
   - Accès aux données par sqlc, en adaptateur mince.
 - [ ] **8. Sous-commande `tribe-menus admin init`** (EF-08).
