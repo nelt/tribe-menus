@@ -1,7 +1,7 @@
 # 0019. GitHub CLI en lecture seule dans le Dev Container
 
 - **Date** : 2026-10-01
-- **Statut** : accepté
+- **Statut** : accepté ; amendé par 0020 (jeton en écriture sur *Contents* et *Pull requests*)
 
 ## Contexte
 

@@ -1,4 +1,4 @@
-# Image du Dev Container (ADR 0009, 0018, 0019).
+# Image du Dev Container (ADR 0009, 0018, 0019, 0020).
 # Aucune version d'outil du projet n'est dupliquée ici : Go suit la directive
 # `toolchain` de go.mod (téléchargée au besoin), Node suit .nvmrc. Seules les
 # versions de Claude Code (aussi dans devcontainer.json) et de GitHub CLI sont
@@ -34,7 +34,7 @@ RUN version="$(tr -d '[:space:]v' < /tmp/.nvmrc)" \
  && rm -f "${file}" /tmp/.nvmrc \
  && node --version
 
-# GitHub CLI, en lecture seule sur le dépôt (ADR 0019) : archive officielle
+# GitHub CLI (ADR 0019 ; jeton en écriture, ADR 0020) : archive officielle
 # vérifiée par l'empreinte publiée avec la version.
 RUN case "$(dpkg --print-architecture)" in \
       amd64|arm64) arch="$(dpkg --print-architecture)" ;; \
@@ -47,6 +47,11 @@ RUN case "$(dpkg --print-architecture)" in \
  && tar -xzf "${file}" -C /usr/local --strip-components=1 --no-same-owner "gh_${GH_VERSION}_linux_${arch}/bin/gh" \
  && rm -f "${file}" \
  && gh --version
+
+# Réglages de Claude Code propres à l'image : Remote Control connecté à
+# l'ouverture de chaque session (ADR 0020). Ce réglage est ignoré dans
+# .claude/settings.json ; il est pris en compte dans ce fichier système.
+COPY .devcontainer/claude-managed-settings.json /etc/claude-code/managed-settings.json
 
 # Utilisateur non privilégié. Son UID est aligné sur celui de l'hôte à la
 # création du conteneur (updateRemoteUserUID), pour les droits sur le dépôt.

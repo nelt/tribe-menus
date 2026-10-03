@@ -1,6 +1,6 @@
 # Préparer un poste de développement
 
-Mise en route d'un poste Linux pour travailler sur Melting Tribe (ADR 0009, 0018). Sur l'hôte ne tournent que Docker, l'interface de VS Code, Git et GitHub CLI avec identifiants ; tout le reste (Go, Node, outils, Claude Code) tourne dans le Dev Container.
+Mise en route d'un poste Linux pour travailler sur Melting Tribe (ADR 0009, 0018, 0020). Sur l'hôte ne tournent que Docker, l'interface de VS Code, Git et GitHub CLI avec identifiants ; tout le reste (Go, Node, outils, Claude Code) tourne dans le Dev Container.
 
 ```
 Hôte                              Dev Container
@@ -8,7 +8,8 @@ Hôte                              Dev Container
 VS Code (interface)  ◄──────────► extensions, terminaux, Claude Code
 navigateur :8080     ◄── port ──► make dev (esbuild + serveur Go)
 tribe-menus/         ◄─ partagé ─► /workspaces/tribe-menus
-git push, gh (jeton)              git commit, make ci
+git, gh (jeton du poste)          git commit, make ci
+                                  git push, gh pr create (jeton du conteneur)
 ```
 
 ## 1. Compte GitHub
@@ -17,7 +18,7 @@ Réglages du compte, décrits dans `docs/securite-depot.md` (section 1) :
 
 - double authentification par passkey ou clé de sécurité ;
 - adresse e-mail privée et blocage des pushes qui l'exposent (Settings › Emails) ; noter l'adresse `ID+nelt@users.noreply.github.com` ;
-- un second jeton à portée fine, **`tribe-menus-devcontainer`**, pour GitHub CLI dans le Dev Container (ADR 0019) : limité au dépôt `tribe-menus`, avec une date d'expiration, **en lecture seule** : *Actions*, *Contents*, *Pull requests* et *Metadata*. Aucune permission en écriture : le push reste sur l'hôte ;
+- un second jeton à portée fine, **`tribe-menus-devcontainer`**, pour Git et GitHub CLI dans le Dev Container (ADR 0019, 0020) : limité au dépôt `tribe-menus`, avec une date d'expiration. Permissions : *Contents* et *Pull requests* en lecture et écriture ; *Actions* et *Metadata* en lecture. **Pas de *Workflows*** : les changements de `.github/workflows/` se poussent depuis l'hôte ;
 - un jeton à portée fine **dédié au poste**, limité au dépôt `tribe-menus`, avec une date d'expiration. Permissions : *Contents*, *Pull requests* et *Workflows* en lecture et écriture ; *Actions* en lecture seule (suivi de la CI avec `gh`).
 
 ## 2. Logiciels de l'hôte
@@ -41,7 +42,7 @@ Créer un profil « Melting Tribe » vide (Profiles › New Profile), y installe
 }
 ```
 
-Les deux derniers réglages empêchent VS Code de copier la configuration Git de l'hôte et de transmettre son assistant d'identifiants au conteneur (ADR 0018). L'agent SSH est coupé par `devcontainer.json`.
+Les deux derniers réglages empêchent VS Code de copier la configuration Git de l'hôte et de transmettre son assistant d'identifiants au conteneur (ADR 0018). L'agent SSH est coupé par `devcontainer.json`, qui fait aussi passer le Git du conteneur par le jeton de `gh` (ADR 0020).
 
 ## 4. Clone et configuration Git
 
@@ -89,12 +90,14 @@ Les commits portent la ligne DCO : `git commit -s` (ADR 0011).
 1. Ouvrir le dossier `tribe-menus` dans VS Code, avec le profil « Melting Tribe ».
 2. « Reopen in Container ». La première construction télécharge l'image Go, Node et Claude Code : compter quelques minutes.
 3. Dans un terminal du conteneur, lancer `claude` une première fois pour se connecter à son compte. La connexion est conservée dans le volume `tribe-menus-claude`.
-4. Toujours dans le conteneur, donner à GitHub CLI le jeton `tribe-menus-devcontainer` (lecture seule, ADR 0019) :
+4. Toujours dans le conteneur, donner à GitHub CLI le jeton `tribe-menus-devcontainer` (ADR 0019, 0020) :
 
    ```bash
    gh auth login --with-token   # coller le jeton, Entrée, puis Ctrl-D
    gh auth status               # compte nelt ; jeton dans /home/vscode/.config/gh/hosts.yml
    ```
+
+   Git s'en sert aussi pour pousser : rien d'autre à configurer, `git push -u origin feature/<sujet>` fonctionne dans le conteneur.
 
    Le jeton n'apparaît ni dans la ligne de commande ni dans l'historique. Il est conservé dans le volume `tribe-menus-gh` et survit à la reconstruction du conteneur. Pour le remplacer : `gh auth logout`, puis la même commande. Pour l'effacer tout à fait : `docker volume rm tribe-menus-gh` depuis l'hôte, conteneur arrêté.
 
@@ -103,8 +106,16 @@ Tant que le projet n'est pas initialisé, suivre `docs/plans/2026-09-29-environn
 ## 6. Au quotidien
 
 - Dans le conteneur : `make dev` (application sur `http://localhost:8080`), `make test`, `make ci` avant de pousser. `make help` liste les cibles.
-- Claude Code travaille dans le conteneur et peut commiter ; il ne pousse pas.
-- Depuis un terminal **de l'hôte** : `git push`, puis `gh pr create` (ou l'interface de GitHub).
+- Claude Code travaille dans le conteneur : il commite, pousse la branche `feature/…` et ouvre la PR (ADR 0020). Il ne fusionne pas : la fusion se fait dans l'interface de GitHub, une fois la CI au vert.
+- Depuis un terminal **de l'hôte** : les pushes qui modifient `.github/workflows/` (le jeton du conteneur n'a pas la permission *Workflows*), et tout ce qu'on préfère faire à la main.
+
+### Remote Control
+
+Chaque session de Claude Code ouverte dans le conteneur se connecte à Remote Control (ADR 0020) : elle apparaît sur [claude.ai/code](https://claude.ai/code) et dans l'application mobile, d'où on peut la suivre et lui répondre. La session s'exécute toujours dans le conteneur, qui doit rester ouvert.
+
+- Vérifier : `claude doctor`, ou `/remote-control` dans une session.
+- S'en passer sur ce poste : `{ "remoteControlAtStartup": false }` dans `.claude/settings.local.json`.
+- Si l'option « Require trusted devices » du compte claude.ai est activée, retirer `DISABLE_TELEMETRY` de `devcontainer.json`.
 
 ### Suivre la CI depuis le terminal
 
