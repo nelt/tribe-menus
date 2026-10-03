@@ -76,7 +76,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - En cas d'échec en cours de route, ni fichier ni entrée de registre ne restent.
 - [x] **9. Scénarios EF-08** (4, plus celui de l'étape 5) : définitions d'étapes godog qui pilotent la sous-commande avec une entrée et une sortie simulées ; lignes retirées de `pending.txt`.
 - [x] **10. `make seed`** : sous-commande `admin seed`, qui crée la tribu de démonstration `demo` (« Les Démo ») avec les membres des conventions Gherkin (Alice, Bruno, Chloé, David) ; sans effet si elle existe déjà. Elle s'enrichira avec les plats et le planning.
-- [ ] **11. Documentation du lot** : `CLAUDE.md` (cibles `generate`, `acceptance` et `seed` disponibles), `CHANGELOG.md`, cases cochées.
+- [x] **11. Documentation du lot** : `CLAUDE.md` (cibles `generate`, `acceptance` et `seed` disponibles), `CHANGELOG.md`, cases cochées.
 
 ### Lot B : connexion et session, côté API (`feature/enf-01-connexion-et-session`)
 
@@ -122,7 +122,11 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ## Notes d'exécution
 
+- **Étape 1** : une seule connexion par base, pour les lectures comme pour les écritures, plutôt qu'une connexion d'écriture à côté d'un pool de lecture : plus simple, et suffisant à cette échelle. Une tribu créée par un autre processus (`admin init` pendant que le serveur tourne) est ouverte et migrée à sa première requête.
 - **Étape 4** : le harnais donne à chaque scénario son propre dossier de données. Le serveur `httptest`, l'horloge et le `Mailer` de test arrivent avec le lot B, qui les crée ; aucun scénario du lot A n'en a besoin. Le test `TestAcceptance` ne s'exécute qu'avec l'option `-acceptance` (cible `make acceptance`), pour que `make test` ne le lance pas une seconde fois, sans étiquette de build qui cacherait les étapes à `go vet` et `staticcheck`. `pending.txt` contient au départ les 173 scénarios exécutables (175 moins les 2 `@manuel`).
+- **Étape 6** : `members.email` peut être NULL, pour l'anonymisation (EF-11), sans recréer la table plus tard ; l'auteur « script d'administration » est un auteur NULL.
+- **Étape 9** : les scénarios EF-08 pilotent `admin init` question par question ; les questions que le scénario ne mentionne pas reçoivent une réponse par défaut. L'étape « aucun e-mail n'est envoyé » consulte les envois enregistrés, qu'aucun code n'alimente avant le lot B.
+- **Étape 10** : la tribu `demo` est initialisée avec Alice, qui ajoute ensuite Bruno, Chloé et David ; d'où une méthode d'ajout de membre dans l'adaptateur de la tribu, en avance sur EF-01.
 
 ## Critères de validation
 
