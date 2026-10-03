@@ -1,7 +1,7 @@
 # Plan : socle de données et connexion (première tranche verticale)
 
 - **Date** : 2026-10-03
-- **Statut** : en cours (lot A fusionné ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
+- **Statut** : en cours (lot A fusionné, lot B en revue ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
 
 ## Objectif
 
@@ -104,7 +104,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 - [x] **18. Scénarios ENF-01 (16) et ENF-02 (5)** : définitions d'étapes godog ; lignes retirées de `pending.txt`. Les états de départ (membre révoqué, session vieille de 80 jours, demandes de code déjà faites) sont posés par le code du domaine et l'horloge de test, les actions et les vérifications passent par l'API.
   - **`Contexte` de `compartimentage-tribus.feature`** (D8) : l'étape « la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon" » quitte le `Contexte` et passe en première étape des cinq scénarios qui s'en servent (bibliothèque de plats, référentiel d'ingrédients, même nom d'ingrédient, accès croisé refusé, toutes les données compartimentées). Sans cela, les 5 scénarios du lot dépendent des plats, qui n'existent pas encore.
   - **Harnais** (D13) : les étapes appellent le handler du serveur directement (`httptest.NewRequest` et `httptest.NewRecorder`), sans connexion réseau. Le test fixe ainsi l'adresse IP du client (`RemoteAddr`), ce qu'exige le scénario des limites par IP et par tribu, et reporte lui-même le cookie de session d'une requête à l'autre, un « appareil » du scénario étant un porte-cookie distinct.
-- [ ] **19. Documentation du lot.**
+- [x] **19. Documentation du lot.**
   - Conservation d'une heure des empreintes d'adresse et d'IP : à reporter dans `gestion-membres-et-sessions.md` (conservation, PT-07) et dans la page Confidentialité (`docs/design/README.md`, maquette `Confidentialite`).
   - `CHANGELOG.md`, cases cochées.
 
@@ -137,6 +137,16 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - **Nom de la tribu stocké deux fois** : dans le registre (ADR 0003, point 2) et dans la table `tribe` de sa base. Aucune story ne renomme une tribu ; désigner la source de vérité au plus tard quand le lot B lira le nom après connexion. *Tranché : D9, consigné dans l'ADR 0021.*
   - **Une seule connexion par base, lectures comprises** (étape 1) : une requête lancée sur la base pendant qu'une transaction ou un curseur est ouvert attend indéfiniment. Règle pour le lot B : dans une transaction, tout passe par elle ; les curseurs sont fermés avant toute autre requête.
 - **Relecture du lot B après la fusion du lot A** (2026-10-03) : le code du lot A correspond à ce que le lot B suppose (colonnes `session_id` et `detected_device` du journal d'audit, sans clé étrangère, donc compatibles avec l'effacement des sessions ; opérations d'audit du glossaire ; format des dates). Deux points de l'étape 18 ne pouvaient pas passer tels qu'écrits (D8, D13) et quatre restaient implicites (D9 à D12). Le serveur ne reçoit pas encore le stockage, l'horloge ni le `Mailer` : câblage attendu de l'étape 16.
+
+- **Lot B, choix faits à l'implémentation** (2026-10-03) :
+  - **Contrat de l'API**, en JSON. `POST login-codes` : 202 sans corps, 400 `invalid_email`, 429 `too_many_requests`. `POST sessions` : 201 avec `tribe.name` et `member` (`email`, `displayName`), 400 `incorrect_code` avec `attemptsLeft` (0 : code invalidé), 400 `new_code_needed` (code expiré, épuisé, déjà utilisé, remplacé ou jamais demandé, sans distinction). `GET session` : 200 comme ci-dessus, 401 `no_session`. `DELETE session` : 204, 401 sans session. Corps illisible : 400 `bad_request` ; chemin inconnu sous `api/` : 404 `not_found`. Un cookie qui ne correspond à aucune session est effacé.
+  - **Vérification de l'origine** : `http.CrossOriginProtection` de la bibliothèque standard (Go 1.25), qui lit `Sec-Fetch-Site` puis `Origin` ; une requête sans ces en-têtes (client hors navigateur) passe, ce qui ne crée pas de risque CSRF.
+  - **Seules les demandes acceptées comptent** dans la limitation : une demande refusée n'est pas enregistrée, ce qui borne la taille de la base de limitation.
+  - **Hors `-dev`**, le serveur n'envoie aucun code (`Mailer` qui refuse, sans écrire le code dans les logs) jusqu'à l'envoi SMTP du déploiement.
+  - **Effacement automatique** au démarrage puis toutes les 10 minutes ; une session est aussi supprimée à la déconnexion.
+  - **Harnais** : une même formulation sert d'état de départ et de vérification (« … est membre actif de la tribu … ») ; l'étape lit le type de l'étape Gherkin (`Context` ou `Outcome`) pour savoir si elle pose l'état ou le vérifie. Les appareils sont des `cookiejar` sur une origine `https`, pour que le cookie `Secure` circule. « L'application affiche le même message que pour une adresse membre » rejoue la demande pour un membre actif depuis un autre appareil, et l'e-mail de cette référence n'est pas compté par « aucun e-mail n'est envoyé ».
+  - **Révocation d'un membre** (en avance sur EF-03) : elle ferme ses sessions (entrées « fermeture de session ») et invalide son code.
+  - **D12 reste à confirmer** par le développeur : l'appareil détecté est calculé et tracé comme prévu.
 
 ## Critères de validation
 
