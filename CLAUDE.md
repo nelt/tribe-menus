@@ -4,7 +4,7 @@ Instructions pour Claude Code dans ce dépôt.
 
 ## Contexte
 
-Application **Melting Tribe** (menus de la semaine, en tribu), dépôt public sous AGPL. Le travail préparatoire (cadrage, architecture, découpage) est souvent fait en amont dans Claude (chat) puis déposé dans `docs/`. L'ordre des plans de travail est dans `docs/feuille-de-route.md`, à mettre à jour quand un plan est créé, terminé ou déplacé.
+Application **Melting Tribe** (menus de la semaine, en tribu), dépôt public sous AGPL. Le travail préparatoire (cadrage, architecture, découpage) est souvent fait en amont dans Claude (chat) puis déposé dans `docs/`. L'ordre des plans de travail est dans `docs/feuille-de-route.md`, à mettre à jour quand un plan est créé, terminé ou déplacé ; elle fixe aussi le nommage : un plan a un nom court (`socle`), un lot se désigne par le nom de son plan et une lettre (`socle/C`).
 
 ## Avant de coder
 

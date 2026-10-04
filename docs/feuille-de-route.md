@@ -4,35 +4,55 @@
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
+## Vocabulaire et nommage
+
+| Terme | Ce que c'est | Comment on le désigne |
+| --- | --- | --- |
+| **Feuille de route** | La liste ordonnée des plans. | Ce document. |
+| **Plan** | Un objectif et ce qu'il faut pour l'atteindre : contexte, étapes, décisions. Un fichier `plans/AAAA-MM-JJ-sujet.md`. | Par son **nom** : court, en minuscules, sans accent, fixé à la création et jamais changé (`socle`). |
+| **Lot** | Une partie d'un plan livrée par une PR fusionnable seule. N'existe que si le plan demande plusieurs PR. | Par le nom de son plan et une lettre : `socle/C`, ou « lot C du plan `socle` ». Dans le plan lui-même, « lot C » suffit. |
+| **Étape** | Une case à cocher d'un plan. | Par son numéro, continu d'un lot à l'autre. |
+
+- **Un plan n'a pas de numéro.** Son rang est sa position dans le tableau ci-dessous, qui change quand un plan est inséré ; son nom, lui, ne change pas.
+- **Les lettres des lots** suivent l'ordre de réalisation et ne sont jamais réattribuées : la lettre d'un lot abandonné ou scindé n'est pas reprise.
+- **Les décisions** d'un plan sont numérotées dans ce plan (D1, D2…) ; hors du plan, on écrit `socle`, D14.
+- **Le nom figure dans l'en-tête du plan** (ligne « Nom »), à côté de la date et du statut.
+- **Titres de PR et lignes de `CHANGELOG.md`** : le lot est cité à côté des stories, sous la forme `socle/C`.
+- **Branches** : décrites par leur sujet (`feature/enf-01-ecrans-de-connexion`), sans le nom du plan.
+
 ## Plans, dans l'ordre
 
-| # | Sujet | Plan | État |
+| Nom | Sujet | Plan | État |
 | --- | --- | --- | --- |
-| 1 | Environnement de développement | [`2026-09-29-environnement-de-developpement.md`](plans/2026-09-29-environnement-de-developpement.md) | terminé |
-| 2 | Intégration continue | [`2026-09-30-integration-continue.md`](plans/2026-09-30-integration-continue.md) | terminé |
-| 3 | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | en cours : lots A et B fusionnés, lot C à réaliser |
-| 4 | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | prêt ; commence après le lot C |
-| 5 | Application prête pour la production | à écrire | après le plan 4 |
-| 6 | Serveur, recette et première release | à écrire | après le plan 5 |
+| `environnement` | Environnement de développement | [`2026-09-29-environnement-de-developpement.md`](plans/2026-09-29-environnement-de-developpement.md) | terminé |
+| `ci` | Intégration continue | [`2026-09-30-integration-continue.md`](plans/2026-09-30-integration-continue.md) | terminé |
+| `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | en cours : `socle/A` et `socle/B` fusionnés, `socle/C` en cours de réalisation |
+| `canal-prive` | Canal privé pour les vulnérabilités | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | prêt ; avance en parallèle de `socle/C` |
+| `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | prêt ; commence après `socle/C` et `canal-prive` |
+| `production` | Application prête pour la production | à écrire | après `revue-securite` |
+| `recette` | Serveur, recette et première release | à écrire | après `production` |
 
-### 5. Application prête pour la production
+### `production` : application prête pour la production
 
 Ce qui manque au binaire, sans toucher au serveur : envoi SMTP réel et alerte sur échecs répétés (ADR 0014) ; fichier de configuration et secrets en credentials systemd, écoute sur le socket transmis par systemd, logs en JSON (ADR 0015) ; lecture de `X-Forwarded-For` pour les seules requêtes venant de Caddy, avec le décompte des IPv6 par préfixe /64 (ADR 0006, point 7) ; noms de fichiers du front avec empreinte, `release.yml`, `RELEASING.md` (ADR 0012).
 
-### 6. Serveur, recette et première release
+### `recette` : serveur, recette et première release
 
-`deploy/provision.sh`, unité systemd confinée, configuration de Caddy, script `tribe-menus-deploy` avec instantané et retour arrière (ADR 0015, 0016) ; DNS et e-mail (CAA, DNSSEC, SPF, DKIM, DMARC, boîtes `no-reply@` et `server@`, ADR 0007 et 0014) ; déploiement en recette et vérification sur téléphone : scénarios `@manuel`, connexion sous Safari (plan 3, D14), réception du code sur les messageries réelles ; relecture de sécurité des scripts de déploiement dans leurs PR, puis contrôle du serveur en place.
+`deploy/provision.sh`, unité systemd confinée, configuration de Caddy, script `tribe-menus-deploy` avec instantané et retour arrière (ADR 0015, 0016) ; DNS et e-mail (CAA, DNSSEC, SPF, DKIM, DMARC, boîtes `no-reply@` et `server@`, ADR 0007 et 0014) ; déploiement en recette et vérification sur téléphone : scénarios `@manuel`, connexion sous Safari (`socle`, D14), réception du code sur les messageries réelles ; relecture de sécurité des scripts de déploiement dans leurs PR, puis contrôle du serveur en place.
 
 ## Décisions d'ordonnancement
 
 Le 2026-10-04, avec le développeur.
 
 - **Le déploiement passe avant le métier.** Il rend l'application utilisable ailleurs qu'en local et permet les vérifications renvoyées à la recette.
-- **Une revue de sécurité précède le déploiement**, pour ne pas livrer de vulnérabilité : le plan 4 porte sur le code existant, le plan 6 relit ses propres scripts.
-- **Le premier déploiement vise la recette seule.** À la fin du plan 3, l'application ne fait que connecter un membre ; la production ouvre quand le planning existe.
+- **Une revue de sécurité précède le déploiement**, pour ne pas livrer de vulnérabilité : `revue-securite` porte sur le code existant, `recette` relit ses propres scripts.
+- **Le canal privé précède la revue de sécurité.** Le dépôt étant public, tout ce que les sessions Claude s'écrivent par les PR l'est aussi, vulnérabilités comprises. `canal-prive` installe un canal réservé aux vulnérabilités ; `revue-securite` s'en sert, ce qui le met à l'épreuve avant qu'une version soit en ligne.
+- **Le premier déploiement vise la recette seule.** À la fin de `socle`, l'application ne fait que connecter un membre ; la production ouvre quand le planning existe.
 - **Le site public attend l'ouverture de la production** : mentions légales et page Confidentialité doivent être en ligne en même temps qu'elle, pas avant.
 
 ## Ensuite, sans ordre arrêté
+
+Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
 - **Métier** : bibliothèque de plats, planning des repas, listes de courses ; avec eux, les scénarios de compartimentage des données métier (ENF-02).
@@ -45,9 +65,9 @@ Le 2026-10-04, avec le développeur.
 
 | Point | Origine | À reprendre |
 | --- | --- | --- |
-| Force brute sur le code de connexion ; blocage ciblé d'une tribu par ses limites | revue de la PR #29 | plan 4 |
-| Forme de l'appareil détecté dans le journal d'audit ; iPad vu comme un ordinateur | revue de la PR #29, D12 | plan 4, puis EF-04 |
-| Adresse IP du client derrière Caddy ; IPv6 par préfixe /64 | revue de la PR #29 | plan 5 |
+| Force brute sur le code de connexion ; blocage ciblé d'une tribu par ses limites | revue de la PR #29 | `revue-securite` |
+| Forme de l'appareil détecté dans le journal d'audit ; iPad vu comme un ordinateur | revue de la PR #29 ; `socle`, D12 | `revue-securite`, puis EF-04 |
+| Adresse IP du client derrière Caddy ; IPv6 par préfixe /64 | revue de la PR #29 | `production` |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
-| Lien entre Playwright et les `.feature` (tag `@ui`) | plan 3, D5 | première story prouvée seulement dans le navigateur (C5 ou C7) |
-| Écriture de la dernière activité à chaque requête | plan 3, questions ouvertes | si la mesure le justifie |
+| Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | première story prouvée seulement dans le navigateur (C5 ou C7) |
+| Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |

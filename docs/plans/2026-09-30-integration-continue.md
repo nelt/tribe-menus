@@ -1,5 +1,6 @@
 # Plan : intégration continue (GitHub Actions)
 
+- **Nom** : `ci`
 - **Date** : 2026-09-30
 - **Statut** : terminé
 

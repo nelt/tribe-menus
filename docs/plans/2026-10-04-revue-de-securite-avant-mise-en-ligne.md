@@ -1,7 +1,8 @@
 # Plan : revue de sécurité avant mise en ligne
 
+- **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : prêt (commence quand le lot C du plan « socle de données et connexion » est fusionné)
+- **Statut** : prêt (commence quand `socle/C` est fusionné et que le plan `canal-prive` est terminé)
 
 ## Objectif
 
@@ -13,14 +14,14 @@ S'assurer, avant d'écrire le déploiement, que le code existant ne livre pas de
 - les points de specs sur la force brute et le blocage ciblé sont tranchés et, s'il y a lieu, implémentés ;
 - l'état des protections du dépôt (`docs/securite-depot.md`) est vérifié.
 
-**Hors périmètre** : ce qui n'existe qu'avec le déploiement, renvoyé aux plans 5 et 6 de `docs/feuille-de-route.md` (adresse IP du client derrière Caddy, secrets, confinement systemd, configuration de Caddy, scripts de `deploy/`).
+**Hors périmètre** : ce qui n'existe qu'avec le déploiement, renvoyé aux plans `production` et `recette` de `docs/feuille-de-route.md` (adresse IP du client derrière Caddy, secrets, confinement systemd, configuration de Caddy, scripts de `deploy/`).
 
 ## Contexte et contraintes
 
 - À lire avant de commencer : ADR 0001, 0003, 0004 (point 9), 0006, 0011, 0021 ; `docs/specs/exigences-non-fonctionnelles.md` (ENF-01, ENF-02) ; `gestion-membres-et-sessions.md` ; `docs/securite-depot.md` ; les notes d'exécution du plan `2026-10-03-socle-donnees-et-connexion.md` (revues des PR #26 et #29).
 - **Qui fait quoi.** La revue (étapes 2 à 4) est faite par une **session cloud**, qui n'a pas écrit le code. Les corrections (étape 6) sont faites par **Claude Code dans le Dev Container**, qui peut lancer `make ci`. Le développeur arbitre entre les deux (étape 5).
-- **Pas de PR à relire** : le code est déjà fusionné, `docs/revue-de-pr.md` ne s'applique donc pas tel quel. Le relecteur consigne ses constats dans ce plan, par une PR de documentation, avec les deux catégories du protocole : « à corriger » et « à noter ».
-- **Constats publiés dans un dépôt public** : acceptable tant que l'application n'est déployée nulle part. Après le premier déploiement, une vulnérabilité se signale et se traite en privé (`SECURITY.md`).
+- **Pas de PR à relire** : le code est déjà fusionné, `docs/revue-de-pr.md` ne s'applique donc pas tel quel. Les constats gardent les deux catégories du protocole, « à corriger » et « à noter ».
+- **Les constats passent par le canal privé** mis en place par le plan `canal-prive`, selon sa règle de tri : ce qui est exploitable, ou dont on ne sait pas encore si ça l'est, y reste jusqu'à la correction ; le reste est consigné dans ce plan, par une PR. Rien n'est encore déployé : c'est aussi la première mise à l'épreuve du canal.
 - **Un constat est concret** : fichier et fonction, scénario d'attaque en une phrase, conséquence. Pas de recommandation générale sans cas d'usage dans ce code.
 - **Git** : une branche `feature/…` et une PR par étape qui change le dépôt ; `git commit -s` ; une ligne dans `CHANGELOG.md` par PR ; `make ci` avant de pousser pour les PR de code.
 
@@ -55,18 +56,18 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Options réservées au développement (`-dev`, `-mail-file`) : ce qu'elles ouvrent si elles sont activées par erreur en production, et ce qui l'empêche.
   - Commandes d'administration : entrées non validées, états partiels après un échec.
 - [ ] **4. Revue : serveur HTTP et front** (`internal/server/server.go`, `web/`).
-  - En-têtes : CSP au regard de ce que le front charge réellement, `nosniff`, `Referrer-Policy`, `noindex` ; ce qui reviendra à Caddy (HSTS) est noté pour le plan 6.
+  - En-têtes : CSP au regard de ce que le front charge réellement, `nosniff`, `Referrer-Policy`, `noindex` ; ce qui reviendra à Caddy (HSTS) est noté pour le plan `recette`.
   - Service des fichiers du front : traversée de chemin, fichiers servis par erreur (sourcemaps, sources), mise en cache.
   - Gabarit `index.html` : valeurs injectées (`Base`, adresse du code source) et leur échappement.
   - Front : aucune échappatoire au rendu échappé (`webcheck`), rien de sensible gardé côté client, nom de la tribu jamais affiché avant connexion, comportement sur un 401.
   - Délais et limites du serveur (`ReadHeaderTimeout` seul aujourd'hui) : lecture du corps, écriture, connexions inactives.
   - Dépendances : `make vuln`, licences, et ce que `go.mod` et `package.json` embarquent réellement dans le binaire.
 - [ ] **5. Constats et arbitrage.**
-  - Le relecteur ouvre une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier.
-  - Le développeur arbitre dans la PR (retirer un point, le changer de catégorie), puis fusionne.
+  - Le relecteur trie ses constats selon la règle du plan `canal-prive`. Les constats privés vont dans le canal ; les autres dans une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier.
+  - Le développeur arbitre (retirer un point, le changer de catégorie, le faire passer du privé au public), puis fusionne la PR.
 - [ ] **6. Corrections**, par Claude Code dans le Dev Container.
-  - Les décisions de l'étape 1 qui touchent au code, et chaque point « à corriger » : un commit par point, test compris ; `make ci`.
-  - Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
+  - Les décisions de l'étape 1 qui touchent au code, et chaque point public « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
+  - Les constats privés sont corrigés par le déroulé du plan `canal-prive`, et ajoutés à la section « Constats » une fois corrigés.
   - Les points « à noter » rejoignent `docs/feuille-de-route.md` (points reportés), avec le plan qui les reprendra.
 - [ ] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
