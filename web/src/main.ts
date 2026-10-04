@@ -1,6 +1,5 @@
 // Provisional skeleton, to be replaced by the router (ADR 0004).
 import { LitElement, css, html } from "lit";
-import { tribeIdFromPath } from "./route.ts";
 
 export class App extends LitElement {
   static override styles = css`
@@ -19,11 +18,7 @@ export class App extends LitElement {
   `;
 
   override render() {
-    const tribeId = tribeIdFromPath(window.location.pathname);
-    return html`
-      <h1>Melting Tribe</h1>
-      ${tribeId === undefined ? null : html`<p>tribu ${tribeId}</p>`}
-    `;
+    return html`<h1>Melting Tribe</h1>`;
   }
 }
 
