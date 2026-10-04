@@ -1,15 +1,106 @@
-/* Design tokens (docs/design/README.md), visible inside shadow roots. */
+/* Self-hosted fonts (ADR 0004, point 5): see fonts/README.md. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("fonts/BricolageGrotesque[opsz,wdth,wght].woff2") format("woff2");
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("fonts/Figtree[wght].woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Design tokens (docs/design/README.md), declared on :root so that shadow roots see them. */
 :root {
+  /* Interface colours */
   --color-background: #ffffff;
   --color-text: #22193a;
   --color-text-secondary: #5e5470;
+  --color-text-muted: #6e6680;
   --color-border: #e7e1ee;
+  --color-dashed: #cfc6de;
   --color-action: #c63d24;
+  --color-action-hover: #9e2e19;
+  --color-error: #c63d24;
+  --color-focus: #e39a89;
+  --color-lunch-border: #f2d27a;
+  --color-lunch-text: #8a6100;
+  --color-dinner-border: #bdbaf0;
+  --color-dinner-text: #3d3a8c;
+  --color-success-border: #a9d3b1;
+  --color-success-text: #2f7a3e;
+  --color-overlay: rgba(34, 25, 58, 0.45);
+
+  /* Dish colours: strong hue (text), and the same lightened by 60 % towards white (border) */
+  --color-dish-1: #c2502e;
+  --color-dish-1-border: #e7b9ab;
+  --color-dish-2: #3f7f25;
+  --color-dish-2-border: #b2cca8;
+  --color-dish-3: #2f6fb0;
+  --color-dish-3-border: #acc5df;
+  --color-dish-4: #b0306a;
+  --color-dish-4-border: #dfacc3;
+  --color-dish-5: #b36a0b;
+  --color-dish-5-border: #e1c39d;
+  --color-dish-6: #8a45b3;
+  --color-dish-6-border: #d0b5e1;
+  --color-dish-7: #2e8a6e;
+  --color-dish-7-border: #abd0c5;
+  --color-dish-8: #9c7400;
+  --color-dish-8-border: #d7c799;
+  --color-dish-9: #6e6680;
+  --color-dish-9-border: #c5c2cc;
+
+  /* Identity colours */
+  --color-brand-red: #c63d24;
+  --color-brand-red-on-dark: #ee7a5f;
+  --color-soup: #f2c94c;
+  --color-carrot: #e07b1f;
+
+  /* Typography */
+  --font-heading: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-text: "Figtree", system-ui, sans-serif;
+
+  /* Shapes */
+  --border-thin: 1.5px;
+  --border-strong: 2px;
+  --radius-pill: 999px;
+  --radius-field: 16px;
+  --radius-button: 18px;
+  --radius-card: 20px;
+  --radius-sheet: 26px;
+  --touch-target: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-text);
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-text);
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  color: var(--color-action);
+}
+
+a:hover {
+  color: var(--color-action-hover);
+}
+
+button,
+input {
+  font: inherit;
 }
