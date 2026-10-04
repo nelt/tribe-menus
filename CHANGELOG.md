@@ -4,7 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
-- Revue du lot B : un identifiant d'URL hors format n'est plus écrit en clair dans la base de limitation (ADR 0021) ; durée de conservation des empreintes annoncée telle qu'elle est, une heure et dix minutes au plus.
+- Revue du lot B : un identifiant d'URL hors format n'est plus écrit en clair dans la base de limitation (ADR 0021) ; durée de conservation des empreintes annoncée telle qu'elle est, une heure et dix minutes au plus ; test des limites et des essais après un redémarrage.
 - Connexion et session côté API (ENF-01, ENF-02) : code à 6 chiffres envoyé par e-mail (écrit dans les logs en développement), session par cookie à expiration glissante de 90 jours, limitation des demandes et codes fantômes dans une base dédiée (ADR 0021), effacement automatique, déconnexion ; 21 scénarios Gherkin passent.
 - Plan de la première tranche verticale, lot B précisé après la fusion du lot A : `Contexte` de `compartimentage-tribus.feature`, harnais godog sans connexion réseau, source du nom de la tribu, empreintes par tribu, fin des envois d'e-mail, appareil détecté (D8 à D13).
 - Protocole de revue de PR entre sessions Claude (`docs/revue-de-pr.md`) : un commentaire de revue structuré, corrections par l'auteur, clôture par le relecteur ; `gh pr comment` autorisé sans confirmation (ADR 0020).
