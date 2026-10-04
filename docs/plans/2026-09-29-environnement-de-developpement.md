@@ -1,5 +1,6 @@
 # Plan : environnement de développement sur le poste
 
+- **Nom** : `environnement`
 - **Date** : 2026-09-29
 - **Statut** : terminé
 
