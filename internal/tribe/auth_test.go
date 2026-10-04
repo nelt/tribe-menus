@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -165,6 +166,13 @@ func TestRateLimits(t *testing.T) {
 			},
 			n: TribeRequestLimit, slug: "dupont", email: "alice@exemple.fr", ip: "192.0.2.9",
 		},
+		{
+			name: "by malformed slug",
+			prior: func(i int) (string, string, string) {
+				return "Pas un identifiant", string(rune('a'+i)) + "x@exemple.fr", "198.51.100." + string(rune('0'+i%10))
+			},
+			n: TribeRequestLimit, slug: "Pas un identifiant", email: "alice@exemple.fr", ip: "192.0.2.9",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -197,6 +205,33 @@ func TestRateLimits(t *testing.T) {
 				t.Errorf("after the window: %v", err)
 			}
 		})
+	}
+}
+
+// TestMalformedSlugIsNotStored: a slug no tribe can have gets the answers of an unknown
+// tribe, and the rate limit database keeps neither its text nor its length (ADR 0021).
+func TestMalformedSlugIsNotStored(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	slug := "alice@exemple.fr " + strings.Repeat("x", 10_000)
+
+	if err := f.login.RequestCode(ctx, slug, nil, "alice@exemple.fr", "192.0.2.1"); err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if len(f.mailer.sent) != 0 {
+		t.Errorf("sent = %v, want nothing", f.mailer.sent)
+	}
+	var incorrect *IncorrectCodeError
+	if _, _, err := f.login.OpenSession(ctx, slug, nil, "alice@exemple.fr", "123456", Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+		t.Errorf("open session: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
+	}
+
+	var stored string
+	if err := f.store.RateLimit().QueryRowContext(ctx, "SELECT slug FROM code_requests").Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	if len(stored) != 65 || strings.Contains(stored, "alice") {
+		t.Errorf("stored slug = %q (%d bytes), want a hash", stored, len(stored))
 	}
 }
 
@@ -421,5 +456,74 @@ func TestPurge(t *testing.T) {
 	}
 	if _, _, _, s := counts(); s != 0 {
 		t.Errorf("after 90 days: %d sessions, want 0", s)
+	}
+}
+
+// TestLimitsSurviveRestart: after the databases are closed and opened again, as at a
+// restart of the server, the requests already made and the attempts already used still
+// count, for a real code as for a decoy code (ADR 0021).
+func TestLimitsSurviveRestart(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	now := time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC)
+	mailer := &fakeMailer{}
+	migrations, err := storage.EmbeddedMigrations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	open := func() (*storage.Store, *Login, *Store) {
+		t.Helper()
+		st, err := storage.Open(ctx, dir, migrations)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = st.Close() })
+		login := &Login{RateLimit: NewRateLimitDB(st.RateLimit()), Mailer: mailer, Now: func() time.Time { return now }}
+		db, err := st.Tribe(ctx, "martin")
+		if errors.Is(err, storage.ErrUnknownTribe) {
+			return st, login, nil
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return st, login, NewStore(db)
+	}
+
+	st, login, _ := open()
+	err = st.CreateTribe(ctx, "martin", "Les Martin", func(ctx context.Context, db *sql.DB) error {
+		return NewStore(db).Initialize(ctx, "Les Martin", "alice@exemple.fr", "Alice", now)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := st.Tribe(ctx, "martin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	martin := NewStore(db)
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		for range EmailRequestLimit {
+			if err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", Device{}); err == nil {
+			t.Fatal("a wrong code was accepted")
+		}
+	}
+	if err := st.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, login, martin = open()
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		if err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); !errors.Is(err, ErrTooManyRequests) {
+			t.Errorf("%s: request after restart: error = %v, want ErrTooManyRequests", email, err)
+		}
+		_, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", Device{})
+		var incorrect *IncorrectCodeError
+		if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-2 {
+			t.Errorf("%s: attempt after restart: error = %v, want %d attempts left", email, err, LoginCodeAttempts-2)
+		}
 	}
 }

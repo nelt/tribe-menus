@@ -2,6 +2,7 @@ package tribe
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"time"
 )
 
@@ -22,7 +23,9 @@ const (
 // CodeRequest is a request for a login code, as the rate limit sees it: no address nor
 // IP in clear (ADR 0021).
 type CodeRequest struct {
-	// Slug is the slug of the URL, whether a tribe has it or not.
+	// Slug is the slug of the URL, whether a tribe has it or not. A slug that does not
+	// follow the format of EF-08, which no tribe can have, is replaced by its hash: nothing
+	// of arbitrary length nor content chosen by the client is stored.
 	Slug string
 	// EmailHash is the hash of the address with the slug: the same address has unrelated
 	// hashes in two tribes (ENF-02).
@@ -33,7 +36,19 @@ type CodeRequest struct {
 
 // NewCodeRequest returns the request of email for the tribe slug from ip.
 func NewCodeRequest(slug string, email Email, ip string) CodeRequest {
-	return CodeRequest{Slug: slug, EmailHash: emailHash(slug, email), IPHash: hash(ip)}
+	return CodeRequest{Slug: requestSlug(slug), EmailHash: emailHash(slug, email), IPHash: hash(ip)}
+}
+
+// malformedSlugPrefix starts the stored form of a malformed slug: no slug has this character.
+const malformedSlugPrefix = "#"
+
+// requestSlug is the slug as the rate limit database keeps it: in clear when it follows
+// the format of EF-08, as its SHA-256 hash in hexadecimal otherwise.
+func requestSlug(slug string) string {
+	if _, err := ParseSlug(slug); err == nil {
+		return slug
+	}
+	return malformedSlugPrefix + hex.EncodeToString(hash(slug))
 }
 
 // emailHash hashes an address with the slug of the tribe. Neither contains a line feed.

@@ -34,7 +34,9 @@ const (
 	readHeaderTimeout = 10 * time.Second
 	shutdownTimeout   = 10 * time.Second
 	// purgeInterval: login codes, sessions and rate limit rows are purged at startup, then
-	// at this interval (PT-07).
+	// at this interval (PT-07). The retention stated in the specs, ADR 0021 and the privacy
+	// page (an hour and ten minutes at most for the hashes of addresses and IPs) is
+	// tribe.RateLimitRetention plus this interval: change them together.
 	purgeInterval = 10 * time.Minute
 )
 

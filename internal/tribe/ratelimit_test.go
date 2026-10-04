@@ -48,3 +48,44 @@ func TestNewCodeRequest(t *testing.T) {
 		}
 	}
 }
+
+func TestRequestSlug(t *testing.T) {
+	long := strings.Repeat("x", 10_000)
+	cases := []struct {
+		name      string
+		slug      string
+		wantClear bool
+	}{
+		{name: "slug of a tribe", slug: "martin", wantClear: true},
+		{name: "well-formed slug without tribe", slug: "les-dupont-2", wantClear: true},
+		{name: "upper case", slug: "Martin"},
+		{name: "too short", slug: "ab"},
+		{name: "too long", slug: long},
+		{name: "free text", slug: "alice@exemple.fr, 12 rue des Lilas"},
+		{name: "line feed", slug: "martin\nalice"},
+		{name: "empty", slug: ""},
+		{name: "already in the stored form", slug: "#" + strings.Repeat("0", 64)},
+	}
+	seen := map[string]string{}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := NewCodeRequest(tc.slug, "alice@exemple.fr", "192.0.2.1").Slug
+			if tc.wantClear {
+				if got != tc.slug {
+					t.Errorf("stored slug = %q, want %q", got, tc.slug)
+				}
+				return
+			}
+			if len(got) != 65 || !strings.HasPrefix(got, "#") || got == tc.slug {
+				t.Errorf("stored slug = %q, want # and a SHA-256 in hexadecimal", got)
+			}
+			if _, err := ParseSlug(got); err == nil {
+				t.Errorf("stored slug %q could be the slug of a tribe", got)
+			}
+			if other, ok := seen[got]; ok {
+				t.Errorf("%q and %q are stored alike", tc.slug, other)
+			}
+			seen[got] = tc.slug
+		})
+	}
+}

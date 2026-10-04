@@ -1,7 +1,7 @@
 # Plan : socle de données et connexion (première tranche verticale)
 
 - **Date** : 2026-10-03
-- **Statut** : en cours (lot A fusionné, lot B en revue ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
+- **Statut** : en cours (lots A et B fusionnés ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
 
 ## Objectif
 
@@ -147,6 +147,12 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - **Harnais** : une même formulation sert d'état de départ et de vérification (« … est membre actif de la tribu … ») ; l'étape lit le type de l'étape Gherkin (`Context` ou `Outcome`) pour savoir si elle pose l'état ou le vérifie. Les appareils sont des `cookiejar` sur une origine `https`, pour que le cookie `Secure` circule. « L'application affiche le même message que pour une adresse membre » rejoue la demande pour un membre actif depuis un autre appareil, et l'e-mail de cette référence n'est pas compté par « aucun e-mail n'est envoyé ».
   - **Révocation d'un membre** (en avance sur EF-03) : elle ferme ses sessions (entrées « fermeture de session ») et invalide son code.
   - **D12 reste à confirmer** par le développeur : l'appareil détecté est calculé et tracé comme prévu.
+- **Revue de la PR #29** (2026-10-04, faite après la fusion ; corrections dans une PR à part) :
+  - **Corrigé** : un segment d'URL hors du format d'EF-08 n'est plus écrit en clair dans la base de limitation, seule son empreinte l'est (ADR 0021, point 3) ; la durée de conservation des empreintes est annoncée telle qu'elle est, une heure et dix minutes au plus (fenêtre d'une heure, effacement toutes les dix minutes).
+  - **Adresse IP du client derrière Caddy** : `clientIP` lit l'adresse de la connexion TCP ; derrière le proxy, toute l'instance partagerait une seule IP, donc 10 demandes par heure au total. À traiter avec la lecture de `X-Forwarded-For` (déploiement). Au même moment : compter une IPv6 par préfixe /64, sinon la limite par IP se contourne en changeant d'adresse.
+  - **Appareil détecté écrit en anglais dans le journal d'audit** : `audit_log.detected_device` contient une chaîne d'affichage (« computer · Linux · Firefox · tab »), alors que `sessions` a des colonnes structurées. À trancher avec EF-04, avant le premier déploiement. Un iPad sous Safari se présente comme un Mac et est vu comme un ordinateur.
+  - **Critère « limites et essais inchangés après un redémarrage »** : prouvé par `TestLimitsSurviveRestart`, qui ferme et rouvre les bases (pour un vrai code et pour un code fantôme) ; ajouté dans la même PR plutôt qu'au lot C, puisque c'est un critère de validation du lot B.
+  - **Force brute et blocage ciblé, par conception d'ENF-01** : les limites laissent 30 demandes par heure et par tribu, soit 90 essais par heure sur un code à 6 chiffres ; rien ne signale ni ne bloque une attaque soutenue. Qui connaît l'identifiant d'URL peut aussi empêcher toute connexion à une tribu avec 30 demandes par heure. À reprendre dans les specs avant le premier déploiement.
 
 ## Critères de validation
 
