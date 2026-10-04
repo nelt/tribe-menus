@@ -11,7 +11,8 @@ import (
 var (
 	// ErrInvalidSlug is returned for a slug that does not follow the format of EF-08.
 	ErrInvalidSlug = errors.New("invalid slug")
-	// ErrInvalidEmail is returned for an address that is not of the form local@domain.
+	// ErrInvalidEmail is returned for an address that is not of the form local@domain, with a
+	// dot inside the domain.
 	ErrInvalidEmail = errors.New("invalid email address")
 )
 
@@ -39,7 +40,8 @@ func ParseSlug(s string) (Slug, error) {
 // Email is a normalized address: without spaces, in lower case.
 type Email string
 
-// ParseEmail normalizes the address and checks that it has the form local@domain.
+// ParseEmail normalizes the address and checks that it has the form local@domain, with a
+// dot in the domain, neither first nor last (D16): alice@exemple is refused.
 func ParseEmail(s string) (Email, error) {
 	normalized := strings.ToLower(strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
@@ -48,7 +50,8 @@ func ParseEmail(s string) (Email, error) {
 		return r
 	}, s))
 	local, domain, found := strings.Cut(normalized, "@")
-	if !found || local == "" || domain == "" || strings.Contains(domain, "@") {
+	if !found || local == "" || strings.Contains(domain, "@") ||
+		!strings.Contains(domain, ".") || strings.HasPrefix(domain, ".") || strings.HasSuffix(domain, ".") {
 		return "", ErrInvalidEmail
 	}
 	return Email(normalized), nil

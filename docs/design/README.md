@@ -179,6 +179,17 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 - Réseau lent ou absent : message et bouton « Réessayer » ; le planning en cache reste accessible (ENF-01).
 - Fond blanc partout (manifeste, écran de lancement du système, chargement), pour un enchaînement sans saut de couleur. Sur iOS, pas d'images de démarrage.
 
+**Écarts de la réalisation avec les maquettes** (lot C du plan du 2026-10-03, 2026-10-04)
+
+- **Champ du code** : un seul champ (`inputmode="numeric"`, `autocomplete="one-time-code"`, `maxlength="6"`), dessiné en six cases par le CSS, chiffres tabulaires de Bricolage Grotesque. La case en cours de saisie n'a pas son propre liseré : au focus, le champ entier est entouré du liseré de saisie `#E39A89` (D17). Un code collé n'en garde que les chiffres.
+- **Renvoi refusé** : « Je n'ai rien reçu : renvoyer un code » refusé pour trop de demandes affiche, sous le champ du code, le message de l'écran de l'e-mail (« Trop de demandes depuis cet appareil… ») ; le code déjà reçu reste utilisable.
+- **Trop de demandes**, écran de l'e-mail : le bouton reste inactif jusqu'à ce que l'adresse soit modifiée.
+- **Erreur de réseau** sur un formulaire : « Le réseau est lent ou absent. Réessayez. », avec l'icône d'erreur ; le formulaire reste en l'état. Une réponse imprévue du serveur (5xx) est traitée de la même façon.
+- **Chargement, réseau lent** : le message et « Réessayer », sans la phrase sur le planning en cache, qui attend le hors-ligne.
+- **« Modifier »** est un bouton présenté comme un lien. L'adresse saisie n'est gardée qu'en mémoire : un rechargement de la saisie du code ramène à la saisie de l'e-mail.
+- **Accueil provisoire** après connexion, sans maquette : symbole, nom de la tribu, « Se déconnecter » (bouton au contour rouge tomate), pied de page ; il sera remplacé par le planning.
+- **URL** : la connexion est servie sous `/tribes/<identifiant>/connexion`, l'accueil sous `/tribes/<identifiant>/`.
+
 ### Application
 
 | Écran | Maquette | Stories |

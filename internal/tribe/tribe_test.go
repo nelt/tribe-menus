@@ -58,6 +58,11 @@ func TestParseEmail(t *testing.T) {
 		{input: "@exemple.fr"},
 		{input: "alice@"},
 		{input: "alice@exemple@fr"},
+		{input: "alice@exemple"},
+		{input: "alice@.exemple"},
+		{input: "alice@exemple."},
+		{input: "alice@."},
+		{input: "alice@mail.exemple.fr", want: "alice@mail.exemple.fr"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.input, func(t *testing.T) {

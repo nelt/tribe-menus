@@ -8,6 +8,7 @@
 /web/test-results/
 /web/playwright-report/
 /web/blob-report/
+/web/.e2e-data/
 
 # Données locales (bases SQLite de développement)
 /data/

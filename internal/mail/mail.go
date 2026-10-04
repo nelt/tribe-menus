@@ -1,13 +1,16 @@
 // Package mail sends the only email of the application, the login code (ENF-01, ADR 0014),
-// through a Mailer: in development to the logs, in tests to memory. Sending happens in the
+// through a Mailer: in development to the logs (and to a file for the end-to-end tests), in
+// tests to memory. Sending happens in the
 // background (Outbox), outside of the request.
 package mail
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 	"time"
 )
@@ -52,6 +55,52 @@ type LogMailer struct {
 func (m LogMailer) Send(_ context.Context, msg Message) error {
 	m.Logger.Info("email (development: not sent)", "to", msg.To, "subject", msg.Subject, "body", msg.Body)
 	return nil
+}
+
+// FileMailer appends each message to a file, one JSON object per line, so that the
+// end-to-end tests read the code (D6): development only, code included.
+type FileMailer struct {
+	Path string
+	mu   sync.Mutex
+}
+
+// Send implements Mailer.
+func (m *FileMailer) Send(_ context.Context, msg Message) (err error) {
+	line, err := json.Marshal(struct {
+		To      string `json:"to"`
+		Subject string `json:"subject"`
+		Body    string `json:"body"`
+	}{msg.To, msg.Subject, msg.Body})
+	if err != nil {
+		return fmt.Errorf("mail file: %w", err)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, err := os.OpenFile(m.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0o600)
+	if err != nil {
+		return fmt.Errorf("mail file: %w", err)
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("mail file: %w", closeErr)
+		}
+	}()
+	if _, err := f.Write(append(line, '\n')); err != nil {
+		return fmt.Errorf("mail file: %w", err)
+	}
+	return nil
+}
+
+// Mailers sends each message with every mailer, in order, and returns their errors joined.
+type Mailers []Mailer
+
+// Send implements Mailer.
+func (ms Mailers) Send(ctx context.Context, msg Message) error {
+	var errs []error
+	for _, m := range ms {
+		errs = append(errs, m.Send(ctx, msg))
+	}
+	return errors.Join(errs...)
 }
 
 // ErrNotConfigured is returned by Unconfigured.

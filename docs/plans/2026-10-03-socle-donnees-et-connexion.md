@@ -2,7 +2,7 @@
 
 - **Nom** : `socle`
 - **Date** : 2026-10-03
-- **Statut** : en cours (lots A et B fusionnés ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
+- **Statut** : en cours (lots A et B fusionnés, lot C en revue ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
 
 ## Objectif
 
@@ -111,19 +111,19 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ### Lot C : écrans de connexion (`feature/enf-01-ecrans-de-connexion`)
 
-- [ ] **20. Polices, tokens et ressources** (D7).
+- [x] **20. Polices, tokens et ressources** (D7).
   - Bricolage Grotesque et Figtree en `woff2` variables, pris dans les dépôts officiels de leurs auteurs à une version précise, dans `web/src/fonts/` avec le texte de l'OFL et un `README` (source, version, empreinte SHA-256). Aucun paquet npm. Si seul le `ttf` est publié, le signaler avant de convertir.
   - `@font-face` avec `font-display: swap` ; tokens de `docs/design/README.md` au complet dans `app.css`.
   - `web/scripts/build.mjs` copie dans `web/dist` le dossier des polices, texte de l'OFL compris, ainsi que `symbole.svg` et `logotype.svg`, lus dans `docs/design/identite/` : une seule source, pas de copie dans `web/src`.
   - Aucun style en ligne : la CSP (`default-src 'self'`) bloque les attributs `style`, dont les maquettes sont faites. Tout passe par des classes de `app.css`, y compris les décalages d'animation des gouttes du chargement.
-- [ ] **21. Côté serveur.**
+- [x] **21. Côté serveur.**
   - **Adresse mal formée** (D16) : `ParseEmail` exige un point dans le domaine, ni en tête ni en fin (`alice@exemple` est refusée). La règle est ajoutée à `gestion-membres-et-sessions.md` (identification du membre) et aux tableaux de cas de `internal/tribe` ; elle vaut aussi pour `admin init`.
   - **`Mailer` de développement lisible par les tests** (D6) : option `-mail-file` de `serve`, qui écrit aussi chaque message dans un fichier (une ligne JSON par message) ; refusée sans `-dev`. `make dev` ne s'en sert pas.
   - **Lien vers le code source de la version** (ADR 0011, point 2) : `server.Config` reçoit la version et le commit ; le gabarit `index.html` reçoit l'adresse du code source, dans une balise `<meta name="source-url">` que le front lit. Règle : étiquette `vX.Y.Z` si la version en est une, sinon le commit s'il est connu, sinon le dépôt.
-- [ ] **22. Routeur et client d'API** (ADR 0004, point 6) : routeur fondé sur l'API History avec le préfixe de tribu, client `fetch` qui ramène à la connexion sur un 401. Modules purs, testés avec `node:test`.
+- [x] **22. Routeur et client d'API** (ADR 0004, point 6) : routeur fondé sur l'API History avec le préfixe de tribu, client `fetch` qui ramène à la connexion sur un 401. Modules purs, testés avec `node:test`.
   - Le client traduit les réponses de l'API (contrat dans les notes du lot B) en états d'écran, par une fonction pure testée en tableau de cas : `invalid_email` : adresse mal formée ; `too_many_requests` : trop de demandes ; `incorrect_code` avec `attemptsLeft` supérieur à 0 : code erroné, avec les essais restants ; `incorrect_code` avec `attemptsLeft` à 0 : essais épuisés ; `new_code_needed` : code expiré, quelle qu'en soit la cause (expiré, remplacé, déjà utilisé) ; échec du réseau ou réponse 5xx : erreur de réseau.
   - `installedApp`, envoyé à l'ouverture de la session, vient de `display-mode: standalone` (et de `navigator.standalone` sur iOS).
-- [ ] **23. Écrans**, en DOM classique pour les formulaires (ADR 0004, point 3) :
+- [x] **23. Écrans**, en DOM classique pour les formulaires (ADR 0004, point 3) :
   - saisie de l'e-mail, téléphone et ordinateur : états saisie, adresse mal formée, trop de demandes. L'adresse est validée par le serveur seul : pas de seconde règle dans le front ;
   - saisie du code : états saisie, code erroné avec essais restants, essais épuisés, code expiré. **Un seul champ** (D17), `inputmode="numeric"`, `maxlength="6"`, `autocomplete="one-time-code"`, dessiné en six cases par le CSS, avec les chiffres tabulaires de Bricolage Grotesque (`font-variant-numeric: tabular-nums`). Si la police n'a pas de chiffres tabulaires ou si l'alignement dans les cases ne tient pas, le signaler avant de continuer ;
   - saisie du code, actions de la maquette : « Modifier » ramène à la saisie de l'e-mail ; « Je n'ai rien reçu : renvoyer un code » refait la demande. Un renvoi refusé pour trop de demandes affiche le message de l'écran de l'e-mail sous le champ ; le code déjà reçu reste utilisable ;
@@ -132,11 +132,11 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - chargement, affiché seulement au-delà de 300 ms, animations coupées avec `prefers-reduced-motion`. État « réseau lent » : le message et « Réessayer », sans la phrase sur le planning en cache, qui attend le hors-ligne ;
   - accueil provisoire après connexion : nom de la tribu et « Se déconnecter », en attendant le planning ;
   - erreurs avec icône et `role="alert"` ; pied de page avec le lien vers le code source de la version (étape 21).
-- [ ] **24. Playwright** (D14, D15). Tests d'écran ordinaires, sans tag `@ui` ni lien avec les `.feature` (D5). Le scénario de fumée actuel est remplacé.
+- [x] **24. Playwright** (D14, D15). Tests d'écran ordinaires, sans tag `@ui` ni lien avec les `.feature` (D5). Le scénario de fumée actuel est remplacé.
   - **Un seul parcours réel**, sur Chromium : connexion avec le code lu dans le fichier des e-mails, accueil avec le nom de la tribu, déconnexion ; et l'écran d'une tribu inexistante, identique à celui de la tribu de démonstration jusqu'au message qui suit la demande de code. Deux demandes de code par exécution.
   - **États des écrans avec une API simulée** (`page.route`), sur Chromium et WebKit : adresse mal formée, trop de demandes, code erroné, essais épuisés, code expiré, renvoi refusé, erreur de réseau, chargement lent, accueil et déconnexion. Les réponses simulées sont définies une seule fois, dans un module des tests, d'après le contrat des notes du lot B.
   - **Serveur des tests** : dossier de données fixe `web/.e2e-data/` (ignoré par Git), vidé au démarrage, puis `admin seed -data` et `serve -dev -data … -mail-file …` sur ce dossier. `reuseExistingServer: false`, pour que les compteurs de limitation repartent de zéro à chaque exécution.
-- [ ] **25. Documentation du lot** : écarts avec les maquettes dans `docs/design/README.md` (champ du code unique, renvoi refusé, erreur de réseau, chargement sans la phrase sur le planning) ; ADR 0009, point 4, si la note du 2026-10-04 est à compléter ; `CLAUDE.md`, `CHANGELOG.md`, cases cochées.
+- [x] **25. Documentation du lot** : écarts avec les maquettes dans `docs/design/README.md` (champ du code unique, renvoi refusé, erreur de réseau, chargement sans la phrase sur le planning) ; ADR 0009, point 4, si la note du 2026-10-04 est à compléter ; `CLAUDE.md`, `CHANGELOG.md`, cases cochées.
 - [ ] **26. Validation par le développeur** : `make seed` puis `make dev`, connexion à `http://localhost:8080/tribes/demo/` avec le code lu dans les logs, sur ordinateur et en mode téléphone du navigateur (Chrome ou Firefox : Safari refuse le cookie sur `http://localhost`, D14). La connexion sous Safari se vérifie en recette, en HTTPS, avec les scénarios `@manuel`.
 
 ## Notes d'exécution
@@ -168,6 +168,19 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - **Critère « limites et essais inchangés après un redémarrage »** : prouvé par `TestLimitsSurviveRestart`, qui ferme et rouvre les bases (pour un vrai code et pour un code fantôme) ; ajouté dans la même PR plutôt qu'au lot C, puisque c'est un critère de validation du lot B.
   - **Force brute et blocage ciblé, par conception d'ENF-01** : les limites laissent 30 demandes par heure et par tribu, soit 90 essais par heure sur un code à 6 chiffres ; rien ne signale ni ne bloque une attaque soutenue. Qui connaît l'identifiant d'URL peut aussi empêcher toute connexion à une tribu avec 30 demandes par heure. À reprendre dans les specs avant le premier déploiement.
 - **Relecture du lot C après la fusion du lot B** (2026-10-04) : le contrat de l'API couvre tous les états des maquettes, l'écran est identique pour une tribu inexistante, aucun scénario godog n'est touché. Trois points de l'étape 24 ne pouvaient pas passer tels qu'écrits : le cookie `Secure` refusé par WebKit (D14), la limite de 10 demandes par heure et par IP, que partagent tous les tests (D15), et un serveur de test sans tribu ni fichier d'e-mails (étape 24). Deux écarts entre le plan, les maquettes et le code sont tranchés (D16, D17). Le reste est précisé dans les étapes, sur proposition de la relecture et à confirmer à la revue de la PR du plan : ressources du front et CSP (étape 20), lien vers le code source (étape 21), correspondance entre réponses de l'API et états (étape 22), états absents des maquettes (étape 23). L'ordre des étapes 21 à 23 change : le côté serveur passe avant les écrans, qui en dépendent. Non vérifié : la publication de `woff2` variables par les dépôts officiels des polices, et la présence de chiffres tabulaires dans Bricolage Grotesque.
+
+- **Lot C, choix faits à l'implémentation** (2026-10-04) :
+  - **Polices** : les deux dépôts publient des `woff2` variables, pris tels quels, sans conversion. Figtree 2.001, étiquette `v2.0.3` ; Bricolage Grotesque 1.001, épinglée par commit (`84745e5`), le dépôt n'ayant aucune étiquette. Bricolage Grotesque a des chiffres tabulaires : les dix chiffres ont la même chasse dans Chromium, et l'alignement dans les six cases tient dans Chromium et WebKit (captures vérifiées).
+  - **Champ du code** : cases dessinées derrière un champ transparent, espacement des chiffres calculé avec les unités de conteneur (`cqw`) et `1ch` ; `overflow: clip` et non `hidden`, sinon le navigateur fait défiler le conteneur pour montrer le curseur après le sixième chiffre. `maxlength="6"` tronquait un code collé avec des espaces : le collage est intercepté et n'insère que les chiffres. Un code incomplet n'est pas envoyé (il coûterait un essai).
+  - **Routes** : `connexion` pour la connexion, la racine de la tribu pour l'accueil ; toute autre adresse sous la tribu mène à l'accueil en attendant ses écrans. Sans session, toute page renvoie à la connexion ; avec une session, la connexion renvoie à l'accueil (remplacement dans l'historique, sans nouvelle entrée).
+  - **Client d'API** : délai de 10 secondes, au-delà duquel un appel est une erreur de réseau ; une réponse imprévue (5xx, `bad_request`, `not_found`, corps qui n'est pas une session) aussi. Le chargement s'affiche au-delà de 300 ms ; une erreur de réseau au démarrage donne l'état « réseau lent ».
+  - **Trop de demandes**, écran de l'e-mail : le bouton reste inactif jusqu'à ce que l'adresse change. Après un renvoi accepté, le champ du code est vidé, sans autre message.
+  - **Lien vers le code source** : la règle (`sourceURL`) est dans `internal/server` ; `make dev` construit sans `-ldflags`, le lien y pointe donc vers le dépôt.
+  - **Playwright** : le serveur de test est lancé par `go run` (construction du front, `admin seed`, puis `serve`) ; il attend `/healthz`. Le parcours réel recharge aussi la page connectée puis déconnectée, pour vérifier le cookie.
+
+- **Revue de la PR #33** (2026-10-04) : points 1 à 3 corrigés dans la PR (adresse de l'écran du code, collage, focus après un renvoi). À traiter plus tard :
+  - **Aucun retour visible pendant un appel** : `busy` ignore un second envoi mais ne change rien à l'écran ; pendant les 10 secondes que peut durer un appel, rien n'indique que la demande est partie, et les maquettes n'ont pas d'état « en cours ». À trancher à la validation de l'étape 26, en limitant le débit dans le navigateur ; l'état retenu servira aussi aux formulaires du plan suivant.
+  - **Mise en page ordinateur non testée** : les deux projets Playwright sont des téléphones, rien n'exerce la grille au-delà de 960 px (vue correcte à 1280 px à la revue). À couvrir avec le premier écran de l'application qui a une version ordinateur.
 
 ## Critères de validation
 
