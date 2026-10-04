@@ -104,3 +104,489 @@ button,
 input {
   font: inherit;
 }
+
+/* Common components (docs/design/README.md, "Composants") */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: var(--border-strong) solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.button-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: var(--color-action);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.button-primary:hover {
+  background: var(--color-action-hover);
+}
+
+/* Inactive button: dashed outline, muted text; it keeps its place. */
+.button-primary:disabled {
+  border: var(--border-strong) dashed var(--color-dashed);
+  background: var(--color-background);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.button-secondary,
+.button-danger {
+  min-height: 48px;
+  padding: 0 22px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Destructive action: outline in tomato red, never a solid fill on the screen. */
+.button-danger {
+  border-color: var(--color-action);
+  color: var(--color-action);
+}
+
+.button-danger:hover {
+  border-color: var(--color-action-hover);
+  color: var(--color-action-hover);
+}
+
+.button-text {
+  min-height: var(--touch-target);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-action);
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--color-action-hover);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field-input {
+  height: 52px;
+  padding: 0 14px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.field-input:focus {
+  border-color: var(--color-focus);
+  outline: none;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--color-error);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.3em;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.app-footer a {
+  color: var(--color-text-muted);
+}
+
+/* Login (maquettes identite/Connexion, ConnexionBureau, Code) */
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 44px 20px 20px;
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-symbol {
+  display: block;
+  width: 210px;
+  height: 210px;
+}
+
+.login--code .login-symbol {
+  width: 170px;
+  height: 170px;
+}
+
+.login-logotype {
+  margin: 0;
+  line-height: 0;
+}
+
+.login-logotype img {
+  display: block;
+  width: 280px;
+  height: auto;
+}
+
+.login--code .login-logotype img {
+  width: 240px;
+}
+
+.login-tagline {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.login-main {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.login-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.login-text strong {
+  color: var(--color-text);
+}
+
+.login-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/*
+ * Code: a single field drawn as six cells (D17). The digits are tabular, so that each one
+ * falls in its cell: the pitch of a cell is a sixth of the field plus a gap, the letter
+ * spacing completes the width of a digit (1ch) up to this pitch. The field is wider than
+ * the cells, so that the caret after the sixth digit never scrolls the text.
+ */
+.code-field {
+  --code-gap: 8px;
+  position: relative;
+  container-type: inline-size;
+  height: 56px;
+  /* clip, not hidden: a hidden overflow still scrolls to show the caret, moving the cells. */
+  overflow: clip;
+  border-radius: 14px;
+}
+
+.code-field:focus-within {
+  outline: var(--border-strong) solid var(--color-focus);
+  outline-offset: 4px;
+}
+
+.code-cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--code-gap);
+  pointer-events: none;
+}
+
+.code-cell {
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-background);
+}
+
+.code-cell--filled {
+  border: var(--border-strong) solid var(--color-text);
+}
+
+.code-field--error .code-cell {
+  border: var(--border-strong) solid var(--color-error);
+}
+
+.code-field--dead .code-cell {
+  border: var(--border-thin) solid var(--color-border);
+}
+
+.code-input {
+  position: relative;
+  display: block;
+  width: calc(100% + 100cqw / 6);
+  height: 56px;
+  margin: 0;
+  padding: 0 0 0 calc((100cqw - 5 * var(--code-gap)) / 12 - 0.5ch);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  caret-color: var(--color-action);
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: calc((100cqw + var(--code-gap)) / 6 - 1ch);
+  outline: none;
+}
+
+.code-input:disabled {
+  color: var(--color-text-muted);
+  -webkit-text-fill-color: var(--color-text-muted);
+  opacity: 1;
+}
+
+/* Desktop: the brand on the left, the form on the right */
+@media (min-width: 960px) {
+  .login {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 40px 0;
+    max-width: none;
+    padding: 0;
+  }
+
+  .login-brand {
+    grid-row: 1 / 3;
+    justify-content: center;
+    gap: 18px;
+    border-right: var(--border-thin) solid var(--color-border);
+  }
+
+  .login-symbol,
+  .login--code .login-symbol {
+    width: 360px;
+    height: 360px;
+  }
+
+  .login-logotype img,
+  .login--code .login-logotype img {
+    width: 420px;
+  }
+
+  .login-tagline {
+    font-size: 18px;
+  }
+
+  .login-main,
+  .login .app-footer {
+    grid-column: 2;
+    padding: 0 clamp(40px, 9vw, 120px);
+  }
+
+  .login-form {
+    max-width: 400px;
+  }
+
+  .login .app-footer {
+    align-self: start;
+    justify-content: flex-start;
+  }
+}
+
+/* Loading (maquette identite/Chargement) */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 20px;
+}
+
+.loading-symbol {
+  display: block;
+  width: 180px;
+  height: 180px;
+  animation: mt-breath 2.4s ease-in-out infinite;
+}
+
+.loading-drops {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  height: 28px;
+}
+
+.drop {
+  animation: mt-drop 1.2s ease-in-out infinite;
+}
+
+.drop-2 {
+  animation-delay: 0.2s;
+}
+
+.drop-3 {
+  animation-delay: 0.4s;
+}
+
+@keyframes mt-drop {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+@keyframes mt-breath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-symbol,
+  .drop {
+    animation: none;
+  }
+}
+
+.loading-slow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 300px;
+  text-align: center;
+}
+
+.loading-message {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Provisional home, until the planning */
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 44px 20px 20px;
+}
+
+.home-main {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.home-symbol {
+  display: block;
+  width: 120px;
+  height: 120px;
+}
+
+.home-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 800;
+}

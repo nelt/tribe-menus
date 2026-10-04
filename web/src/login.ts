@@ -137,10 +137,12 @@ export function normalizeCode(input: string): string {
 /** What tells an installed app from a browser tab (display-mode, and navigator.standalone on iOS). */
 export interface DisplayEnvironment {
   matchMedia(query: string): { matches: boolean };
-  navigator: { standalone?: boolean };
+  /** Safari on iOS adds standalone, which the DOM types do not declare. */
+  navigator: object;
 }
 
 /** Whether the application runs installed, sent when the session opens (EF-04). */
 export function isInstalledApp(env: DisplayEnvironment): boolean {
-  return env.matchMedia("(display-mode: standalone)").matches || env.navigator.standalone === true;
+  const standalone = "standalone" in env.navigator && env.navigator.standalone === true;
+  return env.matchMedia("(display-mode: standalone)").matches || standalone;
 }
