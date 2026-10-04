@@ -2,7 +2,7 @@
 
 - **Nom** : `canal-prive`
 - **Date** : 2026-10-04
-- **Statut** : prêt (avance en parallèle de `socle/C` : il ne touche pas au code de l'application)
+- **Statut** : en cours (avance en parallèle de `socle/C` : il ne touche pas au code de l'application)
 
 ## Objectif
 
@@ -36,7 +36,7 @@ Le dépôt est public : ce que les sessions Claude s'écrivent par les PR (revue
 
 ## Étapes
 
-- [ ] **1. Essais d'accès**, avec un avis factice créé puis supprimé par le développeur.
+- [x] **1. Essais d'accès**, avec un avis factice créé puis supprimé par le développeur.
   - Signalement privé de vulnérabilités : activé ou non dans les réglages du dépôt.
   - Session cloud : lire un avis en brouillon, y écrire, lire le fork privé temporaire.
   - Claude Code dans le Dev Container, avec son jeton actuel puis avec le droit sur les avis de sécurité du dépôt : mêmes essais, plus cloner le fork temporaire, y pousser une branche, y ouvrir une PR.
@@ -61,3 +61,44 @@ Le dépôt est public : ce que les sessions Claude s'écrivent par les PR (revue
 - **Vérification sans CI** : si le canal A est retenu, le correctif n'est vérifié que par `make ci` dans le Dev Container avant la fusion ; la CI du dépôt ne passe qu'après. Suffisant, ou faut-il que le développeur relance `make ci` de son côté ?
 - **Historique Git** : le message de commit d'un correctif est public dès la fusion, donc avant le déploiement. Convention à fixer : message neutre à la fusion, détail dans l'avis publié ensuite.
 - **Recette** : une vulnérabilité qui ne touche que la recette (données de démonstration) justifie-t-elle le canal privé ? La règle de l'étape 3 dit oui par défaut ; à confirmer.
+
+## Notes d'exécution
+
+- **Étape 1, essais d'accès** (2026-10-04), sur l'avis factice `GHSA-6658-5pv8-wrwf`, en brouillon, créé par le développeur. Son fork privé temporaire est `nelt/tribe-menus-ghsa-6658-5pv8-wrwf` (champ `private_fork` de l'avis).
+  - **Signalement privé de vulnérabilités** : désactivé (`gh api repos/nelt/tribe-menus/private-vulnerability-reporting` renvoie `{"enabled":false}`, vu depuis les deux sessions), alors que `SECURITY.md` y renvoie. À activer à l'étape 5.
+  - **Session cloud** :
+
+    | Essai | Résultat |
+    | --- | --- |
+    | Lire l'avis | refusé : 403 « Resource not accessible by integration » |
+    | Lister les avis en brouillon | liste vide sans erreur : l'avis lui est caché |
+    | Écrire dans l'avis | non tenté : écriture bloquée par les garde-fous de la session (la lecture étant refusée, l'écriture l'aurait été aussi) |
+    | Lire le fork temporaire | refusé : dépôt introuvable ou inaccessible |
+
+    Conséquence pour l'étape 2 : la session cloud ne peut ni écrire le constat ni relire le correctif par le canal A.
+  - **Dev Container, passe 1, jeton actuel** (jeton à portée fine des ADR 0019 et 0020) :
+
+    | Essai | Commande | Résultat |
+    | --- | --- | --- |
+    | 1. Lire l'avis | `gh api repos/nelt/tribe-menus/security-advisories/GHSA-6658-5pv8-wrwf` | refusé : 403 « Resource not accessible by personal access token » |
+    | 2. Lister les avis en brouillon | `gh api "repos/nelt/tribe-menus/security-advisories?state=draft"` | liste vide sans erreur : l'avis est caché |
+    | 3. Écrire dans l'avis | `gh api -X PATCH …/GHSA-6658-5pv8-wrwf -f state=draft` (sans effet sur le contenu, la description n'ayant pu être lue) | refusé : 403 « Resource not accessible by personal access token » |
+    | 4. Lire le fork par l'API | `gh api repos/nelt/tribe-menus-ghsa-6658-5pv8-wrwf` | refusé : 404 « Not Found » |
+    | 5. Cloner le fork | `git clone https://github.com/nelt/tribe-menus-ghsa-6658-5pv8-wrwf.git` | refusé : « remote: Write access to repository not granted. », HTTP 403 |
+    | 6. Pousser une branche | `git push <fork> feature/essai-canal-prive` (commit `-s` dans un dépôt local, faute de clone) | refusé : même message que l'essai 5 |
+    | 7. Ouvrir une PR | `gh api -X POST repos/nelt/tribe-menus-ghsa-6658-5pv8-wrwf/pulls …` | refusé : 404 « Not Found » |
+
+  - **Dev Container, passe 2, jeton élargi** (droit *Repository security advisories* en lecture et écriture ajouté) :
+
+    | Essai | Commande | Résultat |
+    | --- | --- | --- |
+    | 1. Lire l'avis | comme en passe 1 | réussi : marqueur de lecture `canal-prive-essai-1` lu |
+    | 2. Lister les avis en brouillon | comme en passe 1 | réussi : l'avis apparaît |
+    | 3. Écrire dans l'avis | `gh api -X PATCH …/GHSA-6658-5pv8-wrwf --input <description lue + ligne ajoutée>` | réussi : « Marqueur d'écriture : dev-container-passe-2 » ajouté en fin de description, le reste conservé |
+    | 4. Lire le fork par l'API | comme en passe 1 ; aussi `gh repo view` | refusé : 404 « Not Found » ; `gh repo view` : « Could not resolve to a Repository » |
+    | 5. Cloner le fork | comme en passe 1 | refusé : « remote: Write access to repository not granted. », HTTP 403 |
+    | 6. Pousser une branche | comme en passe 1 | refusé : même message |
+    | 7. Ouvrir une PR | comme en passe 1 | refusé : 404 « Not Found » |
+
+  - **Droit qui manque pour le fork** : les messages n'en nomment aucun. Le fork existe (l'avis le désigne), mais le jeton ne le voit pas du tout : 404 par l'API, et un refus de Git qui parle d'écriture même pour un clone. Hypothèse à vérifier par le développeur, non confirmée par les messages : le fork, créé après le jeton, est hors de la liste des dépôts auxquels un jeton à portée fine donne accès.
+  - **Bilan pour l'étape 2** : avec le droit sur les avis, le Dev Container lit et écrit le constat. Ni l'une ni l'autre session n'accède au fork temporaire, donc la préparation privée du correctif n'est pas acquise par le canal A.

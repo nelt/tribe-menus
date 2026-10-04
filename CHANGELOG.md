@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `canal-prive`, étape 1 : essais d'accès aux avis de sécurité en brouillon et au fork privé temporaire, depuis la session cloud et le Dev Container (avant et après l'ajout du droit sur les avis de sécurité) ; résultats dans les notes d'exécution du plan.
 - Écrans de connexion (ENF-01) : saisie de l'e-mail et du code (champ unique en six cases), chargement, accueil provisoire avec le nom de la tribu et la déconnexion ; polices auto-hébergées et tokens du design ; lien vers le code source de la version ; adresse e-mail avec un point dans le domaine ; option `-mail-file` de `serve` ; tests Playwright du parcours réel et des états des écrans.
 - Feuille de route (`docs/feuille-de-route.md`) : ordre des plans, déploiement avant le métier, première cible la recette seule ; vocabulaire et nommage (plan nommé, lot `plan/lettre`, étape) ; plans `canal-prive` (canal privé pour les vulnérabilités) et `revue-securite` (revue de sécurité avant mise en ligne).
 - Plan de la première tranche verticale, lot C précisé après la fusion du lot B : parcours de connexion réel sur Chromium seul et états des écrans avec une API simulée, adresse e-mail avec un point dans le domaine, champ du code unique, serveur des tests Playwright, lien vers le code source, ressources du front (D14 à D17).
