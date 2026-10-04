@@ -29,6 +29,7 @@ func TestRun(t *testing.T) {
 		{name: "no command", args: nil, wantCode: 2, wantStderr: "Usage: tribe-menus"},
 		{name: "unknown command", args: []string{"frobnicate"}, wantCode: 2, wantStderr: `unknown command "frobnicate"`},
 		{name: "unknown serve flag", args: []string{"serve", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
+		{name: "mail file without dev", args: []string{"serve", "-data", data, "-mail-file", filepath.Join(data, "mails.jsonl")}, wantCode: 2, wantStderr: "-mail-file requires -dev"},
 		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-data", data, "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
 	}
 	for _, tc := range cases {
@@ -102,6 +103,53 @@ func TestServeDevAndShutdown(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("server did not stop")
+	}
+}
+
+// With -mail-file, the development mailer also writes each email to the file, which the
+// end-to-end tests read (D6); the file is complete once the server has stopped (D11).
+func TestServeDevMailFile(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "web", "dist", "index.html"), `<base href="{{.Base}}">`)
+	data := filepath.Join(root, "data")
+	if code := run([]string{"admin", "seed", "-data", data}, strings.NewReader(""), io.Discard, io.Discard); code != 0 {
+		t.Fatalf("admin seed: exit code %d", code)
+	}
+	mailFile := filepath.Join(root, "mails.jsonl")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	logs := &syncBuffer{}
+	done := make(chan int, 1)
+	go func() {
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0", "-mail-file", mailFile}, logs)
+	}()
+	base := waitForAddress(t, logs)
+
+	resp, err := http.Post(base+"/tribes/demo/api/login-codes", "application/json", strings.NewReader(`{"email":"alice@exemple.fr"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusAccepted {
+		t.Errorf("POST login-codes: status %d, want %d", resp.StatusCode, http.StatusAccepted)
+	}
+
+	cancel()
+	select {
+	case code := <-done:
+		if code != 0 {
+			t.Errorf("exit code = %d, want 0 (logs: %s)", code, logs.String())
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not stop")
+	}
+	content, err := os.ReadFile(mailFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`^\{"to":"alice@exemple.fr",.*\b\d{6}\b.*\}\n$`).Match(content) {
+		t.Errorf("mail file = %q, want one message to alice@exemple.fr with the code", content)
 	}
 }
 

@@ -133,26 +133,43 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	dev := flags.Bool("dev", false, "development mode: read the front end and the public site from disk")
 	root := flags.String("root", ".", "repository root, used in development mode")
 	data := flags.String("data", "data", "directory of the databases")
+	mailFile := flags.String("mail-file", "", "development mode: also append each email to this file, one JSON object per line (end-to-end tests)")
 	if err := flags.Parse(args); err != nil {
+		return 2
+	}
+	if *mailFile != "" && !*dev {
+		fmt.Fprintln(stderr, "tribe-menus serve: -mail-file requires -dev")
 		return 2
 	}
 
 	logger := slog.New(slog.NewTextHandler(stderr, nil))
-	if err := migrateAndServe(ctx, *data, *addr, *dev, *root, logger); err != nil {
+	opts := serveOptions{addr: *addr, dev: *dev, root: *root, data: *data, mailFile: *mailFile}
+	if err := migrateAndServe(ctx, opts, logger); err != nil {
 		logger.Error("server stopped", "error", err)
 		return 1
 	}
 	return 0
 }
 
+// serveOptions are the flags of the serve command.
+type serveOptions struct {
+	addr string
+	dev  bool
+	// root is the repository root, read in development mode.
+	root string
+	data string
+	// mailFile, in development mode only, receives a copy of each email (D6).
+	mailFile string
+}
+
 // migrateAndServe opens and migrates every database before listening, so that the server,
 // and its health check, never answer on a database left unmigrated (ADR 0003, point 6).
-func migrateAndServe(ctx context.Context, data, addr string, dev bool, root string, logger *slog.Logger) (err error) {
+func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger) (err error) {
 	migrations, err := storage.EmbeddedMigrations()
 	if err != nil {
 		return err
 	}
-	store, err := storage.Open(ctx, data, migrations)
+	store, err := storage.Open(ctx, opts.data, migrations)
 	if err != nil {
 		return err
 	}
@@ -161,13 +178,16 @@ func migrateAndServe(ctx context.Context, data, addr string, dev bool, root stri
 			err = fmt.Errorf("close databases: %w", closeErr)
 		}
 	}()
-	logger.Info("databases migrated", "data", data)
+	logger.Info("databases migrated", "data", opts.data)
 
 	// Sending email over SMTP comes with the deployment (ADR 0014): until then, the codes
 	// are written to the logs in development, and not sent otherwise.
 	var mailer mail.Mailer = mail.Unconfigured{}
-	if dev {
+	if opts.dev {
 		mailer = mail.LogMailer{Logger: logger}
+	}
+	if opts.dev && opts.mailFile != "" {
+		mailer = mail.Mailers{mailer, &mail.FileMailer{Path: opts.mailFile}}
 	}
 	outbox := mail.NewOutbox(mailer, tribe.LoginCodeValidity, logger)
 	// Deferred after store.Close, hence run before: the sendings in progress end first (D11).
@@ -185,7 +205,7 @@ func migrateAndServe(ctx context.Context, data, addr string, dev bool, root stri
 		<-purged
 	}()
 
-	return listenAndServe(ctx, addr, dev, root, logger, store, login)
+	return listenAndServe(ctx, opts, logger, store, login)
 }
 
 // purgePeriodically purges at once, then at each interval until ctx is done.
@@ -204,8 +224,8 @@ func purgePeriodically(ctx context.Context, login *tribe.Login, dbs tribe.Databa
 	}
 }
 
-func listenAndServe(ctx context.Context, addr string, dev bool, root string, logger *slog.Logger, store *storage.Store, login *tribe.Login) error {
-	cfg, err := serverConfig(dev, root, logger)
+func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger, store *storage.Store, login *tribe.Login) error {
+	cfg, err := serverConfig(opts.dev, opts.root, logger)
 	if err != nil {
 		return err
 	}
@@ -215,7 +235,7 @@ func listenAndServe(ctx context.Context, addr string, dev bool, root string, log
 		return err
 	}
 
-	listener, err := net.Listen("tcp", addr)
+	listener, err := net.Listen("tcp", opts.addr)
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
@@ -224,7 +244,7 @@ func listenAndServe(ctx context.Context, addr string, dev bool, root string, log
 		ReadHeaderTimeout: readHeaderTimeout,
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelWarn),
 	}
-	logger.Info("server started", "version", version, "commit", commit, "addr", "http://"+listener.Addr().String(), "dev", dev)
+	logger.Info("server started", "version", version, "commit", commit, "addr", "http://"+listener.Addr().String(), "dev", opts.dev)
 
 	served := make(chan error, 1)
 	go func() { served <- srv.Serve(listener) }()
