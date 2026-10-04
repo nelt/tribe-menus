@@ -12,6 +12,7 @@ import {
   initialLoginState,
   isInstalledApp,
   normalizeCode,
+  pasteIntoCode,
 } from "./login.ts";
 import { alertMessage, footer } from "./templates.ts";
 
@@ -147,8 +148,8 @@ export class LoginScreen extends LitElement {
     this.code = code;
   }
 
-  // maxlength would cut a pasted "123 456" before the digits are kept: the paste is
-  // replaced by its digits.
+  // maxlength would cut a pasted "123 456" before the digits are kept: the digits of the
+  // paste take the place of the selection, as a native paste would.
   #codePaste(e: ClipboardEvent) {
     const text = e.clipboardData?.getData("text");
     if (text === undefined) {
@@ -156,8 +157,13 @@ export class LoginScreen extends LitElement {
     }
     e.preventDefault();
     const input = e.target as HTMLInputElement;
-    this.code = normalizeCode(text);
-    input.value = this.code;
+    const pasted = pasteIntoCode(input.value, input.selectionStart ?? input.value.length, input.selectionEnd ?? input.value.length, text);
+    if (pasted === undefined) {
+      return;
+    }
+    input.value = pasted.code;
+    input.setSelectionRange(pasted.caret, pasted.caret);
+    this.code = pasted.code;
   }
 
   async #requestCode(e: SubmitEvent) {

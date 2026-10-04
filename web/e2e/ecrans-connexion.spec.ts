@@ -77,17 +77,34 @@ test("the code screen follows the address requested, even if the field changes m
   expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "123456", installedApp: false } });
 });
 
+async function paste(page: Page, text: string) {
+  await page.getByLabel("Code de connexion").evaluate((input, text) => {
+    const data = new DataTransfer();
+    data.setData("text", text);
+    input.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+  }, text);
+}
+
 test("pasted code: only the digits are kept, even with spaces", async ({ page }) => {
   const received = await openCodeScreen(page, { openSession: [replies.incorrectCode(2)] });
-  await page.getByLabel("Code de connexion").evaluate((input) => {
-    const data = new DataTransfer();
-    data.setData("text", "12 34-56");
-    input.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
-  });
+  await paste(page, "12 34-56");
   await expect(page.getByLabel("Code de connexion")).toHaveValue("123456");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "123456", installedApp: false } });
+});
+
+test("pasted code: inserted at the caret, a paste without digit changes nothing", async ({ page }) => {
+  await openCodeScreen(page);
+  const field = page.getByLabel("Code de connexion");
+  await field.pressSequentially("12");
+  await paste(page, "3456");
+  await expect(field).toHaveValue("123456");
+  await paste(page, "bonjour");
+  await expect(field).toHaveValue("123456");
+  await field.fill("12");
+  await paste(page, "bonjour");
+  await expect(field).toHaveValue("12");
 });
 
 test("incorrect code, with the attempts left", async ({ page }) => {

@@ -134,6 +134,21 @@ export function normalizeCode(input: string): string {
   return input.replace(/\D/g, "").slice(0, 6);
 }
 
+/**
+ * The code once a text is pasted over the selection [start, end) of the field: the digits
+ * of the text take the place of the selection, six digits at most in all, and the caret
+ * follows them. Undefined when the text has no digit: the paste changes nothing.
+ */
+export function pasteIntoCode(value: string, start: number, end: number, text: string): { code: string; caret: number } | undefined {
+  const digits = text.replace(/\D/g, "");
+  if (digits === "") {
+    return undefined;
+  }
+  const before = value.slice(0, start);
+  const code = normalizeCode(before + digits + value.slice(end));
+  return { code, caret: Math.min(code.length, before.length + digits.length) };
+}
+
 /** What tells an installed app from a browser tab (display-mode, and navigator.standalone on iOS). */
 export interface DisplayEnvironment {
   matchMedia(query: string): { matches: boolean };

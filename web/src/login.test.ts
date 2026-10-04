@@ -11,6 +11,7 @@ import {
   errorMessage,
   isInstalledApp,
   normalizeCode,
+  pasteIntoCode,
 } from "./login.ts";
 
 const email = "alice@exemple.fr";
@@ -98,6 +99,23 @@ const codeCases: { input: string; want: string }[] = [
 for (const { input, want } of codeCases) {
   test(`normalizeCode: ${JSON.stringify(input)}`, () => {
     assert.equal(normalizeCode(input), want);
+  });
+}
+
+const pasteCases: { name: string; value: string; start: number; end: number; text: string; want: { code: string; caret: number } | undefined }[] = [
+  { name: "empty field", value: "", start: 0, end: 0, text: "482 190", want: { code: "482190", caret: 6 } },
+  { name: "after the digits typed", value: "12", start: 2, end: 2, text: "3456", want: { code: "123456", caret: 6 } },
+  { name: "in the middle", value: "1256", start: 2, end: 2, text: "34", want: { code: "123456", caret: 4 } },
+  { name: "over a selection", value: "999999", start: 0, end: 6, text: "123-456", want: { code: "123456", caret: 6 } },
+  { name: "over a partial selection", value: "129956", start: 2, end: 4, text: "34", want: { code: "123456", caret: 4 } },
+  { name: "beyond six digits", value: "1234", start: 4, end: 4, text: "5678", want: { code: "123456", caret: 6 } },
+  { name: "no digit", value: "12", start: 2, end: 2, text: "bonjour", want: undefined },
+  { name: "empty text", value: "12", start: 2, end: 2, text: "", want: undefined },
+];
+
+for (const { name, value, start, end, text, want } of pasteCases) {
+  test(`pasteIntoCode: ${name}`, () => {
+    assert.deepEqual(pasteIntoCode(value, start, end, text), want);
   });
 }
 
