@@ -1,5 +1,6 @@
 # Plan : <sujet>
 
+- **Nom** : `nom-court` (fixé à la création, voir `docs/feuille-de-route.md`)
 - **Date** : AAAA-MM-JJ
 - **Statut** : brouillon | prêt | en cours | terminé
 

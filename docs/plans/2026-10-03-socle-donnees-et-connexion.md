@@ -1,5 +1,6 @@
 # Plan : socle de données et connexion (première tranche verticale)
 
+- **Nom** : `socle`
 - **Date** : 2026-10-03
 - **Statut** : en cours (lots A et B fusionnés, lot C en revue ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
 
@@ -15,9 +16,9 @@ Première tranche qui traverse tout le système : une tribu créée par la comma
 
 Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR successives (lots A à C), chacune fusionnable seule (D1).
 
-**Hors périmètre**, renvoyé à un plan ultérieur :
+**Hors périmètre**, renvoyé à un plan ultérieur (ordre dans `docs/feuille-de-route.md`) :
 
-- **Membres et sessions dans l'interface** (EF-01 à EF-07, sauf l'ouverture de session et la déconnexion) : plan suivant. Le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres » attend donc EF-01.
+- **Membres et sessions dans l'interface** (EF-01 à EF-07, sauf l'ouverture de session et la déconnexion). Le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres » attend donc EF-01.
 - **Administration** : EF-09, EF-10, EF-11.
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes ; les 5 scénarios hors-ligne d'ENF-01 et les 2 scénarios `@manuel`.
 - **Compartimentage des données métier** : les 7 scénarios d'ENF-02 qui supposent des plats, un planning, des listes ou la liste des membres ; chacun arrive avec sa story.
