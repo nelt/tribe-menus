@@ -1,7 +1,7 @@
 # Plan : socle de données et connexion (première tranche verticale)
 
 - **Date** : 2026-10-03
-- **Statut** : en cours (lots A et B fusionnés ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B)
+- **Statut** : en cours (lots A et B fusionnés ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
 
 ## Objectif
 
@@ -110,20 +110,33 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
 
 ### Lot C : écrans de connexion (`feature/enf-01-ecrans-de-connexion`)
 
-- [ ] **20. Polices et tokens** (D7).
+- [ ] **20. Polices, tokens et ressources** (D7).
   - Bricolage Grotesque et Figtree en `woff2` variables, pris dans les dépôts officiels de leurs auteurs à une version précise, dans `web/src/fonts/` avec le texte de l'OFL et un `README` (source, version, empreinte SHA-256). Aucun paquet npm. Si seul le `ttf` est publié, le signaler avant de convertir.
   - `@font-face` avec `font-display: swap` ; tokens de `docs/design/README.md` au complet dans `app.css`.
-- [ ] **21. Routeur et client d'API** (ADR 0004, point 6) : routeur fondé sur l'API History avec le préfixe de tribu, client `fetch` qui ramène à la connexion sur un 401. Modules purs, testés avec `node:test`.
-- [ ] **22. Écrans**, en DOM classique pour les formulaires (ADR 0004, point 3) :
-  - saisie de l'e-mail, téléphone et ordinateur : états saisie, adresse mal formée, trop de demandes ;
-  - saisie du code : états saisie, code erroné avec essais restants, essais épuisés, code expiré ; champ `autocomplete="one-time-code"` ;
-  - chargement, affiché seulement au-delà de 300 ms, animations coupées avec `prefers-reduced-motion` ;
+  - `web/scripts/build.mjs` copie dans `web/dist` le dossier des polices, texte de l'OFL compris, ainsi que `symbole.svg` et `logotype.svg`, lus dans `docs/design/identite/` : une seule source, pas de copie dans `web/src`.
+  - Aucun style en ligne : la CSP (`default-src 'self'`) bloque les attributs `style`, dont les maquettes sont faites. Tout passe par des classes de `app.css`, y compris les décalages d'animation des gouttes du chargement.
+- [ ] **21. Côté serveur.**
+  - **Adresse mal formée** (D16) : `ParseEmail` exige un point dans le domaine, ni en tête ni en fin (`alice@exemple` est refusée). La règle est ajoutée à `gestion-membres-et-sessions.md` (identification du membre) et aux tableaux de cas de `internal/tribe` ; elle vaut aussi pour `admin init`.
+  - **`Mailer` de développement lisible par les tests** (D6) : option `-mail-file` de `serve`, qui écrit aussi chaque message dans un fichier (une ligne JSON par message) ; refusée sans `-dev`. `make dev` ne s'en sert pas.
+  - **Lien vers le code source de la version** (ADR 0011, point 2) : `server.Config` reçoit la version et le commit ; le gabarit `index.html` reçoit l'adresse du code source, dans une balise `<meta name="source-url">` que le front lit. Règle : étiquette `vX.Y.Z` si la version en est une, sinon le commit s'il est connu, sinon le dépôt.
+- [ ] **22. Routeur et client d'API** (ADR 0004, point 6) : routeur fondé sur l'API History avec le préfixe de tribu, client `fetch` qui ramène à la connexion sur un 401. Modules purs, testés avec `node:test`.
+  - Le client traduit les réponses de l'API (contrat dans les notes du lot B) en états d'écran, par une fonction pure testée en tableau de cas : `invalid_email` : adresse mal formée ; `too_many_requests` : trop de demandes ; `incorrect_code` avec `attemptsLeft` supérieur à 0 : code erroné, avec les essais restants ; `incorrect_code` avec `attemptsLeft` à 0 : essais épuisés ; `new_code_needed` : code expiré, quelle qu'en soit la cause (expiré, remplacé, déjà utilisé) ; échec du réseau ou réponse 5xx : erreur de réseau.
+  - `installedApp`, envoyé à l'ouverture de la session, vient de `display-mode: standalone` (et de `navigator.standalone` sur iOS).
+- [ ] **23. Écrans**, en DOM classique pour les formulaires (ADR 0004, point 3) :
+  - saisie de l'e-mail, téléphone et ordinateur : états saisie, adresse mal formée, trop de demandes. L'adresse est validée par le serveur seul : pas de seconde règle dans le front ;
+  - saisie du code : états saisie, code erroné avec essais restants, essais épuisés, code expiré. **Un seul champ** (D17), `inputmode="numeric"`, `maxlength="6"`, `autocomplete="one-time-code"`, dessiné en six cases par le CSS, avec les chiffres tabulaires de Bricolage Grotesque (`font-variant-numeric: tabular-nums`). Si la police n'a pas de chiffres tabulaires ou si l'alignement dans les cases ne tient pas, le signaler avant de continuer ;
+  - saisie du code, actions de la maquette : « Modifier » ramène à la saisie de l'e-mail ; « Je n'ai rien reçu : renvoyer un code » refait la demande. Un renvoi refusé pour trop de demandes affiche le message de l'écran de l'e-mail sous le champ ; le code déjà reçu reste utilisable ;
+  - l'adresse saisie n'est gardée qu'en mémoire : après un rechargement de la page sur la saisie du code, retour à la saisie de l'e-mail ;
+  - erreur de réseau sur un formulaire : message « Le réseau est lent ou absent. Réessayez. », le formulaire reste en l'état ;
+  - chargement, affiché seulement au-delà de 300 ms, animations coupées avec `prefers-reduced-motion`. État « réseau lent » : le message et « Réessayer », sans la phrase sur le planning en cache, qui attend le hors-ligne ;
   - accueil provisoire après connexion : nom de la tribu et « Se déconnecter », en attendant le planning ;
-  - erreurs avec icône et `role="alert"` ; pied de page avec le lien vers le code source de la version.
-- [ ] **23. `Mailer` de développement lisible par les tests** (D6) : option `-mail-file` de `serve`, qui écrit aussi chaque message dans un fichier (une ligne JSON par message) ; refusée sans `-dev`. `make dev` ne s'en sert pas.
-- [ ] **24. Playwright** : parcours de connexion et de déconnexion, états d'erreur, écran identique pour une tribu inexistante ; sur Chromium et WebKit. Tests d'écran ordinaires, sans tag `@ui` ni lien avec les `.feature` (D5). Le scénario de fumée actuel est remplacé.
-- [ ] **25. Documentation du lot** : `docs/design/README.md` si un écart avec les maquettes apparaît, `CLAUDE.md`, `CHANGELOG.md`, cases cochées.
-- [ ] **26. Validation par le développeur** : `make seed` puis `make dev`, connexion à `http://localhost:8080/tribes/demo/` avec le code lu dans les logs, sur ordinateur et en mode téléphone du navigateur.
+  - erreurs avec icône et `role="alert"` ; pied de page avec le lien vers le code source de la version (étape 21).
+- [ ] **24. Playwright** (D14, D15). Tests d'écran ordinaires, sans tag `@ui` ni lien avec les `.feature` (D5). Le scénario de fumée actuel est remplacé.
+  - **Un seul parcours réel**, sur Chromium : connexion avec le code lu dans le fichier des e-mails, accueil avec le nom de la tribu, déconnexion ; et l'écran d'une tribu inexistante, identique à celui de la tribu de démonstration jusqu'au message qui suit la demande de code. Deux demandes de code par exécution.
+  - **États des écrans avec une API simulée** (`page.route`), sur Chromium et WebKit : adresse mal formée, trop de demandes, code erroné, essais épuisés, code expiré, renvoi refusé, erreur de réseau, chargement lent, accueil et déconnexion. Les réponses simulées sont définies une seule fois, dans un module des tests, d'après le contrat des notes du lot B.
+  - **Serveur des tests** : dossier de données fixe `web/.e2e-data/` (ignoré par Git), vidé au démarrage, puis `admin seed -data` et `serve -dev -data … -mail-file …` sur ce dossier. `reuseExistingServer: false`, pour que les compteurs de limitation repartent de zéro à chaque exécution.
+- [ ] **25. Documentation du lot** : écarts avec les maquettes dans `docs/design/README.md` (champ du code unique, renvoi refusé, erreur de réseau, chargement sans la phrase sur le planning) ; ADR 0009, point 4, si la note du 2026-10-04 est à compléter ; `CLAUDE.md`, `CHANGELOG.md`, cases cochées.
+- [ ] **26. Validation par le développeur** : `make seed` puis `make dev`, connexion à `http://localhost:8080/tribes/demo/` avec le code lu dans les logs, sur ordinateur et en mode téléphone du navigateur (Chrome ou Firefox : Safari refuse le cookie sur `http://localhost`, D14). La connexion sous Safari se vérifie en recette, en HTTPS, avec les scénarios `@manuel`.
 
 ## Notes d'exécution
 
@@ -153,6 +166,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - **Appareil détecté écrit en anglais dans le journal d'audit** : `audit_log.detected_device` contient une chaîne d'affichage (« computer · Linux · Firefox · tab »), alors que `sessions` a des colonnes structurées. À trancher avec EF-04, avant le premier déploiement. Un iPad sous Safari se présente comme un Mac et est vu comme un ordinateur.
   - **Critère « limites et essais inchangés après un redémarrage »** : prouvé par `TestLimitsSurviveRestart`, qui ferme et rouvre les bases (pour un vrai code et pour un code fantôme) ; ajouté dans la même PR plutôt qu'au lot C, puisque c'est un critère de validation du lot B.
   - **Force brute et blocage ciblé, par conception d'ENF-01** : les limites laissent 30 demandes par heure et par tribu, soit 90 essais par heure sur un code à 6 chiffres ; rien ne signale ni ne bloque une attaque soutenue. Qui connaît l'identifiant d'URL peut aussi empêcher toute connexion à une tribu avec 30 demandes par heure. À reprendre dans les specs avant le premier déploiement.
+- **Relecture du lot C après la fusion du lot B** (2026-10-04) : le contrat de l'API couvre tous les états des maquettes, l'écran est identique pour une tribu inexistante, aucun scénario godog n'est touché. Trois points de l'étape 24 ne pouvaient pas passer tels qu'écrits : le cookie `Secure` refusé par WebKit (D14), la limite de 10 demandes par heure et par IP, que partagent tous les tests (D15), et un serveur de test sans tribu ni fichier d'e-mails (étape 24). Deux écarts entre le plan, les maquettes et le code sont tranchés (D16, D17). Le reste est précisé dans les étapes, sur proposition de la relecture et à confirmer à la revue de la PR du plan : ressources du front et CSP (étape 20), lien vers le code source (étape 21), correspondance entre réponses de l'API et états (étape 22), états absents des maquettes (étape 23). L'ordre des étapes 21 à 23 change : le côté serveur passe avant les écrans, qui en dépendent. Non vérifié : la publication de `woff2` variables par les dépôts officiels des polices, et la présence de chiffres tabulaires dans Bricolage Grotesque.
 
 ## Critères de validation
 
@@ -191,8 +205,15 @@ Le 2026-10-03, à la relecture du lot B après la fusion du lot A.
 - **D12. Appareil détecté dès le lot B**, par une fonction pure sur l'en-tête `User-Agent`, parce que l'entrée d'audit « ouverture de session » le porte (EF-07). Écarté : une colonne laissée vide jusqu'à EF-04, qui laisserait des entrées d'audit incomplètes. À confirmer par le développeur.
 - **D13. Harnais godog sans connexion réseau** : appel direct du handler. Un serveur `httptest.NewServer` ne voit que `127.0.0.1`, et le client HTTP de Go ne renvoie pas un cookie `Secure` sur `http://` (vérifié le 2026-10-03). Précise l'étape 4 et l'ADR 0005, point 2 : le serveur tourne toujours dans le processus de test. Écartés : `X-Forwarded-For` (hors périmètre, ADR 0006 point 7), un serveur de test en TLS (ne règle pas l'adresse IP).
 
+Le 2026-10-04, à la relecture du lot C après la fusion du lot B.
+
+- **D14. Parcours de connexion réel sur Chromium seul.** WebKit refuse le cookie `Secure` sur `http://localhost`. WebKit couvre les écrans avec une API simulée ; la connexion sous Safari est vérifiée en recette, en HTTPS. Limite assumée : des réponses simulées peuvent s'écarter du contrat réel sans que WebKit le voie, seul le parcours Chromium le verra. Écartés : le TLS en local (une option de plus, un certificat à gérer ; reste possible si la recette révèle des surprises), un cookie sans `Secure` en mode `-dev` (le développement divergerait de la production sur un attribut que vérifie un scénario ENF-01).
+- **D15. États d'erreur simulés, un seul parcours réel.** Tous les tests Playwright arrivent de `127.0.0.1` et partagent la limite de 10 demandes par heure et par IP ; les règles sont déjà prouvées contre l'API par godog (ADR 0005, point 2). Playwright prouve que chaque écran affiche le bon état pour une réponse donnée, et qu'un parcours complet fonctionne. Écartés : des limites réglables par une option de `serve` (des paramètres de sécurité modifiables en ligne de commande), des tests tous réels en restant sous la limite (fragile, l'échec se manifeste ailleurs que dans le test fautif).
+- **D16. Une adresse e-mail a un point dans son domaine**, règle portée par le serveur seul. La maquette donne `alice@exemple` comme adresse mal formée, que `ParseEmail` acceptait. Écarté : une règle dans le front, qui ferait deux règles à tenir d'accord.
+- **D17. Un seul champ pour le code, dessiné en six cases.** Saisie, effacement, collage et suggestion du clavier restent natifs. Écart avec la maquette `Code` : la case en cours de saisie n'a pas son propre liseré, le champ entier le porte. Écarté : six champs comme la maquette (déplacement du curseur, collage et remplissage automatique à reprogrammer, six champs annoncés par les lecteurs d'écran).
+
 ## Questions ouvertes
 
-- **Cookie `Secure` sur `http://localhost` avec WebKit** : Chromium et Firefox l'acceptent ; à vérifier pour WebKit dès l'étape 16, avant d'écrire les écrans. Si WebKit le refuse, il faudra soit du TLS local pour les tests Playwright, soit limiter le parcours de connexion à Chromium et couvrir WebKit en recette. *Vérifié le 2026-10-03 avec Playwright 1.63 : WebKit refuse le cookie, sur `localhost` comme sur `127.0.0.1`, en navigation comme par `fetch` ; Chromium l'accepte. À trancher avant le lot C (étape 24) ; même question pour `make dev` ouvert dans Safari.*
+- **Cookie `Secure` sur `http://localhost` avec WebKit** : Chromium et Firefox l'acceptent ; à vérifier pour WebKit dès l'étape 16, avant d'écrire les écrans. Si WebKit le refuse, il faudra soit du TLS local pour les tests Playwright, soit limiter le parcours de connexion à Chromium et couvrir WebKit en recette. *Vérifié le 2026-10-03 avec Playwright 1.63 : WebKit refuse le cookie, sur `localhost` comme sur `127.0.0.1`, en navigation comme par `fetch` ; Chromium l'accepte. À trancher avant le lot C (étape 24) ; même question pour `make dev` ouvert dans Safari.* **Tranché le 2026-10-04 : D14.**
 - **Écriture de la dernière activité à chaque requête** : négligeable à cette échelle (ADR 0001) ; à espacer seulement si la mesure le justifie.
 - **Sessions cloud de Claude** : aujourd'hui elles n'atteignent pas `proxy.golang.org`, donc ni `make tools` ni `make ci`. Elles conviennent à la documentation ; le code de ce plan se fait dans le Dev Container, sauf à ouvrir cet accès dans les réglages réseau de l'environnement cloud.

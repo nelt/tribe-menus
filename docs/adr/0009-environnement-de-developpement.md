@@ -23,7 +23,7 @@ Le souci de limiter les adhérences (ADR 0002, 0004) s'applique aussi à l'outil
 4. **Boucle de développement** :
    - esbuild en mode surveillance reconstruit le front à chaque modification ;
    - le serveur Go en mode développement écoute sur `http://localhost:8080`, lit le front sur le disque plutôt que dans le binaire, sert aussi `site/` à la racine (ce que fait Caddy en production) et écrit les codes de connexion dans les logs au lieu de les envoyer par e-mail ;
-   - pas de TLS en local : les navigateurs traitent `localhost` comme un contexte sécurisé, ce qui suffit au service worker et à l'installation de la PWA ;
+   - pas de TLS en local : les navigateurs traitent `localhost` comme un contexte sécurisé, ce qui suffit au service worker et à l'installation de la PWA. *Précision du 2026-10-04 : WebKit refuse en revanche un cookie `Secure` sur `http://localhost` ; la connexion ne s'y teste donc pas en local, mais en recette (plan du 2026-10-03, D14)* ;
    - `make dev` lance l'ensemble ; `make seed` crée des données de démonstration (tribu, membres, plats, planning) via la sous-commande `admin`.
 5. **Éditeur de référence : VS Code** (distribution officielle, seule à disposer de l'extension Dev Containers). Le dépôt n'en dépend pas pour autant : seuls sont partagés un `.editorconfig` et la configuration du Dev Container.
 6. **Politique des extensions VS Code.** Une extension s'exécute sans bac à sable, avec les droits de l'utilisateur, et peut être compromise par une mise à jour automatique. Règles :
