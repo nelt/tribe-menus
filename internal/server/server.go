@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/nelt/tribe-menus/internal/tribe"
@@ -22,6 +23,14 @@ const (
 	indexTemplate = "index.html"
 
 	contentSecurityPolicy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
+
+	// repositoryURL is the public repository of the source code (ADR 0011).
+	repositoryURL = "https://github.com/nelt/tribe-menus"
+)
+
+var (
+	releasePattern = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+$`)
+	commitPattern  = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
 )
 
 // Config holds what the server serves.
@@ -36,12 +45,16 @@ type Config struct {
 	// Tribes and Login serve the API; without them, only the front end is served.
 	Tribes Tribes
 	Login  *tribe.Login
+	// Version and Commit of the binary (ADR 0012) give the link to its source code.
+	Version string
+	Commit  string
 }
 
 type server struct {
-	web    fs.FS
-	dev    bool
-	logger *slog.Logger
+	web       fs.FS
+	dev       bool
+	logger    *slog.Logger
+	sourceURL string
 	// index is parsed once at startup in production, nil in development.
 	index *template.Template
 }
@@ -51,7 +64,7 @@ func New(cfg Config) (http.Handler, error) {
 	if cfg.Web == nil {
 		return nil, errors.New("server: no front end")
 	}
-	s := &server{web: cfg.Web, dev: cfg.Dev, logger: cfg.Logger}
+	s := &server{web: cfg.Web, dev: cfg.Dev, logger: cfg.Logger, sourceURL: sourceURL(cfg.Version, cfg.Commit)}
 	if s.logger == nil {
 		s.logger = slog.Default()
 	}
@@ -77,6 +90,19 @@ func New(cfg Config) (http.Handler, error) {
 		mux.Handle("GET /", http.FileServerFS(cfg.Site))
 	}
 	return withCommonHeaders(mux), nil
+}
+
+// sourceURL is the address of the source code of this version (ADR 0011, point 2): its tag
+// for a release vX.Y.Z, otherwise its commit if known, otherwise the repository.
+func sourceURL(version, commit string) string {
+	switch {
+	case releasePattern.MatchString(version):
+		return repositoryURL + "/tree/" + version
+	case commitPattern.MatchString(commit):
+		return repositoryURL + "/tree/" + commit
+	default:
+		return repositoryURL
+	}
 }
 
 func parseIndex(web fs.FS) (*template.Template, error) {
@@ -161,7 +187,8 @@ func (s *server) renderIndex(w http.ResponseWriter, tribe string) {
 	}
 
 	var body bytes.Buffer
-	if err := index.Execute(&body, struct{ Base string }{Base: tribeBase(tribe)}); err != nil {
+	data := struct{ Base, SourceURL string }{Base: tribeBase(tribe), SourceURL: s.sourceURL}
+	if err := index.Execute(&body, data); err != nil {
 		s.fail(w, fmt.Errorf("server: render %s: %w", indexTemplate, err))
 		return
 	}

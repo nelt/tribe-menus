@@ -12,7 +12,7 @@ import (
 
 func webFS() fstest.MapFS {
 	return fstest.MapFS{
-		"index.html":  {Data: []byte(`<base href="{{.Base}}">`)},
+		"index.html":  {Data: []byte(`<base href="{{.Base}}"><meta name="source-url" content="{{.SourceURL}}">`)},
 		"main.js":     {Data: []byte(`console.log("app");`)},
 		"app.css":     {Data: []byte(`body{}`)},
 		"assets/a.js": {Data: []byte(`// nested`)},
@@ -83,6 +83,39 @@ func TestRoutes(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestSourceURL(t *testing.T) {
+	cases := []struct {
+		name, version, commit, want string
+	}{
+		{name: "release", version: "v1.2.3", commit: "0123abc", want: repositoryURL + "/tree/v1.2.3"},
+		{name: "pull request build", version: "pr-31", commit: "0123abc", want: repositoryURL + "/tree/0123abc"},
+		{name: "full commit", version: "dev", commit: "84745e5b96261ae5f8c6c856e262fe78d1d6efdd", want: repositoryURL + "/tree/84745e5b96261ae5f8c6c856e262fe78d1d6efdd"},
+		{name: "unknown commit", version: "dev", commit: "unknown", want: repositoryURL},
+		{name: "no commit", version: "dev", commit: "", want: repositoryURL},
+		{name: "not a release tag", version: "v1.2", commit: "unknown", want: repositoryURL},
+		{name: "release with suffix", version: "v1.2.3-rc1", commit: "unknown", want: repositoryURL},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := sourceURL(tc.version, tc.commit); got != tc.want {
+				t.Errorf("sourceURL(%q, %q) = %q, want %q", tc.version, tc.commit, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIndexHasSourceURL(t *testing.T) {
+	for _, dev := range []bool{false, true} {
+		t.Run(modeName(dev), func(t *testing.T) {
+			h := newHandler(t, Config{Web: webFS(), Dev: dev, Version: "v1.2.3", Commit: "0123abc"})
+			want := `<meta name="source-url" content="` + repositoryURL + `/tree/v1.2.3">`
+			if body := get(h, "/tribes/demo/").Body.String(); !strings.Contains(body, want) {
+				t.Errorf("body = %q, want it to contain %q", body, want)
+			}
+		})
 	}
 }
 
