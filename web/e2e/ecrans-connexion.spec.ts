@@ -125,7 +125,14 @@ test("attempts exhausted: the only action is to receive a new code", async ({ pa
   await page.getByRole("button", { name: "Recevoir un nouveau code" }).click();
   await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
   await expect(page.getByLabel("Code de connexion")).toHaveValue("");
+  await expect(page.getByLabel("Code de connexion")).toBeFocused();
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("resend accepted: the code field has the focus", async ({ page }) => {
+  await openCodeScreen(page);
+  await page.getByRole("button", { name: "Je n’ai rien reçu : renvoyer un code" }).click();
+  await expect(page.getByLabel("Code de connexion")).toBeFocused();
 });
 
 test("code expired", async ({ page }) => {

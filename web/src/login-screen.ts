@@ -195,6 +195,11 @@ export class LoginScreen extends LitElement {
         this.code = "";
       }
       this.state = afterResend(this.state, outcome);
+      if (outcome.kind === "ok") {
+        // The field, enabled again after a dead code, waits for the new one.
+        await this.updateComplete;
+        this.querySelector<HTMLInputElement>(".code-input")?.focus();
+      }
     } finally {
       this.busy = false;
     }
