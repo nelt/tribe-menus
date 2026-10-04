@@ -177,6 +177,10 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - **Lien vers le code source** : la règle (`sourceURL`) est dans `internal/server` ; `make dev` construit sans `-ldflags`, le lien y pointe donc vers le dépôt.
   - **Playwright** : le serveur de test est lancé par `go run` (construction du front, `admin seed`, puis `serve`) ; il attend `/healthz`. Le parcours réel recharge aussi la page connectée puis déconnectée, pour vérifier le cookie.
 
+- **Revue de la PR #33** (2026-10-04) : points 1 à 3 corrigés dans la PR (adresse de l'écran du code, collage, focus après un renvoi). À traiter plus tard :
+  - **Aucun retour visible pendant un appel** : `busy` ignore un second envoi mais ne change rien à l'écran ; pendant les 10 secondes que peut durer un appel, rien n'indique que la demande est partie, et les maquettes n'ont pas d'état « en cours ». À trancher à la validation de l'étape 26, en limitant le débit dans le navigateur ; l'état retenu servira aussi aux formulaires du plan suivant.
+  - **Mise en page ordinateur non testée** : les deux projets Playwright sont des téléphones, rien n'exerce la grille au-delà de 960 px (vue correcte à 1280 px à la revue). À couvrir avec le premier écran de l'application qui a une version ordinateur.
+
 ## Critères de validation
 
 - `make ci` passe à la fin de chaque lot, `make acceptance` compris.
