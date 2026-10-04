@@ -126,6 +126,7 @@ export class LoginScreen extends LitElement {
           aria-invalid=${error === "incorrect-code" ? "true" : "false"}
           aria-describedby=${error === undefined ? nothing : errorId}
           @input=${this.#codeInput}
+          @paste=${this.#codePaste}
         >
       </label>
       ${error === undefined ? nothing : alertMessage(errorId, errorMessage(error, state.attemptsLeft))}
@@ -144,6 +145,19 @@ export class LoginScreen extends LitElement {
       input.value = code;
     }
     this.code = code;
+  }
+
+  // maxlength would cut a pasted "123 456" before the digits are kept: the paste is
+  // replaced by its digits.
+  #codePaste(e: ClipboardEvent) {
+    const text = e.clipboardData?.getData("text");
+    if (text === undefined) {
+      return;
+    }
+    e.preventDefault();
+    const input = e.target as HTMLInputElement;
+    this.code = normalizeCode(text);
+    input.value = this.code;
   }
 
   async #requestCode(e: SubmitEvent) {
