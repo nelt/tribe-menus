@@ -2,7 +2,7 @@
 
 - **Nom** : `socle`
 - **Date** : 2026-10-03
-- **Statut** : en cours (lots A et B fusionnés, lot C en revue ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
+- **Statut** : en cours (lots A, B et C fusionnés, reste la validation par le développeur, étape 26 ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
 
 ## Objectif
 

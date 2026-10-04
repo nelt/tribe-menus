@@ -26,9 +26,9 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | --- | --- | --- | --- |
 | `environnement` | Environnement de développement | [`2026-09-29-environnement-de-developpement.md`](plans/2026-09-29-environnement-de-developpement.md) | terminé |
 | `ci` | Intégration continue | [`2026-09-30-integration-continue.md`](plans/2026-09-30-integration-continue.md) | terminé |
-| `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | en cours : `socle/A` et `socle/B` fusionnés, `socle/C` en cours de réalisation |
-| `canal-prive` | Canal privé pour les vulnérabilités | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | en cours : étape 1 (essais d'accès) faite ; avance en parallèle de `socle/C` |
-| `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | prêt ; commence après `socle/C` et `canal-prive` |
+| `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | en cours : `socle/A`, `socle/B` et `socle/C` fusionnés ; reste la validation par le développeur (étape 26) |
+| `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | en cours : canal privé écarté, analyse de risques retenue (étapes 1 et 2) ; reste à écrire le document, l'ADR et à faire les réglages |
+| `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | prêt ; commence quand `canal-prive` a livré son document (étape 3) |
 | `production` | Application prête pour la production | à écrire | après `revue-securite` |
 | `recette` | Serveur, recette et première release | à écrire | après `production` |
 
@@ -38,7 +38,7 @@ Ce qui manque au binaire, sans toucher au serveur : envoi SMTP réel et alerte s
 
 ### `recette` : serveur, recette et première release
 
-`deploy/provision.sh`, unité systemd confinée, configuration de Caddy, script `tribe-menus-deploy` avec instantané et retour arrière (ADR 0015, 0016) ; DNS et e-mail (CAA, DNSSEC, SPF, DKIM, DMARC, boîtes `no-reply@` et `server@`, ADR 0007 et 0014) ; déploiement en recette et vérification sur téléphone : scénarios `@manuel`, connexion sous Safari (`socle`, D14), réception du code sur les messageries réelles ; relecture de sécurité des scripts de déploiement dans leurs PR, puis contrôle du serveur en place.
+`deploy/provision.sh`, unité systemd confinée, configuration de Caddy, script `tribe-menus-deploy` avec instantané et retour arrière (ADR 0015, 0016) ; DNS et e-mail (CAA, DNSSEC, SPF, DKIM, DMARC, boîtes `no-reply@` et `server@`, ADR 0007 et 0014) ; déploiement en recette et vérification sur téléphone : scénarios `@manuel`, connexion sous Safari (`socle`, D14), réception du code sur les messageries réelles ; relecture de sécurité des scripts de déploiement dans leurs PR, puis contrôle du serveur en place ; ce que demande le traitement des vulnérabilités (`canal-prive`) : déploiement en production tenant dans une séance, recette ciblée sur une archive de PR, retour arrière fiable, mesure d'attente documentée, répétition d'un traitement accéléré sur un faux constat.
 
 ## Décisions d'ordonnancement
 
@@ -46,7 +46,7 @@ Le 2026-10-04, avec le développeur.
 
 - **Le déploiement passe avant le métier.** Il rend l'application utilisable ailleurs qu'en local et permet les vérifications renvoyées à la recette.
 - **Une revue de sécurité précède le déploiement**, pour ne pas livrer de vulnérabilité : `revue-securite` porte sur le code existant, `recette` relit ses propres scripts.
-- **Le canal privé précède la revue de sécurité.** Le dépôt étant public, tout ce que les sessions Claude s'écrivent par les PR l'est aussi, vulnérabilités comprises. `canal-prive` installe un canal réservé aux vulnérabilités ; `revue-securite` s'en sert, ce qui le met à l'épreuve avant qu'une version soit en ligne.
+- **Le traitement des vulnérabilités est fixé avant la revue de sécurité.** Le dépôt étant public, tout ce que les sessions Claude s'écrivent par les PR l'est aussi, vulnérabilités comprises. `canal-prive` a écarté l'idée d'un canal privé et retient une analyse de risques, qui choisit pour chaque vulnérabilité un traitement normal, accéléré ou urgent ; `revue-securite` rode la grille sur ses constats, avant qu'une version soit en ligne.
 - **Le premier déploiement vise la recette seule.** À la fin de `socle`, l'application ne fait que connecter un membre ; la production ouvre quand le planning existe.
 - **Le site public attend l'ouverture de la production** : mentions légales et page Confidentialité doivent être en ligne en même temps qu'elle, pas avant.
 
