@@ -165,11 +165,14 @@ export class LoginScreen extends LitElement {
     if (this.busy || this.state.step !== "email" || this.state.blocked) {
       return;
     }
+    // The field stays editable during the request: the next screen follows the address
+    // requested, to which the code was sent, not the one typed meanwhile.
+    const requested = this.state;
     this.busy = true;
     try {
-      const outcome = await this.api.requestCode(this.state.email);
+      const outcome = await this.api.requestCode(requested.email);
       this.code = "";
-      this.state = afterCodeRequest(this.state, outcome);
+      this.state = afterCodeRequest(requested, outcome);
     } finally {
       this.busy = false;
     }

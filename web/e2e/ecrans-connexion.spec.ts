@@ -67,6 +67,16 @@ test("code screen: the message does not say whether the address is a member", as
   expect(received).toContainEqual({ method: "POST", path: "login-codes", body: { email } });
 });
 
+test("the code screen follows the address requested, even if the field changes meanwhile", async ({ page }) => {
+  const received = await openLogin(page, { requestCode: [{ ...replies.codeSent, delayMs: 1500 }], openSession: [replies.incorrectCode(2)] });
+  await requestCode(page);
+  await page.getByLabel("Votre adresse e-mail").fill("alice@exemple.com");
+  await expect(page.getByText(`Si ${email} fait partie de la tribu, un code à 6 chiffres vient d’y être envoyé.`)).toBeVisible();
+  await submitCode(page);
+  await expect(page.getByRole("alert")).toBeVisible();
+  expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "123456", installedApp: false } });
+});
+
 test("pasted code: only the digits are kept, even with spaces", async ({ page }) => {
   const received = await openCodeScreen(page, { openSession: [replies.incorrectCode(2)] });
   await page.getByLabel("Code de connexion").evaluate((input) => {
