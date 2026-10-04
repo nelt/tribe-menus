@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -165,6 +166,13 @@ func TestRateLimits(t *testing.T) {
 			},
 			n: TribeRequestLimit, slug: "dupont", email: "alice@exemple.fr", ip: "192.0.2.9",
 		},
+		{
+			name: "by malformed slug",
+			prior: func(i int) (string, string, string) {
+				return "Pas un identifiant", string(rune('a'+i)) + "x@exemple.fr", "198.51.100." + string(rune('0'+i%10))
+			},
+			n: TribeRequestLimit, slug: "Pas un identifiant", email: "alice@exemple.fr", ip: "192.0.2.9",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -197,6 +205,33 @@ func TestRateLimits(t *testing.T) {
 				t.Errorf("after the window: %v", err)
 			}
 		})
+	}
+}
+
+// TestMalformedSlugIsNotStored: a slug no tribe can have gets the answers of an unknown
+// tribe, and the rate limit database keeps neither its text nor its length (ADR 0021).
+func TestMalformedSlugIsNotStored(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	slug := "alice@exemple.fr " + strings.Repeat("x", 10_000)
+
+	if err := f.login.RequestCode(ctx, slug, nil, "alice@exemple.fr", "192.0.2.1"); err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if len(f.mailer.sent) != 0 {
+		t.Errorf("sent = %v, want nothing", f.mailer.sent)
+	}
+	var incorrect *IncorrectCodeError
+	if _, _, err := f.login.OpenSession(ctx, slug, nil, "alice@exemple.fr", "123456", Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+		t.Errorf("open session: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
+	}
+
+	var stored string
+	if err := f.store.RateLimit().QueryRowContext(ctx, "SELECT slug FROM code_requests").Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	if len(stored) != 65 || strings.Contains(stored, "alice") {
+		t.Errorf("stored slug = %q (%d bytes), want a hash", stored, len(stored))
 	}
 }
 

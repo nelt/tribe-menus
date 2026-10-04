@@ -151,6 +151,7 @@ func TestAPIErrors(t *testing.T) {
 		{name: "no session", method: "GET", target: "/tribes/martin/api/session", wantStatus: 401, wantBody: `{"error":"no_session"}`},
 		{name: "sign out without session", method: "DELETE", target: "/tribes/martin/api/session", wantStatus: 401, wantBody: `{"error":"no_session"}`},
 		{name: "unknown API path", method: "GET", target: "/tribes/martin/api/nope", wantStatus: 404, wantBody: `{"error":"not_found"}`},
+		{name: "code request for a slug no tribe can have", method: "POST", target: "/tribes/" + strings.Repeat("X", 5000) + "/api/login-codes", body: `{"email":"alice@exemple.fr"}`, wantStatus: 202},
 		{name: "wrong method", method: "PUT", target: "/tribes/martin/api/session", wantStatus: 405},
 	}
 	for _, tc := range cases {

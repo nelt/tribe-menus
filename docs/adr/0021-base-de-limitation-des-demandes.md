@@ -18,7 +18,7 @@ Les codes des membres réels vivent dans la base de leur tribu (ADR 0003, point 
 3. **Empreintes** : SHA-256, jamais de valeur en clair.
    - Une adresse est hachée avec l'identifiant d'URL de la tribu : une personne membre de deux tribus n'a pas la même empreinte dans les deux, et rien ne relie ses appartenances (ENF-02, D10).
    - Une IP est hachée seule : la limite par IP vaut pour toute l'instance.
-   - L'identifiant d'URL est conservé en clair : ce n'est pas une donnée personnelle, et il figure déjà dans l'URL.
+   - L'identifiant d'URL est conservé en clair s'il a le format d'EF-08 : ce n'est pas une donnée personnelle, et il figure déjà dans l'URL. Un segment d'URL qui n'a pas ce format, qu'aucune tribu ne peut porter, est un texte libre choisi par le client : seule son empreinte est conservée, précédée de `#` (revue du lot B, 2026-10-04).
    - Ces empreintes restent des données personnelles (une adresse se devine par essais) : elles sont effacées dès la sortie de leur fenêtre, une heure au plus.
    - Dans les bases de tribu, le code de connexion et le jeton de session sont stockés de la même façon, en SHA-256. Le jeton (32 octets aléatoires) ne se retrouve pas à partir de son empreinte ; un code à 6 chiffres, si : sa protection tient à sa validité de 10 minutes et à ses 3 essais.
 4. **Interface** : le code métier ne voit que la décision de limitation (une fonction pure des demandes passées) et une interface de stockage ; la base de limitation en est la seule implémentation.
