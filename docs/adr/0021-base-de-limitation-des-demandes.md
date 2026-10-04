@@ -19,7 +19,7 @@ Les codes des membres réels vivent dans la base de leur tribu (ADR 0003, point 
    - Une adresse est hachée avec l'identifiant d'URL de la tribu : une personne membre de deux tribus n'a pas la même empreinte dans les deux, et rien ne relie ses appartenances (ENF-02, D10).
    - Une IP est hachée seule : la limite par IP vaut pour toute l'instance.
    - L'identifiant d'URL est conservé en clair s'il a le format d'EF-08 : ce n'est pas une donnée personnelle, et il figure déjà dans l'URL. Un segment d'URL qui n'a pas ce format, qu'aucune tribu ne peut porter, est un texte libre choisi par le client : seule son empreinte est conservée, précédée de `#` (revue du lot B, 2026-10-04).
-   - Ces empreintes restent des données personnelles (une adresse se devine par essais) : elles sont effacées dès la sortie de leur fenêtre, une heure au plus.
+   - Ces empreintes restent des données personnelles (une adresse se devine par essais) : elles sont effacées à la sortie de leur fenêtre d'une heure, par l'effacement automatique qui passe toutes les dix minutes : une heure et dix minutes au plus après la demande, tant que le serveur tourne (arrêté, il les efface à son redémarrage).
    - Dans les bases de tribu, le code de connexion et le jeton de session sont stockés de la même façon, en SHA-256. Le jeton (32 octets aléatoires) ne se retrouve pas à partir de son empreinte ; un code à 6 chiffres, si : sa protection tient à sa validité de 10 minutes et à ses 3 essais.
 4. **Interface** : le code métier ne voit que la décision de limitation (une fonction pure des demandes passées) et une interface de stockage ; la base de limitation en est la seule implémentation.
 5. **Pas d'instantané avant déploiement** pour ce fichier (ADR 0016) : le perdre remet les compteurs à zéro et efface les codes fantômes, sans autre conséquence.
@@ -36,5 +36,5 @@ Les codes des membres réels vivent dans la base de leur tribu (ADR 0003, point 
 
 - **Positif** : limites et essais survivent au redémarrage ; aucune adresse ni IP en clair ; une tribu inexistante se comporte exactement comme une tribu existante ; l'interface laisse la porte ouverte à un stockage partagé.
 - **Négatif** : une base de plus à migrer et à effacer périodiquement. SQLite suppose toujours une seule machine : un vrai fonctionnement multi-instance demandera de revoir ce stockage, comme celui des tribus.
-- **Confidentialité** : la conservation d'une heure des empreintes est mentionnée dans `gestion-membres-et-sessions.md` et dans la page Confidentialité.
+- **Confidentialité** : la conservation des empreintes, une heure et dix minutes au plus, est mentionnée dans `gestion-membres-et-sessions.md` et dans la page Confidentialité.
 - **Précise** l'ADR 0001 (limitation des demandes et des essais) et l'ADR 0003 (sortes de bases).
