@@ -1,0 +1,7 @@
+# Issue templates (docs/securite-depot.md, section 3). A vulnerability is never
+# reported in a public issue: the link below opens a private report (SECURITY.md).
+blank_issues_enabled: false
+contact_links:
+  - name: Signaler une vulnérabilité
+    url: https://github.com/nelt/tribe-menus/security/advisories/new
+    about: Signalement privé, visible du seul mainteneur. Pas d'issue publique pour une faille (SECURITY.md).
