@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `revue-securite`, étapes 2 à 5 : revue de sécurité du socle (authentification et sessions, stockage, serveur HTTP et front) par une session cloud ; section « Constats » du plan, quatre points à corriger et sept à noter, avec leurs évaluations et ce qui n'a pas pu être vérifié ; arbitrage du développeur à suivre, corrections à l'étape 6.
 - Plan `revue-securite`, étape 1 : code de connexion à 8 chiffres, limite par tribu comptant les seules demandes adressées à ses membres actifs, alerte à l'administrateur sur limites atteintes (plan `production`), appareil détecté structuré dans le journal d'audit (ENF-01, EF-07) ; implémentation à l'étape 6.
 - Traitement des vulnérabilités (`docs/traitement-des-vulnerabilites.md`, ADR 0022) : signal d'arrêt, constat remis au développeur hors de GitHub, analyse en trois évaluations, traitement normal, accéléré ou urgent, publication après le déploiement ; `docs/revue-de-pr.md`, `SECURITY.md` et `CLAUDE.md` accordés ; plan `canal-prive`, étapes 3 à 5.
 - Plan `socle` terminé : connexion validée par le développeur en local, sur ordinateur et en mode téléphone (étape 26) ; plan `canal-prive`, étape 6 : signalement privé de vulnérabilités activé, avis factice fermé, jeton du Dev Container ramené à ses droits.
