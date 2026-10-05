@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 à 4 faites ; constats de la revue à arbitrer par le développeur, étape 5)
+- **Statut** : en cours (étapes 1 à 4 faites ; constats arbitrés par le développeur le 2026-10-05, étape 5 ; corrections à suivre, étape 6)
 
 ## Objectif
 
@@ -63,12 +63,12 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Front : aucune échappatoire au rendu échappé (`webcheck`), rien de sensible gardé côté client, nom de la tribu jamais affiché avant connexion, comportement sur un 401.
   - Délais et limites du serveur (`ReadHeaderTimeout` seul aujourd'hui) : lecture du corps, écriture, connexions inactives.
   - Dépendances : `make vuln`, licences, et ce que `go.mod` et `package.json` embarquent réellement dans le binaire.
-- [ ] **5. Constats et arbitrage.**
+- [x] **5. Constats et arbitrage.**
   - Le relecteur ouvre une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier ; chaque constat de sécurité porte ses trois évaluations (gravité, risque de livrer sans recette, risque d'exploitation une fois publié) et le niveau de traitement qu'il aurait en production.
   - Le développeur arbitre (retirer un point, le changer de catégorie, corriger une évaluation), puis fusionne la PR.
-  - Section « Constats » ajoutée le 2026-10-05 ; arbitrage à faire.
+  - Section « Constats » ajoutée le 2026-10-05. Arbitrage du même jour : catégories et évaluations gardées telles quelles, point 1 tranché (D5), lecture de la grille confirmée pour le point 4 (D6).
 - [ ] **6. Corrections**, par Claude Code dans le Dev Container.
-  - Les décisions de l'étape 1 qui touchent au code (D1 à D3, voir « Ce que l'étape 1 demande à l'étape 6 »), et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
+  - Les décisions qui touchent au code (D1 à D3 et D5, voir « Ce que les décisions demandent à l'étape 6 »), et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
   - Les points « à noter » rejoignent `docs/feuille-de-route.md` (points reportés), avec le plan qui les reprendra.
 - [ ] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
@@ -94,19 +94,25 @@ Le 2026-10-05, avec le développeur (étape 1).
 - **D3. Appareil détecté enregistré sous forme structurée dans le journal d'audit.** `audit_log` reçoit les colonnes de `sessions` (type, système, navigateur, app installée) à la place de la chaîne `detected_device` ; le libellé, en français, est composé à l'affichage par l'interface d'EF-07. Confirme `socle`, D12, sous cette forme. Rien n'est déployé : la forme de la migration (modifier la 0001 ou en ajouter une) se choisit à l'étape 6. L'iPad vu comme un ordinateur reste à EF-04. Écartés : une chaîne en français (le serveur fixerait le libellé et le journal resterait figé s'il change) ; garder la forme actuelle.
 - **D4. Une seule session cloud relit les étapes 2 à 4**, puis relit les corrections de l'étape 6. Le code est petit et rien n'est en production. Tranche la question ouverte « une ou deux sessions ».
 
-### Ce que l'étape 1 demande à l'étape 6
+Le 2026-10-05, avec le développeur, à l'arbitrage des constats (étape 5).
+
+- **D5. Le code ne se saisit que depuis le navigateur qui l'a demandé** (constat 1). `POST login-codes` pose un cookie aléatoire, `HttpOnly`, `Secure`, `SameSite=Lax`, au `Path` de la tribu, valable 10 minutes ; son empreinte est gardée avec le code, réel comme fantôme. Un essai sans ce cookie reçoit `new_code_needed` et ne consomme rien. Pour bloquer un membre, il faut alors redemander un code à sa place : c'est limité, visible de la victime, et vu par l'alerte de D1. ENF-01, l'ADR 0001 (renvoi) et le texte de la page Confidentialité (`docs/design/README.md` : deux cookies au lieu d'un) sont mis à jour ; pas de nouvel ADR, le mécanisme reste un code par e-mail et une session par cookie. Limite assumée : un code demandé sur un appareil ne se saisit pas sur un autre. Écartée : une limite des essais par adresse IP, que quelques adresses suffisent à contourner.
+- **D6. La gravité se juge comme la grille l'écrit, sur ce qu'il faut à l'attaquant** (constat 4). « Accès au serveur requis » reste une gravité faible, donc un traitement normal, même quand la conséquence est la session d'un membre : l'attaquant a déjà un compte sur le serveur, et un constat écrit en public ne l'aide pas à en obtenir un. `docs/traitement-des-vulnerabilites.md` n'est pas modifié.
+
+### Ce que les décisions demandent à l'étape 6
 
 Un commit par décision, les scénarios écrits ou modifiés d'abord (`docs/specs/conventions-gherkin.md`) :
 
 - D1 : `authentification.feature` (« un code à 8 chiffres »), `internal/tribe/login.go` (`loginCodeDigits`), écrans et tests du front (champ en huit cases, textes) ;
 - D2 : l'exemple « 30 demandes de code pour la tribu » de `authentification.feature` précisé, et un scénario « des demandes pour des adresses qui ne sont pas membres ne bloquent pas la tribu » ; décompte et ADR 0021 ;
-- D3 : migration, requêtes sqlc, `sessionAudit` et `Device.String` dans `internal/tribe`.
+- D3 : migration, requêtes sqlc, `sessionAudit` et `Device.String` dans `internal/tribe` ;
+- D5 : `authentification.feature` (un scénario « des essais venus d'un autre navigateur ne consomment pas ceux du code », et le cas d'une adresse non membre) ; colonne d'empreinte dans `login_codes` et `decoy_codes`, requêtes sqlc ; `requestCode` et `openSession` dans `internal/server/api.go`, `Login.RequestCode` et `Login.OpenSession` ; nom du cookie à choisir, distinct de `session` ; ADR 0021 précisé (ce que garde un code fantôme) ; maquette `identite/Confidentialite` accordée au texte ; harnais godog et tests Playwright, qui reportent déjà les cookies.
 
 ## Constats
 
 Revue des étapes 2 à 4, faite le 2026-10-05 par une session cloud qui n'a pas écrit le code, sur `main` au commit `4bc8c86`. Aucune version n'est publiée ni en production (aucune étiquette `v*`) : tout suit le flux public.
 
-**Avis d'ensemble.** Le socle tient ce qu'il annonce : réponses identiques pour un membre, une adresse inconnue et une tribu inexistante, limites tenues sous des demandes simultanées, aucune requête SQL construite à la main, fichiers du front servis sans traversée de chemin, rien de sensible dans les logs hors `-dev`. Quatre points sont à corriger avant le déploiement, dont un demande d'abord une décision de specs (point 1) ; sept sont à noter pour les plans qui suivent.
+**Avis d'ensemble.** Le socle tient ce qu'il annonce : réponses identiques pour un membre, une adresse inconnue et une tribu inexistante, limites tenues sous des demandes simultanées, aucune requête SQL construite à la main, fichiers du front servis sans traversée de chemin, rien de sensible dans les logs hors `-dev`. Quatre points sont à corriger avant le déploiement, dont un demandait d'abord une décision de specs (point 1, tranché par D5) ; sept sont à noter pour les plans qui suivent.
 
 Chaque constat de sécurité porte les trois évaluations de `docs/traitement-des-vulnerabilites.md`, dans l'ordre **gravité / risque de livrer sans recette / risque d'exploitation une fois publié**, puis le niveau qu'il aurait si le code était en production.
 
@@ -123,9 +129,9 @@ Déjà connus et non repris ici : adresse IP du client derrière Caddy et IPv6 p
 - Constaté par l'exécution : après une demande de code pour `alice@exemple.fr`, trois `POST sessions` erronés sans cookie ni demande préalable répondent `incorrect_code` (2, 1, 0), puis le bon code reçoit `new_code_needed`. 300 `POST sessions` de suite depuis la même adresse IP reçoivent tous 400, jamais 429.
 - Effet de bord : le nombre d'appels étant illimité, c'est aussi la route qui donnerait le plus d'échantillons à une mesure de temps de réponse (voir « Ce qui n'a pas pu être vérifié »).
 
-Évaluations : moyenne (blocage d'un membre à distance et sans compte, aucune donnée exposée) / moyen (authentification touchée, couverte par les scénarios ; une migration selon la piste retenue) / élevé (se déduit d'ENF-01, sans même lire un correctif). Niveau en production : **accéléré**, sans autre mesure d'attente que l'arrêt.
+Évaluations : moyenne (blocage d'un membre à distance et sans compte, aucune donnée exposée) / moyen (authentification touchée, couverte par les scénarios ; une colonne ajoutée à deux tables) / élevé (se déduit d'ENF-01, sans même lire un correctif). Niveau en production : **accéléré**, sans autre mesure d'attente que l'arrêt.
 
-Attendu : une décision dans ENF-01, puis le scénario Gherkin et le code. Deux pistes :
+Attendu : une décision dans ENF-01, puis le scénario Gherkin et le code. **Tranché le 2026-10-05 : la première des deux pistes (D5).**
 
 - **lier le code au navigateur qui l'a demandé** : `POST login-codes` pose un cookie aléatoire (`HttpOnly`, même `Path` que la session, 10 minutes), dont l'empreinte est gardée avec le code, réel comme fantôme ; un essai sans ce cookie reçoit `new_code_needed` et ne consomme rien. Pour bloquer un membre, il faut alors redemander un code à sa place, ce qui est limité, visible de la victime et vu par l'alerte de D1. L'écran du code ne s'atteint déjà qu'après une demande faite depuis la même page ;
 - **limiter les essais par adresse IP** dans la base de limitation : plus simple, mais quelques adresses IP suffisent à la contourner.
@@ -134,7 +140,7 @@ Test : après trois essais erronés venus d'un autre client, le code du membre o
 
 **2. Le tirage du code ne suit pas `loginCodeDigits`** (`internal/tribe/login.go`, `newLoginCode`)
 
-Le code est tiré dans `big.NewInt(1_000_000)`, constante écrite à part de `loginCodeDigits`, qui ne sert qu'au remplissage par des zéros. « Ce que l'étape 1 demande à l'étape 6 » ne cite que `loginCodeDigits` pour D1.
+Le code est tiré dans `big.NewInt(1_000_000)`, constante écrite à part de `loginCodeDigits`, qui ne sert qu'au remplissage par des zéros. « Ce que les décisions demandent à l'étape 6 » ne cite que `loginCodeDigits` pour D1.
 
 - Scénario : D1 est implémenté en passant `loginCodeDigits` à 8 ; les codes ont bien 8 chiffres, mais commencent tous par `00`.
 - Conséquence : la force brute reste celle du tableau de ce plan (environ 1 chance sur 4 par an pour une adresse) alors qu'ENF-01 annonce 0,3 %, et un test qui ne vérifie que la longueur passe.
@@ -219,7 +225,7 @@ Attendu : des fichiers en 0600 quel que soit le dossier, pour `serve` comme pour
 
 Premier rodage de `docs/traitement-des-vulnerabilites.md` :
 
-- **« Accès au serveur requis » classe le point 4 en gravité faible**, donc en traitement normal, alors que sa conséquence est la session de n'importe quel membre. À confirmer : c'est ce que dit la grille, pas forcément ce que le développeur en attend.
+- **« Accès au serveur requis » classe le point 4 en gravité faible**, donc en traitement normal, alors que sa conséquence est la session de n'importe quel membre. *Confirmé par le développeur le 2026-10-05 : la grille reste telle quelle (D6).*
 - **Une faille lisible dans les specs** (point 1) est exposée avant tout correctif : le traitement accéléré ne raccourcit que ce qui suit le constat.
 - **Une fonction manquante** (point 5) se range mal sur l'axe 2, pensé pour un correctif.
 
@@ -227,3 +233,4 @@ Premier rodage de `docs/traitement-des-vulnerabilites.md` :
 
 - **Étape 1** (2026-10-05) : décisions D1 à D4 prises avec le développeur sur les recommandations proposées ; ENF-01, EF-07 (`gestion-membres-et-sessions.md`), `docs/design/README.md` (texte de l'écran du code) et l'ADR 0001 (renvoi) mis à jour. L'alerte rejoint le plan `production` dans la feuille de route.
 - **Étapes 2 à 4** (2026-10-05) : revue faite par une session cloud, en lecture et par l'exécution d'une copie de travail jetable ; rien n'a été corrigé. Résultat dans « Constats », conditions de vérification dans « Ce qui n'a pas pu être vérifié ».
+- **Étape 5** (2026-10-05) : arbitrage dans la conversation avec la session de revue, consigné dans la même PR que les constats ; décisions D5 et D6 ; ENF-01, ADR 0001 et `docs/design/README.md` mis à jour pour D5.
