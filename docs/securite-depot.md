@@ -10,7 +10,7 @@ Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Le dépô
 - [x] Jeton dédié au poste de développement (commits et pushes depuis l'hôte, en HTTPS), distinct du jeton du Dev Container ; conservé par le gestionnaire d'identifiants du système, jamais en clair (`credential.helper store` proscrit).
 - [x] Git configuré avec l'adresse « noreply » de GitHub, et option « Block command line pushes that expose my email » activée.
 - [x] Revue périodique des applications GitHub et OAuth autorisées sur le compte. Dernière revue le 2026-10-05 : rien d'inconnu ni d'abandonné.
-- [ ] Double authentification sur le compte claude.ai : il a accès au dépôt en écriture (sessions cloud) et, avec Remote Control, aux sessions du Dev Container (ADR 0020).
+- [x] Double authentification sur le compte claude.ai : il a accès au dépôt en écriture (sessions cloud) et, avec Remote Control, aux sessions du Dev Container (ADR 0020). La connexion passe par un compte Google : c'est sa double authentification qui protège l'accès.
 
 **Application GitHub de Claude** (sessions cloud), constatée le 2026-10-05 : installée sur le seul dépôt `tribe-menus`. Ses permissions sont fixées par son éditeur et ne se réduisent pas : lecture de l'administration, des statuts de commit, des files de fusion et des métadonnées ; lecture et écriture des actions, des vérifications, du code, des discussions, des tickets, des PR, **des hooks du dépôt et des workflows**. La restriction « sans *Workflows* » ne vaut donc que pour le jeton du Dev Container. Ce qui limite la portée de cet écart :
 

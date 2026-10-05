@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 à 6 faites ; corrections à relire par la session de revue ; restent les protections du dépôt, étape 7, et la clôture)
+- **Statut** : en cours (étapes 1 à 7 faites ; reste la clôture, étape 8)
 
 ## Objectif
 
@@ -71,7 +71,8 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Les décisions qui touchent au code (D1 à D3 et D5, voir « Ce que les décisions demandent à l'étape 6 »), et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
   - Les points « à noter » rejoignent `docs/feuille-de-route.md` (points reportés), avec le plan qui les reprendra.
   - Fait le 2026-10-05 : six commits (D1 avec le constat 2, D2, D3, D5 avec le constat 1, constats 3 et 4), points 5 à 11 et suites des constats 1 et 4 dans la feuille de route. Choix faits en route dans les notes d'exécution.
-- [ ] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
+- [x] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
+  - Fait le 2026-10-05 : réglages parcourus un à un par le développeur, relus par la session de revue là où l'API le permet ; aucune alerte ouverte d'analyse de code, de Dependabot ni de détection de secrets. Détail dans les notes d'exécution.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
 
 ## Critères de validation
@@ -245,3 +246,10 @@ Premier rodage de `docs/traitement-des-vulnerabilites.md` :
 - **Revue de la PR #40** (2026-10-05) : un point à corriger, l'arrêt du serveur qui échouait encore avec une connexion lente ouverte moins de 10 secondes avant (suite du constat 3) ; les connexions restantes sont désormais fermées à l'échéance de l'attente, et l'arrêt réussit. À noter :
   - **Un seul cookie `code_request` par navigateur et par tribu.** Deux personnes qui demandent chacune un code depuis le même navigateur (ordinateur familial, deux onglets) : la seconde demande remplace le cookie, et le code de la première reçoit « Ce code a expiré », sans essai consommé. À regarder en recette avec les scénarios `@manuel` ; rien à changer tant que le cas ne gêne pas.
   - **Migrations relues, pas rejouées sur une base peuplée par l'ancien schéma** : sans enjeu tant que rien n'est déployé.
+- **Étape 7** (2026-10-05) : `docs/securite-depot.md` parcouru avec le développeur, qui a envoyé l'état de chaque page de réglages.
+  - **Déjà en place** : ruleset `main`, jeton de CI en lecture seule, Dependabot (alertes et mises à jour de sécurité), signalement privé, double authentification des deux comptes, adresse « noreply ».
+  - **Activé ou créé ce jour** : deux rulesets pour les étiquettes `v*` (un contournement vaut pour toutes les règles d'un ruleset, d'où `versions-creation` et `versions-immuables`) ; actions limitées à celles de GitHub, épinglage par empreinte exigé, approbation pour tous les contributeurs externes ; CodeQL en configuration par défaut (Go, JavaScript/TypeScript, Actions) ; détection de secrets et blocage des pushes ; description, site et aperçu social ; modèles de tickets.
+  - **Alertes** : zéro ouverte dans les trois listes ; le balayage de l'historique par la détection de secrets n'a rien trouvé, la première analyse CodeQL non plus. Cinq alertes Dependabot fermées auparavant.
+  - **Restent décochées** : « aucun jeton classique » et « commits signés exigés » (ce dernier satisfait par la fusion *squash*, comme le dit le document).
+  - **Application GitHub de Claude** : ses permissions comprennent l'écriture des workflows et des hooks, ce que le document ne disait pas ; il la décrit désormais, avec ce qui en limite la portée. Le développeur a accepté ce jour deux permissions de lecture supplémentaires (administration, files de fusion), qui n'ouvrent ni les alertes ni les avis de sécurité.
+  - **Ce que la session n'a pas pu lire** : réglages d'Actions, webhooks, secrets, clés de déploiement, alertes, comptes ; ces points reposent sur les captures et les réponses du développeur.
