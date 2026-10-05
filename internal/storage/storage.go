@@ -266,6 +266,9 @@ func newTribeFileName() (string, error) {
 // openDB opens a database with a single connection, in WAL mode, with foreign keys
 // enforced and a busy timeout. Without create, a missing file is an error.
 func openDB(ctx context.Context, path string, create bool) (*sql.DB, error) {
+	if err := restrictFiles(path, create); err != nil {
+		return nil, fmt.Errorf("open %s: %w", path, err)
+	}
 	mode := "rw"
 	if create {
 		mode = "rwc"
@@ -290,6 +293,28 @@ func openDB(ctx context.Context, path string, create bool) (*sql.DB, error) {
 		return nil, fmt.Errorf("open %s: %w", path, err)
 	}
 	return db, nil
+}
+
+// restrictFiles makes the database file and its WAL companions readable by their owner
+// only, whatever the umask and the mode of the directory (plan revue-securite, finding 4):
+// the file is created in 0600 before SQLite opens it, and SQLite gives its -wal and -shm
+// files the mode of the database. Files left wider by an earlier version are narrowed.
+func restrictFiles(path string, create bool) error {
+	if create {
+		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
+		if err != nil {
+			return fmt.Errorf("create: %w", err)
+		}
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("create: %w", err)
+		}
+	}
+	for _, suffix := range []string{"", "-wal", "-shm"} {
+		if err := os.Chmod(path+suffix, 0o600); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("restrict mode: %w", err)
+		}
+	}
+	return nil
 }
 
 // removeDatabase removes a database file and its WAL companions.

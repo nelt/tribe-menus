@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 	"testing/fstest"
 
@@ -348,5 +349,49 @@ func TestOpenFailsOnBrokenTribe(t *testing.T) {
 	_, err = Open(ctx, dir, broken)
 	if err == nil || !strings.Contains(err.Error(), bad) {
 		t.Fatalf("Open error = %v, want the failed migration", err)
+	}
+}
+
+// TestFileModes: the databases and their WAL files are readable by their owner only,
+// whatever the umask and the mode of a data directory prepared beforehand, and even when
+// a file was created with a wider mode (plan revue-securite, finding 4).
+func TestFileModes(t *testing.T) {
+	defer syscall.Umask(syscall.Umask(0o022))
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(dir, tribesDir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, registryFile), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	s := openStore(t, dir)
+	if err := s.CreateTribe(context.Background(), "martin", "Les Martin", setName("Les Martin")); err != nil {
+		t.Fatal(err)
+	}
+	var files int
+	err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
+		files++
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if mode := info.Mode().Perm(); mode != 0o600 {
+			t.Errorf("%s: mode %v, want 0600", path, mode)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Registry, rate limit and tribe databases, each with its -wal and -shm files.
+	if files != 9 {
+		t.Errorf("%d files checked, want 9", files)
 	}
 }
