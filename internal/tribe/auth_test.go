@@ -350,7 +350,7 @@ func TestOpenSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	last := entries[len(entries)-1]
-	if last.Operation != SessionOpened || last.SessionID != session.ID || last.DetectedDevice != device.String() || last.AuthorID != f.alice.ID {
+	if last.Operation != SessionOpened || last.SessionID != session.ID || last.Device != device || last.AuthorID != f.alice.ID {
 		t.Errorf("last audit entry = %+v, want the session opened", last)
 	}
 
@@ -362,7 +362,7 @@ func TestOpenSession(t *testing.T) {
 		t.Errorf("after sign out: error = %v, want ErrNoSession", err)
 	}
 	entries, _ = f.martin.AuditLog(ctx)
-	if last := entries[len(entries)-1]; last.Operation != SignedOut || last.SessionID != session.ID {
+	if last := entries[len(entries)-1]; last.Operation != SignedOut || last.SessionID != session.ID || last.Device != device {
 		t.Errorf("last audit entry = %+v, want signed out", last)
 	}
 }

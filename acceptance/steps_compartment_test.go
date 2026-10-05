@@ -155,14 +155,14 @@ func (w *world) signInAudited(ctx context.Context, slug string) error {
 	if err != nil {
 		return err
 	}
-	want := tribe.DetectDevice(userAgent, false).String()
+	want := tribe.DetectDevice(userAgent, false)
 	for _, e := range entries {
 		if e.Operation == tribe.SessionOpened && e.MemberEmail == w.auth.email && e.AuthorID == member.ID &&
-			e.SessionID != 0 && e.DetectedDevice == want {
+			e.SessionID != 0 && e.Device == want {
 			return nil
 		}
 	}
-	return fmt.Errorf("no session opened by %s on %q in %+v", w.auth.email, want, entries)
+	return fmt.Errorf("no session opened by %s on %+v in %+v", w.auth.email, want, entries)
 }
 
 func (w *world) signInNotAudited(ctx context.Context, slug string) error {

@@ -276,12 +276,15 @@ func (s *Store) Purge(ctx context.Context, now time.Time) error {
 
 func sessionAudit(op AuditOperation, memberID, authorID, sessionID int64, device Device, now time.Time) tribedb.InsertAuditEntryParams {
 	return tribedb.InsertAuditEntryParams{
-		At:             formatTime(now),
-		Operation:      string(op),
-		MemberID:       memberID,
-		AuthorID:       sql.NullInt64{Int64: authorID, Valid: authorID != 0},
-		SessionID:      sql.NullInt64{Int64: sessionID, Valid: true},
-		DetectedDevice: sql.NullString{String: device.String(), Valid: true},
+		At:           formatTime(now),
+		Operation:    string(op),
+		MemberID:     memberID,
+		AuthorID:     sql.NullInt64{Int64: authorID, Valid: authorID != 0},
+		SessionID:    sql.NullInt64{Int64: sessionID, Valid: true},
+		DeviceType:   sql.NullString{String: string(device.Type), Valid: true},
+		Os:           sql.NullString{String: device.OS, Valid: true},
+		Browser:      sql.NullString{String: device.Browser, Valid: true},
+		InstalledApp: sql.NullInt64{Int64: boolInt(device.InstalledApp), Valid: true},
 	}
 }
 
