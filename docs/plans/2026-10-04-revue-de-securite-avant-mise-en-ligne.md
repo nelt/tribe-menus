@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : prêt (commence quand `socle/C` est fusionné et que le plan `canal-prive` est terminé)
+- **Statut** : prêt (commence quand `socle/C` est fusionné et que le plan `canal-prive` a livré son document, étape 3)
 
 ## Objectif
 
@@ -21,7 +21,7 @@ S'assurer, avant d'écrire le déploiement, que le code existant ne livre pas de
 - À lire avant de commencer : ADR 0001, 0003, 0004 (point 9), 0006, 0011, 0021 ; `docs/specs/exigences-non-fonctionnelles.md` (ENF-01, ENF-02) ; `gestion-membres-et-sessions.md` ; `docs/securite-depot.md` ; les notes d'exécution du plan `2026-10-03-socle-donnees-et-connexion.md` (revues des PR #26 et #29).
 - **Qui fait quoi.** La revue (étapes 2 à 4) est faite par une **session cloud**, qui n'a pas écrit le code. Les corrections (étape 6) sont faites par **Claude Code dans le Dev Container**, qui peut lancer `make ci`. Le développeur arbitre entre les deux (étape 5).
 - **Pas de PR à relire** : le code est déjà fusionné, `docs/revue-de-pr.md` ne s'applique donc pas tel quel. Les constats gardent les deux catégories du protocole, « à corriger » et « à noter ».
-- **Les constats passent par le canal privé** mis en place par le plan `canal-prive`, selon sa règle de tri : ce qui est exploitable, ou dont on ne sait pas encore si ça l'est, y reste jusqu'à la correction ; le reste est consigné dans ce plan, par une PR. Rien n'est encore déployé : c'est aussi la première mise à l'épreuve du canal.
+- **Les constats suivent le flux public**, par une PR : rien n'est en production, donc toute vulnérabilité relève du traitement normal (plan `canal-prive`, D8). Chaque constat de sécurité porte quand même les trois évaluations de `docs/traitement-des-vulnerabilites.md` : c'est le rodage de la grille avant qu'une version soit en ligne.
 - **Un constat est concret** : fichier et fonction, scénario d'attaque en une phrase, conséquence. Pas de recommandation générale sans cas d'usage dans ce code.
 - **Git** : une branche `feature/…` et une PR par étape qui change le dépôt ; `git commit -s` ; une ligne dans `CHANGELOG.md` par PR ; `make ci` avant de pousser pour les PR de code.
 
@@ -63,11 +63,10 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Délais et limites du serveur (`ReadHeaderTimeout` seul aujourd'hui) : lecture du corps, écriture, connexions inactives.
   - Dépendances : `make vuln`, licences, et ce que `go.mod` et `package.json` embarquent réellement dans le binaire.
 - [ ] **5. Constats et arbitrage.**
-  - Le relecteur trie ses constats selon la règle du plan `canal-prive`. Les constats privés vont dans le canal ; les autres dans une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier.
-  - Le développeur arbitre (retirer un point, le changer de catégorie, le faire passer du privé au public), puis fusionne la PR.
+  - Le relecteur ouvre une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier ; chaque constat de sécurité porte ses trois évaluations (gravité, risque de livrer sans recette, risque d'exploitation une fois publié) et le niveau de traitement qu'il aurait en production.
+  - Le développeur arbitre (retirer un point, le changer de catégorie, corriger une évaluation), puis fusionne la PR.
 - [ ] **6. Corrections**, par Claude Code dans le Dev Container.
-  - Les décisions de l'étape 1 qui touchent au code, et chaque point public « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
-  - Les constats privés sont corrigés par le déroulé du plan `canal-prive`, et ajoutés à la section « Constats » une fois corrigés.
+  - Les décisions de l'étape 1 qui touchent au code, et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
   - Les points « à noter » rejoignent `docs/feuille-de-route.md` (points reportés), avec le plan qui les reprendra.
 - [ ] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
