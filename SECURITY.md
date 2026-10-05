@@ -2,7 +2,7 @@
 
 ## Signaler une vulnérabilité
 
-**Pas d'issue publique.** Utilisez le signalement privé de GitHub : onglet *Security* du dépôt, puis *Report a vulnerability*. Le signalement n'est visible que du mainteneur, et la correction peut être préparée dans un espace privé avant d'être publiée.
+**Pas d'issue publique.** Utilisez le signalement privé de GitHub : onglet *Security* du dépôt, puis *Report a vulnerability*. Le signalement n'est visible que du mainteneur. Son contenu reste privé jusqu'à ce que la version corrigée soit en ligne ; le correctif, lui, passe par une PR publique, ouverte le moins longtemps possible avant le déploiement (`docs/traitement-des-vulnerabilites.md`).
 
 Indiquez si possible :
 

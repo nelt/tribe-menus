@@ -7,4 +7,5 @@
 - `adr/` : Architecture Decision Records, numérotés `NNNN-titre.md`. Modèle : `adr/0000-template.md`.
 - `securite-depot.md` : liste des protections du dépôt GitHub (ADR 0011), à appliquer avant le passage en public.
 - `revue-de-pr.md` : protocole de revue d'une PR entre sessions Claude, par commentaires sur la PR.
+- `traitement-des-vulnerabilites.md` : ce qu'on fait d'une vulnérabilité, du constat à sa publication : signal d'arrêt, analyse de risques, traitement normal, accéléré ou urgent (ADR 0022).
 - `poste-de-developpement.md` : préparation d'un poste de développement (Docker, VS Code, Git, Dev Container, Claude Code).

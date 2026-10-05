@@ -56,7 +56,7 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 - [ ] **Dependency review** sur chaque PR : bloque l'ajout d'une dépendance vulnérable ou sous une licence incompatible avec l'AGPL (`.github/workflows/dependency-review.yml`). Le job ne s'exécute qu'une fois le dépôt public ; vérifier alors qu'il passe.
 - [ ] `govulncheck` et audit npm dans `make ci` (ADR 0010).
 - [ ] npm : `npm ci --ignore-scripts`, versions exactes, fichier de verrouillage versionné (ADR 0004).
-- [ ] Signalement privé des vulnérabilités activé (réservé aux dépôts publics ; `SECURITY.md` y renvoie).
+- [x] Signalement privé des vulnérabilités activé (réservé aux dépôts publics ; `SECURITY.md` y renvoie). Activé le 2026-10-05 ; lu par le seul développeur, aucun jeton de session n'a de droit sur les avis de sécurité (ADR 0022).
 
 ## 6. Présentation du dépôt
 

@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : prêt (commence quand `socle/C` est fusionné et que le plan `canal-prive` a livré son document, étape 3)
+- **Statut** : prêt (`socle` est terminé et `docs/traitement-des-vulnerabilites.md` est écrit)
 
 ## Objectif
 
