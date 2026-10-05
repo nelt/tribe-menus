@@ -5,7 +5,7 @@
 
 ## Contexte
 
-ENF-01 limite les demandes de code de connexion : 3 par quart d'heure pour une adresse dans une tribu, 10 par heure pour une adresse IP, 30 par heure pour une tribu. La limite par adresse s'applique de la même façon à une adresse inconnue, révoquée ou d'une autre tribu, et à une tribu qui n'existe pas (ENF-02, ADR 0006, point 9) : il faut donc compter des demandes, et retenir des codes, pour des tribus et des adresses qui n'ont pas de base où les écrire.
+ENF-01 limite les demandes de code de connexion : 3 par quart d'heure pour une adresse dans une tribu, 10 par heure pour une adresse IP, 30 par heure pour une tribu (adressées à ses membres actifs depuis le plan `revue-securite`, D2). La limite par adresse s'applique de la même façon à une adresse inconnue, révoquée ou d'une autre tribu, et à une tribu qui n'existe pas (ENF-02, ADR 0006, point 9) : il faut donc compter des demandes, et retenir des codes, pour des tribus et des adresses qui n'ont pas de base où les écrire.
 
 Les codes des membres réels vivent dans la base de leur tribu (ADR 0003, point 1). Le registre ne contient aucune donnée personnelle (ADR 0003, point 2). La mémoire du processus est perdue au redémarrage et propre à une instance, alors qu'un redémarrage ne doit remettre à zéro ni les limites ni les essais restants (plan du 2026-10-03, D3).
 
@@ -13,17 +13,18 @@ Les codes des membres réels vivent dans la base de leur tribu (ADR 0003, point 
 
 1. **Une troisième sorte de base SQLite**, à côté du registre et des bases de tribu : `ratelimit.db`, dans le répertoire de données. Elle a sa propre série de migrations (`migrations/ratelimit/`), appliquée au démarrage comme les autres (ADR 0003, point 6), et son paquet sqlc. Même configuration que les autres bases (ADR 0003, point 5).
 2. **Elle contient** :
-   - les **demandes de code** acceptées, horodatées : identifiant d'URL de la tribu (existante ou non), empreinte de l'adresse, empreinte de l'IP ;
+   - les **demandes de code** acceptées, horodatées : empreinte de l'adresse, empreinte de l'IP. Elles servent aux limites par adresse et par IP ;
    - les **codes fantômes** : pour une tribu inexistante ou une adresse qui n'est pas membre actif, un code qui n'est jamais envoyé et ne peut pas réussir, avec la même échéance (10 minutes) et les mêmes 3 essais qu'un vrai code. Les réponses de l'API sont ainsi identiques pour un membre actif et pour toute autre adresse.
 3. **Empreintes** : SHA-256, jamais de valeur en clair.
    - Une adresse est hachée avec l'identifiant d'URL de la tribu : une personne membre de deux tribus n'a pas la même empreinte dans les deux, et rien ne relie ses appartenances (ENF-02, D10).
    - Une IP est hachée seule : la limite par IP vaut pour toute l'instance.
-   - L'identifiant d'URL est conservé en clair s'il a le format d'EF-08 : ce n'est pas une donnée personnelle, et il figure déjà dans l'URL. Un segment d'URL qui n'a pas ce format, qu'aucune tribu ne peut porter, est un texte libre choisi par le client : seule son empreinte est conservée, précédée de `#` (revue du lot B, 2026-10-04).
+   - L'identifiant d'URL n'est conservé que dans l'empreinte de l'adresse, quel que soit son format (plan `revue-securite`, D2). Il l'était auparavant en clair, ou en empreinte pour un segment hors du format d'EF-08 (revue du lot B, 2026-10-04), pour la limite par tribu.
    - Ces empreintes restent des données personnelles (une adresse se devine par essais) : elles sont effacées à la sortie de leur fenêtre d'une heure, par l'effacement automatique qui passe toutes les dix minutes : une heure et dix minutes au plus après la demande, tant que le serveur tourne (arrêté, il les efface à son redémarrage).
    - Dans les bases de tribu, le code de connexion et le jeton de session sont stockés de la même façon, en SHA-256. Le jeton (32 octets aléatoires) ne se retrouve pas à partir de son empreinte ; un code à 6 chiffres, si : sa protection tient à sa validité de 10 minutes et à ses 3 essais.
-4. **Interface** : le code métier ne voit que la décision de limitation (une fonction pure des demandes passées) et une interface de stockage ; la base de limitation en est la seule implémentation.
-5. **Pas d'instantané avant déploiement** pour ce fichier (ADR 0016) : le perdre remet les compteurs à zéro et efface les codes fantômes, sans autre conséquence.
-6. **Nom de la tribu** (D9) : une fois la session vérifiée, le nom affiché est lu dans la base de la tribu, qui fait foi ; le nom du registre ne sert qu'aux commandes d'administration, qui écriront les deux le jour où une story renommera une tribu.
+4. **La limite par tribu se compte dans la base de la tribu** (2026-10-05, plan `revue-securite`, D2). Elle ne porte que sur les demandes adressées aux membres actifs : si la base de limitation la comptait, elle apprendrait quelles empreintes d'adresse sont celles de membres. La base de la tribu garde l'heure de chacune de ces demandes, sans adresse, effacée à la sortie de la fenêtre d'une heure. Une demande est d'abord comptée par la base de limitation, comme toute autre, puis, pour un membre actif, par la base de la tribu : ce que la première enregistre ne dépend pas de l'appartenance, y compris quand la limite de la tribu refuse la demande. Une tribu inexistante n'a pas de base, et n'atteint jamais cette limite, comme une tribu existante visée par des adresses qui ne sont pas membres.
+5. **Interface** : le code métier ne voit que la décision de limitation (une fonction pure des demandes passées) et une interface de stockage ; la base de limitation en est la seule implémentation.
+6. **Pas d'instantané avant déploiement** pour ce fichier (ADR 0016) : le perdre remet les compteurs à zéro et efface les codes fantômes, sans autre conséquence.
+7. **Nom de la tribu** (D9) : une fois la session vérifiée, le nom affiché est lu dans la base de la tribu, qui fait foi ; le nom du registre ne sert qu'aux commandes d'administration, qui écriront les deux le jour où une story renommera une tribu.
 
 ## Alternatives envisagées
 

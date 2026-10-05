@@ -55,7 +55,8 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^"([^"]*)" est membre révoqué de la tribu "([^"]*)"$`, w.givenRevokedMember)
 	sc.Step(`^"([^"]*)" a demandé (\d+) codes pour la tribu "([^"]*)" dans le dernier quart d'heure$`, w.givenRequestsByEmail)
 	sc.Step(`^(\d+) demandes de code depuis la même adresse IP ont été faites dans la dernière heure$`, w.givenRequestsByIP)
-	sc.Step(`^(\d+) demandes de code pour la tribu "([^"]*)" ont été faites dans la dernière heure$`, w.givenRequestsByTribe)
+	sc.Step(`^(\d+) demandes de code pour des membres de la tribu "([^"]*)" ont été faites dans la dernière heure$`, w.givenRequestsForMembers)
+	sc.Step(`^(\d+) demandes de code pour des adresses qui ne sont pas membres de la tribu "([^"]*)" ont été faites dans la dernière heure$`, w.givenRequestsForOthers)
 	sc.Step(`^je suis connecté à la tribu "([^"]*)" en tant que "([^"]*)"$`, func(ctx context.Context, slug, email string) error {
 		return w.signIn(ctx, w.newDevice(), slug, email)
 	})
@@ -272,7 +273,22 @@ func (w *world) givenRequestsByIP(ctx context.Context, n int) error {
 	})
 }
 
-func (w *world) givenRequestsByTribe(ctx context.Context, n int, slug string) error {
+// givenRequestsForMembers makes n requests for n distinct members of the tribe, added for
+// it, from a few IPs: no limit by address nor by IP is reached.
+func (w *world) givenRequestsForMembers(ctx context.Context, n int, slug string) error {
+	for i := range n {
+		if _, err := w.ensureMember(ctx, fmt.Sprintf("membre-%d@exemple.fr", i), slug); err != nil {
+			return err
+		}
+	}
+	return w.givenRequests(ctx, n, func(i int) (string, string, string) {
+		return slug, fmt.Sprintf("membre-%d@exemple.fr", i), fmt.Sprintf("198.51.100.%d", i%(tribe.IPRequestLimit-1)+1)
+	})
+}
+
+// givenRequestsForOthers makes n requests for n distinct addresses that are not members of
+// the tribe, from a few IPs.
+func (w *world) givenRequestsForOthers(ctx context.Context, n int, slug string) error {
 	return w.givenRequests(ctx, n, func(i int) (string, string, string) {
 		return slug, fmt.Sprintf("personne-%d@exemple.fr", i), fmt.Sprintf("198.51.100.%d", i%(tribe.IPRequestLimit-1)+1)
 	})

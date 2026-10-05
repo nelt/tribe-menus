@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -79,6 +80,24 @@ func newLoginFixture(t *testing.T) *loginFixture {
 	return f
 }
 
+// tribeOf returns the store of the tribe "martin", nil for any other slug.
+func (f *loginFixture) tribeOf(slug string) *Store {
+	if slug == "martin" {
+		return f.martin
+	}
+	return nil
+}
+
+// addMembers adds n active members to the tribe "martin": membre-0@exemple.fr…
+func (f *loginFixture) addMembers(t *testing.T, n int) {
+	t.Helper()
+	for i := range n {
+		if _, err := f.martin.AddMember(context.Background(), Email(fmt.Sprintf("membre-%d@exemple.fr", i)), "", f.alice.ID, f.now); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func (f *loginFixture) signIn(t *testing.T, email string) (Session, string) {
 	t.Helper()
 	ctx := context.Background()
@@ -134,6 +153,8 @@ func TestRateLimits(t *testing.T) {
 		slug  string
 		email string
 		ip    string
+		// members are added to the tribe "martin" first: membre-0@exemple.fr…
+		members int
 	}{
 		{
 			name:  "by address in a tribe",
@@ -153,36 +174,19 @@ func TestRateLimits(t *testing.T) {
 			n: IPRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.1",
 		},
 		{
-			name: "by tribe",
+			name: "by tribe, for its members",
 			prior: func(i int) (string, string, string) {
-				return "martin", string(rune('a'+i)) + "x@exemple.fr", "198.51.100." + string(rune('0'+i%10))
+				return "martin", fmt.Sprintf("membre-%d@exemple.fr", i), fmt.Sprintf("198.51.100.%d", i%10)
 			},
-			n: TribeRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.9",
-		},
-		{
-			name: "by unknown tribe",
-			prior: func(i int) (string, string, string) {
-				return "dupont", string(rune('a'+i)) + "x@exemple.fr", "198.51.100." + string(rune('0'+i%10))
-			},
-			n: TribeRequestLimit, slug: "dupont", email: "alice@exemple.fr", ip: "192.0.2.9",
-		},
-		{
-			name: "by malformed slug",
-			prior: func(i int) (string, string, string) {
-				return "Pas un identifiant", string(rune('a'+i)) + "x@exemple.fr", "198.51.100." + string(rune('0'+i%10))
-			},
-			n: TribeRequestLimit, slug: "Pas un identifiant", email: "alice@exemple.fr", ip: "192.0.2.9",
+			members: TribeRequestLimit,
+			n:       TribeRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.9",
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newLoginFixture(t)
-			tribeOf := func(slug string) *Store {
-				if slug == "martin" {
-					return f.martin
-				}
-				return nil
-			}
+			f.addMembers(t, tc.members)
+			tribeOf := f.tribeOf
 			for i := range tc.n {
 				slug, email, ip := tc.prior(i)
 				if err := f.login.RequestCode(ctx, slug, tribeOf(slug), email, ip); err != nil {
@@ -208,6 +212,43 @@ func TestRateLimits(t *testing.T) {
 	}
 }
 
+// TestTribeLimitCountsMembersOnly: requests for addresses that are not active members of the
+// tribe never reach the limit by tribe, whether the tribe exists or not (D2).
+func TestTribeLimitCountsMembersOnly(t *testing.T) {
+	ctx := context.Background()
+	cases := []struct {
+		name  string
+		prior string // slug of the prior requests, for addresses that are not members
+		slug  string
+		email string
+	}{
+		{name: "addresses that are not members", prior: "martin", slug: "martin", email: "alice@exemple.fr"},
+		{name: "revoked member", prior: "martin", slug: "martin", email: "alice@exemple.fr"},
+		{name: "unknown tribe", prior: "dupont", slug: "dupont", email: "alice@exemple.fr"},
+		{name: "malformed slug", prior: "Pas un identifiant", slug: "Pas un identifiant", email: "alice@exemple.fr"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newLoginFixture(t)
+			for i := range 2 * TribeRequestLimit {
+				email := fmt.Sprintf("personne-%d@exemple.fr", i)
+				if tc.name == "revoked member" {
+					email = "bruno@exemple.fr"
+					f.advance(5 * time.Minute) // 3 requests a quarter of an hour
+				}
+				ip := fmt.Sprintf("198.51.100.%d", i%(IPRequestLimit-1))
+				if err := f.login.RequestCode(ctx, tc.prior, f.tribeOf(tc.prior), email, ip); err != nil {
+					t.Fatalf("request %d: %v", i+1, err)
+				}
+				f.advance(time.Second)
+			}
+			if err := f.login.RequestCode(ctx, tc.slug, f.tribeOf(tc.slug), tc.email, "192.0.2.9"); err != nil {
+				t.Errorf("request for %s: %v", tc.email, err)
+			}
+		})
+	}
+}
+
 // TestMalformedSlugIsNotStored: a slug no tribe can have gets the answers of an unknown
 // tribe, and the rate limit database keeps neither its text nor its length (ADR 0021).
 func TestMalformedSlugIsNotStored(t *testing.T) {
@@ -226,12 +267,42 @@ func TestMalformedSlugIsNotStored(t *testing.T) {
 		t.Errorf("open session: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
 	}
 
-	var stored string
-	if err := f.store.RateLimit().QueryRowContext(ctx, "SELECT slug FROM code_requests").Scan(&stored); err != nil {
-		t.Fatal(err)
-	}
-	if len(stored) != 65 || strings.Contains(stored, "alice") {
-		t.Errorf("stored slug = %q (%d bytes), want a hash", stored, len(stored))
+	for _, table := range []string{"code_requests", "decoy_codes"} {
+		rows, err := f.store.RateLimit().QueryContext(ctx, "SELECT * FROM "+table)
+		if err != nil {
+			t.Fatal(err)
+		}
+		columns, err := rows.Columns()
+		if err != nil {
+			t.Fatal(err)
+		}
+		n := 0
+		for rows.Next() {
+			n++
+			values := make([]any, len(columns))
+			pointers := make([]any, len(columns))
+			for i := range values {
+				pointers[i] = &values[i]
+			}
+			if err := rows.Scan(pointers...); err != nil {
+				t.Fatal(err)
+			}
+			// Hashes of 32 bytes and dates only.
+			for i, v := range values {
+				b, isBytes := v.([]byte)
+				text, isText := v.(string)
+				if isBytes && len(b) != 32 || isText && len(text) != len(timeFormat) {
+					t.Errorf("%s.%s = %q: neither a hash nor a date", table, columns[i], v)
+				}
+			}
+		}
+		if err := rows.Err(); err != nil {
+			t.Fatal(err)
+		}
+		_ = rows.Close()
+		if n != 1 {
+			t.Errorf("%d rows in %s, want 1", n, table)
+		}
 	}
 }
 

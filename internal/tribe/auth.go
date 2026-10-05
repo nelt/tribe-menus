@@ -53,7 +53,9 @@ func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail
 	if err != nil {
 		return err
 	}
-	if err := t.ReplaceLoginCode(ctx, member.ID, newRealCode(code, now)); err != nil {
+	// Counted by the rate limit database first, like any other request: what it records
+	// does not depend on membership (ADR 0021).
+	if err := t.IssueLoginCode(ctx, member.ID, newRealCode(code, now), now); err != nil {
 		return err
 	}
 	l.Mailer.SendLoginCode(string(email), code)

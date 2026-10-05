@@ -99,7 +99,13 @@ Fonctionnalité: Connexion et session persistante
     Exemples:
       | demandes                                             | origine                                   |
       | 10 demandes de code depuis la même adresse IP        | depuis cette adresse IP, pour une autre adresse e-mail |
-      | 30 demandes de code pour la tribu "martin"           | pour la tribu "martin", depuis une autre adresse IP |
+      | 30 demandes de code pour des membres de la tribu "martin" | pour la tribu "martin", depuis une autre adresse IP |
+
+  @ENF-01
+  Scénario: Des demandes pour des adresses qui ne sont pas membres ne bloquent pas la tribu
+    Étant donné 30 demandes de code pour des adresses qui ne sont pas membres de la tribu "martin" ont été faites dans la dernière heure
+    Quand "alice@exemple.fr" demande un code pour la tribu "martin"
+    Alors un code à 8 chiffres est envoyé à "alice@exemple.fr"
 
   @ENF-01
   Scénario: Un code ne sert qu'une fois

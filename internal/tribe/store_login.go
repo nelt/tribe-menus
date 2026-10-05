@@ -21,16 +21,37 @@ type Session struct {
 	Label        string
 }
 
-// ReplaceLoginCode stores the code of a member, replacing the previous one (ENF-01).
-func (s *Store) ReplaceLoginCode(ctx context.Context, memberID int64, code LoginCode) error {
-	err := tribedb.New(s.db).ReplaceLoginCode(ctx, tribedb.ReplaceLoginCodeParams{
+// IssueLoginCode stores the code of a member, replacing the previous one, unless the limit
+// by tribe is reached: it then returns ErrTooManyRequests. Only the requests for active
+// members are counted here (ENF-01; plan revue-securite, D2).
+func (s *Store) IssueLoginCode(ctx context.Context, memberID int64, code LoginCode, now time.Time) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("issue login code: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	q := tribedb.New(tx)
+
+	n, err := q.CountCodeRequests(ctx, formatTime(TribeRequestWindowStart(now)))
+	if err != nil {
+		return fmt.Errorf("issue login code: count requests: %w", err)
+	}
+	if !TribeRequestAllowed(int(n)) {
+		return ErrTooManyRequests
+	}
+	if err := q.InsertCodeRequest(ctx, formatTime(now)); err != nil {
+		return fmt.Errorf("issue login code: record request: %w", err)
+	}
+	if err := q.ReplaceLoginCode(ctx, tribedb.ReplaceLoginCodeParams{
 		MemberID:     memberID,
 		CodeHash:     code.Hash,
 		ExpiresAt:    formatTime(code.ExpiresAt),
 		AttemptsLeft: int64(code.AttemptsLeft),
-	})
-	if err != nil {
-		return fmt.Errorf("replace login code: %w", err)
+	}); err != nil {
+		return fmt.Errorf("issue login code: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("issue login code: %w", err)
 	}
 	return nil
 }
@@ -236,12 +257,16 @@ func (s *Store) RevokeMember(ctx context.Context, memberID, revokedBy int64, now
 	return nil
 }
 
-// Purge deletes the login codes expired or out of attempts, and the expired sessions (PT-07).
+// Purge deletes the login codes expired or out of attempts, the expired sessions (PT-07),
+// and the code requests out of the window of the limit by tribe.
 func (s *Store) Purge(ctx context.Context, now time.Time) error {
 	q := tribedb.New(s.db)
 	at := formatTime(now)
 	if _, err := q.PurgeLoginCodes(ctx, at); err != nil {
 		return fmt.Errorf("purge login codes: %w", err)
+	}
+	if _, err := q.PurgeCodeRequests(ctx, formatTime(TribeRequestWindowStart(now))); err != nil {
+		return fmt.Errorf("purge code requests: %w", err)
 	}
 	if _, err := q.PurgeSessions(ctx, at); err != nil {
 		return fmt.Errorf("purge sessions: %w", err)

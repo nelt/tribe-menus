@@ -18,6 +18,11 @@ type AuditLog struct {
 	DetectedDevice sql.NullString
 }
 
+type CodeRequest struct {
+	ID int64
+	At string
+}
+
 type LoginCode struct {
 	MemberID     int64
 	CodeHash     []byte

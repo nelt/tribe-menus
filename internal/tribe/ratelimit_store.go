@@ -12,8 +12,8 @@ import (
 
 // RateLimitStore keeps the code requests and the decoy codes of the instance (ADR 0021).
 type RateLimitStore interface {
-	// RecordCodeRequest records the request at now if the past requests allow it, and
-	// reports whether they did. Counting and recording are atomic.
+	// RecordCodeRequest records the request at now if the limits by address and by IP allow
+	// it, and reports whether they did. Counting and recording are atomic.
 	RecordCodeRequest(ctx context.Context, req CodeRequest, now time.Time) (bool, error)
 	// ReplaceDecoyCode stores a decoy code for the address hash, replacing the previous one.
 	ReplaceDecoyCode(ctx context.Context, emailHash []byte, code LoginCode) error
@@ -45,7 +45,7 @@ func (r *RateLimitDB) RecordCodeRequest(ctx context.Context, req CodeRequest, no
 	defer func() { _ = tx.Rollback() }()
 	q := ratelimitdb.New(tx)
 
-	emailSince, ipSince, tribeSince := RequestWindows(now)
+	emailSince, ipSince := RequestWindows(now)
 	byEmail, err := q.CountCodeRequestsByEmail(ctx, ratelimitdb.CountCodeRequestsByEmailParams{EmailHash: req.EmailHash, At: formatTime(emailSince)})
 	if err != nil {
 		return false, fmt.Errorf("record code request: count by address: %w", err)
@@ -54,17 +54,12 @@ func (r *RateLimitDB) RecordCodeRequest(ctx context.Context, req CodeRequest, no
 	if err != nil {
 		return false, fmt.Errorf("record code request: count by IP: %w", err)
 	}
-	byTribe, err := q.CountCodeRequestsByTribe(ctx, ratelimitdb.CountCodeRequestsByTribeParams{Slug: req.Slug, At: formatTime(tribeSince)})
-	if err != nil {
-		return false, fmt.Errorf("record code request: count by tribe: %w", err)
-	}
-	counts := CodeRequestCounts{Email: int(byEmail), IP: int(byIP), Tribe: int(byTribe)}
+	counts := CodeRequestCounts{Email: int(byEmail), IP: int(byIP)}
 	if !counts.Allowed() {
 		return false, nil
 	}
 	if err := q.InsertCodeRequest(ctx, ratelimitdb.InsertCodeRequestParams{
 		At:        formatTime(now),
-		Slug:      req.Slug,
 		EmailHash: req.EmailHash,
 		IpHash:    req.IPHash,
 	}); err != nil {
