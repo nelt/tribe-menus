@@ -27,7 +27,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `environnement` | Environnement de développement | [`2026-09-29-environnement-de-developpement.md`](plans/2026-09-29-environnement-de-developpement.md) | terminé |
 | `ci` | Intégration continue | [`2026-09-30-integration-continue.md`](plans/2026-09-30-integration-continue.md) | terminé |
 | `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | en cours : `socle/A` et `socle/B` fusionnés, `socle/C` en cours de réalisation |
-| `canal-prive` | Canal privé pour les vulnérabilités | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | prêt ; avance en parallèle de `socle/C` |
+| `canal-prive` | Canal privé pour les vulnérabilités | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | en cours : étape 1 (essais d'accès) faite ; avance en parallèle de `socle/C` |
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | prêt ; commence après `socle/C` et `canal-prive` |
 | `production` | Application prête pour la production | à écrire | après `revue-securite` |
 | `recette` | Serveur, recette et première release | à écrire | après `production` |
