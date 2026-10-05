@@ -10,13 +10,18 @@ import (
 )
 
 const decoyCode = `-- name: DecoyCode :one
-SELECT email_hash, expires_at, attempts_left FROM decoy_codes WHERE email_hash = ?
+SELECT email_hash, request_hash, expires_at, attempts_left FROM decoy_codes WHERE email_hash = ?
 `
 
 func (q *Queries) DecoyCode(ctx context.Context, emailHash []byte) (DecoyCode, error) {
 	row := q.db.QueryRowContext(ctx, decoyCode, emailHash)
 	var i DecoyCode
-	err := row.Scan(&i.EmailHash, &i.ExpiresAt, &i.AttemptsLeft)
+	err := row.Scan(
+		&i.EmailHash,
+		&i.RequestHash,
+		&i.ExpiresAt,
+		&i.AttemptsLeft,
+	)
 	return i, err
 }
 
@@ -42,21 +47,28 @@ func (q *Queries) PurgeDecoyCodes(ctx context.Context, expiresAt string) (int64,
 }
 
 const replaceDecoyCode = `-- name: ReplaceDecoyCode :exec
-INSERT INTO decoy_codes (email_hash, expires_at, attempts_left)
-VALUES (?, ?, ?)
+INSERT INTO decoy_codes (email_hash, request_hash, expires_at, attempts_left)
+VALUES (?, ?, ?, ?)
 ON CONFLICT (email_hash) DO UPDATE SET
+    request_hash = excluded.request_hash,
     expires_at = excluded.expires_at,
     attempts_left = excluded.attempts_left
 `
 
 type ReplaceDecoyCodeParams struct {
 	EmailHash    []byte
+	RequestHash  []byte
 	ExpiresAt    string
 	AttemptsLeft int64
 }
 
 func (q *Queries) ReplaceDecoyCode(ctx context.Context, arg ReplaceDecoyCodeParams) error {
-	_, err := q.db.ExecContext(ctx, replaceDecoyCode, arg.EmailHash, arg.ExpiresAt, arg.AttemptsLeft)
+	_, err := q.db.ExecContext(ctx, replaceDecoyCode,
+		arg.EmailHash,
+		arg.RequestHash,
+		arg.ExpiresAt,
+		arg.AttemptsLeft,
+	)
 	return err
 }
 

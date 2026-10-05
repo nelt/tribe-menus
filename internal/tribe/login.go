@@ -19,7 +19,7 @@ const (
 
 	// SessionLifetime is the sliding expiry of a session: each use extends it.
 	SessionLifetime = 90 * 24 * time.Hour
-	sessionTokenLen = 32
+	tokenLen        = 32
 )
 
 var (
@@ -55,31 +55,39 @@ func newLoginCode() (string, error) {
 }
 
 // LoginCode is a login code waiting to be entered, real or decoy. Only the hash of a
-// real code is kept; a decoy code has none, so that no input matches it.
+// real code is kept; a decoy code has none, so that no input matches it. Both keep the
+// hash of the token of their request, set in a cookie of the browser that requested the
+// code: an attempt without it consumes nothing (ENF-01; plan revue-securite, D5).
 type LoginCode struct {
 	Hash         []byte
+	RequestHash  []byte
 	ExpiresAt    time.Time
 	AttemptsLeft int
 }
 
-// newRealCode returns the state of a code issued now.
-func newRealCode(code string, now time.Time) LoginCode {
-	return LoginCode{Hash: hash(code), ExpiresAt: now.Add(LoginCodeValidity), AttemptsLeft: LoginCodeAttempts}
+// newRealCode returns the state of a code issued now for the request of this token.
+func newRealCode(code, requestToken string, now time.Time) LoginCode {
+	return LoginCode{Hash: hash(code), RequestHash: hash(requestToken), ExpiresAt: now.Add(LoginCodeValidity), AttemptsLeft: LoginCodeAttempts}
 }
 
-// NewDecoyCode returns a decoy code issued now: the deadline and attempts of a real code,
-// but nothing can match it.
-func NewDecoyCode(now time.Time) LoginCode {
-	return LoginCode{ExpiresAt: now.Add(LoginCodeValidity), AttemptsLeft: LoginCodeAttempts}
+// NewDecoyCode returns a decoy code issued now for the request of this token: the deadline
+// and attempts of a real code, but nothing can match it.
+func NewDecoyCode(requestToken string, now time.Time) LoginCode {
+	return LoginCode{RequestHash: hash(requestToken), ExpiresAt: now.Add(LoginCodeValidity), AttemptsLeft: LoginCodeAttempts}
 }
 
-// Check tries the entered code at now. It returns nil when the code is accepted,
-// ErrNewCodeNeeded when it expired or has no attempt left, *IncorrectCodeError otherwise;
-// and the state of the code after the attempt, with keep false when it must be deleted
-// (accepted, expired, or invalidated by the last attempt).
-func (c LoginCode) Check(entered string, now time.Time) (after LoginCode, keep bool, err error) {
+// Check tries the code entered at now, with the token of the request presented by the
+// browser. It returns nil when the code is accepted; ErrNewCodeNeeded when it expired, has
+// no attempt left, or when the token is not the one of the request, which consumes no
+// attempt; *IncorrectCodeError otherwise. It also returns the state of the code after the
+// attempt, with keep false when it must be deleted (accepted, expired, or invalidated by
+// the last attempt).
+func (c LoginCode) Check(entered, requestToken string, now time.Time) (after LoginCode, keep bool, err error) {
 	if !now.Before(c.ExpiresAt) || c.AttemptsLeft <= 0 {
 		return c, false, ErrNewCodeNeeded
+	}
+	if subtle.ConstantTimeCompare(hash(requestToken), c.RequestHash) != 1 {
+		return c, true, ErrNewCodeNeeded
 	}
 	// A decoy code has no hash: compare with a hash of the same length, which never matches
 	// a hash of the input, so that both cases take the same time.
@@ -94,11 +102,12 @@ func (c LoginCode) Check(entered string, now time.Time) (after LoginCode, keep b
 	return c, c.AttemptsLeft > 0, &IncorrectCodeError{AttemptsLeft: c.AttemptsLeft}
 }
 
-// newSessionToken returns an opaque token of 32 random bytes, for the session cookie.
-func newSessionToken() (string, error) {
-	b := make([]byte, sessionTokenLen)
+// newToken returns an opaque token of 32 random bytes: a session token, for the session
+// cookie, or the token of a code request, for its cookie.
+func newToken() (string, error) {
+	b := make([]byte, tokenLen)
 	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("draw a session token: %w", err)
+		return "", fmt.Errorf("draw a token: %w", err)
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }

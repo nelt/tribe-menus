@@ -19,7 +19,7 @@ func (q *Queries) DeleteLoginCode(ctx context.Context, memberID int64) error {
 }
 
 const loginCode = `-- name: LoginCode :one
-SELECT member_id, code_hash, expires_at, attempts_left FROM login_codes WHERE member_id = ?
+SELECT member_id, code_hash, request_hash, expires_at, attempts_left FROM login_codes WHERE member_id = ?
 `
 
 func (q *Queries) LoginCode(ctx context.Context, memberID int64) (LoginCode, error) {
@@ -28,6 +28,7 @@ func (q *Queries) LoginCode(ctx context.Context, memberID int64) (LoginCode, err
 	err := row.Scan(
 		&i.MemberID,
 		&i.CodeHash,
+		&i.RequestHash,
 		&i.ExpiresAt,
 		&i.AttemptsLeft,
 	)
@@ -47,10 +48,11 @@ func (q *Queries) PurgeLoginCodes(ctx context.Context, expiresAt string) (int64,
 }
 
 const replaceLoginCode = `-- name: ReplaceLoginCode :exec
-INSERT INTO login_codes (member_id, code_hash, expires_at, attempts_left)
-VALUES (?, ?, ?, ?)
+INSERT INTO login_codes (member_id, code_hash, request_hash, expires_at, attempts_left)
+VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (member_id) DO UPDATE SET
     code_hash = excluded.code_hash,
+    request_hash = excluded.request_hash,
     expires_at = excluded.expires_at,
     attempts_left = excluded.attempts_left
 `
@@ -58,6 +60,7 @@ ON CONFLICT (member_id) DO UPDATE SET
 type ReplaceLoginCodeParams struct {
 	MemberID     int64
 	CodeHash     []byte
+	RequestHash  []byte
 	ExpiresAt    string
 	AttemptsLeft int64
 }
@@ -66,6 +69,7 @@ func (q *Queries) ReplaceLoginCode(ctx context.Context, arg ReplaceLoginCodePara
 	_, err := q.db.ExecContext(ctx, replaceLoginCode,
 		arg.MemberID,
 		arg.CodeHash,
+		arg.RequestHash,
 		arg.ExpiresAt,
 		arg.AttemptsLeft,
 	)

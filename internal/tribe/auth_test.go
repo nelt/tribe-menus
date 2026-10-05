@@ -30,8 +30,10 @@ func (m *fakeMailer) last(t *testing.T, to string) string {
 }
 
 type loginFixture struct {
-	store  *storage.Store
-	login  *Login
+	store *storage.Store
+	login *Login
+	// token is the token of the last code request, as the browser keeps it in a cookie.
+	token  string
 	mailer *fakeMailer
 	now    time.Time
 	martin *Store
@@ -39,6 +41,16 @@ type loginFixture struct {
 }
 
 func (f *loginFixture) advance(d time.Duration) { f.now = f.now.Add(d) }
+
+// requestCode asks for a code as the browser of the fixture, which keeps the token of the
+// request.
+func (f *loginFixture) requestCode(ctx context.Context, slug string, t *Store, email, ip string) error {
+	token, err := f.login.RequestCode(ctx, slug, t, email, ip)
+	if err == nil {
+		f.token = token
+	}
+	return err
+}
 
 // newLoginFixture creates the tribe "martin" with Alice, active, and Bruno, revoked.
 func newLoginFixture(t *testing.T) *loginFixture {
@@ -101,10 +113,10 @@ func (f *loginFixture) addMembers(t *testing.T, n int) {
 func (f *loginFixture) signIn(t *testing.T, email string) (Session, string) {
 	t.Helper()
 	ctx := context.Background()
-	if err := f.login.RequestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
-	session, token, err := f.login.OpenSession(ctx, "martin", f.martin, email, f.mailer.last(t, email), Device{Type: Phone})
+	session, token, err := f.login.OpenSession(ctx, "martin", f.martin, email, f.mailer.last(t, email), f.token, Device{Type: Phone})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +145,7 @@ func TestRequestCode(t *testing.T) {
 			if tc.unknown {
 				tribe = nil
 			}
-			err := f.login.RequestCode(context.Background(), tc.slug, tribe, tc.email, "192.0.2.1")
+			err := f.requestCode(context.Background(), tc.slug, tribe, tc.email, "192.0.2.1")
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("error = %v, want %v", err, tc.wantErr)
 			}
@@ -189,13 +201,13 @@ func TestRateLimits(t *testing.T) {
 			tribeOf := f.tribeOf
 			for i := range tc.n {
 				slug, email, ip := tc.prior(i)
-				if err := f.login.RequestCode(ctx, slug, tribeOf(slug), email, ip); err != nil {
+				if err := f.requestCode(ctx, slug, tribeOf(slug), email, ip); err != nil {
 					t.Fatalf("request %d: %v", i+1, err)
 				}
 				f.advance(time.Second)
 			}
 			sent := len(f.mailer.sent)
-			err := f.login.RequestCode(ctx, tc.slug, tribeOf(tc.slug), tc.email, tc.ip)
+			err := f.requestCode(ctx, tc.slug, tribeOf(tc.slug), tc.email, tc.ip)
 			if !errors.Is(err, ErrTooManyRequests) {
 				t.Fatalf("error = %v, want ErrTooManyRequests", err)
 			}
@@ -205,7 +217,7 @@ func TestRateLimits(t *testing.T) {
 
 			// The windows end: a new request is accepted.
 			f.advance(time.Hour)
-			if err := f.login.RequestCode(ctx, tc.slug, tribeOf(tc.slug), tc.email, tc.ip); err != nil {
+			if err := f.requestCode(ctx, tc.slug, tribeOf(tc.slug), tc.email, tc.ip); err != nil {
 				t.Errorf("after the window: %v", err)
 			}
 		})
@@ -237,12 +249,12 @@ func TestTribeLimitCountsMembersOnly(t *testing.T) {
 					f.advance(5 * time.Minute) // 3 requests a quarter of an hour
 				}
 				ip := fmt.Sprintf("198.51.100.%d", i%(IPRequestLimit-1))
-				if err := f.login.RequestCode(ctx, tc.prior, f.tribeOf(tc.prior), email, ip); err != nil {
+				if err := f.requestCode(ctx, tc.prior, f.tribeOf(tc.prior), email, ip); err != nil {
 					t.Fatalf("request %d: %v", i+1, err)
 				}
 				f.advance(time.Second)
 			}
-			if err := f.login.RequestCode(ctx, tc.slug, f.tribeOf(tc.slug), tc.email, "192.0.2.9"); err != nil {
+			if err := f.requestCode(ctx, tc.slug, f.tribeOf(tc.slug), tc.email, "192.0.2.9"); err != nil {
 				t.Errorf("request for %s: %v", tc.email, err)
 			}
 		})
@@ -256,14 +268,14 @@ func TestMalformedSlugIsNotStored(t *testing.T) {
 	f := newLoginFixture(t)
 	slug := "alice@exemple.fr " + strings.Repeat("x", 10_000)
 
-	if err := f.login.RequestCode(ctx, slug, nil, "alice@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, slug, nil, "alice@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatalf("request: %v", err)
 	}
 	if len(f.mailer.sent) != 0 {
 		t.Errorf("sent = %v, want nothing", f.mailer.sent)
 	}
 	var incorrect *IncorrectCodeError
-	if _, _, err := f.login.OpenSession(ctx, slug, nil, "alice@exemple.fr", "12345678", Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+	if _, _, err := f.login.OpenSession(ctx, slug, nil, "alice@exemple.fr", "12345678", f.token, Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
 		t.Errorf("open session: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
 	}
 
@@ -311,7 +323,7 @@ func TestOpenSession(t *testing.T) {
 	f := newLoginFixture(t)
 	device := Device{Type: Phone, OS: "iOS", Browser: "Safari", InstalledApp: true}
 
-	if err := f.login.RequestCode(ctx, "martin", f.martin, "alice@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", f.martin, "alice@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	code := f.mailer.last(t, "alice@exemple.fr")
@@ -319,13 +331,13 @@ func TestOpenSession(t *testing.T) {
 	if code == wrong {
 		wrong = "111111"
 	}
-	_, _, err := f.login.OpenSession(ctx, "martin", f.martin, "alice@exemple.fr", wrong, device)
+	_, _, err := f.login.OpenSession(ctx, "martin", f.martin, "alice@exemple.fr", wrong, f.token, device)
 	var incorrect *IncorrectCodeError
 	if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != 2 {
 		t.Fatalf("wrong code: error = %v, want 2 attempts left", err)
 	}
 
-	session, token, err := f.login.OpenSession(ctx, "martin", f.martin, "ALICE@exemple.fr", code, device)
+	session, token, err := f.login.OpenSession(ctx, "martin", f.martin, "ALICE@exemple.fr", code, f.token, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +346,7 @@ func TestOpenSession(t *testing.T) {
 	}
 
 	// The code is used once.
-	if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, "alice@exemple.fr", code, device); !errors.Is(err, ErrNewCodeNeeded) {
+	if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, "alice@exemple.fr", code, f.token, device); !errors.Is(err, ErrNewCodeNeeded) {
 		t.Errorf("code used twice: error = %v, want ErrNewCodeNeeded", err)
 	}
 
@@ -414,13 +426,13 @@ func TestSameAnswers(t *testing.T) {
 	var answers [][]string
 	for _, target := range targets {
 		var got []string
-		_, _, err := f.login.OpenSession(ctx, target.slug, target.tribe, target.email, "000001", Device{})
+		_, _, err := f.login.OpenSession(ctx, target.slug, target.tribe, target.email, "000001", f.token, Device{})
 		got = append(got, errorString(err))
-		if err := f.login.RequestCode(ctx, target.slug, target.tribe, target.email, "192.0.2.1"); err != nil {
+		if err := f.requestCode(ctx, target.slug, target.tribe, target.email, "192.0.2.1"); err != nil {
 			t.Fatal(err)
 		}
 		for range LoginCodeAttempts + 1 {
-			_, _, err := f.login.OpenSession(ctx, target.slug, target.tribe, target.email, "000001", Device{})
+			_, _, err := f.login.OpenSession(ctx, target.slug, target.tribe, target.email, "000001", f.token, Device{})
 			got = append(got, errorString(err))
 		}
 		answers = append(answers, got)
@@ -432,6 +444,50 @@ func TestSameAnswers(t *testing.T) {
 				break
 			}
 		}
+	}
+}
+
+// TestAttemptsFromAnotherBrowser: an attempt without the token of the code request, or with
+// the token of another request, consumes nothing, and gets the same answer whatever the
+// address or the tribe (D5).
+func TestAttemptsFromAnotherBrowser(t *testing.T) {
+	ctx := context.Background()
+	targets := []struct {
+		name    string
+		slug    string
+		unknown bool
+		email   string
+	}{
+		{name: "active member", slug: "martin", email: "alice@exemple.fr"},
+		{name: "unknown address", slug: "martin", email: "inconnu@exemple.fr"},
+		{name: "revoked member", slug: "martin", email: "bruno@exemple.fr"},
+		{name: "unknown tribe", slug: "dupont", unknown: true, email: "alice@exemple.fr"},
+	}
+	for _, target := range targets {
+		t.Run(target.name, func(t *testing.T) {
+			f := newLoginFixture(t)
+			store := f.martin
+			if target.unknown {
+				store = nil
+			}
+			// Another browser requests a code for chloe: its token is valid, for another code.
+			if err := f.requestCode(ctx, target.slug, store, "chloe@exemple.fr", "192.0.2.2"); err != nil {
+				t.Fatal(err)
+			}
+			other := f.token
+			if err := f.requestCode(ctx, target.slug, store, target.email, "192.0.2.1"); err != nil {
+				t.Fatal(err)
+			}
+			for _, token := range []string{"", other, f.token + "x", other, ""} {
+				if _, _, err := f.login.OpenSession(ctx, target.slug, store, target.email, "00000001", token, Device{}); !errors.Is(err, ErrNewCodeNeeded) {
+					t.Fatalf("attempt with the token %q: error = %v, want ErrNewCodeNeeded", token, err)
+				}
+			}
+			var incorrect *IncorrectCodeError
+			if _, _, err := f.login.OpenSession(ctx, target.slug, store, target.email, "00000001", f.token, Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+				t.Errorf("attempt from the browser of the request: error = %v, want %d attempts left", err, LoginCodeAttempts-1)
+			}
+		})
 	}
 }
 
@@ -450,7 +506,7 @@ func TestRevokeMemberClosesSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, token := f.signIn(t, "chloe@exemple.fr")
-	if err := f.login.RequestCode(ctx, "martin", f.martin, "chloe@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", f.martin, "chloe@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	code := f.mailer.last(t, "chloe@exemple.fr")
@@ -461,7 +517,7 @@ func TestRevokeMemberClosesSessions(t *testing.T) {
 	if _, err := f.login.Session(ctx, f.martin, token); !errors.Is(err, ErrNoSession) {
 		t.Errorf("session of a revoked member: error = %v, want ErrNoSession", err)
 	}
-	if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, "chloe@exemple.fr", code, Device{}); err == nil {
+	if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, "chloe@exemple.fr", code, f.token, Device{}); err == nil {
 		t.Error("the pending code of a revoked member is accepted")
 	}
 	if err := f.martin.RevokeMember(ctx, chloe.ID, f.alice.ID, f.now); !errors.Is(err, ErrUnknownMember) {
@@ -481,10 +537,10 @@ func TestPurge(t *testing.T) {
 	ctx := context.Background()
 	f := newLoginFixture(t)
 	f.signIn(t, "alice@exemple.fr")
-	if err := f.login.RequestCode(ctx, "martin", f.martin, "alice@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", f.martin, "alice@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.login.RequestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	counts := func() (requests, decoys, codes, sessions int) {
@@ -572,13 +628,14 @@ func TestLimitsSurviveRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	martin := NewStore(db)
+	tokens := map[string]string{}
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
 		for range EmailRequestLimit {
-			if err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); err != nil {
+			if tokens[email], err = login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if _, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", Device{}); err == nil {
+		if _, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", tokens[email], Device{}); err == nil {
 			t.Fatal("a wrong code was accepted")
 		}
 	}
@@ -588,10 +645,10 @@ func TestLimitsSurviveRestart(t *testing.T) {
 
 	_, login, martin = open()
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
-		if err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); !errors.Is(err, ErrTooManyRequests) {
+		if _, err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); !errors.Is(err, ErrTooManyRequests) {
 			t.Errorf("%s: request after restart: error = %v, want ErrTooManyRequests", email, err)
 		}
-		_, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", Device{})
+		_, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", tokens[email], Device{})
 		var incorrect *IncorrectCodeError
 		if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-2 {
 			t.Errorf("%s: attempt after restart: error = %v, want %d attempts left", email, err, LoginCodeAttempts-2)

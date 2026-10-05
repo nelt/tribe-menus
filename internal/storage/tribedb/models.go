@@ -29,6 +29,7 @@ type CodeRequest struct {
 type LoginCode struct {
 	MemberID     int64
 	CodeHash     []byte
+	RequestHash  []byte
 	ExpiresAt    string
 	AttemptsLeft int64
 }

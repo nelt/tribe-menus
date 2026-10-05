@@ -69,6 +69,27 @@ Fonctionnalité: Connexion et session persistante
     Alors je suis connecté à la tribu "martin"
 
   @ENF-01
+  Scénario: Des essais venus d'un autre navigateur ne consomment pas ceux du code
+    Étant donné j'ai demandé un code pour "alice@exemple.fr"
+    Quand un code erroné est saisi 3 fois pour "alice@exemple.fr" depuis un autre navigateur
+    Alors ces essais reçoivent l'invitation à demander un nouveau code
+    Quand je saisis ce code
+    Alors je suis connecté à la tribu "martin"
+
+  @ENF-01
+  Plan du scénario: Un essai venu d'un autre navigateur reçoit la même réponse pour toute adresse
+    Étant donné "<adresse>" a demandé un code pour la tribu "martin"
+    Quand un code erroné est saisi 3 fois pour "<adresse>" depuis un autre navigateur
+    Alors ces essais reçoivent l'invitation à demander un nouveau code
+    Quand un code erroné est saisi depuis le navigateur de la demande
+    Alors un message indique que le code est incorrect et qu'il reste 2 essais
+
+    Exemples:
+      | adresse            |
+      | alice@exemple.fr   |
+      | inconnu@exemple.fr |
+
+  @ENF-01
   Scénario: Une nouvelle demande remplace le code précédent
     Étant donné j'ai demandé un code pour "alice@exemple.fr"
     Et j'ai demandé un nouveau code pour "alice@exemple.fr"

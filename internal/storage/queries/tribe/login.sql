@@ -1,8 +1,9 @@
 -- name: ReplaceLoginCode :exec
-INSERT INTO login_codes (member_id, code_hash, expires_at, attempts_left)
-VALUES (?, ?, ?, ?)
+INSERT INTO login_codes (member_id, code_hash, request_hash, expires_at, attempts_left)
+VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (member_id) DO UPDATE SET
     code_hash = excluded.code_hash,
+    request_hash = excluded.request_hash,
     expires_at = excluded.expires_at,
     attempts_left = excluded.attempts_left;
 

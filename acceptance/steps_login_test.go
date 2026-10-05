@@ -110,6 +110,7 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^j'ai demandé un nouveau code pour "([^"]*)"$`, func(ctx context.Context, email string) error {
 		return w.requestAndReceive(ctx, w.currentDevice(), w.auth.home, email)
 	})
+	sc.Step(`^"([^"]*)" a demandé un code pour la tribu "([^"]*)"$`, w.givenCodeRequested)
 	sc.Step(`^"([^"]*)" a reçu un code de connexion pour la tribu "([^"]*)"$`, func(ctx context.Context, email, slug string) error {
 		return w.requestAndReceive(ctx, w.newDevice(), slug, email)
 	})
@@ -120,6 +121,10 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^je saisis le premier code$`, func(ctx context.Context) error { return w.enterCode(ctx, w.currentDevice(), w.auth.codes[0]) })
 	sc.Step(`^je saisis un code erroné$`, func(ctx context.Context) error { return w.enterWrongCode(ctx, 1) })
 	sc.Step(`^je saisis un code erroné (\d+) fois$`, w.enterWrongCode)
+	sc.Step(`^un code erroné est saisi (\d+) fois pour "([^"]*)" depuis un autre navigateur$`, w.enterWrongCodeElsewhere)
+	sc.Step(`^un code erroné est saisi depuis le navigateur de la demande$`, func(ctx context.Context) error {
+		return w.enterCode(ctx, w.currentDevice(), w.wrongCode())
+	})
 	sc.Step(`^je saisis à nouveau ce code sur un autre appareil$`, func(ctx context.Context) error {
 		return w.enterCode(ctx, w.newDevice(), w.lastCode())
 	})
@@ -141,6 +146,8 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 		return w.lastError(http.StatusTooManyRequests, "too_many_requests")
 	})
 	sc.Step(`^le code est invalidé$`, w.codeInvalidated)
+	sc.Step(`^ces essais reçoivent l'invitation à demander un nouveau code$`, w.foreignAttemptsRefused)
+	sc.Step(`^un message indique que le code est incorrect et qu'il reste (\d+) essais$`, w.incorrectCodeWithAttempts)
 	sc.Step(`^même le bon code n'est plus accepté$`, func(ctx context.Context) error {
 		if err := w.enterCode(ctx, w.currentDevice(), w.lastCode()); err != nil {
 			return err
@@ -254,7 +261,7 @@ func (w *world) givenRequests(ctx context.Context, n int, request func(i int) (s
 		} else if !errors.Is(err, storage.ErrUnknownTribe) {
 			return err
 		}
-		if err := w.login.RequestCode(ctx, slug, t, email, ip); err != nil {
+		if _, err := w.login.RequestCode(ctx, slug, t, email, ip); err != nil {
 			return fmt.Errorf("request %d: %w", i+1, err)
 		}
 	}
@@ -357,13 +364,21 @@ func (w *world) enterCode(ctx context.Context, d *device, code string) error {
 	return nil
 }
 
-// enterWrongCode enters n times a code that differs from the one received.
-func (w *world) enterWrongCode(ctx context.Context, n int) error {
+// wrongCode returns a code that differs from the last one received, if any.
+func (w *world) wrongCode() string {
 	right, err := strconv.Atoi(w.lastCode())
 	if err != nil {
-		return fmt.Errorf("no code received: %w", err)
+		return "12345678"
 	}
-	wrong := fmt.Sprintf("%08d", (right+1)%100_000_000)
+	return fmt.Sprintf("%08d", (right+1)%100_000_000)
+}
+
+// enterWrongCode enters n times a code that differs from the one received.
+func (w *world) enterWrongCode(ctx context.Context, n int) error {
+	if w.lastCode() == "" {
+		return errors.New("no code received")
+	}
+	wrong := w.wrongCode()
 	for range n {
 		if err := w.enterCode(ctx, w.currentDevice(), wrong); err != nil {
 			return err
@@ -371,6 +386,66 @@ func (w *world) enterWrongCode(ctx context.Context, n int) error {
 		if err := w.lastError(http.StatusBadRequest, "incorrect_code"); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// givenCodeRequested asks for a code from a new device, which becomes the current one,
+// and keeps the code if one was sent: the address may be a member's or not.
+func (w *world) givenCodeRequested(ctx context.Context, email, slug string) error {
+	if err := w.requestCode(ctx, w.newDevice(), slug, email); err != nil {
+		return err
+	}
+	if err := w.lastStatus(http.StatusAccepted); err != nil {
+		return err
+	}
+	for _, m := range w.sentMails(w.auth.mailMark) {
+		if m.To == email {
+			return w.receiveCode(email)
+		}
+	}
+	return nil
+}
+
+// enterWrongCodeElsewhere enters n times a wrong code for the address, from a device that
+// did not request the code, as anyone knowing the address could.
+func (w *world) enterWrongCodeElsewhere(ctx context.Context, n int, email string) error {
+	other := w.otherDevice()
+	w.auth.foreign = nil
+	for range n {
+		rec, err := w.do(ctx, other, http.MethodPost, tribePath(string(w.tribe), "api/sessions"), map[string]any{
+			"email": email, "code": w.wrongCode(), "installedApp": false,
+		})
+		if err != nil {
+			return err
+		}
+		w.auth.foreign = append(w.auth.foreign, rec)
+	}
+	return nil
+}
+
+func (w *world) foreignAttemptsRefused() error {
+	if len(w.auth.foreign) == 0 {
+		return errors.New("no attempt from another device")
+	}
+	for i, rec := range w.auth.foreign {
+		if rec.Code != http.StatusBadRequest || strings.TrimSpace(rec.Body.String()) != `{"error":"new_code_needed"}` {
+			return fmt.Errorf("attempt %d: status %d, body %s; want new_code_needed", i+1, rec.Code, rec.Body)
+		}
+	}
+	return nil
+}
+
+func (w *world) incorrectCodeWithAttempts(attempts int) error {
+	if err := w.lastError(http.StatusBadRequest, "incorrect_code"); err != nil {
+		return err
+	}
+	e, err := w.lastAPIError()
+	if err != nil {
+		return err
+	}
+	if e.AttemptsLeft == nil || *e.AttemptsLeft != attempts {
+		return fmt.Errorf("answer %+v, want %d attempts left", e, attempts)
 	}
 	return nil
 }
@@ -537,10 +612,16 @@ func (w *world) sameAnswerAsMember(ctx context.Context) error {
 	return nil
 }
 
-// answer is what the client sees of a response: status, headers that matter, body.
+// answer is what the client sees of a response: status, headers that matter, cookies but
+// their random value, body.
 func answer(rec *httptest.ResponseRecorder) string {
 	h := rec.Header()
-	return strings.Join([]string{strconv.Itoa(rec.Code), h.Get("Content-Type"), h.Get("Cache-Control"), h.Get("Set-Cookie"), rec.Body.String()}, " | ")
+	var cookies []string
+	for _, c := range rec.Result().Cookies() {
+		c.Value = strings.Repeat("v", len(c.Value))
+		cookies = append(cookies, c.String())
+	}
+	return strings.Join([]string{strconv.Itoa(rec.Code), h.Get("Content-Type"), h.Get("Cache-Control"), strings.Join(cookies, ", "), rec.Body.String()}, " | ")
 }
 
 func (w *world) noMailSinceAction() error {

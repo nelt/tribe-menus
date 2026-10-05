@@ -45,6 +45,7 @@ func (s *Store) IssueLoginCode(ctx context.Context, memberID int64, code LoginCo
 	if err := q.ReplaceLoginCode(ctx, tribedb.ReplaceLoginCodeParams{
 		MemberID:     memberID,
 		CodeHash:     code.Hash,
+		RequestHash:  code.RequestHash,
 		ExpiresAt:    formatTime(code.ExpiresAt),
 		AttemptsLeft: int64(code.AttemptsLeft),
 	}); err != nil {
@@ -56,10 +57,11 @@ func (s *Store) IssueLoginCode(ctx context.Context, memberID int64, code LoginCo
 	return nil
 }
 
-// OpenSession checks the code entered by the member and, when it is accepted, opens a
-// session for the device and traces it. It returns the session and its token, or
-// ErrNewCodeNeeded, or *IncorrectCodeError; the attempt is recorded in every case.
-func (s *Store) OpenSession(ctx context.Context, memberID int64, entered string, device Device, now time.Time) (Session, string, error) {
+// OpenSession checks the code entered by the member, with the token of its request, and,
+// when it is accepted, opens a session for the device and traces it. It returns the session
+// and its token, or ErrNewCodeNeeded, or *IncorrectCodeError; the attempt is recorded in
+// every case.
+func (s *Store) OpenSession(ctx context.Context, memberID int64, entered, requestToken string, device Device, now time.Time) (Session, string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return Session{}, "", fmt.Errorf("open session: %w", err)
@@ -78,8 +80,8 @@ func (s *Store) OpenSession(ctx context.Context, memberID int64, entered string,
 	if err != nil {
 		return Session{}, "", fmt.Errorf("open session: %w", err)
 	}
-	code := LoginCode{Hash: row.CodeHash, ExpiresAt: expiresAt, AttemptsLeft: int(row.AttemptsLeft)}
-	after, keep, checkErr := code.Check(entered, now)
+	code := LoginCode{Hash: row.CodeHash, RequestHash: row.RequestHash, ExpiresAt: expiresAt, AttemptsLeft: int(row.AttemptsLeft)}
+	after, keep, checkErr := code.Check(entered, requestToken, now)
 	if keep {
 		err = q.SetLoginCodeAttempts(ctx, tribedb.SetLoginCodeAttemptsParams{AttemptsLeft: int64(after.AttemptsLeft), MemberID: memberID})
 	} else {
@@ -95,7 +97,7 @@ func (s *Store) OpenSession(ctx context.Context, memberID int64, entered string,
 		return Session{}, "", checkErr
 	}
 
-	token, err := newSessionToken()
+	token, err := newToken()
 	if err != nil {
 		return Session{}, "", fmt.Errorf("open session: %w", err)
 	}

@@ -13,6 +13,7 @@ type CodeRequest struct {
 
 type DecoyCode struct {
 	EmailHash    []byte
+	RequestHash  []byte
 	ExpiresAt    string
 	AttemptsLeft int64
 }

@@ -37,7 +37,7 @@ func TestNewLoginCode(t *testing.T) {
 
 func TestLoginCodeCheck(t *testing.T) {
 	now := time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC)
-	issued := newRealCode("12345678", now)
+	issued := newRealCode("12345678", "request", now)
 	withAttempts := func(n int) LoginCode {
 		c := issued
 		c.AttemptsLeft = n
@@ -47,6 +47,7 @@ func TestLoginCodeCheck(t *testing.T) {
 		name         string
 		code         LoginCode
 		entered      string
+		token        string // of the request; "request" when empty
 		at           time.Time
 		wantErr      error
 		wantAttempts int // for an incorrect code
@@ -61,13 +62,24 @@ func TestLoginCodeCheck(t *testing.T) {
 		{name: "right code without attempts left", code: withAttempts(0), entered: "12345678", at: now, wantErr: ErrNewCodeNeeded},
 		{name: "right code at expiry", code: issued, entered: "12345678", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
 		{name: "wrong code after expiry", code: issued, entered: "00000000", at: now.Add(time.Hour), wantErr: ErrNewCodeNeeded},
-		{name: "decoy code", code: NewDecoyCode(now), entered: "12345678", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
-		{name: "decoy code, empty input", code: NewDecoyCode(now), entered: "", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
-		{name: "expired decoy code", code: NewDecoyCode(now), entered: "12345678", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
+		{name: "token of another request", code: issued, entered: "12345678", token: "other", at: now, wantErr: ErrNewCodeNeeded, wantKeep: true},
+		{name: "no token", code: issued, entered: "12345678", token: "-", at: now, wantErr: ErrNewCodeNeeded, wantKeep: true},
+		{name: "wrong code, token of another request", code: withAttempts(1), entered: "87654321", token: "other", at: now, wantErr: ErrNewCodeNeeded, wantKeep: true},
+		{name: "decoy code, token of another request", code: NewDecoyCode("request", now), entered: "12345678", token: "other", at: now, wantErr: ErrNewCodeNeeded, wantKeep: true},
+		{name: "decoy code", code: NewDecoyCode("request", now), entered: "12345678", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
+		{name: "decoy code, empty input", code: NewDecoyCode("request", now), entered: "", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
+		{name: "expired decoy code", code: NewDecoyCode("request", now), entered: "12345678", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			after, keep, err := tc.code.Check(tc.entered, tc.at)
+			token := tc.token
+			switch token {
+			case "":
+				token = "request"
+			case "-":
+				token = ""
+			}
+			after, keep, err := tc.code.Check(tc.entered, token, tc.at)
 			var incorrect *IncorrectCodeError
 			switch {
 			case tc.wantErr == nil && err != nil:
@@ -85,16 +97,19 @@ func TestLoginCodeCheck(t *testing.T) {
 			if keep != tc.wantKeep {
 				t.Errorf("keep = %v, want %v", keep, tc.wantKeep)
 			}
+			if errors.Is(err, ErrNewCodeNeeded) && keep && after.AttemptsLeft != tc.code.AttemptsLeft {
+				t.Errorf("attempts left after = %d, want %d: nothing consumed", after.AttemptsLeft, tc.code.AttemptsLeft)
+			}
 		})
 	}
 }
 
-func TestNewSessionToken(t *testing.T) {
-	a, err := newSessionToken()
+func TestNewToken(t *testing.T) {
+	a, err := newToken()
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := newSessionToken()
+	b, err := newToken()
 	if err != nil {
 		t.Fatal(err)
 	}

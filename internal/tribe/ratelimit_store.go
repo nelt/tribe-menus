@@ -17,9 +17,10 @@ type RateLimitStore interface {
 	RecordCodeRequest(ctx context.Context, req CodeRequest, now time.Time) (bool, error)
 	// ReplaceDecoyCode stores a decoy code for the address hash, replacing the previous one.
 	ReplaceDecoyCode(ctx context.Context, emailHash []byte, code LoginCode) error
-	// CheckDecoyCode records an attempt on the decoy code of the address hash: it returns
-	// ErrNewCodeNeeded or *IncorrectCodeError, as for a real code.
-	CheckDecoyCode(ctx context.Context, emailHash []byte, entered string, now time.Time) error
+	// CheckDecoyCode records an attempt on the decoy code of the address hash, with the
+	// token of its request: it returns ErrNewCodeNeeded or *IncorrectCodeError, as for a
+	// real code.
+	CheckDecoyCode(ctx context.Context, emailHash []byte, entered, requestToken string, now time.Time) error
 	// Purge deletes the rows out of their window.
 	Purge(ctx context.Context, now time.Time) error
 }
@@ -75,6 +76,7 @@ func (r *RateLimitDB) RecordCodeRequest(ctx context.Context, req CodeRequest, no
 func (r *RateLimitDB) ReplaceDecoyCode(ctx context.Context, emailHash []byte, code LoginCode) error {
 	err := ratelimitdb.New(r.db).ReplaceDecoyCode(ctx, ratelimitdb.ReplaceDecoyCodeParams{
 		EmailHash:    emailHash,
+		RequestHash:  code.RequestHash,
 		ExpiresAt:    formatTime(code.ExpiresAt),
 		AttemptsLeft: int64(code.AttemptsLeft),
 	})
@@ -85,7 +87,7 @@ func (r *RateLimitDB) ReplaceDecoyCode(ctx context.Context, emailHash []byte, co
 }
 
 // CheckDecoyCode implements RateLimitStore.
-func (r *RateLimitDB) CheckDecoyCode(ctx context.Context, emailHash []byte, entered string, now time.Time) error {
+func (r *RateLimitDB) CheckDecoyCode(ctx context.Context, emailHash []byte, entered, requestToken string, now time.Time) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("check decoy code: %w", err)
@@ -104,7 +106,8 @@ func (r *RateLimitDB) CheckDecoyCode(ctx context.Context, emailHash []byte, ente
 	if err != nil {
 		return fmt.Errorf("check decoy code: %w", err)
 	}
-	after, keep, checkErr := LoginCode{ExpiresAt: expiresAt, AttemptsLeft: int(row.AttemptsLeft)}.Check(entered, now)
+	decoy := LoginCode{RequestHash: row.RequestHash, ExpiresAt: expiresAt, AttemptsLeft: int(row.AttemptsLeft)}
+	after, keep, checkErr := decoy.Check(entered, requestToken, now)
 	if checkErr == nil {
 		return errors.New("check decoy code: a decoy code was accepted")
 	}
