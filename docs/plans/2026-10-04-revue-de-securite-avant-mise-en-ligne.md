@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 à 4 faites ; constats arbitrés par le développeur le 2026-10-05, étape 5 ; corrections à suivre, étape 6)
+- **Statut** : en cours (étapes 1 à 6 faites ; corrections à relire par la session de revue ; restent les protections du dépôt, étape 7, et la clôture)
 
 ## Objectif
 
@@ -67,9 +67,10 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Le relecteur ouvre une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier ; chaque constat de sécurité porte ses trois évaluations (gravité, risque de livrer sans recette, risque d'exploitation une fois publié) et le niveau de traitement qu'il aurait en production.
   - Le développeur arbitre (retirer un point, le changer de catégorie, corriger une évaluation), puis fusionne la PR.
   - Section « Constats » ajoutée le 2026-10-05. Arbitrage du même jour : catégories et évaluations gardées telles quelles, point 1 tranché (D5), lecture de la grille confirmée pour le point 4 (D6).
-- [ ] **6. Corrections**, par Claude Code dans le Dev Container.
+- [x] **6. Corrections**, par Claude Code dans le Dev Container.
   - Les décisions qui touchent au code (D1 à D3 et D5, voir « Ce que les décisions demandent à l'étape 6 »), et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
   - Les points « à noter » rejoignent `docs/feuille-de-route.md` (points reportés), avec le plan qui les reprendra.
+  - Fait le 2026-10-05 : six commits (D1 avec le constat 2, D2, D3, D5 avec le constat 1, constats 3 et 4), points 5 à 11 et suites des constats 1 et 4 dans la feuille de route. Choix faits en route dans les notes d'exécution.
 - [ ] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
 
@@ -234,3 +235,10 @@ Premier rodage de `docs/traitement-des-vulnerabilites.md` :
 - **Étape 1** (2026-10-05) : décisions D1 à D4 prises avec le développeur sur les recommandations proposées ; ENF-01, EF-07 (`gestion-membres-et-sessions.md`), `docs/design/README.md` (texte de l'écran du code) et l'ADR 0001 (renvoi) mis à jour. L'alerte rejoint le plan `production` dans la feuille de route.
 - **Étapes 2 à 4** (2026-10-05) : revue faite par une session cloud, en lecture et par l'exécution d'une copie de travail jetable ; rien n'a été corrigé. Résultat dans « Constats », conditions de vérification dans « Ce qui n'a pas pu être vérifié ».
 - **Étape 5** (2026-10-05) : arbitrage dans la conversation avec la session de revue, consigné dans la même PR que les constats ; décisions D5 et D6 ; ENF-01, ADR 0001 et `docs/design/README.md` mis à jour pour D5.
+- **Étape 6** (2026-10-05), choix faits en route :
+  - **Migrations ajoutées**, pas de modification des 0001 (D3 laissait le choix) : rien n'est déployé, mais les bases de développement existantes migrent sans être recréées. Tribu : 0003 (demandes pour les membres), 0004 (appareil du journal d'audit ; l'ancien texte n'est pas converti), 0005 (`login_codes` recréée avec l'empreinte du jeton de la demande, codes en attente abandonnés). Limitation : 0002 (plus d'identifiant d'URL), 0003 (`decoy_codes` recréée de même).
+  - **D2, où compter** : dans la base de la tribu, table `code_requests` réduite à l'heure de la demande. Une demande est d'abord comptée par la base de limitation, comme toute autre, puis, pour un membre actif, par la base de la tribu, dans la transaction qui remplace le code (`Store.IssueLoginCode`). Ce que la base de limitation enregistre ne dépend donc pas de l'appartenance, même quand la limite de la tribu refuse ; contrepartie, une demande refusée par la limite de la tribu compte pour les limites par adresse et par IP, comme une demande pour une autre adresse. La base de limitation ne garde plus l'identifiant d'URL, devenu inutile hors de l'empreinte d'adresse. ADR 0021 précisé (points 2 à 4).
+  - **D5** : cookie `code_request`, 32 octets aléatoires, effacé à l'ouverture de la session. Le jeton est tiré pour toute demande acceptée, membre ou non. Un jeton absent ou d'une autre demande reçoit `new_code_needed` sans consommer d'essai ; un code expiré est supprimé quel que soit le jeton. Rien à changer dans le front, le navigateur renvoie le cookie.
+  - **D1, front** : à huit cases, les chiffres dérivaient d'une case à l'autre : `1ch`, largeur d'un zéro proportionnel, dépasse celle d'un chiffre tabulaire (17 px contre 16 sous Chromium). L'écran de connexion mesure la largeur d'un chiffre et la passe au CSS (`--code-digit`), `1ch` restant le repli. Maquettes de connexion et `docs/design/README.md` accordés.
+  - **Constat 3** : lecture 20 s, écriture 30 s, inactivité 60 s, en-têtes 10 s comme avant.
+  - **Constat 4** : le fichier de base est créé en 0600 avant que SQLite l'ouvre, et SQLite donne ce mode à `-wal` et `-shm` ; un fichier plus ouvert est ramené à 0600. Pas d'umask du processus : la correction tient sans elle, et l'unité systemd posera `UMask=0077` (plan `recette`).
