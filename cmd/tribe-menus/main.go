@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -30,9 +31,18 @@ var (
 	commit  = "unknown"
 )
 
+// timeouts of the HTTP server: without them, a client that stops sending, or keeps a
+// connection idle, holds a goroutine and a file descriptor without limit, and makes the
+// shutdown fail (plan revue-securite, finding 3). A request body is 4 KB at most, a
+// response a few hundred KB.
+type timeouts struct {
+	readHeader, read, write, idle time.Duration
+}
+
+var defaultTimeouts = timeouts{readHeader: 10 * time.Second, read: 20 * time.Second, write: 30 * time.Second, idle: 60 * time.Second}
+
 const (
-	readHeaderTimeout = 10 * time.Second
-	shutdownTimeout   = 10 * time.Second
+	shutdownTimeout = 10 * time.Second
 	// purgeInterval: login codes, sessions and rate limit rows are purged at startup, then
 	// at this interval (PT-07). The retention stated in the specs, ADR 0021 and the privacy
 	// page (an hour and ten minutes at most for the hashes of addresses and IPs) is
@@ -240,11 +250,7 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
-	srv := &http.Server{
-		Handler:           handler,
-		ReadHeaderTimeout: readHeaderTimeout,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelWarn),
-	}
+	srv := newHTTPServer(handler, slog.NewLogLogger(logger.Handler(), slog.LevelWarn), defaultTimeouts)
 	logger.Info("server started", "version", version, "commit", commit, "addr", "http://"+listener.Addr().String(), "dev", opts.dev)
 
 	served := make(chan error, 1)
@@ -265,6 +271,18 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 		return fmt.Errorf("serve: %w", err)
 	}
 	return nil
+}
+
+// newHTTPServer returns the HTTP server of the handler, with its timeouts.
+func newHTTPServer(handler http.Handler, errorLog *log.Logger, t timeouts) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: t.readHeader,
+		ReadTimeout:       t.read,
+		WriteTimeout:      t.write,
+		IdleTimeout:       t.idle,
+		ErrorLog:          errorLog,
+	}
 }
 
 func serverConfig(dev bool, root string, logger *slog.Logger) (server.Config, error) {
