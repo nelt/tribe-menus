@@ -64,6 +64,7 @@ Critères d'acceptation : `features/membres-et-sessions.feature` (EF-01 à EF-07
   - les opérations sur les membres : initialisation de la tribu, ajout, révocation (y compris auto-révocation), réactivation ;
   - les opérations sur les sessions : ouverture (connexion réussie), révocation d'une session, « déconnecter tous les autres appareils », déconnexion, fermeture des sessions consécutive à la révocation d'un membre.
 - Chaque entrée contient : la tribu, la date et l'heure, l'opération, le membre concerné, l'auteur (un membre, ou « script d'administration »), et pour une opération sur une session, la session et l'appareil détecté.
+- L'appareil détecté est enregistré dans l'entrée sous la même forme que dans la session : type, système, navigateur, app installée ou onglet. Le libellé (« iPhone · Safari · app installée ») est composé à l'affichage, pas enregistré (2026-10-05, plan `revue-securite`, D3).
 - Le journal est en ajout seul : aucune fonction de l'interface ne modifie ni ne supprime ses entrées. Seules exceptions, hors interface : l'effacement automatique des entrées de plus de 12 mois, et l'anonymisation d'un membre (EF-11).
 
 ## Administration
