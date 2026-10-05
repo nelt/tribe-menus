@@ -7,13 +7,13 @@ package ratelimitdb
 type CodeRequest struct {
 	ID        int64
 	At        string
-	Slug      string
 	EmailHash []byte
 	IpHash    []byte
 }
 
 type DecoyCode struct {
 	EmailHash    []byte
+	RequestHash  []byte
 	ExpiresAt    string
 	AttemptsLeft int64
 }

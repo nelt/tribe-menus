@@ -11,20 +11,23 @@ import (
 )
 
 const auditLog = `-- name: AuditLog :many
-SELECT audit_log.id, audit_log.at, audit_log.operation, audit_log.member_id, audit_log.author_id, audit_log.session_id, audit_log.detected_device, members.email AS member_email
+SELECT audit_log.id, audit_log.at, audit_log.operation, audit_log.member_id, audit_log.author_id, audit_log.session_id, audit_log.device_type, audit_log.os, audit_log.browser, audit_log.installed_app, members.email AS member_email
 FROM audit_log JOIN members ON members.id = audit_log.member_id
 ORDER BY audit_log.id
 `
 
 type AuditLogRow struct {
-	ID             int64
-	At             string
-	Operation      string
-	MemberID       int64
-	AuthorID       sql.NullInt64
-	SessionID      sql.NullInt64
-	DetectedDevice sql.NullString
-	MemberEmail    sql.NullString
+	ID           int64
+	At           string
+	Operation    string
+	MemberID     int64
+	AuthorID     sql.NullInt64
+	SessionID    sql.NullInt64
+	DeviceType   sql.NullString
+	Os           sql.NullString
+	Browser      sql.NullString
+	InstalledApp sql.NullInt64
+	MemberEmail  sql.NullString
 }
 
 func (q *Queries) AuditLog(ctx context.Context) ([]AuditLogRow, error) {
@@ -43,7 +46,10 @@ func (q *Queries) AuditLog(ctx context.Context) ([]AuditLogRow, error) {
 			&i.MemberID,
 			&i.AuthorID,
 			&i.SessionID,
-			&i.DetectedDevice,
+			&i.DeviceType,
+			&i.Os,
+			&i.Browser,
+			&i.InstalledApp,
 			&i.MemberEmail,
 		); err != nil {
 			return nil, err
@@ -60,17 +66,20 @@ func (q *Queries) AuditLog(ctx context.Context) ([]AuditLogRow, error) {
 }
 
 const insertAuditEntry = `-- name: InsertAuditEntry :exec
-INSERT INTO audit_log (at, operation, member_id, author_id, session_id, detected_device)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO audit_log (at, operation, member_id, author_id, session_id, device_type, os, browser, installed_app)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertAuditEntryParams struct {
-	At             string
-	Operation      string
-	MemberID       int64
-	AuthorID       sql.NullInt64
-	SessionID      sql.NullInt64
-	DetectedDevice sql.NullString
+	At           string
+	Operation    string
+	MemberID     int64
+	AuthorID     sql.NullInt64
+	SessionID    sql.NullInt64
+	DeviceType   sql.NullString
+	Os           sql.NullString
+	Browser      sql.NullString
+	InstalledApp sql.NullInt64
 }
 
 func (q *Queries) InsertAuditEntry(ctx context.Context, arg InsertAuditEntryParams) error {
@@ -80,7 +89,10 @@ func (q *Queries) InsertAuditEntry(ctx context.Context, arg InsertAuditEntryPara
 		arg.MemberID,
 		arg.AuthorID,
 		arg.SessionID,
-		arg.DetectedDevice,
+		arg.DeviceType,
+		arg.Os,
+		arg.Browser,
+		arg.InstalledApp,
 	)
 	return err
 }

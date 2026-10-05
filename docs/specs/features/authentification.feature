@@ -12,7 +12,7 @@ Fonctionnalité: Connexion et session persistante
   Scénario: Se connecter avec un code reçu par e-mail
     Étant donné j'ouvre l'URL de la tribu "martin" sans être connecté
     Quand je saisis "alice@exemple.fr"
-    Alors un code à 6 chiffres est envoyé à "alice@exemple.fr"
+    Alors un code à 8 chiffres est envoyé à "alice@exemple.fr"
     Quand je saisis ce code
     Alors je suis connecté à la tribu "martin"
     Et une session est ouverte pour cet appareil
@@ -69,6 +69,27 @@ Fonctionnalité: Connexion et session persistante
     Alors je suis connecté à la tribu "martin"
 
   @ENF-01
+  Scénario: Des essais venus d'un autre navigateur ne consomment pas ceux du code
+    Étant donné j'ai demandé un code pour "alice@exemple.fr"
+    Quand un code erroné est saisi 3 fois pour "alice@exemple.fr" depuis un autre navigateur
+    Alors ces essais reçoivent l'invitation à demander un nouveau code
+    Quand je saisis ce code
+    Alors je suis connecté à la tribu "martin"
+
+  @ENF-01
+  Plan du scénario: Un essai venu d'un autre navigateur reçoit la même réponse pour toute adresse
+    Étant donné "<adresse>" a demandé un code pour la tribu "martin"
+    Quand un code erroné est saisi 3 fois pour "<adresse>" depuis un autre navigateur
+    Alors ces essais reçoivent l'invitation à demander un nouveau code
+    Quand un code erroné est saisi depuis le navigateur de la demande
+    Alors un message indique que le code est incorrect et qu'il reste 2 essais
+
+    Exemples:
+      | adresse            |
+      | alice@exemple.fr   |
+      | inconnu@exemple.fr |
+
+  @ENF-01
   Scénario: Une nouvelle demande remplace le code précédent
     Étant donné j'ai demandé un code pour "alice@exemple.fr"
     Et j'ai demandé un nouveau code pour "alice@exemple.fr"
@@ -99,7 +120,13 @@ Fonctionnalité: Connexion et session persistante
     Exemples:
       | demandes                                             | origine                                   |
       | 10 demandes de code depuis la même adresse IP        | depuis cette adresse IP, pour une autre adresse e-mail |
-      | 30 demandes de code pour la tribu "martin"           | pour la tribu "martin", depuis une autre adresse IP |
+      | 30 demandes de code pour des membres de la tribu "martin" | pour la tribu "martin", depuis une autre adresse IP |
+
+  @ENF-01
+  Scénario: Des demandes pour des adresses qui ne sont pas membres ne bloquent pas la tribu
+    Étant donné 30 demandes de code pour des adresses qui ne sont pas membres de la tribu "martin" ont été faites dans la dernière heure
+    Quand "alice@exemple.fr" demande un code pour la tribu "martin"
+    Alors un code à 8 chiffres est envoyé à "alice@exemple.fr"
 
   @ENF-01
   Scénario: Un code ne sert qu'une fois

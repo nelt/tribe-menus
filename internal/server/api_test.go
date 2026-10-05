@@ -72,33 +72,67 @@ func (f *apiFixture) do(method, target, body string, cookies ...*http.Cookie) *h
 	return rec
 }
 
-var sixDigits = regexp.MustCompile(`\b[0-9]{6}\b`)
+var eightDigits = regexp.MustCompile(`\b[0-9]{8}\b`)
 
 // signIn signs in to the tribe and returns the session cookie.
 func (f *apiFixture) signIn(t *testing.T, slug, email string) *http.Cookie {
 	t.Helper()
-	if rec := f.do("POST", "/tribes/"+slug+"/api/login-codes", `{"email":"`+email+`"}`); rec.Code != http.StatusAccepted {
+	rec := f.do("POST", "/tribes/"+slug+"/api/login-codes", `{"email":"`+email+`"}`)
+	if rec.Code != http.StatusAccepted {
 		t.Fatalf("login-codes: status %d", rec.Code)
 	}
+	request := cookieOf(t, rec, codeRequestCookie)
 	f.outbox.Wait()
 	msgs := f.recorder.Messages()
-	code := sixDigits.FindString(msgs[len(msgs)-1].Body)
-	rec := f.do("POST", "/tribes/"+slug+"/api/sessions", `{"email":"`+email+`","code":"`+code+`"}`)
+	code := eightDigits.FindString(msgs[len(msgs)-1].Body)
+	rec = f.do("POST", "/tribes/"+slug+"/api/sessions", `{"email":"`+email+`","code":"`+code+`"}`, request)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("sessions: status %d, body %s", rec.Code, rec.Body)
+	}
+	if cleared := cookieOf(t, rec, codeRequestCookie); cleared.MaxAge >= 0 {
+		t.Errorf("cookie of the code request after sign in = %+v, want it deleted", cleared)
 	}
 	return sessionCookieOf(t, rec)
 }
 
 func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
 	t.Helper()
+	return cookieOf(t, rec, sessionCookie)
+}
+
+func cookieOf(t *testing.T, rec *httptest.ResponseRecorder, name string) *http.Cookie {
+	t.Helper()
 	for _, c := range rec.Result().Cookies() {
-		if c.Name == sessionCookie {
+		if c.Name == name {
 			return c
 		}
 	}
-	t.Fatalf("no session cookie in %v", rec.Header())
+	t.Fatalf("no %s cookie in %v", name, rec.Header())
 	return nil
+}
+
+// TestCodeRequestCookie: the code request sets a cookie of the tribe, valid as long as the
+// code, without which an attempt consumes nothing (D5).
+func TestCodeRequestCookie(t *testing.T) {
+	f := newAPIFixture(t)
+	rec := f.do("POST", "/tribes/martin/api/login-codes", `{"email":"alice@exemple.fr"}`)
+	request := cookieOf(t, rec, codeRequestCookie)
+	if !request.HttpOnly || !request.Secure || request.SameSite != http.SameSiteLaxMode ||
+		request.Path != "/tribes/martin/" || request.MaxAge != 600 || len(request.Value) != 43 {
+		t.Errorf("cookie = %+v", request)
+	}
+	for _, cookies := range [][]*http.Cookie{nil, {{Name: codeRequestCookie, Value: "forged"}}} {
+		for range 3 {
+			rec := f.do("POST", "/tribes/martin/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`, cookies...)
+			if rec.Code != http.StatusBadRequest || strings.TrimSpace(rec.Body.String()) != `{"error":"new_code_needed"}` {
+				t.Fatalf("attempt with cookies %v: status %d, body %s", cookies, rec.Code, rec.Body)
+			}
+		}
+	}
+	rec = f.do("POST", "/tribes/martin/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`, request)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), `"attemptsLeft":2`) {
+		t.Errorf("attempt with the cookie of the request: status %d, body %s; want 2 attempts left", rec.Code, rec.Body)
+	}
 }
 
 func TestSignInAndOut(t *testing.T) {
@@ -147,7 +181,7 @@ func TestAPIErrors(t *testing.T) {
 	}{
 		{name: "malformed address", method: "POST", target: "/tribes/martin/api/login-codes", body: `{"email":"alice"}`, wantStatus: 400, wantBody: `{"error":"invalid_email"}`},
 		{name: "malformed body", method: "POST", target: "/tribes/martin/api/login-codes", body: `{`, wantStatus: 400, wantBody: `{"error":"bad_request"}`},
-		{name: "code never requested", method: "POST", target: "/tribes/martin/api/sessions", body: `{"email":"alice@exemple.fr","code":"123456"}`, wantStatus: 400, wantBody: `{"error":"new_code_needed"}`},
+		{name: "code never requested", method: "POST", target: "/tribes/martin/api/sessions", body: `{"email":"alice@exemple.fr","code":"12345678"}`, wantStatus: 400, wantBody: `{"error":"new_code_needed"}`},
 		{name: "no session", method: "GET", target: "/tribes/martin/api/session", wantStatus: 401, wantBody: `{"error":"no_session"}`},
 		{name: "sign out without session", method: "DELETE", target: "/tribes/martin/api/session", wantStatus: 401, wantBody: `{"error":"no_session"}`},
 		{name: "unknown API path", method: "GET", target: "/tribes/martin/api/nope", wantStatus: 404, wantBody: `{"error":"not_found"}`},
@@ -200,21 +234,38 @@ func TestUnknownTribeAnswersAlike(t *testing.T) {
 		{"GET", "/", ""},
 		{"GET", "/planning", ""},
 		{"GET", "/api/session", ""},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
 		{"POST", "/api/login-codes", `{"email":"alice@exemple.fr"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
 		{"DELETE", "/api/session", ""},
 	}
+	// Each tribe has its browser, which keeps the cookies it receives.
+	jars := map[string]map[string]*http.Cookie{"martin": {}, "dupont": {}}
 	answer := func(slug string, i int) string {
 		s := steps[i]
-		rec := f.do(s.method, "/tribes/"+slug+s.path, s.body)
+		var cookies []*http.Cookie
+		for _, c := range jars[slug] {
+			cookies = append(cookies, c)
+		}
+		rec := f.do(s.method, "/tribes/"+slug+s.path, s.body, cookies...)
 		body, _ := io.ReadAll(rec.Body)
 		h := rec.Header()
+		// Cookies as the client sees them, but their random value.
+		var set []string
+		for _, c := range rec.Result().Cookies() {
+			if c.MaxAge < 0 {
+				delete(jars[slug], c.Name)
+			} else {
+				jars[slug][c.Name] = c
+			}
+			c.Value = strings.Repeat("v", len(c.Value))
+			set = append(set, strings.ReplaceAll(c.String(), slug, "<slug>"))
+		}
 		return strings.Join([]string{
-			http.StatusText(rec.Code), h.Get("Content-Type"), h.Get("Cache-Control"),
+			http.StatusText(rec.Code), h.Get("Content-Type"), h.Get("Cache-Control"), strings.Join(set, ", "),
 			strings.ReplaceAll(string(body), slug, "<slug>"),
 		}, " | ")
 	}

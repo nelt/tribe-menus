@@ -1,7 +1,8 @@
 -- name: ReplaceDecoyCode :exec
-INSERT INTO decoy_codes (email_hash, expires_at, attempts_left)
-VALUES (?, ?, ?)
+INSERT INTO decoy_codes (email_hash, request_hash, expires_at, attempts_left)
+VALUES (?, ?, ?, ?)
 ON CONFLICT (email_hash) DO UPDATE SET
+    request_hash = excluded.request_hash,
     expires_at = excluded.expires_at,
     attempts_left = excluded.attempts_left;
 

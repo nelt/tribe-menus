@@ -88,10 +88,10 @@ for (const { name, got, want } of messageCases) {
 }
 
 const codeCases: { input: string; want: string }[] = [
-  { input: "482190", want: "482190" },
-  { input: "482 190", want: "482190" },
-  { input: "48-21-90", want: "482190" },
-  { input: "4821905", want: "482190" },
+  { input: "48219037", want: "48219037" },
+  { input: "4821 9037", want: "48219037" },
+  { input: "48-21-90-37", want: "48219037" },
+  { input: "482190375", want: "48219037" },
   { input: "48a", want: "48" },
   { input: "", want: "" },
 ];
@@ -103,12 +103,12 @@ for (const { input, want } of codeCases) {
 }
 
 const pasteCases: { name: string; value: string; start: number; end: number; text: string; want: { code: string; caret: number } | undefined }[] = [
-  { name: "empty field", value: "", start: 0, end: 0, text: "482 190", want: { code: "482190", caret: 6 } },
-  { name: "after the digits typed", value: "12", start: 2, end: 2, text: "3456", want: { code: "123456", caret: 6 } },
-  { name: "in the middle", value: "1256", start: 2, end: 2, text: "34", want: { code: "123456", caret: 4 } },
-  { name: "over a selection", value: "999999", start: 0, end: 6, text: "123-456", want: { code: "123456", caret: 6 } },
-  { name: "over a partial selection", value: "129956", start: 2, end: 4, text: "34", want: { code: "123456", caret: 4 } },
-  { name: "beyond six digits", value: "1234", start: 4, end: 4, text: "5678", want: { code: "123456", caret: 6 } },
+  { name: "empty field", value: "", start: 0, end: 0, text: "4821 9037", want: { code: "48219037", caret: 8 } },
+  { name: "after the digits typed", value: "12", start: 2, end: 2, text: "345678", want: { code: "12345678", caret: 8 } },
+  { name: "in the middle", value: "125678", start: 2, end: 2, text: "34", want: { code: "12345678", caret: 4 } },
+  { name: "over a selection", value: "99999999", start: 0, end: 8, text: "1234-5678", want: { code: "12345678", caret: 8 } },
+  { name: "over a partial selection", value: "12995678", start: 2, end: 4, text: "34", want: { code: "12345678", caret: 4 } },
+  { name: "beyond eight digits", value: "1234", start: 4, end: 4, text: "567890", want: { code: "12345678", caret: 8 } },
   { name: "no digit", value: "12", start: 2, end: 2, text: "bonjour", want: undefined },
   { name: "empty text", value: "12", start: 2, end: 2, text: "", want: undefined },
 ];

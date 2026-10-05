@@ -24,22 +24,6 @@ type Device struct {
 	InstalledApp bool
 }
 
-// String is the form of the device in the audit log, such as "phone · iOS · Safari · installed app".
-func (d Device) String() string {
-	var parts []string
-	for _, p := range []string{string(d.Type), d.OS, d.Browser} {
-		if p != "" {
-			parts = append(parts, p)
-		}
-	}
-	if d.InstalledApp {
-		parts = append(parts, "installed app")
-	} else {
-		parts = append(parts, "tab")
-	}
-	return strings.Join(parts, " · ")
-}
-
 // DetectDevice deduces the device from the User-Agent header. User-Agent Client Hints
 // wait for EF-04.
 func DetectDevice(userAgent string, installedApp bool) Device {

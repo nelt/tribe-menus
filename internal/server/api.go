@@ -15,7 +15,10 @@ import (
 
 const (
 	sessionCookie = "session"
-	maxBodyBytes  = 4 << 10
+	// codeRequestCookie holds the token of the last code request of the browser: a code is
+	// entered only from the browser that requested it (ENF-01; plan revue-securite, D5).
+	codeRequestCookie = "code_request"
+	maxBodyBytes      = 4 << 10
 )
 
 // Tribes gives the database of a tribe by its slug, or storage.ErrUnknownTribe.
@@ -152,9 +155,10 @@ func (a *api) requestCode(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &body) {
 		return
 	}
-	err := a.login.RequestCode(r.Context(), r.PathValue("tribe"), tribeOf(r), body.Email, clientIP(r))
+	token, err := a.login.RequestCode(r.Context(), r.PathValue("tribe"), tribeOf(r), body.Email, clientIP(r))
 	switch {
 	case err == nil:
+		setCodeRequestCookie(w, r, token, tribe.LoginCodeValidity)
 		w.WriteHeader(http.StatusAccepted)
 	case errors.Is(err, tribe.ErrInvalidEmail):
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errInvalidEmail})
@@ -165,8 +169,10 @@ func (a *api) requestCode(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// openSession: POST sessions {email, code, installedApp}. Opens the session and sets its
-// cookie, or tells an incorrect code with the attempts left, or a new code to request.
+// openSession: POST sessions {email, code, installedApp}, with the cookie of the code
+// request. Opens the session and sets its cookie, or tells an incorrect code with the
+// attempts left, or a new code to request: without the cookie of the request, an attempt
+// consumes nothing.
 func (a *api) openSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Email        string `json:"email"`
@@ -178,11 +184,16 @@ func (a *api) openSession(w http.ResponseWriter, r *http.Request) {
 	}
 	store := tribeOf(r)
 	device := tribe.DetectDevice(r.UserAgent(), body.InstalledApp)
-	session, token, err := a.login.OpenSession(r.Context(), r.PathValue("tribe"), store, body.Email, body.Code, device)
+	var requestToken string
+	if cookie, err := r.Cookie(codeRequestCookie); err == nil {
+		requestToken = cookie.Value
+	}
+	session, token, err := a.login.OpenSession(r.Context(), r.PathValue("tribe"), store, body.Email, body.Code, requestToken, device)
 	var incorrect *tribe.IncorrectCodeError
 	switch {
 	case err == nil:
 		setSessionCookie(w, r, token, session.ExpiresAt)
+		setCodeRequestCookie(w, r, "", -1)
 		a.writeSession(w, r, http.StatusCreated, session)
 	case errors.Is(err, tribe.ErrInvalidEmail):
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errInvalidEmail})
@@ -242,6 +253,24 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 		Path:     tribeBase(r.PathValue("tribe")),
 		MaxAge:   int(tribe.SessionLifetime / time.Second),
 		Expires:  expires,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// setCodeRequestCookie sets the cookie of a code request of the tribe, valid as long as the
+// code; a negative validity deletes it.
+func setCodeRequestCookie(w http.ResponseWriter, r *http.Request, token string, validity time.Duration) {
+	maxAge := int(validity / time.Second)
+	if validity < 0 {
+		maxAge = -1
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     codeRequestCookie,
+		Value:    token,
+		Path:     tribeBase(r.PathValue("tribe")),
+		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,

@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -148,7 +149,7 @@ func TestServeDevMailFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !regexp.MustCompile(`^\{"to":"alice@exemple.fr",.*\b\d{6}\b.*\}\n$`).Match(content) {
+	if !regexp.MustCompile(`^\{"to":"alice@exemple.fr",.*\b\d{8}\b.*\}\n$`).Match(content) {
 		t.Errorf("mail file = %q, want one message to alice@exemple.fr with the code", content)
 	}
 }
@@ -268,4 +269,101 @@ func (b *syncBuffer) String() string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.buf.String()
+}
+
+// TestServerTimeouts: a connection that stops sending its body, or stays idle after a
+// response, is closed at the timeout, instead of holding a goroutine and a file descriptor
+// until the shutdown fails.
+func TestServerTimeouts(t *testing.T) {
+	short := timeouts{readHeader: time.Second, read: 300 * time.Millisecond, write: time.Second, idle: 300 * time.Millisecond}
+	cases := []struct {
+		name    string
+		request string
+	}{
+		{name: "body never sent", request: "POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 100\r\n\r\n"},
+		{name: "idle after a response", request: "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = io.ReadAll(r.Body) })
+			srv := newHTTPServer(handler, nil, short)
+			go func() { _ = srv.Serve(listener) }()
+			t.Cleanup(func() { _ = srv.Close() })
+
+			conn, err := net.Dial("tcp", listener.Addr().String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			if _, err := io.WriteString(conn, tc.request); err != nil {
+				t.Fatal(err)
+			}
+			if err := conn.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			// The server answers or not, then closes: reading ends with EOF, not the deadline.
+			if _, err := io.Copy(io.Discard, conn); err != nil {
+				t.Errorf("connection still open after the timeout: %v", err)
+			}
+		})
+	}
+}
+
+func TestDefaultTimeouts(t *testing.T) {
+	d := defaultTimeouts
+	srv := newHTTPServer(http.NotFoundHandler(), nil, d)
+	if srv.ReadHeaderTimeout != d.readHeader || srv.ReadTimeout != d.read || srv.WriteTimeout != d.write || srv.IdleTimeout != d.idle {
+		t.Errorf("server timeouts %v, %v, %v, %v, want %+v", srv.ReadHeaderTimeout, srv.ReadTimeout, srv.WriteTimeout, srv.IdleTimeout, d)
+	}
+	for _, v := range []time.Duration{d.readHeader, d.read, d.write, d.idle} {
+		if v <= 0 || v > time.Minute {
+			t.Errorf("timeouts %+v: each one between 0 and a minute", d)
+		}
+	}
+}
+
+// TestShutdownWithSlowClient: a connection still reading its body at the end of the
+// shutdown wait is closed, and the shutdown succeeds: a slow client cannot make a
+// deployment fail (review of PR #40, point 1).
+func TestShutdownWithSlowClient(t *testing.T) {
+	defer func(d time.Duration) { shutdownTimeout = d }(shutdownTimeout)
+	shutdownTimeout = 300 * time.Millisecond
+
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "web", "dist", "index.html"), `<base href="{{.Base}}">`)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	logs := &syncBuffer{}
+	done := make(chan int, 1)
+	go func() {
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", filepath.Join(root, "data"), "-addr", "localhost:0"}, logs)
+	}()
+	base := waitForAddress(t, logs)
+
+	conn, err := net.Dial("tcp", strings.TrimPrefix(base, "http://"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := io.WriteString(conn, "POST /tribes/demo/api/login-codes HTTP/1.1\r\nHost: localhost\r\nContent-Length: 100\r\n\r\n"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(100 * time.Millisecond) // the request reaches its handler
+
+	cancel()
+	select {
+	case code := <-done:
+		if code != 0 {
+			t.Errorf("exit code = %d, want 0 (logs: %s)", code, logs.String())
+		}
+		if !strings.Contains(logs.String(), "connections closed at the end of the shutdown wait") {
+			t.Errorf("no log of the closed connections: %s", logs.String())
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not stop")
+	}
 }

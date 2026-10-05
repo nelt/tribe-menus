@@ -25,7 +25,7 @@ async function openCodeScreen(page: Page, script: Script = {}) {
   return received;
 }
 
-async function submitCode(page: Page, code = "123456") {
+async function submitCode(page: Page, code = "12345678") {
   await page.getByLabel("Code de connexion").fill(code);
   await page.getByRole("button", { name: "Se connecter" }).click();
 }
@@ -58,11 +58,11 @@ test("network error on the email form: the form stays as it was", async ({ page 
 
 test("code screen: the message does not say whether the address is a member", async ({ page }) => {
   const received = await openCodeScreen(page);
-  await expect(page.getByText(`Si ${email} fait partie de la tribu, un code à 6 chiffres vient d’y être envoyé.`)).toBeVisible();
+  await expect(page.getByText(`Si ${email} fait partie de la tribu, un code à 8 chiffres vient d’y être envoyé.`)).toBeVisible();
   const field = page.getByLabel("Code de connexion");
   await expect(field).toHaveAttribute("inputmode", "numeric");
   await expect(field).toHaveAttribute("autocomplete", "one-time-code");
-  await expect(field).toHaveAttribute("maxlength", "6");
+  await expect(field).toHaveAttribute("maxlength", "8");
   await expect(field).toBeFocused();
   expect(received).toContainEqual({ method: "POST", path: "login-codes", body: { email } });
 });
@@ -71,10 +71,10 @@ test("the code screen follows the address requested, even if the field changes m
   const received = await openLogin(page, { requestCode: [{ ...replies.codeSent, delayMs: 1500 }], openSession: [replies.incorrectCode(2)] });
   await requestCode(page);
   await page.getByLabel("Votre adresse e-mail").fill("alice@exemple.com");
-  await expect(page.getByText(`Si ${email} fait partie de la tribu, un code à 6 chiffres vient d’y être envoyé.`)).toBeVisible();
+  await expect(page.getByText(`Si ${email} fait partie de la tribu, un code à 8 chiffres vient d’y être envoyé.`)).toBeVisible();
   await submitCode(page);
   await expect(page.getByRole("alert")).toBeVisible();
-  expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "123456", installedApp: false } });
+  expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "12345678", installedApp: false } });
 });
 
 async function paste(page: Page, text: string) {
@@ -87,21 +87,21 @@ async function paste(page: Page, text: string) {
 
 test("pasted code: only the digits are kept, even with spaces", async ({ page }) => {
   const received = await openCodeScreen(page, { openSession: [replies.incorrectCode(2)] });
-  await paste(page, "12 34-56");
-  await expect(page.getByLabel("Code de connexion")).toHaveValue("123456");
+  await paste(page, "1234 56-78");
+  await expect(page.getByLabel("Code de connexion")).toHaveValue("12345678");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
-  expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "123456", installedApp: false } });
+  expect(received).toContainEqual({ method: "POST", path: "sessions", body: { email, code: "12345678", installedApp: false } });
 });
 
 test("pasted code: inserted at the caret, a paste without digit changes nothing", async ({ page }) => {
   await openCodeScreen(page);
   const field = page.getByLabel("Code de connexion");
   await field.pressSequentially("12");
-  await paste(page, "3456");
-  await expect(field).toHaveValue("123456");
+  await paste(page, "345678");
+  await expect(field).toHaveValue("12345678");
   await paste(page, "bonjour");
-  await expect(field).toHaveValue("123456");
+  await expect(field).toHaveValue("12345678");
   await field.fill("12");
   await paste(page, "bonjour");
   await expect(field).toHaveValue("12");
@@ -109,10 +109,10 @@ test("pasted code: inserted at the caret, a paste without digit changes nothing"
 
 test("incorrect code, with the attempts left", async ({ page }) => {
   await openCodeScreen(page, { openSession: [replies.incorrectCode(2), replies.incorrectCode(1)] });
-  await submitCode(page, "111111");
+  await submitCode(page, "11111111");
   await expect(page.getByRole("alert")).toHaveText("Code incorrect. Il vous reste 2 essais.");
   await expect(page.getByLabel("Code de connexion")).toHaveAttribute("aria-invalid", "true");
-  await submitCode(page, "222222");
+  await submitCode(page, "22222222");
   await expect(page.getByRole("alert")).toHaveText("Code incorrect. Il vous reste 1 essai.");
 });
 
@@ -153,9 +153,9 @@ test("resend refused: the message of the email screen, the code received stays u
 
 test("network error on the code form", async ({ page }) => {
   await openCodeScreen(page, { openSession: [replies.networkError] });
-  await submitCode(page, "654321");
+  await submitCode(page, "87654321");
   await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
-  await expect(page.getByLabel("Code de connexion")).toHaveValue("654321");
+  await expect(page.getByLabel("Code de connexion")).toHaveValue("87654321");
 });
 
 test("“Modifier” goes back to the email, which is kept", async ({ page }) => {

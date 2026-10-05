@@ -28,9 +28,10 @@ type AuditEntry struct {
 	MemberEmail Email
 	// AuthorID is the member who made the operation, 0 for the admin command.
 	AuthorID int64
-	// SessionID and DetectedDevice are set for an operation on a session.
-	SessionID      int64
-	DetectedDevice string
+	// SessionID and Device are set for an operation on a session. The label of the device
+	// is composed by the interface (EF-07).
+	SessionID int64
+	Device    Device
 }
 
 // ByAdminCommand reports whether the operation was made by the admin command.
@@ -159,12 +160,17 @@ func (s *Store) AuditLog(ctx context.Context) ([]AuditEntry, error) {
 			return nil, fmt.Errorf("audit log: entry %d: %w", row.ID, err)
 		}
 		entries = append(entries, AuditEntry{
-			At:             at,
-			Operation:      AuditOperation(row.Operation),
-			MemberEmail:    Email(row.MemberEmail.String),
-			AuthorID:       row.AuthorID.Int64,
-			SessionID:      row.SessionID.Int64,
-			DetectedDevice: row.DetectedDevice.String,
+			At:          at,
+			Operation:   AuditOperation(row.Operation),
+			MemberEmail: Email(row.MemberEmail.String),
+			AuthorID:    row.AuthorID.Int64,
+			SessionID:   row.SessionID.Int64,
+			Device: Device{
+				Type:         DeviceType(row.DeviceType.String),
+				OS:           row.Os.String,
+				Browser:      row.Browser.String,
+				InstalledApp: row.InstalledApp.Int64 == 1,
+			},
 		})
 	}
 	return entries, nil

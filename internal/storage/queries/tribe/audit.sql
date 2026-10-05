@@ -1,6 +1,6 @@
 -- name: InsertAuditEntry :exec
-INSERT INTO audit_log (at, operation, member_id, author_id, session_id, detected_device)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO audit_log (at, operation, member_id, author_id, session_id, device_type, os, browser, installed_app)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: AuditLog :many
 SELECT audit_log.*, members.email AS member_email

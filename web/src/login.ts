@@ -129,14 +129,17 @@ export function errorMessage(error: EmailError | CodeError, attemptsLeft = 0): s
   }
 }
 
-/** Keeps the digits of a typed or pasted code, six at most. */
+/** Number of digits of a login code (ENF-01). */
+export const codeLength = 8;
+
+/** Keeps the digits of a typed or pasted code, codeLength at most. */
 export function normalizeCode(input: string): string {
-  return input.replace(/\D/g, "").slice(0, 6);
+  return input.replace(/\D/g, "").slice(0, codeLength);
 }
 
 /**
  * The code once a text is pasted over the selection [start, end) of the field: the digits
- * of the text take the place of the selection, six digits at most in all, and the caret
+ * of the text take the place of the selection, codeLength digits at most in all, and the caret
  * follows them. Undefined when the text has no digit: the paste changes nothing.
  */
 export function pasteIntoCode(value: string, start: number, end: number, text: string): { code: string; caret: number } | undefined {

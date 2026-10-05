@@ -7,6 +7,7 @@ import {
   afterResend,
   afterSessionFailure,
   changeEmail,
+  codeLength,
   emailEdited,
   errorMessage,
   initialLoginState,
@@ -51,6 +52,20 @@ export class LoginScreen extends LitElement {
     if (previous !== undefined && previous.step !== this.state.step) {
       this.querySelector<HTMLInputElement>(this.state.step === "code" ? ".code-input" : ".field-input")?.focus();
     }
+    if (this.state.step === "code") {
+      void this.#measureDigit();
+    }
+  }
+
+  // 1ch is the width of a proportional zero, wider than a tabular digit: the gap would add
+  // up from cell to cell. The field is drawn with the width of the digits it shows.
+  async #measureDigit() {
+    await document.fonts.ready;
+    const probe = this.querySelector<HTMLElement>(".code-probe");
+    const width = (probe?.getBoundingClientRect().width ?? 0) / 10;
+    if (probe !== null && width > 0) {
+      probe.parentElement?.style.setProperty("--code-digit", `${width}px`);
+    }
   }
 
   override render() {
@@ -90,7 +105,7 @@ export class LoginScreen extends LitElement {
       </label>
       ${error === undefined ? nothing : alertMessage(errorId, errorMessage(error))}
       <button class="button-primary" type="submit" ?disabled=${state.blocked}>Recevoir un code</button>
-      <p class="login-hint">Pas de mot de passe : un code à 6 chiffres vous est envoyé par e-mail.</p>
+      <p class="login-hint">Pas de mot de passe : un code à ${codeLength} chiffres vous est envoyé par e-mail.</p>
     </form>`;
   }
 
@@ -100,28 +115,30 @@ export class LoginScreen extends LitElement {
       return nothing;
     }
     const error = state.error;
-    const cells = [0, 1, 2, 3, 4, 5].map(
-      (i) => html`<span class="code-cell ${i < this.code.length ? "code-cell--filled" : ""}"></span>`,
+    const cells = Array.from(
+      { length: codeLength },
+      (_, i) => html`<span class="code-cell ${i < this.code.length ? "code-cell--filled" : ""}"></span>`,
     );
     const fieldClass = state.dead ? "code-field--dead" : error === "incorrect-code" ? "code-field--error" : "";
     return html`<form class="login-form" novalidate @submit=${this.#openSession}>
       <div class="login-intro">
         <h2 class="login-title">Vérifiez vos e-mails</h2>
         <p class="login-text">
-          Si <strong>${state.email}</strong> fait partie de la tribu, un code à 6 chiffres vient d’y être envoyé.
+          Si <strong>${state.email}</strong> fait partie de la tribu, un code à ${codeLength} chiffres vient d’y être envoyé.
           <button class="link-button" type="button" @click=${() => (this.state = changeEmail(this.state))}>Modifier</button>
         </p>
       </div>
       <label class="code-field ${fieldClass}">
         <span class="visually-hidden">Code de connexion</span>
         <span class="code-cells" aria-hidden="true">${cells}</span>
+        <span class="code-probe" aria-hidden="true">0123456789</span>
         <input
           class="code-input"
           type="text"
           name="code"
           inputmode="numeric"
           autocomplete="one-time-code"
-          maxlength="6"
+          maxlength=${codeLength}
           .value=${this.code}
           ?disabled=${state.dead}
           aria-invalid=${error === "incorrect-code" ? "true" : "false"}
@@ -210,8 +227,8 @@ export class LoginScreen extends LitElement {
     if (this.busy || this.state.step !== "code" || this.state.dead) {
       return;
     }
-    // An incomplete code would cost an attempt: the field waits for its six digits.
-    if (this.code.length !== 6) {
+    // An incomplete code would cost an attempt: the field waits for all its digits.
+    if (this.code.length !== codeLength) {
       this.querySelector<HTMLInputElement>(".code-input")?.focus();
       return;
     }

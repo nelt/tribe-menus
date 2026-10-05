@@ -41,40 +41,18 @@ func (q *Queries) CountCodeRequestsByIP(ctx context.Context, arg CountCodeReques
 	return count, err
 }
 
-const countCodeRequestsByTribe = `-- name: CountCodeRequestsByTribe :one
-SELECT count(*) FROM code_requests WHERE slug = ? AND at > ?
-`
-
-type CountCodeRequestsByTribeParams struct {
-	Slug string
-	At   string
-}
-
-func (q *Queries) CountCodeRequestsByTribe(ctx context.Context, arg CountCodeRequestsByTribeParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countCodeRequestsByTribe, arg.Slug, arg.At)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const insertCodeRequest = `-- name: InsertCodeRequest :exec
-INSERT INTO code_requests (at, slug, email_hash, ip_hash) VALUES (?, ?, ?, ?)
+INSERT INTO code_requests (at, email_hash, ip_hash) VALUES (?, ?, ?)
 `
 
 type InsertCodeRequestParams struct {
 	At        string
-	Slug      string
 	EmailHash []byte
 	IpHash    []byte
 }
 
 func (q *Queries) InsertCodeRequest(ctx context.Context, arg InsertCodeRequestParams) error {
-	_, err := q.db.ExecContext(ctx, insertCodeRequest,
-		arg.At,
-		arg.Slug,
-		arg.EmailHash,
-		arg.IpHash,
-	)
+	_, err := q.db.ExecContext(ctx, insertCodeRequest, arg.At, arg.EmailHash, arg.IpHash)
 	return err
 }
 

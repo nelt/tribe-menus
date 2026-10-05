@@ -81,6 +81,9 @@ type loginState struct {
 	opened []*httptest.ResponseRecorder
 	// signIn is the response that opened the last session.
 	signIn *httptest.ResponseRecorder
+	// foreign are the responses to the last attempts made from another device than the
+	// one of the code request.
+	foreign []*httptest.ResponseRecorder
 	// mailMark is the number of emails sent before the last action; ignored, the emails of
 	// reference requests made by the outcome steps.
 	mailMark int
@@ -187,6 +190,14 @@ func (w *world) newDevice() *device {
 	w.auth.nextIP++
 	d := &device{jar: newJar(), ip: fmt.Sprintf("192.0.2.%d", w.auth.nextIP)}
 	w.auth.device = d
+	return d
+}
+
+// otherDevice returns a new device with its own IP, without making it the current one.
+func (w *world) otherDevice() *device {
+	current := w.auth.device
+	d := w.newDevice()
+	w.auth.device = current
 	return d
 }
 

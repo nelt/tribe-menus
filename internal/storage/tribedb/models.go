@@ -9,18 +9,27 @@ import (
 )
 
 type AuditLog struct {
-	ID             int64
-	At             string
-	Operation      string
-	MemberID       int64
-	AuthorID       sql.NullInt64
-	SessionID      sql.NullInt64
-	DetectedDevice sql.NullString
+	ID           int64
+	At           string
+	Operation    string
+	MemberID     int64
+	AuthorID     sql.NullInt64
+	SessionID    sql.NullInt64
+	DeviceType   sql.NullString
+	Os           sql.NullString
+	Browser      sql.NullString
+	InstalledApp sql.NullInt64
+}
+
+type CodeRequest struct {
+	ID int64
+	At string
 }
 
 type LoginCode struct {
 	MemberID     int64
 	CodeHash     []byte
+	RequestHash  []byte
 	ExpiresAt    string
 	AttemptsLeft int64
 }

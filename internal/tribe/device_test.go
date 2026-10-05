@@ -80,19 +80,3 @@ func TestDetectDeviceInstalledApp(t *testing.T) {
 		t.Error("InstalledApp is not the value told by the client")
 	}
 }
-
-func TestDeviceString(t *testing.T) {
-	cases := []struct {
-		device Device
-		want   string
-	}{
-		{device: Device{Type: Phone, OS: "iOS", Browser: "Safari", InstalledApp: true}, want: "phone · iOS · Safari · installed app"},
-		{device: Device{Type: Computer, OS: "Linux", Browser: "Firefox"}, want: "computer · Linux · Firefox · tab"},
-		{device: Device{}, want: "tab"},
-	}
-	for _, tc := range cases {
-		if got := tc.device.String(); got != tc.want {
-			t.Errorf("%+v.String() = %q, want %q", tc.device, got, tc.want)
-		}
-	}
-}

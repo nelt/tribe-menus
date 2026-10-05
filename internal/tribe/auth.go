@@ -25,45 +25,56 @@ type Login struct {
 }
 
 // RequestCode asks for a code for the address in the tribe of this slug, from ip. The
-// tribe store t is nil for an unknown tribe. It returns ErrInvalidEmail, ErrTooManyRequests,
-// or nil, whether a code was sent or not.
-func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail, ip string) error {
+// tribe store t is nil for an unknown tribe. It returns the token of the request, for a
+// cookie of the browser, whether a code was sent or not; or ErrInvalidEmail or
+// ErrTooManyRequests.
+func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail, ip string) (string, error) {
 	email, err := ParseEmail(rawEmail)
 	if err != nil {
-		return err
+		return "", err
 	}
 	now := l.Now()
 	req := NewCodeRequest(slug, email, ip)
 	allowed, err := l.RateLimit.RecordCodeRequest(ctx, req, now)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !allowed {
-		return ErrTooManyRequests
+		return "", ErrTooManyRequests
+	}
+	token, err := newToken()
+	if err != nil {
+		return "", fmt.Errorf("request code: %w", err)
 	}
 
 	member, ok, err := activeMember(ctx, t, email)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !ok {
-		return l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(now))
+		if err := l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(token, now)); err != nil {
+			return "", err
+		}
+		return token, nil
 	}
 	code, err := newLoginCode()
 	if err != nil {
-		return err
+		return "", err
 	}
-	if err := t.ReplaceLoginCode(ctx, member.ID, newRealCode(code, now)); err != nil {
-		return err
+	// Counted by the rate limit database first, like any other request: what it records
+	// does not depend on membership (ADR 0021).
+	if err := t.IssueLoginCode(ctx, member.ID, newRealCode(code, token, now), now); err != nil {
+		return "", err
 	}
 	l.Mailer.SendLoginCode(string(email), code)
-	return nil
+	return token, nil
 }
 
 // OpenSession checks the code entered for the address in the tribe of this slug (t nil for
-// an unknown tribe) and opens a session for the device. It returns the session and its
-// token, or ErrInvalidEmail, ErrNewCodeNeeded or *IncorrectCodeError.
-func (l *Login) OpenSession(ctx context.Context, slug string, t *Store, rawEmail, code string, device Device) (Session, string, error) {
+// an unknown tribe), with the token of the request presented by the browser, and opens a
+// session for the device. It returns the session and its token, or ErrInvalidEmail,
+// ErrNewCodeNeeded or *IncorrectCodeError.
+func (l *Login) OpenSession(ctx context.Context, slug string, t *Store, rawEmail, code, requestToken string, device Device) (Session, string, error) {
 	email, err := ParseEmail(rawEmail)
 	if err != nil {
 		return Session{}, "", err
@@ -74,9 +85,9 @@ func (l *Login) OpenSession(ctx context.Context, slug string, t *Store, rawEmail
 		return Session{}, "", err
 	}
 	if !ok {
-		return Session{}, "", l.RateLimit.CheckDecoyCode(ctx, emailHash(slug, email), code, now)
+		return Session{}, "", l.RateLimit.CheckDecoyCode(ctx, emailHash(slug, email), code, requestToken, now)
 	}
-	return t.OpenSession(ctx, member.ID, code, device, now)
+	return t.OpenSession(ctx, member.ID, code, requestToken, device, now)
 }
 
 // Session returns the session of the token in the tribe store t, extending it, or
