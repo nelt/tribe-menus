@@ -352,12 +352,15 @@ input {
 }
 
 /*
- * Code: a single field drawn as six cells (D17). The digits are tabular, so that each one
- * falls in its cell: the pitch of a cell is a sixth of the field plus a gap, the letter
- * spacing completes the width of a digit (1ch) up to this pitch. The field is wider than
- * the cells, so that the caret after the sixth digit never scrolls the text.
+ * Code: a single field drawn as one cell per digit (D17). The digits are tabular, so that
+ * each one falls in its cell: the pitch of a cell is the field divided by the number of
+ * digits plus a gap, the letter spacing completes the width of a digit (1ch) up to this
+ * pitch. The field is wider than the cells, so that the caret after the last digit never
+ * scrolls the text. --code-length follows codeLength (login.ts); --code-digit, the width
+ * of a tabular digit, is measured by the login screen on the probe, 1ch until then.
  */
 .code-field {
+  --code-length: 8;
   --code-gap: 8px;
   position: relative;
   container-type: inline-size;
@@ -376,7 +379,7 @@ input {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--code-length), minmax(0, 1fr));
   gap: var(--code-gap);
   pointer-events: none;
 }
@@ -402,20 +405,30 @@ input {
 .code-input {
   position: relative;
   display: block;
-  width: calc(100% + 100cqw / 6);
+  width: calc(100% + 100cqw / var(--code-length));
   height: 56px;
   margin: 0;
-  padding: 0 0 0 calc((100cqw - 5 * var(--code-gap)) / 12 - 0.5ch);
+  padding: 0 0 0 calc((100cqw - (var(--code-length) - 1) * var(--code-gap)) / (2 * var(--code-length)) - var(--code-digit, 1ch) / 2);
   border: none;
   background: transparent;
   color: var(--color-text);
   caret-color: var(--color-action);
+  letter-spacing: calc((100cqw + var(--code-gap)) / var(--code-length) - var(--code-digit, 1ch));
+  outline: none;
+}
+
+.code-input,
+.code-probe {
   font-family: var(--font-heading);
   font-size: 26px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  letter-spacing: calc((100cqw + var(--code-gap)) / 6 - 1ch);
-  outline: none;
+}
+
+.code-probe {
+  position: absolute;
+  visibility: hidden;
+  white-space: pre;
 }
 
 .code-input:disabled {

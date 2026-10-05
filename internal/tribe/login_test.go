@@ -3,31 +3,41 @@ package tribe
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestNewLoginCode(t *testing.T) {
-	sixDigits := regexp.MustCompile(`^[0-9]{6}$`)
+	eightDigits := regexp.MustCompile(`^[0-9]{8}$`)
 	seen := map[string]bool{}
+	// Drawn among 10^8 codes, a single one of 1000 has 99 chances out of 100 to start
+	// with something else than 00: all of them do only if the draw ignores the length.
+	beyondSix := 0
 	for range 1000 {
 		code, err := newLoginCode()
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !sixDigits.MatchString(code) {
-			t.Fatalf("code %q is not 6 digits", code)
+		if !eightDigits.MatchString(code) {
+			t.Fatalf("code %q is not 8 digits", code)
+		}
+		if !strings.HasPrefix(code, "00") {
+			beyondSix++
 		}
 		seen[code] = true
 	}
 	if len(seen) < 990 {
 		t.Errorf("%d distinct codes out of 1000", len(seen))
 	}
+	if beyondSix < 950 {
+		t.Errorf("%d codes out of 1000 do not start with 00, want about 990: the draw ignores the length", beyondSix)
+	}
 }
 
 func TestLoginCodeCheck(t *testing.T) {
 	now := time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC)
-	issued := newRealCode("123456", now)
+	issued := newRealCode("12345678", now)
 	withAttempts := func(n int) LoginCode {
 		c := issued
 		c.AttemptsLeft = n
@@ -42,18 +52,18 @@ func TestLoginCodeCheck(t *testing.T) {
 		wantAttempts int // for an incorrect code
 		wantKeep     bool
 	}{
-		{name: "right code", code: issued, entered: "123456", at: now},
-		{name: "right code just before expiry", code: issued, entered: "123456", at: now.Add(LoginCodeValidity - time.Millisecond)},
-		{name: "wrong code, first attempt", code: issued, entered: "654321", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
-		{name: "wrong code, second attempt", code: withAttempts(2), entered: "654321", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 1, wantKeep: true},
-		{name: "wrong code, third attempt invalidates", code: withAttempts(1), entered: "654321", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 0},
-		{name: "right code after 2 wrong ones", code: withAttempts(1), entered: "123456", at: now},
-		{name: "right code without attempts left", code: withAttempts(0), entered: "123456", at: now, wantErr: ErrNewCodeNeeded},
-		{name: "right code at expiry", code: issued, entered: "123456", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
-		{name: "wrong code after expiry", code: issued, entered: "000000", at: now.Add(time.Hour), wantErr: ErrNewCodeNeeded},
-		{name: "decoy code", code: NewDecoyCode(now), entered: "123456", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
+		{name: "right code", code: issued, entered: "12345678", at: now},
+		{name: "right code just before expiry", code: issued, entered: "12345678", at: now.Add(LoginCodeValidity - time.Millisecond)},
+		{name: "wrong code, first attempt", code: issued, entered: "87654321", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
+		{name: "wrong code, second attempt", code: withAttempts(2), entered: "87654321", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 1, wantKeep: true},
+		{name: "wrong code, third attempt invalidates", code: withAttempts(1), entered: "87654321", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 0},
+		{name: "right code after 2 wrong ones", code: withAttempts(1), entered: "12345678", at: now},
+		{name: "right code without attempts left", code: withAttempts(0), entered: "12345678", at: now, wantErr: ErrNewCodeNeeded},
+		{name: "right code at expiry", code: issued, entered: "12345678", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
+		{name: "wrong code after expiry", code: issued, entered: "00000000", at: now.Add(time.Hour), wantErr: ErrNewCodeNeeded},
+		{name: "decoy code", code: NewDecoyCode(now), entered: "12345678", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
 		{name: "decoy code, empty input", code: NewDecoyCode(now), entered: "", at: now, wantErr: &IncorrectCodeError{}, wantAttempts: 2, wantKeep: true},
-		{name: "expired decoy code", code: NewDecoyCode(now), entered: "123456", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
+		{name: "expired decoy code", code: NewDecoyCode(now), entered: "12345678", at: now.Add(LoginCodeValidity), wantErr: ErrNewCodeNeeded},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

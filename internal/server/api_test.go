@@ -72,7 +72,7 @@ func (f *apiFixture) do(method, target, body string, cookies ...*http.Cookie) *h
 	return rec
 }
 
-var sixDigits = regexp.MustCompile(`\b[0-9]{6}\b`)
+var eightDigits = regexp.MustCompile(`\b[0-9]{8}\b`)
 
 // signIn signs in to the tribe and returns the session cookie.
 func (f *apiFixture) signIn(t *testing.T, slug, email string) *http.Cookie {
@@ -82,7 +82,7 @@ func (f *apiFixture) signIn(t *testing.T, slug, email string) *http.Cookie {
 	}
 	f.outbox.Wait()
 	msgs := f.recorder.Messages()
-	code := sixDigits.FindString(msgs[len(msgs)-1].Body)
+	code := eightDigits.FindString(msgs[len(msgs)-1].Body)
 	rec := f.do("POST", "/tribes/"+slug+"/api/sessions", `{"email":"`+email+`","code":"`+code+`"}`)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("sessions: status %d, body %s", rec.Code, rec.Body)
@@ -147,7 +147,7 @@ func TestAPIErrors(t *testing.T) {
 	}{
 		{name: "malformed address", method: "POST", target: "/tribes/martin/api/login-codes", body: `{"email":"alice"}`, wantStatus: 400, wantBody: `{"error":"invalid_email"}`},
 		{name: "malformed body", method: "POST", target: "/tribes/martin/api/login-codes", body: `{`, wantStatus: 400, wantBody: `{"error":"bad_request"}`},
-		{name: "code never requested", method: "POST", target: "/tribes/martin/api/sessions", body: `{"email":"alice@exemple.fr","code":"123456"}`, wantStatus: 400, wantBody: `{"error":"new_code_needed"}`},
+		{name: "code never requested", method: "POST", target: "/tribes/martin/api/sessions", body: `{"email":"alice@exemple.fr","code":"12345678"}`, wantStatus: 400, wantBody: `{"error":"new_code_needed"}`},
 		{name: "no session", method: "GET", target: "/tribes/martin/api/session", wantStatus: 401, wantBody: `{"error":"no_session"}`},
 		{name: "sign out without session", method: "DELETE", target: "/tribes/martin/api/session", wantStatus: 401, wantBody: `{"error":"no_session"}`},
 		{name: "unknown API path", method: "GET", target: "/tribes/martin/api/nope", wantStatus: 404, wantBody: `{"error":"not_found"}`},
@@ -200,12 +200,12 @@ func TestUnknownTribeAnswersAlike(t *testing.T) {
 		{"GET", "/", ""},
 		{"GET", "/planning", ""},
 		{"GET", "/api/session", ""},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
 		{"POST", "/api/login-codes", `{"email":"alice@exemple.fr"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
-		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
+		{"POST", "/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`},
 		{"DELETE", "/api/session", ""},
 	}
 	answer := func(slug string, i int) string {

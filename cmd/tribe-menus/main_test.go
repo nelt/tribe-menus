@@ -148,7 +148,7 @@ func TestServeDevMailFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !regexp.MustCompile(`^\{"to":"alice@exemple.fr",.*\b\d{6}\b.*\}\n$`).Match(content) {
+	if !regexp.MustCompile(`^\{"to":"alice@exemple.fr",.*\b\d{8}\b.*\}\n$`).Match(content) {
 		t.Errorf("mail file = %q, want one message to alice@exemple.fr with the code", content)
 	}
 }

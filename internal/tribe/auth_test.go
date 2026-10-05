@@ -222,7 +222,7 @@ func TestMalformedSlugIsNotStored(t *testing.T) {
 		t.Errorf("sent = %v, want nothing", f.mailer.sent)
 	}
 	var incorrect *IncorrectCodeError
-	if _, _, err := f.login.OpenSession(ctx, slug, nil, "alice@exemple.fr", "123456", Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+	if _, _, err := f.login.OpenSession(ctx, slug, nil, "alice@exemple.fr", "12345678", Device{}); !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
 		t.Errorf("open session: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
 	}
 
@@ -244,7 +244,7 @@ func TestOpenSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	code := f.mailer.last(t, "alice@exemple.fr")
-	wrong := "000000"
+	wrong := "00000000"
 	if code == wrong {
 		wrong = "111111"
 	}

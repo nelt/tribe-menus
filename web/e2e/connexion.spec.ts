@@ -19,7 +19,7 @@ async function codeSentTo(address: string): Promise<string> {
         .split("\n")
         .filter((line) => line !== "")
         .map((line) => JSON.parse(line) as { to: string; body: string });
-      code = messages.filter((m) => m.to === address).at(-1)?.body.match(/\b\d{6}\b/)?.[0];
+      code = messages.filter((m) => m.to === address).at(-1)?.body.match(/\b\d{8}\b/)?.[0];
       return code;
     })
     .toBeDefined();
@@ -63,6 +63,6 @@ test("an unknown tribe shows the same screens as an existing one (ENF-02)", asyn
   expect(await page.locator("body").innerText()).toBe(existing);
 
   await requestCode(page, "alice@exemple.fr");
-  await expect(page.getByText("Si alice@exemple.fr fait partie de la tribu, un code à 6 chiffres vient d’y être envoyé.")).toBeVisible();
+  await expect(page.getByText("Si alice@exemple.fr fait partie de la tribu, un code à 8 chiffres vient d’y être envoyé.")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });

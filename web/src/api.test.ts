@@ -71,8 +71,8 @@ test("Api.requestCode sends the address", async () => {
 
 test("Api.openSession sends the code and whether the app is installed", async () => {
   const { api, requests } = apiWith(async () => jsonResponse(201, sessionBody));
-  assert.deepEqual(await api.openSession("alice@exemple.fr", "123456", true), { kind: "ok", value: sessionBody });
-  assert.deepEqual(requests, [{ url: "api/sessions", method: "POST", body: { email: "alice@exemple.fr", code: "123456", installedApp: true } }]);
+  assert.deepEqual(await api.openSession("alice@exemple.fr", "12345678", true), { kind: "ok", value: sessionBody });
+  assert.deepEqual(requests, [{ url: "api/sessions", method: "POST", body: { email: "alice@exemple.fr", code: "12345678", installedApp: true } }]);
 });
 
 test("Api.getSession: a body that is not a session is a network error", async () => {

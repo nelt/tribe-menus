@@ -15,7 +15,7 @@ import (
 const (
 	LoginCodeValidity = 10 * time.Minute
 	LoginCodeAttempts = 3
-	loginCodeDigits   = 6
+	loginCodeDigits   = 8
 
 	// SessionLifetime is the sliding expiry of a session: each use extends it.
 	SessionLifetime = 90 * 24 * time.Hour
@@ -42,9 +42,12 @@ func (e *IncorrectCodeError) Error() string {
 	return fmt.Sprintf("incorrect login code, %d attempts left", e.AttemptsLeft)
 }
 
-// newLoginCode draws a code of 6 digits with crypto/rand.
+// loginCodeBound is the number of codes: 10^loginCodeDigits.
+var loginCodeBound = new(big.Int).Exp(big.NewInt(10), big.NewInt(loginCodeDigits), nil)
+
+// newLoginCode draws a code of loginCodeDigits digits with crypto/rand, among all of them.
 func newLoginCode() (string, error) {
-	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
+	n, err := rand.Int(rand.Reader, loginCodeBound)
 	if err != nil {
 		return "", fmt.Errorf("draw a login code: %w", err)
 	}

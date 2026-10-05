@@ -24,7 +24,7 @@ import (
 
 const sessionCookie = "session"
 
-var loginCodePattern = regexp.MustCompile(`\b[0-9]{6}\b`)
+var loginCodePattern = regexp.MustCompile(`\b[0-9]{8}\b`)
 
 // apiError is the body of an error response of the API.
 type apiError struct {
@@ -128,7 +128,7 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	})
 
 	// Outcomes.
-	sc.Step(`^un code à 6 chiffres est envoyé à "([^"]*)"$`, w.codeSentTo)
+	sc.Step(`^un code à 8 chiffres est envoyé à "([^"]*)"$`, w.codeSentTo)
 	sc.Step(`^je suis connecté à la tribu "([^"]*)"$`, w.connectedTo)
 	sc.Step(`^une session est ouverte pour cet appareil$`, w.sessionOpenForDevice)
 	sc.Step(`^l'application affiche le même message que pour une adresse membre$`, w.sameAnswerAsMember)
@@ -300,7 +300,7 @@ func (w *world) receiveCode(email string) error {
 		}
 	}
 	if len(codes) != 1 {
-		return fmt.Errorf("want one code of 6 digits sent to %s, got %q", email, codes)
+		return fmt.Errorf("want one code of 8 digits sent to %s, got %q", email, codes)
 	}
 	w.auth.codes = append(w.auth.codes, codes[0])
 	return nil
@@ -347,7 +347,7 @@ func (w *world) enterWrongCode(ctx context.Context, n int) error {
 	if err != nil {
 		return fmt.Errorf("no code received: %w", err)
 	}
-	wrong := fmt.Sprintf("%06d", (right+1)%1_000_000)
+	wrong := fmt.Sprintf("%08d", (right+1)%100_000_000)
 	for range n {
 		if err := w.enterCode(ctx, w.currentDevice(), wrong); err != nil {
 			return err

@@ -12,7 +12,7 @@ Fonctionnalité: Connexion et session persistante
   Scénario: Se connecter avec un code reçu par e-mail
     Étant donné j'ouvre l'URL de la tribu "martin" sans être connecté
     Quand je saisis "alice@exemple.fr"
-    Alors un code à 6 chiffres est envoyé à "alice@exemple.fr"
+    Alors un code à 8 chiffres est envoyé à "alice@exemple.fr"
     Quand je saisis ce code
     Alors je suis connecté à la tribu "martin"
     Et une session est ouverte pour cet appareil
