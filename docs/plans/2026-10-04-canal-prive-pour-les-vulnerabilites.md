@@ -2,7 +2,7 @@
 
 - **Nom** : `canal-prive` (fixé à la création : le nom reste, bien que le plan n'installe plus de canal privé)
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1, 2 et 6 faites ; il ne touche pas au code de l'application)
+- **Statut** : en cours (étapes 1 à 6 faites, reste la mise à l'épreuve avec `revue-securite` ; il ne touche pas au code de l'application)
 
 ## Objectif
 
@@ -70,13 +70,13 @@ Prises le 2026-10-04 avec le développeur.
 
 - [x] **1. Essais d'accès** aux avis de sécurité en brouillon et au fork privé temporaire, avec un avis factice créé par le développeur (notes d'exécution).
 - [x] **2. Choix du traitement**, avec le développeur : canaux écartés, analyse de risques retenue (D1 à D9).
-- [ ] **3. `docs/traitement-des-vulnerabilites.md`**, sur le modèle de `docs/revue-de-pr.md` :
+- [x] **3. `docs/traitement-des-vulnerabilites.md`**, sur le modèle de `docs/revue-de-pr.md` :
   - la grille (D3), les niveaux (D4), la règle (D5), avec un ou deux exemples tirés de ce code ;
   - le signal d'arrêt : ce qui fait qu'un relecteur cesse d'écrire en public, et ce qu'il remet au développeur (fichier et fonction, scénario d'attaque, conséquence, les trois évaluations, le niveau proposé) ;
   - le déroulé de chaque niveau, pas à pas : qui écrit le correctif, où il vit avant la PR, qui le relit et comment, quand la PR s'ouvre, ce que disent son titre et ses messages de commit, ce qui est fait en recette, quand l'analyse est publiée ;
   - le modèle de l'analyse publiée (D9) et les phrases utiles à donner aux sessions.
-- [ ] **4. ADR 0022** : traitement des vulnérabilités par analyse de risques ; alternatives écartées (D1, D2).
-- [ ] **5. Documents accordés** :
+- [x] **4. ADR 0022** : traitement des vulnérabilités par analyse de risques ; alternatives écartées (D1, D2).
+- [x] **5. Documents accordés** :
   - `docs/revue-de-pr.md` : une section « Vulnérabilités » qui renvoie au signal d'arrêt ;
   - `SECURITY.md` : ce qui est réellement en place pour un tiers ;
   - `CLAUDE.md` : une ligne dans les conventions ;
@@ -110,10 +110,8 @@ Prises le 2026-10-04 avec le développeur.
 
 ## Questions ouvertes
 
-- **Relecture du correctif aux niveaux accéléré et urgent** : une revue selon `docs/revue-de-pr.md` écrit le défaut dans la PR. Faut-il la faire avant le push (seconde session dans le Dev Container, ou le développeur), ou sur la PR en termes neutres, le détail restant dans la conversation ?
-- **Signalement d'un tiers** : il arrive au développeur seul, par le signalement privé de GitHub, et suit ensuite D6. Faut-il garder au Dev Container le droit de lire les avis pour lui éviter de recopier, ou s'en tenir au strict nécessaire (étape 6) ?
-- **Avis de sécurité publié** : en plus de `CHANGELOG.md`, publier un avis GitHub après le déploiement ? Utile s'il existe un jour d'autres instances que la nôtre.
-- **Autres instances** : dès qu'un correctif est public, toute copie hébergée ailleurs est exposée. Sans objet aujourd'hui ; à reprendre si le projet est réutilisé.
+- **Avis de sécurité publié** : en plus de `CHANGELOG.md` et de l'analyse sur la PR, publier un avis GitHub après le déploiement ? Utile s'il existe un jour d'autres instances que la nôtre (ADR 0022, conséquences).
+- **Durée réelle d'une séance de livraison** : inconnue tant que la chaîne de release et le déploiement n'existent pas. Si elle dépasse l'heure, les niveaux accéléré et urgent se rapprochent ; à mesurer à la répétition du plan `recette`.
 
 ## Notes d'exécution
 
@@ -157,3 +155,8 @@ Prises le 2026-10-04 avec le développeur.
   - **Bilan pour l'étape 2** : avec le droit sur les avis, le Dev Container lit et écrit le constat. Ni l'une ni l'autre session n'accède au fork temporaire, donc la préparation privée du correctif n'est pas acquise par le canal A.
 - **Étape 2, choix du traitement** (2026-10-04), avec le développeur. Les trois canaux envisagés sont écartés, ainsi que deux variantes examinées en séance ; les raisons sont dans les décisions D1 et D2. Le plan est réécrit autour d'une analyse de risques (D3 à D9) : les étapes 3 à 8 remplacent celles de la première version (règle de tri, déroulé privé, droits, documents, répétition, clôture).
 - **Étape 6, réglages** (2026-10-05), faits par le développeur avant les étapes 3 à 5. Signalement privé de vulnérabilités activé : l'API du dépôt répond `{"enabled":true}`, vérifié depuis une session cloud. Avis factice fermé et droit *Repository security advisories* retiré du jeton du Dev Container : déclarés par le développeur, non vérifiables depuis une session.
+- **Étapes 3 à 5, documents** (2026-10-05). Questions ouvertes tranchées avec le développeur :
+  - *relecture du correctif* : sur la PR en termes neutres au niveau accéléré, avant le push et hors de GitHub au niveau urgent ;
+  - *signalement d'un tiers* : lu par le seul développeur, le droit sur les avis de sécurité est retiré du jeton du Dev Container.
+  - `docs/poste-de-developpement.md` n'est pas modifié : le jeton du Dev Container a retrouvé les droits qui y sont décrits.
+- **Constat fait en écrivant le déroulé** : seule une release étiquetée va en production (ADR 0012, 0016), donc une version corrective emporte tout ce que `main` contient de non publié. L'axe 2 de la grille (risque de livrer sans recette) en tient compte, et le plan `production` doit décrire dans `RELEASING.md` une version corrective préparée dans la PR du correctif.

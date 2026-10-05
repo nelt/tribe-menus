@@ -68,6 +68,12 @@ Les préférences de style qui ne changent ni le comportement ni la lisibilité 
 - **Pas de fusion, pas de push forcé** (ADR 0020). La revue ne réécrit pas l'historique : les corrections sont de nouveaux commits.
 - **Une session cloud ne lance pas forcément `make ci`** (accès réseau limité) : elle s'appuie alors sur la CI de la PR et le dit dans sa revue.
 
+## Vulnérabilités
+
+Une revue ne décrit jamais une vulnérabilité d'une version en production. Le relecteur qui en soupçonne une s'arrête d'écrire sur GitHub à son sujet et remet son constat au développeur, dans la conversation : c'est le signal d'arrêt de `docs/traitement-des-vulnerabilites.md`, qui fixe la suite. Le reste de la revue suit son cours, sans mention de ce point.
+
+Un défaut de sécurité d'un code qui n'est pas en production (la PR relue, la recette) se traite comme tout autre point de revue.
+
 ## Phrases utiles
 
 Au relecteur :
