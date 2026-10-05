@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-10-04
+- **Mise à jour** : 2026-10-05
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -26,8 +26,8 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | --- | --- | --- | --- |
 | `environnement` | Environnement de développement | [`2026-09-29-environnement-de-developpement.md`](plans/2026-09-29-environnement-de-developpement.md) | terminé |
 | `ci` | Intégration continue | [`2026-09-30-integration-continue.md`](plans/2026-09-30-integration-continue.md) | terminé |
-| `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | en cours : `socle/A`, `socle/B` et `socle/C` fusionnés ; reste la validation par le développeur (étape 26) |
-| `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | en cours : canal privé écarté, analyse de risques retenue (étapes 1 et 2) ; reste à écrire le document, l'ADR et à faire les réglages |
+| `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | terminé |
+| `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | en cours : canal privé écarté, analyse de risques retenue (étapes 1 et 2), réglages faits (étape 6) ; reste à écrire le document et l'ADR |
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | prêt ; commence quand `canal-prive` a livré son document (étape 3) |
 | `production` | Application prête pour la production | à écrire | après `revue-securite` |
 | `recette` | Serveur, recette et première release | à écrire | après `production` |

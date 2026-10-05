@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `socle` terminé : connexion validée par le développeur en local, sur ordinateur et en mode téléphone (étape 26) ; plan `canal-prive`, étape 6 : signalement privé de vulnérabilités activé, avis factice fermé, jeton du Dev Container ramené à ses droits.
 - Plan `canal-prive`, étape 2 : canal privé écarté (avis de sécurité, dépôt privé compagnon) ; une analyse de risques en trois évaluations choisit le traitement d'une vulnérabilité, normal, accéléré ou urgent ; plan réécrit, plans `revue-securite` et `socle` et feuille de route accordés.
 - Plan `canal-prive`, étape 1 : essais d'accès aux avis de sécurité en brouillon et au fork privé temporaire, depuis la session cloud et le Dev Container (avant et après l'ajout du droit sur les avis de sécurité) ; résultats dans les notes d'exécution du plan.
 - Écrans de connexion (ENF-01) : saisie de l'e-mail et du code (champ unique en six cases), chargement, accueil provisoire avec le nom de la tribu et la déconnexion ; polices auto-hébergées et tokens du design ; lien vers le code source de la version ; adresse e-mail avec un point dans le domaine ; option `-mail-file` de `serve` ; tests Playwright du parcours réel et des états des écrans.

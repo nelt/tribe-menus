@@ -2,7 +2,7 @@
 
 - **Nom** : `canal-prive` (fixé à la création : le nom reste, bien que le plan n'installe plus de canal privé)
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 et 2 faites ; il ne touche pas au code de l'application)
+- **Statut** : en cours (étapes 1, 2 et 6 faites ; il ne touche pas au code de l'application)
 
 ## Objectif
 
@@ -81,7 +81,7 @@ Prises le 2026-10-04 avec le développeur.
   - `SECURITY.md` : ce qui est réellement en place pour un tiers ;
   - `CLAUDE.md` : une ligne dans les conventions ;
   - `docs/securite-depot.md` et `docs/poste-de-developpement.md` : état des réglages et du jeton après l'étape 6.
-- [ ] **6. Réglages, par le développeur** :
+- [x] **6. Réglages, par le développeur** :
   - activer le signalement privé de vulnérabilités, auquel `SECURITY.md` renvoie ;
   - retirer du jeton du Dev Container le droit *Repository security advisories* ajouté pour les essais ;
   - fermer l'avis factice `GHSA-6658-5pv8-wrwf` et supprimer son fork temporaire.
@@ -156,3 +156,4 @@ Prises le 2026-10-04 avec le développeur.
   - **Droit qui manque pour le fork** : les messages n'en nomment aucun. Le fork existe (l'avis le désigne), mais le jeton ne le voit pas du tout : 404 par l'API, et un refus de Git qui parle d'écriture même pour un clone. Hypothèse à vérifier par le développeur, non confirmée par les messages : le fork, créé après le jeton, est hors de la liste des dépôts auxquels un jeton à portée fine donne accès.
   - **Bilan pour l'étape 2** : avec le droit sur les avis, le Dev Container lit et écrit le constat. Ni l'une ni l'autre session n'accède au fork temporaire, donc la préparation privée du correctif n'est pas acquise par le canal A.
 - **Étape 2, choix du traitement** (2026-10-04), avec le développeur. Les trois canaux envisagés sont écartés, ainsi que deux variantes examinées en séance ; les raisons sont dans les décisions D1 et D2. Le plan est réécrit autour d'une analyse de risques (D3 à D9) : les étapes 3 à 8 remplacent celles de la première version (règle de tri, déroulé privé, droits, documents, répétition, clôture).
+- **Étape 6, réglages** (2026-10-05), faits par le développeur avant les étapes 3 à 5. Signalement privé de vulnérabilités activé : l'API du dépôt répond `{"enabled":true}`, vérifié depuis une session cloud. Avis factice fermé et droit *Repository security advisories* retiré du jeton du Dev Container : déclarés par le développeur, non vérifiables depuis une session.

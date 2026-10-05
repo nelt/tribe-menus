@@ -2,7 +2,7 @@
 
 - **Nom** : `socle`
 - **Date** : 2026-10-03
-- **Statut** : en cours (lots A, B et C fusionnés, reste la validation par le développeur, étape 26 ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
+- **Statut** : terminé (lots A, B et C fusionnés, validation par le développeur le 2026-10-05 ; décisions D1 à D7 prises le 2026-10-03, D8 à D13 ajoutées le même jour à la relecture du lot B, D14 à D17 le 2026-10-04 à la relecture du lot C)
 
 ## Objectif
 
@@ -137,7 +137,7 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en trois PR suc
   - **États des écrans avec une API simulée** (`page.route`), sur Chromium et WebKit : adresse mal formée, trop de demandes, code erroné, essais épuisés, code expiré, renvoi refusé, erreur de réseau, chargement lent, accueil et déconnexion. Les réponses simulées sont définies une seule fois, dans un module des tests, d'après le contrat des notes du lot B.
   - **Serveur des tests** : dossier de données fixe `web/.e2e-data/` (ignoré par Git), vidé au démarrage, puis `admin seed -data` et `serve -dev -data … -mail-file …` sur ce dossier. `reuseExistingServer: false`, pour que les compteurs de limitation repartent de zéro à chaque exécution.
 - [x] **25. Documentation du lot** : écarts avec les maquettes dans `docs/design/README.md` (champ du code unique, renvoi refusé, erreur de réseau, chargement sans la phrase sur le planning) ; ADR 0009, point 4, si la note du 2026-10-04 est à compléter ; `CLAUDE.md`, `CHANGELOG.md`, cases cochées.
-- [ ] **26. Validation par le développeur** : `make seed` puis `make dev`, connexion à `http://localhost:8080/tribes/demo/` avec le code lu dans les logs, sur ordinateur et en mode téléphone du navigateur (Chrome ou Firefox : Safari refuse le cookie sur `http://localhost`, D14). La connexion sous Safari se vérifie en recette, en HTTPS, avec les scénarios `@manuel`.
+- [x] **26. Validation par le développeur** : `make seed` puis `make dev`, connexion à `http://localhost:8080/tribes/demo/` avec le code lu dans les logs, sur ordinateur et en mode téléphone du navigateur (Chrome ou Firefox : Safari refuse le cookie sur `http://localhost`, D14). La connexion sous Safari se vérifie en recette, en HTTPS, avec les scénarios `@manuel`.
 
 ## Notes d'exécution
 
