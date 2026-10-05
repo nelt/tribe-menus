@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `revue-securite`, étape 1 : code de connexion à 8 chiffres, limite par tribu comptant les seules demandes adressées à ses membres actifs, alerte à l'administrateur sur limites atteintes (plan `production`), appareil détecté structuré dans le journal d'audit (ENF-01, EF-07) ; implémentation à l'étape 6.
 - Traitement des vulnérabilités (`docs/traitement-des-vulnerabilites.md`, ADR 0022) : signal d'arrêt, constat remis au développeur hors de GitHub, analyse en trois évaluations, traitement normal, accéléré ou urgent, publication après le déploiement ; `docs/revue-de-pr.md`, `SECURITY.md` et `CLAUDE.md` accordés ; plan `canal-prive`, étapes 3 à 5.
 - Plan `socle` terminé : connexion validée par le développeur en local, sur ordinateur et en mode téléphone (étape 26) ; plan `canal-prive`, étape 6 : signalement privé de vulnérabilités activé, avis factice fermé, jeton du Dev Container ramené à ses droits.
 - Plan `canal-prive`, étape 2 : canal privé écarté (avis de sécurité, dépôt privé compagnon) ; une analyse de risques en trois évaluations choisit le traitement d'une vulnérabilité, normal, accéléré ou urgent ; plan réécrit, plans `revue-securite` et `socle` et feuille de route accordés.

@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : prêt (`socle` est terminé et `docs/traitement-des-vulnerabilites.md` est écrit)
+- **Statut** : en cours (étape 1 faite ; la revue, étapes 2 à 4, est à confier à une session cloud)
 
 ## Objectif
 
@@ -38,11 +38,12 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
 
 ## Étapes
 
-- [ ] **1. Décisions de specs**, avec le développeur, avant la revue.
+- [x] **1. Décisions de specs**, avec le développeur, avant la revue.
   - **Force brute** (tableau ci-dessus). Pistes à comparer : accepter le risque et alerter l'administrateur sur les limites atteintes de façon répétée (l'alerte par e-mail arrive avec le déploiement) ; allonger le code (8 chiffres divisent le risque par 100) ; plafonner les demandes par adresse et par jour. Un plafond plus strict facilite le blocage ciblé d'un membre : les deux points se tranchent ensemble.
   - **Blocage ciblé d'une tribu** par la limite de 30 demandes par heure : l'accepter en V1, ou revoir ce que compte la limite par tribu, sans rien révéler de l'existence de la tribu ni de ses membres (ENF-02).
   - **Appareil détecté dans le journal d'audit** (D12 à confirmer) : chaîne d'affichage en anglais aujourd'hui (`audit_log.detected_device`), colonnes structurées dans `sessions` ; fixer la forme avant que des données réelles existent.
   - Résultat : ENF-01 et `gestion-membres-et-sessions.md` mis à jour, décisions consignées dans ce plan ; un ADR si le mécanisme d'authentification change (ADR 0001).
+  - Fait le 2026-10-05 : D1 à D4. Pas d'ADR : le mécanisme ne change pas, seuls la longueur du code et ce que compte une limite changent ; l'ADR 0001 porte un renvoi. Scénarios Gherkin, code et front suivent à l'étape 6.
 - [ ] **2. Revue : authentification et sessions** (`internal/tribe`, `internal/server/api.go`, `internal/mail`).
   - Codes : tirage, empreinte, comparaison en temps constant, usage unique, remplacement, expiration, essais ; codes fantômes indiscernables des vrais, en réponse comme en durée.
   - Sessions : tirage et empreinte du jeton, expiration glissante, déconnexion, attributs et portée du cookie, cookie d'une tribu présenté à une autre.
@@ -66,7 +67,7 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Le relecteur ouvre une PR qui ajoute à ce plan la section « Constats » : « à corriger » et « à noter », numérotés, avec ce qu'il n'a pas pu vérifier ; chaque constat de sécurité porte ses trois évaluations (gravité, risque de livrer sans recette, risque d'exploitation une fois publié) et le niveau de traitement qu'il aurait en production.
   - Le développeur arbitre (retirer un point, le changer de catégorie, corriger une évaluation), puis fusionne la PR.
 - [ ] **6. Corrections**, par Claude Code dans le Dev Container.
-  - Les décisions de l'étape 1 qui touchent au code, et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
+  - Les décisions de l'étape 1 qui touchent au code (D1 à D3, voir « Ce que l'étape 1 demande à l'étape 6 »), et chaque point « à corriger » : un commit par point, test compris ; `make ci`. Une PR, relue selon `docs/revue-de-pr.md` par la session qui a fait la revue.
   - Les points « à noter » rejoignent `docs/feuille-de-route.md` (points reportés), avec le plan qui les reprendra.
 - [ ] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
@@ -81,5 +82,25 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
 
 ## Questions ouvertes
 
-- **Revue par une seule session, ou par deux sessions indépendantes** sur l'authentification (étape 2), la partie la plus exposée ? Deux revues coûtent plus cher, mais leurs constats se recoupent.
 - **Outil d'analyse supplémentaire** (`gosec`, par exemple) : à n'ajouter que si CodeQL et `staticcheck` laissent un manque constaté, pour ne pas multiplier l'outillage (ADR 0009).
+
+## Décisions
+
+Le 2026-10-05, avec le développeur (étape 1).
+
+- **D1. Code à 8 chiffres, et alerte à l'administrateur.** Avec les limites d'ENF-01 inchangées, la force brute continue passe d'environ 1 sur 4 à 0,3 % par an pour une adresse, et de 1 sur 2 à 0,8 % pour une tribu. Les limites atteintes de façon répétée sont signalées à l'administrateur par e-mail ; l'alerte rejoint le plan `production`, qui apporte l'envoi réel. Écartés : un plafond par jour et par adresse (environ 1 % par an, mais un attaquant qui l'épuise empêche le membre visé de se connecter une journée entière) ; accepter le risque avec la seule alerte (le risque reste celui du tableau tant que personne ne réagit).
+- **D2. La limite par tribu ne compte que les demandes adressées à ses membres actifs.** Des adresses au hasard ne bloquent plus la tribu : il faut connaître des adresses de membres. Le quota d'envoi reste protégé, puisque seuls les membres actifs reçoivent un e-mail. Limite assumée, écrite dans ENF-01 : la limite d'une tribu atteinte, une adresse de membre reçoit « Réessayez dans quelques minutes » et une autre adresse non, ce qui ne se produit qu'après 30 demandes pour des membres dans l'heure. **Contrainte d'implémentation** : la base de limitation ne doit pas apprendre quelles empreintes d'adresse sont celles de membres, ce que l'ADR 0021 évite aujourd'hui ; où tenir ce décompte (base de la tribu, par exemple) se choisit à l'étape 6, et l'ADR 0021 est précisé en conséquence. Écartés : accepter le blocage en V1 ; supprimer la limite par tribu (la force brute répartie sur plusieurs IP et plusieurs membres ne serait plus plafonnée).
+- **D3. Appareil détecté enregistré sous forme structurée dans le journal d'audit.** `audit_log` reçoit les colonnes de `sessions` (type, système, navigateur, app installée) à la place de la chaîne `detected_device` ; le libellé, en français, est composé à l'affichage par l'interface d'EF-07. Confirme `socle`, D12, sous cette forme. Rien n'est déployé : la forme de la migration (modifier la 0001 ou en ajouter une) se choisit à l'étape 6. L'iPad vu comme un ordinateur reste à EF-04. Écartés : une chaîne en français (le serveur fixerait le libellé et le journal resterait figé s'il change) ; garder la forme actuelle.
+- **D4. Une seule session cloud relit les étapes 2 à 4**, puis relit les corrections de l'étape 6. Le code est petit et rien n'est en production. Tranche la question ouverte « une ou deux sessions ».
+
+### Ce que l'étape 1 demande à l'étape 6
+
+Un commit par décision, les scénarios écrits ou modifiés d'abord (`docs/specs/conventions-gherkin.md`) :
+
+- D1 : `authentification.feature` (« un code à 8 chiffres »), `internal/tribe/login.go` (`loginCodeDigits`), écrans et tests du front (champ en huit cases, textes) ;
+- D2 : l'exemple « 30 demandes de code pour la tribu » de `authentification.feature` précisé, et un scénario « des demandes pour des adresses qui ne sont pas membres ne bloquent pas la tribu » ; décompte et ADR 0021 ;
+- D3 : migration, requêtes sqlc, `sessionAudit` et `Device.String` dans `internal/tribe`.
+
+## Notes d'exécution
+
+- **Étape 1** (2026-10-05) : décisions D1 à D4 prises avec le développeur sur les recommandations proposées ; ENF-01, EF-07 (`gestion-membres-et-sessions.md`), `docs/design/README.md` (texte de l'écran du code) et l'ADR 0001 (renvoi) mis à jour. L'alerte rejoint le plan `production` dans la feuille de route.

@@ -166,7 +166,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 **Connexion**
 
 - Fond blanc ; en haut le symbole avec cercle, le logotype et l'accroche ; le formulaire en bas (téléphone) ou à droite (ordinateur, symbole et logotype en grand à gauche).
-- Même message pour une adresse inconnue, révoquée ou d'une autre tribu : « Si … fait partie de la tribu, un code à 6 chiffres vient d'y être envoyé. »
+- Même message pour une adresse inconnue, révoquée ou d'une autre tribu : « Si … fait partie de la tribu, un code à 8 chiffres vient d'y être envoyé. »
 - États de l'e-mail : saisie ; adresse mal formée (champ cerclé de rouge) ; trop de demandes (bouton inactif en pointillé, « Réessayez dans quelques minutes »).
 - États du code : saisie ; code erroné (essais restants) ; essais épuisés et code expiré (seule action : « Recevoir un nouveau code »).
 - Messages d'erreur en rouge tomate, avec icône.

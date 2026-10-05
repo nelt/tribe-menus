@@ -15,7 +15,7 @@ Contraintes relevées :
 
 ## Décision
 
-1. **Login par code à usage unique envoyé par e-mail.** L'utilisateur saisit son adresse, reçoit un code à 6 chiffres et le tape dans l'application. Le code a une validité courte et un nombre de tentatives limité. Seules les adresses de membres enregistrés peuvent obtenir un code ; la réponse est identique que l'adresse soit connue ou non.
+1. **Login par code à usage unique envoyé par e-mail.** L'utilisateur saisit son adresse, reçoit un code à 6 chiffres et le tape dans l'application *(porté à 8 chiffres par ENF-01, plan `revue-securite`, D1)*. Le code a une validité courte et un nombre de tentatives limité. Seules les adresses de membres enregistrés peuvent obtenir un code ; la réponse est identique que l'adresse soit connue ou non.
 2. **Session portée par un cookie posé par le serveur** : `HttpOnly`, `Secure`, `SameSite=Lax`, durée de 90 jours à expiration glissante.
 3. **Jeton opaque, stocké haché côté serveur.** Le cookie contient une valeur aléatoire ; la base conserve son empreinte avec le membre, les informations d'appareil, la date de création et la dernière activité. Révoquer une session revient à supprimer (ou marquer) cette ligne.
 

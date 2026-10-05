@@ -14,11 +14,14 @@ L'utilisateur se connecte une seule fois par appareil. Sa session survit à la f
 
 ### Modalités retenues
 
-- **Login initial par code à usage unique envoyé par e-mail** : l'utilisateur saisit son adresse, reçoit un code à 6 chiffres et le tape dans l'application. Pas de mot de passe.
+- **Login initial par code à usage unique envoyé par e-mail** : l'utilisateur saisit son adresse, reçoit un code à 8 chiffres et le tape dans l'application. Pas de mot de passe.
+  - 8 chiffres plutôt que 6 (2026-10-05, plan `revue-securite`, D1) : avec les limites ci-dessous, une force brute continue sur une adresse a environ 0,3 % de chances de réussir en un an, contre 1 sur 4 avec 6 chiffres ; sur toute une tribu, 0,8 % contre 1 sur 2. Allonger le code ne crée pas de nouvelle façon de bloquer un membre, ce que ferait un plafond plus strict des demandes.
   - Un code, plutôt qu'un lien magique : sur iOS, une PWA installée a un stockage séparé de Safari, et un lien ouvert depuis le mail créerait la session dans Safari et non dans la PWA.
   - Le code est valable **10 minutes** et accepte **3 essais** ; au troisième essai erroné, il est invalidé.
   - Un seul code valable à la fois par adresse et par tribu : une nouvelle demande invalide le code précédent.
-  - **Limitation des demandes de code** : 3 demandes par quart d'heure pour une même adresse dans une tribu, 10 par heure depuis une même adresse IP, 30 par heure pour une même tribu. Au-delà, l'application affiche « Réessayez dans quelques minutes » et n'envoie rien. La limite par adresse s'applique de la même façon à une adresse inconnue, révoquée ou d'une autre tribu, pour ne rien révéler (ENF-02). Elle protège aussi le quota d'envoi du compte e-mail (ADR 0014).
+  - **Limitation des demandes de code** : 3 demandes par quart d'heure pour une même adresse dans une tribu, 10 par heure depuis une même adresse IP, 30 par heure adressées aux membres actifs d'une même tribu. Au-delà, l'application affiche « Réessayez dans quelques minutes » et n'envoie rien. La limite par adresse s'applique de la même façon à une adresse inconnue, révoquée ou d'une autre tribu, pour ne rien révéler (ENF-02). Elle protège aussi le quota d'envoi du compte e-mail (ADR 0014).
+  - **La limite par tribu ne compte que les demandes adressées à ses membres actifs** (2026-10-05, plan `revue-securite`, D2) : des demandes pour des adresses au hasard ne peuvent pas empêcher toute connexion à la tribu ; il faut connaître des adresses de membres. Une tribu inexistante n'atteint donc jamais cette limite, comme une tribu existante visée par des adresses au hasard. Limite assumée : quand la limite d'une tribu est atteinte, une adresse de membre reçoit « Réessayez dans quelques minutes » et une autre adresse non ; ce cas demande 30 demandes pour des membres dans l'heure.
+  - **Les limites atteintes de façon répétée sont signalées à l'administrateur** par e-mail (2026-10-05, plan `revue-securite`, D1), avec l'envoi réel des e-mails (plan `production`) : une force brute ou un blocage ciblé est visible des victimes, cette alerte le rend visible de l'administrateur.
 - **Session portée par un cookie persistant posé par le serveur** :
   - attributs `HttpOnly`, `Secure`, `SameSite=Lax`, durée de 90 jours ;
   - expiration glissante : chaque utilisation prolonge la session ;
