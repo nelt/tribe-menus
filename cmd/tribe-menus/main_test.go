@@ -325,3 +325,45 @@ func TestDefaultTimeouts(t *testing.T) {
 		}
 	}
 }
+
+// TestShutdownWithSlowClient: a connection still reading its body at the end of the
+// shutdown wait is closed, and the shutdown succeeds: a slow client cannot make a
+// deployment fail (review of PR #40, point 1).
+func TestShutdownWithSlowClient(t *testing.T) {
+	defer func(d time.Duration) { shutdownTimeout = d }(shutdownTimeout)
+	shutdownTimeout = 300 * time.Millisecond
+
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "web", "dist", "index.html"), `<base href="{{.Base}}">`)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	logs := &syncBuffer{}
+	done := make(chan int, 1)
+	go func() {
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", filepath.Join(root, "data"), "-addr", "localhost:0"}, logs)
+	}()
+	base := waitForAddress(t, logs)
+
+	conn, err := net.Dial("tcp", strings.TrimPrefix(base, "http://"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := io.WriteString(conn, "POST /tribes/demo/api/login-codes HTTP/1.1\r\nHost: localhost\r\nContent-Length: 100\r\n\r\n"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(100 * time.Millisecond) // the request reaches its handler
+
+	cancel()
+	select {
+	case code := <-done:
+		if code != 0 {
+			t.Errorf("exit code = %d, want 0 (logs: %s)", code, logs.String())
+		}
+		if !strings.Contains(logs.String(), "connections closed at the end of the shutdown wait") {
+			t.Errorf("no log of the closed connections: %s", logs.String())
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not stop")
+	}
+}
