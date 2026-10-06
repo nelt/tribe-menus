@@ -260,7 +260,8 @@ func (s *Store) RevokeMember(ctx context.Context, memberID, revokedBy int64, now
 }
 
 // Purge deletes the login codes expired or out of attempts, the expired sessions (PT-07),
-// and the code requests out of the window of the limit by tribe.
+// the code requests out of the window of the limit by tribe, and the alert counters out of
+// their window.
 func (s *Store) Purge(ctx context.Context, now time.Time) error {
 	q := tribedb.New(s.db)
 	at := formatTime(now)
@@ -272,6 +273,9 @@ func (s *Store) Purge(ctx context.Context, now time.Time) error {
 	}
 	if _, err := q.PurgeSessions(ctx, at); err != nil {
 		return fmt.Errorf("purge sessions: %w", err)
+	}
+	if _, err := q.PurgeAlertCounters(ctx, formatTime(alertWindowStart(now))); err != nil {
+		return fmt.Errorf("purge alert counters: %w", err)
 	}
 	return nil
 }

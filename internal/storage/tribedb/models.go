@@ -8,6 +8,12 @@ import (
 	"database/sql"
 )
 
+type AlertCounter struct {
+	Slot  string
+	Event string
+	N     int64
+}
+
 type AuditLog struct {
 	ID           int64
 	At           string

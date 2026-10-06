@@ -126,7 +126,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
   - `Login.RequestCode` écrit le code fantôme de l'empreinte d'adresse pour **toute** demande acceptée par les limites, membre ou non, avant de chercher le membre. Celui d'un membre n'est jamais vérifié ; il expire et s'efface comme les autres.
   - Test : après une demande pour un membre et une demande pour une autre adresse, la base de limitation contient pour chacune une demande et un code fantôme de même forme ; rien de ce qu'elle garde ne les distingue.
   - Un membre révoqué dans les dix minutes qui suivent sa demande voit ses saisies vérifiées contre ce code fantôme, exactement comme une adresse inconnue : scénarios ENF-02 existants à relancer.
-- [ ] **18. Compteurs** (D7).
+- [x] **18. Compteurs** (D7).
   - Table de compteurs par tranche de dix minutes et par nature d'événement, sans empreinte ni identifiant : une ligne par tranche et par nature, incrémentée. Sa taille ne dépend pas du nombre de demandes.
   - Base de limitation (`internal/storage/migrations/ratelimit/`) : demandes refusées par la limite par adresse, par la limite par IP, codes fantômes épuisés ; et la date de la dernière alerte envoyée, par nature d'alerte.
   - Base de la tribu (`internal/storage/migrations/tribe/`) : demandes refusées par la limite de la tribu, codes réels épuisés.

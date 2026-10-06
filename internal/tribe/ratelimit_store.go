@@ -126,7 +126,7 @@ func (r *RateLimitDB) CheckDecoyCode(ctx context.Context, emailHash []byte, ente
 }
 
 // Purge implements RateLimitStore: requests older than the longest window, decoy codes
-// expired or out of attempts.
+// expired or out of attempts, alert counters out of their window.
 func (r *RateLimitDB) Purge(ctx context.Context, now time.Time) error {
 	q := ratelimitdb.New(r.db)
 	if _, err := q.PurgeCodeRequests(ctx, formatTime(now.Add(-RateLimitRetention))); err != nil {
@@ -134,6 +134,9 @@ func (r *RateLimitDB) Purge(ctx context.Context, now time.Time) error {
 	}
 	if _, err := q.PurgeDecoyCodes(ctx, formatTime(now)); err != nil {
 		return fmt.Errorf("purge decoy codes: %w", err)
+	}
+	if _, err := q.PurgeAlertCounters(ctx, formatTime(alertWindowStart(now))); err != nil {
+		return fmt.Errorf("purge alert counters: %w", err)
 	}
 	return nil
 }
