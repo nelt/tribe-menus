@@ -140,7 +140,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
   - Seuil franchi et aucune alerte de cette nature depuis six heures : un enregistrement `alert=code_request_limits` dans le journal, et un e-mail à l'adresse `alerts.to` de la configuration (clé ajoutée, obligatoire en mode serveur), par le même `Mailer`.
   - E-mail en français, en texte brut : nom de l'instance (`baseURL`), fenêtre, compteurs par nature, renvoi vers les journaux d'accès de Caddy. **Ni adresse e-mail, ni adresse IP, ni tribu.**
   - En développement, l'e-mail d'alerte part dans les logs comme les autres.
-- [ ] **21. Échecs répétés d'envoi** (ADR 0015, point 15). Trois envois échoués en une heure, vérification du démarrage comprise : un enregistrement `alert=smtp_failures`, sans e-mail (D6), au plus un par six heures. Compteur en mémoire (D9).
+- [x] **21. Échecs répétés d'envoi** (ADR 0015, point 15). Trois envois échoués en une heure, vérification du démarrage comprise : un enregistrement `alert=smtp_failures`, sans e-mail (D6), au plus un par six heures. Compteur en mémoire (D9).
 - [ ] **22. Scénarios et documentation du lot** : définitions d'étapes godog des scénarios de l'étape 16 (l'évaluation est appelée par l'étape, avec l'horloge du test) ; `TestLimitsSurviveRestart` étendu aux compteurs ; glossaire ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « alerte de D1 » retiré, relais des alertes inscrit au plan `recette`) ; cases cochées.
 
 ### Lot D : front à empreinte et archive (`feature/front-a-empreinte-et-archive`)

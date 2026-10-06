@@ -295,9 +295,11 @@ func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger
 	}()
 	logger.Info("databases migrated", "data", opts.data)
 
-	// By SMTP in server mode (ADR 0014); in development, to the logs, and to a file for the
+	// By SMTP in server mode (ADR 0014), each failure counted for the alert on repeated
+	// failures (ADR 0023, point 3); in development, to the logs, and to a file for the
 	// end-to-end tests.
-	var mailer mail.Mailer = opts.smtp
+	failures := &alert.SendFailures{Logger: logger, Now: time.Now}
+	var mailer mail.Mailer = alert.CountingMailer{Mailer: opts.smtp, Failures: failures}
 	if opts.dev {
 		mailer = mail.LogMailer{Logger: logger}
 		if opts.mailFile != "" {
@@ -325,7 +327,7 @@ func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger
 		<-purged
 	}()
 
-	return listenAndServe(ctx, opts, logger, store, login)
+	return listenAndServe(ctx, opts, logger, store, login, failures)
 }
 
 // purgePeriodically checks the alerts and purges at once, then at each interval until ctx
@@ -348,7 +350,7 @@ func purgePeriodically(ctx context.Context, login *tribe.Login, dbs tribe.Databa
 	}
 }
 
-func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger, store *storage.Store, login *tribe.Login) error {
+func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger, store *storage.Store, login *tribe.Login, failures *alert.SendFailures) error {
 	cfg, err := serverConfig(opts.dev, opts.root, logger)
 	if err != nil {
 		return err
@@ -389,6 +391,7 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 			if err := opts.smtp.Check(checkCtx); err != nil {
 				if ctx.Err() == nil {
 					logger.Error("SMTP check failed", mail.ErrorAttrs(err)...)
+					failures.Record()
 				}
 				return
 			}
