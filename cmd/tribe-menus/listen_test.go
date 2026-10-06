@@ -165,6 +165,7 @@ func TestServeOnSystemdSocket(t *testing.T) {
 	unix.SetUnlinkOnClose(false)
 	passSocket(t, unix)
 	t.Setenv("LISTEN_FDNAMES", "tribe-menus.socket")
+	writeCredential(t)
 	configFile := writeConfig(t, dir, "systemd")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -251,6 +252,7 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	fakeWeb(t)
 	dir := t.TempDir()
 	configFile := writeConfig(t, dir, "localhost:0")
+	writeCredential(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	stdout := &syncBuffer{}
@@ -280,6 +282,9 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 		t.Fatal("server did not stop")
 	}
 	assertJSONLines(t, stdout.String())
+	if strings.Contains(stdout.String(), testPassword) {
+		t.Errorf("logs contain the SMTP password: %s", stdout.String())
+	}
 }
 
 // waitForLog returns the first JSON record of logs with this message.

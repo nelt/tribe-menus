@@ -51,7 +51,7 @@ func TestOutbox(t *testing.T) {
 
 func TestOutboxFailureDoesNotLogTheCode(t *testing.T) {
 	var logs bytes.Buffer
-	o := NewOutbox(Unconfigured{}, 10*time.Minute, slog.New(slog.NewTextHandler(&logs, nil)))
+	o := NewOutbox(failingMailer{}, 10*time.Minute, slog.New(slog.NewTextHandler(&logs, nil)))
 	o.SendLoginCode("alice@exemple.fr", "123456")
 	o.Wait()
 	if !strings.Contains(logs.String(), "login code not sent") || strings.Contains(logs.String(), "123456") {
@@ -109,11 +109,18 @@ func TestFileMailerError(t *testing.T) {
 
 func TestMailers(t *testing.T) {
 	first, second := &Recorder{}, &Recorder{}
-	err := Mailers{first, Unconfigured{}, second}.Send(context.Background(), LoginCodeMessage("alice@exemple.fr", "123456", 10*time.Minute))
-	if !errors.Is(err, ErrNotConfigured) {
-		t.Errorf("error = %v, want ErrNotConfigured", err)
+	err := Mailers{first, failingMailer{}, second}.Send(context.Background(), LoginCodeMessage("alice@exemple.fr", "123456", 10*time.Minute))
+	if !errors.Is(err, errFailing) {
+		t.Errorf("error = %v, want errFailing", err)
 	}
 	if len(first.Messages()) != 1 || len(second.Messages()) != 1 {
 		t.Errorf("messages = %d and %d, want 1 each", len(first.Messages()), len(second.Messages()))
 	}
 }
+
+var errFailing = errors.New("sending failed")
+
+// failingMailer refuses every message.
+type failingMailer struct{}
+
+func (failingMailer) Send(context.Context, Message) error { return errFailing }

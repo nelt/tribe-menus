@@ -18,6 +18,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	t.Setenv("CREDENTIALS_DIRECTORY", "")
 	data := t.TempDir()
 	configFile := writeConfig(t, data, "localhost:0")
 	invalidConfigFile := filepath.Join(data, "invalid.json")
@@ -43,6 +44,7 @@ func TestRun(t *testing.T) {
 		{name: "mail file with config", args: []string{"serve", "-config", configFile, "-mail-file", filepath.Join(data, "mails.jsonl")}, wantCode: 2, wantStderr: "-mail-file is a flag of the development mode, refused with -config"},
 		{name: "missing config file", args: []string{"serve", "-config", filepath.Join(data, "missing.json")}, wantCode: 2, wantStderr: "tribe-menus serve: config: open"},
 		{name: "invalid config file", args: []string{"serve", "-config", invalidConfigFile}, wantCode: 2, wantStderr: `tribe-menus serve: config: unknown key "addr"`},
+		{name: "SMTP password not passed", args: []string{"serve", "-config", configFile}, wantCode: 2, wantStderr: "tribe-menus serve: credential smtp-password: CREDENTIALS_DIRECTORY not set"},
 		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-data", data, "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
 	}
 	for _, tc := range cases {
@@ -269,11 +271,31 @@ func waitForAddress(t *testing.T, logs *syncBuffer) string {
 	return ""
 }
 
+// smtpTestPort is the SMTP port of the config files of the tests: nothing listens on it, so
+// that the check at startup fails at once.
+const smtpTestPort = 1
+
+// testPassword is the SMTP password of the tests, which no log may contain.
+const testPassword = "s3cret-smtp-pass"
+
+// writeCredential passes the SMTP password as systemd does, in CREDENTIALS_DIRECTORY.
+func writeCredential(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, smtpPasswordCredential), testPassword+"\n")
+	t.Setenv("CREDENTIALS_DIRECTORY", dir)
+}
+
 // writeConfig writes a config file of the server mode in dir, with its data directory
 // in dir, and returns its path.
 func writeConfig(t *testing.T, dir, listen string) string {
 	t.Helper()
-	content, err := json.Marshal(map[string]string{"data": filepath.Join(dir, "data"), "listen": listen, "baseURL": "https://tribes.example.org"})
+	content, err := json.Marshal(map[string]any{
+		"data":    filepath.Join(dir, "data"),
+		"listen":  listen,
+		"baseURL": "https://tribes.example.org",
+		"smtp":    map[string]any{"host": "localhost", "port": smtpTestPort, "username": "no-reply@example.org", "from": "no-reply@example.org"},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

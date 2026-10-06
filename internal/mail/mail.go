@@ -1,7 +1,7 @@
 // Package mail sends the only email of the application, the login code (ENF-01, ADR 0014),
-// through a Mailer: in development to the logs (and to a file for the end-to-end tests), in
-// tests to memory. Sending happens in the
-// background (Outbox), outside of the request.
+// through a Mailer: by SMTP in server mode, in development to the logs (and to a file for
+// the end-to-end tests), in tests to memory. Sending happens in the background (Outbox),
+// outside of the request.
 package mail
 
 import (
@@ -101,18 +101,6 @@ func (ms Mailers) Send(ctx context.Context, msg Message) error {
 		errs = append(errs, m.Send(ctx, msg))
 	}
 	return errors.Join(errs...)
-}
-
-// ErrNotConfigured is returned by Unconfigured.
-var ErrNotConfigured = errors.New("no SMTP server configured")
-
-// Unconfigured refuses every message: the server outside development until SMTP sending
-// comes with the deployment (ADR 0014). The code never reaches the logs.
-type Unconfigured struct{}
-
-// Send implements Mailer.
-func (Unconfigured) Send(context.Context, Message) error {
-	return ErrNotConfigured
 }
 
 // Recorder keeps the messages in memory, for the tests.
