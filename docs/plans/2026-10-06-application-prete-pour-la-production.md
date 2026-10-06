@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lot A fait, lot B en revue)
+- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lots A et B faits, lot C en cours)
 
 ## Objectif
 
