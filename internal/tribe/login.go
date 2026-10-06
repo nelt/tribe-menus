@@ -102,6 +102,13 @@ func (c LoginCode) Check(entered, requestToken string, now time.Time) (after Log
 	return c, c.AttemptsLeft > 0, &IncorrectCodeError{AttemptsLeft: c.AttemptsLeft}
 }
 
+// exhausted reports whether the error of a check tells a code invalidated by this attempt,
+// its last one.
+func exhausted(err error) bool {
+	var incorrect *IncorrectCodeError
+	return errors.As(err, &incorrect) && incorrect.AttemptsLeft == 0
+}
+
 // newToken returns an opaque token of 32 random bytes: a session token, for the session
 // cookie, or the token of a code request, for its cookie.
 func newToken() (string, error) {

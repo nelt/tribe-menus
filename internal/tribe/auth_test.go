@@ -498,6 +498,171 @@ func errorString(err error) string {
 	return err.Error()
 }
 
+// alertCounts returns the alert counters of a database, summed by event over every slot.
+func alertCounts(t *testing.T, db *sql.DB) map[AlertEvent]int {
+	t.Helper()
+	rows, err := db.QueryContext(context.Background(), "SELECT event, sum(n) FROM alert_counters GROUP BY event")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	counts := map[AlertEvent]int{}
+	for rows.Next() {
+		var event string
+		var n int
+		if err := rows.Scan(&event, &n); err != nil {
+			t.Fatal(err)
+		}
+		counts[AlertEvent(event)] = n
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return counts
+}
+
+// TestAlertCounters: each refused request and each code invalidated by its last attempt is
+// counted once, in the database that sees it (ADR 0023; plan production, D7).
+func TestAlertCounters(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	f.addMembers(t, TribeRequestLimit)
+	ip := func(i int) string { return fmt.Sprintf("198.51.100.%d", i) }
+
+	// Limit by address, for a member and for another address.
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		for i := range EmailRequestLimit + 1 {
+			err := f.requestCode(ctx, "martin", f.martin, email, ip(100+i))
+			if i == EmailRequestLimit && !errors.Is(err, ErrTooManyRequests) {
+				t.Fatalf("%s: request %d: %v, want ErrTooManyRequests", email, i+1, err)
+			}
+		}
+	}
+	// Limit by IP.
+	for i := range IPRequestLimit + 1 {
+		err := f.requestCode(ctx, "martin", f.martin, fmt.Sprintf("personne-%d@exemple.fr", i), "203.0.113.7")
+		if i == IPRequestLimit && !errors.Is(err, ErrTooManyRequests) {
+			t.Fatalf("IP request %d: %v, want ErrTooManyRequests", i+1, err)
+		}
+	}
+	// Limit by tribe: Alice's 3 requests already count, the last 3 members are refused.
+	for i := range TribeRequestLimit {
+		err := f.requestCode(ctx, "martin", f.martin, fmt.Sprintf("membre-%d@exemple.fr", i), ip(i%(IPRequestLimit-1)+1))
+		if err != nil && !errors.Is(err, ErrTooManyRequests) {
+			t.Fatal(err)
+		}
+	}
+	f.advance(time.Hour)
+
+	// Codes out of attempts, real and decoy; attempts from another browser and on an
+	// expired code exhaust nothing.
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+			t.Fatal(err)
+		}
+		for range LoginCodeAttempts + 1 {
+			_, _, _ = f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", "another browser", Device{})
+		}
+		for range LoginCodeAttempts {
+			if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", f.token, Device{}); err == nil {
+				t.Fatal("a wrong code was accepted")
+			}
+		}
+		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+			t.Fatal(err)
+		}
+		f.advance(LoginCodeValidity)
+		for range LoginCodeAttempts {
+			_, _, _ = f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", f.token, Device{})
+		}
+	}
+
+	want := map[AlertEvent]int{EmailLimitRefusal: 2, IPLimitRefusal: 1, DecoyCodeExhausted: 1}
+	if got := alertCounts(t, f.store.RateLimit()); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("counters of the rate limit database = %v, want %v", got, want)
+	}
+	want = map[AlertEvent]int{TribeLimitRefusal: 3, LoginCodeExhausted: 1}
+	if got := alertCounts(t, f.martin.db); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("counters of the tribe database = %v, want %v", got, want)
+	}
+
+	// Purged once out of the window.
+	f.advance(AlertWindow)
+	if err := f.login.Purge(ctx, f.store); err != nil {
+		t.Fatal(err)
+	}
+	for name, db := range map[string]*sql.DB{"rate limit": f.store.RateLimit(), "tribe": f.martin.db} {
+		if got := alertCounts(t, db); len(got) != 0 {
+			t.Errorf("counters of the %s database after an hour: %v, want none", name, got)
+		}
+	}
+}
+
+// TestDecoyCodeForEveryRequest: the rate limit database keeps the same rows for a request
+// for a member and for another address, decoy code included, so that nothing it keeps
+// tells a member's address (ADR 0021, point 4; plan production, D11).
+func TestDecoyCodeForEveryRequest(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	tokens := map[string]string{}
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+			t.Fatal(err)
+		}
+		tokens[email] = f.token
+	}
+	if len(f.mailer.sent) != 1 {
+		t.Fatalf("sent = %v, want the code of Alice", f.mailer.sent)
+	}
+
+	rows := map[string][]string{}
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		h := emailHash("martin", Email(email))
+		var requests int
+		if err := f.store.RateLimit().QueryRowContext(ctx, "SELECT count(*) FROM code_requests WHERE email_hash = ?", h).Scan(&requests); err != nil {
+			t.Fatal(err)
+		}
+		var expiresAt string
+		var attempts int
+		var requestHash []byte
+		err := f.store.RateLimit().QueryRowContext(ctx, "SELECT expires_at, attempts_left, request_hash FROM decoy_codes WHERE email_hash = ?", h).Scan(&expiresAt, &attempts, &requestHash)
+		if err != nil {
+			t.Fatalf("%s: decoy code: %v", email, err)
+		}
+		rows[email] = []string{fmt.Sprint(requests), expiresAt, fmt.Sprint(attempts), fmt.Sprint(len(requestHash))}
+	}
+	if a, b := strings.Join(rows["alice@exemple.fr"], " "), strings.Join(rows["inconnu@exemple.fr"], " "); a != b {
+		t.Errorf("rate limit rows of a member %q, of another address %q: want the same", a, b)
+	}
+
+	// The decoy code of a member is never checked: its real code is.
+	if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, "alice@exemple.fr", f.mailer.last(t, "alice@exemple.fr"), tokens["alice@exemple.fr"], Device{}); err != nil {
+		t.Errorf("Alice's code: %v", err)
+	}
+}
+
+// TestRevokedAfterRequest: a member revoked after the request enters codes against its decoy
+// code, as an unknown address does.
+func TestRevokedAfterRequest(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	chloe, err := f.martin.AddMember(ctx, "chloe@exemple.fr", "Chloé", f.alice.ID, f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.requestCode(ctx, "martin", f.martin, "chloe@exemple.fr", "192.0.2.1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.martin.RevokeMember(ctx, chloe.ID, f.alice.ID, f.now); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = f.login.OpenSession(ctx, "martin", f.martin, "chloe@exemple.fr", f.mailer.last(t, "chloe@exemple.fr"), f.token, Device{})
+	var incorrect *IncorrectCodeError
+	if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+		t.Errorf("code of a member revoked after the request: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
+	}
+}
+
 func TestRevokeMemberClosesSessions(t *testing.T) {
 	ctx := context.Background()
 	f := newLoginFixture(t)
@@ -565,7 +730,7 @@ func TestPurge(t *testing.T) {
 	if err := f.login.Purge(ctx, f.store); err != nil {
 		t.Fatal(err)
 	}
-	if r, d, c, s := counts(); r != 3 || d != 1 || c != 1 || s != 1 {
+	if r, d, c, s := counts(); r != 3 || d != 2 || c != 1 || s != 1 {
 		t.Errorf("nothing to purge yet: %d requests, %d decoys, %d codes, %d sessions", r, d, c, s)
 	}
 
@@ -588,7 +753,8 @@ func TestPurge(t *testing.T) {
 
 // TestLimitsSurviveRestart: after the databases are closed and opened again, as at a
 // restart of the server, the requests already made and the attempts already used still
-// count, for a real code as for a decoy code (ADR 0021).
+// count, for a real code as for a decoy code (ADR 0021), and so do the alert counters and
+// the last alert sent (ADR 0023).
 func TestLimitsSurviveRestart(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
@@ -639,6 +805,32 @@ func TestLimitsSurviveRestart(t *testing.T) {
 			t.Fatal("a wrong code was accepted")
 		}
 	}
+	// A refused request, codes exhausted, an alert sent.
+	if _, err := login.RequestCode(ctx, "martin", martin, "inconnu@exemple.fr", "192.0.2.2"); !errors.Is(err, ErrTooManyRequests) {
+		t.Fatalf("request beyond the limit: %v", err)
+	}
+	for _, email := range []string{"chloe@exemple.fr", "david@exemple.fr"} {
+		token, err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.3")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for range LoginCodeAttempts {
+			_, _, _ = login.OpenSession(ctx, "martin", martin, email, "wrong", token, Device{})
+		}
+	}
+	if err := login.RateLimit.SetAlertsSent(ctx, []AlertSignal{ExhaustedCodes}, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := martin.AddMember(ctx, "bruno@exemple.fr", "Bruno", 1, now); err != nil {
+		t.Fatal(err)
+	}
+	token, err := login.RequestCode(ctx, "martin", martin, "bruno@exemple.fr", "192.0.2.3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range LoginCodeAttempts {
+		_, _, _ = login.OpenSession(ctx, "martin", martin, "bruno@exemple.fr", "wrong", token, Device{})
+	}
 	if err := st.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -653,5 +845,177 @@ func TestLimitsSurviveRestart(t *testing.T) {
 		if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-2 {
 			t.Errorf("%s: attempt after restart: error = %v, want %d attempts left", email, err, LoginCodeAttempts-2)
 		}
+	}
+	counts, err := login.RateLimit.AlertCounts(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tribeCounts, err := martin.AlertCounts(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts.add(tribeCounts)
+	// The requests after the restart are refused too.
+	want := map[AlertEvent]int{EmailLimitRefusal: 3, DecoyCodeExhausted: 2, LoginCodeExhausted: 1}
+	if fmt.Sprint(counts.Events) != fmt.Sprint(want) {
+		t.Errorf("counters after restart = %v, want %v", counts.Events, want)
+	}
+	sent, err := login.RateLimit.AlertsSent(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sent[ExhaustedCodes].Equal(now) {
+		t.Errorf("alerts sent after restart = %v, want exhausted codes at %v", sent, now)
+	}
+}
+
+// fakeNotifier keeps the alerts written to the log and those sent by email.
+type fakeNotifier struct{ logged, reports []AlertReport }
+
+func (n *fakeNotifier) LogCodeRequestLimits(r AlertReport)  { n.logged = append(n.logged, r) }
+func (n *fakeNotifier) SendCodeRequestLimits(r AlertReport) { n.reports = append(n.reports, r) }
+
+// unrecordedAlerts is a rate limit database that refuses to record the alerts sent.
+type unrecordedAlerts struct{ *RateLimitDB }
+
+func (unrecordedAlerts) SetAlertsSent(context.Context, []AlertSignal, time.Time) error {
+	return errors.New("disk full")
+}
+
+// TestCheckAlertsUnrecorded: an alert that cannot be recorded is written to the log, at each
+// check, but not sent by email (ADR 0023, point 8).
+func TestCheckAlertsUnrecorded(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	notifier := &fakeNotifier{}
+	f.login.Alerts = notifier
+	f.login.RateLimit = unrecordedAlerts{f.login.RateLimit.(*RateLimitDB)}
+	for i := range RepeatedRequestsThreshold {
+		if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", fmt.Sprintf("198.51.100.%d", i)); err != nil {
+			t.Fatal(err)
+		}
+		f.advance(EmailRequestWindow / EmailRequestLimit)
+	}
+	for check := 1; check <= 2; check++ {
+		if err := f.login.CheckAlerts(ctx, f.store); err == nil || !strings.Contains(err.Error(), "disk full") {
+			t.Errorf("check %d: error = %v, want the one of the database", check, err)
+		}
+		if len(notifier.logged) != check || len(notifier.reports) != 0 {
+			t.Errorf("check %d: %d alerts logged, %d sent; want %d logged, none sent", check, len(notifier.logged), len(notifier.reports), check)
+		}
+	}
+}
+
+// TestCheckAlerts: the counters of the rate limit database and of the tribes are summed over
+// the hour, and each signal is alerted on once per six hours at most (ADR 0023).
+func TestCheckAlerts(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	notifier := &fakeNotifier{}
+	f.login.Alerts = notifier
+	check := func() []AlertSignal {
+		t.Helper()
+		before := len(notifier.reports)
+		if err := f.login.CheckAlerts(ctx, f.store); err != nil {
+			t.Fatal(err)
+		}
+		if len(notifier.logged) != len(notifier.reports) {
+			t.Fatalf("%d alerts logged, %d sent", len(notifier.logged), len(notifier.reports))
+		}
+		switch len(notifier.reports) - before {
+		case 0:
+			return nil
+		case 1:
+			return notifier.reports[before].Signals
+		default:
+			t.Fatalf("%d reports for one check", len(notifier.reports)-before)
+			return nil
+		}
+	}
+	// refuse makes n requests refused by the limit by address, for a member and for others,
+	// each from its own IP.
+	ips := 0
+	ip := func() string {
+		ips++
+		return fmt.Sprintf("10.0.%d.%d", ips/256, ips%256)
+	}
+	f.addMembers(t, TribeRequestLimit)
+	addresses := 0
+	refuse := func(n int) {
+		t.Helper()
+		for range n {
+			addresses++
+			email := fmt.Sprintf("personne-%d@exemple.fr", addresses)
+			if addresses%2 == 0 {
+				email = fmt.Sprintf("membre-%d@exemple.fr", addresses/2%TribeRequestLimit)
+			}
+			for range EmailRequestLimit {
+				_ = f.requestCode(ctx, "martin", f.martin, email, ip())
+			}
+			if err := f.requestCode(ctx, "martin", f.martin, email, ip()); !errors.Is(err, ErrTooManyRequests) {
+				t.Fatalf("refusal for %s: %v", email, err)
+			}
+			f.advance(time.Minute)
+		}
+	}
+
+	refuse(RefusedRequestsThreshold - 1)
+	if got := check(); got != nil {
+		t.Errorf("below the threshold: alert on %v", got)
+	}
+	refuse(1)
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{RefusedRequests}) {
+		t.Errorf("at the threshold: alert on %v, want refused requests", got)
+	}
+	report := notifier.reports[len(notifier.reports)-1]
+	if report.Counts.Refused() != RefusedRequestsThreshold || !report.At.Equal(f.now) {
+		t.Errorf("report %+v", report)
+	}
+
+	f.advance(time.Hour)
+	refuse(RefusedRequestsThreshold)
+	if got := check(); got != nil {
+		t.Errorf("within six hours: alert on %v", got)
+	}
+	f.advance(AlertInterval)
+	refuse(RefusedRequestsThreshold)
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{RefusedRequests}) {
+		t.Errorf("after six hours: alert on %v, want refused requests", got)
+	}
+
+	// Exhausted codes, real ones counted in the tribe, decoy ones in the rate limit database.
+	f.advance(AlertInterval)
+	for i := range ExhaustedCodesThreshold {
+		email := "alice@exemple.fr"
+		if i%2 == 1 {
+			email = fmt.Sprintf("inconnu-%d@exemple.fr", i)
+		}
+		if err := f.requestCode(ctx, "martin", f.martin, email, ip()); err != nil {
+			t.Fatal(err)
+		}
+		for range LoginCodeAttempts {
+			_, _, _ = f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", f.token, Device{})
+		}
+		f.advance(time.Minute)
+	}
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{ExhaustedCodes}) {
+		t.Errorf("exhausted codes: alert on %v, want exhausted codes", got)
+	}
+
+	// Repeated requests for one address, at the pace of the limit.
+	f.advance(AlertInterval)
+	for i := range RepeatedRequestsThreshold {
+		if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", ip()); err != nil {
+			t.Fatalf("request %d: %v", i+1, err)
+		}
+		if i < RepeatedRequestsThreshold-2 {
+			if got := check(); got != nil {
+				t.Errorf("after %d requests: alert on %v", i+1, got)
+			}
+		}
+		f.advance(EmailRequestWindow / EmailRequestLimit)
+	}
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{RepeatedRequests}) {
+		t.Errorf("repeated requests: alert on %v, want repeated requests", got)
 	}
 }

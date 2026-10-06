@@ -21,7 +21,9 @@ type CodeMailer interface {
 type Login struct {
 	RateLimit RateLimitStore
 	Mailer    CodeMailer
-	Now       func() time.Time
+	// Alerts receives the alerts on the code request limits reached repeatedly.
+	Alerts AlertNotifier
+	Now    func() time.Time
 }
 
 // RequestCode asks for a code for the address in the tribe of this slug, from ip. The
@@ -35,16 +37,22 @@ func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail
 	}
 	now := l.Now()
 	req := NewCodeRequest(slug, email, ip)
-	allowed, err := l.RateLimit.RecordCodeRequest(ctx, req, now)
+	refusal, err := l.RateLimit.RecordCodeRequest(ctx, req, now)
 	if err != nil {
 		return "", err
 	}
-	if !allowed {
+	if refusal != "" {
 		return "", ErrTooManyRequests
 	}
 	token, err := newToken()
 	if err != nil {
 		return "", fmt.Errorf("request code: %w", err)
+	}
+	// A decoy code for every request, before looking for the member: the rate limit
+	// database keeps the same rows for a member and for any other address (ADR 0021,
+	// point 4; plan production, D11). The decoy code of a member is never checked.
+	if err := l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(token, now)); err != nil {
+		return "", err
 	}
 
 	member, ok, err := activeMember(ctx, t, email)
@@ -52,9 +60,6 @@ func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail
 		return "", err
 	}
 	if !ok {
-		if err := l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(token, now)); err != nil {
-			return "", err
-		}
 		return token, nil
 	}
 	code, err := newLoginCode()
@@ -144,5 +149,51 @@ func (l *Login) Purge(ctx context.Context, dbs Databases) error {
 			errs = append(errs, fmt.Errorf("tribe %s: %w", slug, err))
 		}
 	}
+	return errors.Join(errs...)
+}
+
+// CheckAlerts sums the alert counters of the window, in the rate limit database and in
+// every tribe, and notifies the signals due (ADR 0023, point 8). The alert is written to
+// the log first, then recorded, then sent by email only if it was recorded: a database that
+// refuses the record repeats the log record at each check, never the email. A failing tribe
+// is reported, after the evaluation of the others: it does not hide an alert.
+func (l *Login) CheckAlerts(ctx context.Context, dbs Databases) error {
+	now := l.Now()
+	counts, err := l.RateLimit.AlertCounts(ctx, now)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	slugs, err := dbs.Tribes(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	for _, slug := range slugs {
+		db, err := dbs.Tribe(ctx, slug)
+		var events map[AlertEvent]int
+		if err == nil {
+			events, err = NewStore(db).AlertCounts(ctx, now)
+		}
+		if err != nil {
+			errs = append(errs, fmt.Errorf("tribe %s: %w", slug, err))
+			continue
+		}
+		counts.add(events)
+	}
+
+	sent, err := l.RateLimit.AlertsSent(ctx)
+	if err != nil {
+		return errors.Join(append(errs, err)...)
+	}
+	due := DueAlerts(counts, sent, now)
+	if len(due) == 0 {
+		return errors.Join(errs...)
+	}
+	report := AlertReport{At: now, Signals: due, Counts: counts}
+	l.Alerts.LogCodeRequestLimits(report)
+	if err := l.RateLimit.SetAlertsSent(ctx, due, now); err != nil {
+		return errors.Join(append(errs, err)...)
+	}
+	l.Alerts.SendCodeRequestLimits(report)
 	return errors.Join(errs...)
 }

@@ -38,7 +38,7 @@ Le serveur est un VPS OVHcloud (ADR 0007) qui fait tourner Caddy (ADR 0006) et l
 15. **Alertes par e-mail depuis le serveur** (via `msmtp`) :
     - panne ou redémarrages en boucle de l'application (`OnFailure=` dans systemd) ;
     - disque rempli à plus de 80 % (minuteur quotidien) ;
-    - échecs répétés d'envoi SMTP, signalés par l'application ;
+    - échecs répétés d'envoi SMTP, signalés par l'application ; précisé le 2026-10-06 (ADR 0023) : l'application signale une alerte par un enregistrement de son journal portant l'attribut `alert`, que le serveur relaie par `msmtp` ; l'alerte sur les limites de demandes de code part en plus par e-mail depuis l'application ;
     - rapports de mise à jour et redémarrages programmés.
 16. **Pas de sonde externe en V1**, ni de centralisation des logs ni de métriques.
 

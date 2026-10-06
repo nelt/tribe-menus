@@ -83,9 +83,18 @@ type CodeRequestCounts struct {
 	Email, IP int
 }
 
-// Allowed reports whether a new request is allowed after these requests.
-func (c CodeRequestCounts) Allowed() bool {
-	return c.Email < EmailRequestLimit && c.IP < IPRequestLimit
+// Refusal returns the limit that refuses a new request after these requests, as the event
+// counted for the alerts, or "" when the request is allowed. A request refused by both
+// limits is counted once, by address.
+func (c CodeRequestCounts) Refusal() AlertEvent {
+	switch {
+	case c.Email >= EmailRequestLimit:
+		return EmailLimitRefusal
+	case c.IP >= IPRequestLimit:
+		return IPLimitRefusal
+	default:
+		return ""
+	}
 }
 
 // RequestWindows returns the start of each window for a request at now: requests made

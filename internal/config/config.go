@@ -39,6 +39,15 @@ type Config struct {
 	// SMTP is the server sending the emails (ADR 0014). Its password is not here: it is a
 	// systemd credential (ADR 0015, point 10).
 	SMTP SMTP `json:"smtp"`
+	// Alerts are the alerts sent by email by the application (ADR 0023).
+	Alerts Alerts `json:"alerts"`
+}
+
+// Alerts is the alerts key of the config file.
+type Alerts struct {
+	// To is the address of the administrator, who receives the alert on the code request
+	// limits.
+	To string `json:"to"`
 }
 
 // SMTP is the smtp key of the config file.
@@ -59,6 +68,7 @@ var keys = map[string]map[string]bool{
 	"listen":  nil,
 	"baseURL": nil,
 	"smtp":    {"host": true, "port": true, "username": true, "from": true},
+	"alerts":  {"to": true},
 }
 
 // Systemd reports whether the server listens on the socket passed by systemd, hence behind
@@ -232,7 +242,26 @@ func (c Config) validate() error {
 	case !validBaseURL(c.BaseURL):
 		return errors.New(`key "baseURL": want https://host, without path`)
 	}
-	return c.SMTP.validate()
+	if err := c.SMTP.validate(); err != nil {
+		return err
+	}
+	return c.Alerts.validate()
+}
+
+func (a Alerts) validate() error {
+	if a.To == "" {
+		return missing("alerts.to")
+	}
+	if !lowerCaseEmail(a.To) {
+		return errors.New(`key "alerts.to": want an email address, in lower case`)
+	}
+	return nil
+}
+
+// lowerCaseEmail reports whether s is an address that ParseEmail accepts as is.
+func lowerCaseEmail(s string) bool {
+	email, err := tribe.ParseEmail(s)
+	return err == nil && string(email) == s
 }
 
 func (s SMTP) validate() error {
@@ -252,7 +281,7 @@ func (s SMTP) validate() error {
 	case s.From == "":
 		return missing("smtp.from")
 	}
-	if from, err := tribe.ParseEmail(s.From); err != nil || string(from) != s.From {
+	if !lowerCaseEmail(s.From) {
 		return errors.New(`key "smtp.from": want an email address, in lower case`)
 	}
 	return nil

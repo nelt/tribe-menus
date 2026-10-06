@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lot A fait, lot B en revue)
+- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A et B faits, lot C en revue)
 
 ## Objectif
 
@@ -117,31 +117,31 @@ Points d'attention de la revue : injection dans les en-têtes ou l'enveloppe par
 
 Points d'attention de la revue : ce que les compteurs apprennent sur l'appartenance d'une adresse à une tribu ; contenu de l'e-mail d'alerte ; croissance des tables sous un flot de demandes.
 
-- [ ] **16. ADR 0023 : alertes de l'application** (D6 à D9), et specs.
+- [x] **16. ADR 0023 : alertes de l'application** (D6 à D9), et specs.
   - L'ADR fixe : ce qu'est une alerte (un enregistrement du journal de niveau erreur portant un attribut `alert`, relayé par le serveur) ; lesquelles sont aussi envoyées par e-mail par l'application ; ce qui est compté et où ; ce que l'e-mail contient. Il précise l'ADR 0015 (point 15) et l'ADR 0021 (ce que contiennent les bases).
   - ENF-01 : la phrase « limites atteintes de façon répétée » reçoit sa définition et ses seuils (D8).
   - `authentification.feature` : scénarios « Des demandes refusées à répétition sont signalées à l'administrateur », « Des codes épuisés à répétition sont signalés à l'administrateur », « Des demandes répétées pour une même adresse sont signalées à l'administrateur » (D12), « L'alerte ne nomme ni adresse ni tribu », « Une alerte n'est pas répétée tant qu'elle dure ».
   - ADR 0021 (point 4) : renvoi daté vers D11, ce que la base de limitation savait des membres avant lui et ce qu'elle garde après.
-- [ ] **17. Un code fantôme pour toute demande** (D11). Test d'abord.
+- [x] **17. Un code fantôme pour toute demande** (D11). Test d'abord.
   - `Login.RequestCode` écrit le code fantôme de l'empreinte d'adresse pour **toute** demande acceptée par les limites, membre ou non, avant de chercher le membre. Celui d'un membre n'est jamais vérifié ; il expire et s'efface comme les autres.
   - Test : après une demande pour un membre et une demande pour une autre adresse, la base de limitation contient pour chacune une demande et un code fantôme de même forme ; rien de ce qu'elle garde ne les distingue.
   - Un membre révoqué dans les dix minutes qui suivent sa demande voit ses saisies vérifiées contre ce code fantôme, exactement comme une adresse inconnue : scénarios ENF-02 existants à relancer.
-- [ ] **18. Compteurs** (D7).
+- [x] **18. Compteurs** (D7).
   - Table de compteurs par tranche de dix minutes et par nature d'événement, sans empreinte ni identifiant : une ligne par tranche et par nature, incrémentée. Sa taille ne dépend pas du nombre de demandes.
   - Base de limitation (`internal/storage/migrations/ratelimit/`) : demandes refusées par la limite par adresse, par la limite par IP, codes fantômes épuisés ; et la date de la dernière alerte envoyée, par nature d'alerte.
   - Base de la tribu (`internal/storage/migrations/tribe/`) : demandes refusées par la limite de la tribu, codes réels épuisés.
   - Requêtes sqlc, `make generate`. Effacement automatique des tranches sorties de la fenêtre, avec le reste (PT-07).
-- [ ] **19. Comptage**, dans la transaction qui constate l'événement.
+- [x] **19. Comptage**, dans la transaction qui constate l'événement.
   - `RateLimitStore.RecordCodeRequest` dit quelle limite a refusé, et compte le refus.
   - `Store.IssueLoginCode` compte le refus par la limite de la tribu ; `Store.OpenSession` et `CheckDecoyCode` comptent le code invalidé par son dernier essai.
   - Ni la réponse de l'API ni sa durée ne changent : les scénarios ENF-02 existants le prouvent déjà, à relancer.
-- [ ] **20. Évaluation et envoi.**
+- [x] **20. Évaluation et envoi.**
   - Avec l'effacement périodique, toutes les dix minutes : somme des compteurs de la dernière heure, base de limitation et toutes les tribus, et nombre d'empreintes d'adresse à neuf demandes ou plus dans l'heure, lu dans les demandes que la base de limitation garde déjà (D12) ; décision par une fonction pure (compteurs, dernière alerte, heure), testée en tableau de cas.
   - Seuil franchi et aucune alerte de cette nature depuis six heures : un enregistrement `alert=code_request_limits` dans le journal, et un e-mail à l'adresse `alerts.to` de la configuration (clé ajoutée, obligatoire en mode serveur), par le même `Mailer`.
   - E-mail en français, en texte brut : nom de l'instance (`baseURL`), fenêtre, compteurs par nature, renvoi vers les journaux d'accès de Caddy. **Ni adresse e-mail, ni adresse IP, ni tribu.**
   - En développement, l'e-mail d'alerte part dans les logs comme les autres.
-- [ ] **21. Échecs répétés d'envoi** (ADR 0015, point 15). Trois envois échoués en une heure, vérification du démarrage comprise : un enregistrement `alert=smtp_failures`, sans e-mail (D6), au plus un par six heures. Compteur en mémoire (D9).
-- [ ] **22. Scénarios et documentation du lot** : définitions d'étapes godog des scénarios de l'étape 16 (l'évaluation est appelée par l'étape, avec l'horloge du test) ; `TestLimitsSurviveRestart` étendu aux compteurs ; glossaire ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « alerte de D1 » retiré, relais des alertes inscrit au plan `recette`) ; cases cochées.
+- [x] **21. Échecs répétés d'envoi** (ADR 0015, point 15). Trois envois échoués en une heure, vérification du démarrage comprise : un enregistrement `alert=smtp_failures`, sans e-mail (D6), au plus un par six heures. Compteur en mémoire (D9).
+- [x] **22. Scénarios et documentation du lot** : définitions d'étapes godog des scénarios de l'étape 16 (l'évaluation est appelée par l'étape, avec l'horloge du test) ; `TestLimitsSurviveRestart` étendu aux compteurs ; glossaire ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « alerte de D1 » retiré, relais des alertes inscrit au plan `recette`) ; cases cochées.
 
 ### Lot D : front à empreinte et archive (`feature/front-a-empreinte-et-archive`)
 
@@ -189,7 +189,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Secret** : le mot de passe SMTP ne se trouve ni dans une option, ni dans l'environnement, ni dans le fichier de configuration, ni dans un log, y compris après un échec d'authentification.
 - **Logs** : après des envois réussis et échoués, les logs du mode serveur ne contiennent ni adresse e-mail, ni code, ni jeton.
 - **Alertes** : les seuils de D8 et de D12 déclenchent un e-mail à l'administrateur et un enregistrement `alert` ; rien en dessous ; une seule alerte par nature en six heures ; compteurs inchangés après un redémarrage ; l'e-mail ne nomme ni adresse ni tribu.
-- **Base de limitation** : elle ne contient toujours ni adresse ni IP en clair, et rien de ce qu'elle garde ne dépend de l'appartenance d'une adresse à une tribu, codes fantômes compris (D11).
+- **Base de limitation** : elle ne contient toujours ni adresse ni IP en clair ; à la demande, ce qu'elle garde ne dépend pas de l'appartenance d'une adresse à une tribu, codes fantômes compris (D11). Après un essai, les essais restants du code fantôme et le compteur des codes fantômes épuisés en dépendent : limite assumée (D13).
 - **Front** : modifier une source change le nom du fichier produit ; un fichier à empreinte est servi avec `immutable`, la page d'entrée avec `no-cache`.
 - **Archive** : deux `make dist` sur le même commit donnent la même empreinte ; l'archive contient le binaire `linux/amd64`, `site/` et `deploy/`.
 - **Release** : l'essai à blanc de `release.yml` dépose une archive vérifiable ; le job qui lance `make ci` n'a aucun droit d'écriture.
@@ -209,7 +209,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 
 - **Unité systemd** : `ExecStart=… serve -config /etc/tribe-menus/<environnement>/config.json` ; credential `smtp-password` ; un seul socket transmis ; `TimeoutStopSec` d'au moins 45 secondes (10 d'attente des requêtes, 30 d'un envoi en cours).
 - **Caddy** : son adresse de client en dernière position de `X-Forwarded-For`, `Host` transmis tel quel.
-- **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert`.
+- **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert` (ADR 0023) ; l'adresse de l'administrateur dans la clé `alerts.to` du fichier de configuration.
 - **Archive** : `deploy/` au complet.
 - **E-mail** (revue de la PR #46, points 2 et 3) : lire les réponses réelles du MX Plan à un destinataire refusé, et ne garder que les codes si elles citent la partie locale ; vérifier que `EHLO localhost` ne pénalise pas la réception hors des indésirables.
 
@@ -219,11 +219,12 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Seuils de D8** : valeurs proposées sans mesure. À revoir après les premières semaines de recette, où tout faux positif sera visible.
 - **Nouvel essai d'envoi** : aucun en V1 ; le membre dispose de « Je n'ai rien reçu : renvoyer un code ». À reprendre si les logs de recette montrent des échecs passagers.
 - **Adresses hors ASCII** (D5) : refusées. À rouvrir si un membre en a une, avec la prise en charge de SMTPUTF8 par le MX Plan à vérifier d'abord.
+- **Essais sur un code fantôme de membre** (lot C, étape 16) : close le 2026-10-06 par D13 (limite assumée).
 - **Nombre de PR** : cinq lots, là où `socle` en avait trois. A et B peuvent se fondre si le développeur préfère moins de PR ; D et E restent séparés à cause des workflows.
 
 ## Décisions
 
-D1 à D10 proposées par la session qui a écrit le plan, confirmées telles quelles par le développeur le 2026-10-06 ; D11 et D12 tranchées par lui le même jour, à partir des deux premières questions ouvertes du brouillon.
+D1 à D10 proposées par la session qui a écrit le plan, confirmées telles quelles par le développeur le 2026-10-06 ; D11 et D12 tranchées par lui le même jour, à partir des deux premières questions ouvertes du brouillon ; D13 tranchée par lui à la revue de la PR #47.
 
 - **D1. Fichier de configuration en JSON, lu strictement.** La bibliothèque standard le lit sans dépendance, et une clé mal orthographiée arrête le démarrage au lieu d'être ignorée. Le fichier vit sur le serveur (`/etc/tribe-menus/<environnement>/`, ADR 0015, point 9), ce qui garde hors du dépôt les valeurs propres à l'instance (ADR 0011, point 5). Écartés : TOML ou YAML (une dépendance) ; des options dans l'unité systemd, versionnée dans `deploy/` (les valeurs de l'instance entreraient dans le dépôt) ; des variables d'environnement (l'ADR 0015 les écarte pour les secrets, et deux canaux de configuration valent moins qu'un).
 - **D2. Deux modes exclusifs, `-dev` ou `-config`.** L'écoute sur le socket et l'envoi SMTP ne s'expriment que dans le fichier de configuration : le constat 8 est tenu par construction, et le mode à moitié configuré d'aujourd'hui (ni développement, ni envoi) disparaît. Écarté : garder les options et ajouter un contrôle par combinaison dangereuse, liste qu'il faudrait tenir à jour.
@@ -250,6 +251,8 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
 - **D11. Un code fantôme pour toute demande, membre ou non** (étape 17). Avant ce plan, la base de limitation n'écrit un code fantôme que pour une adresse qui n'est pas membre active : une demande enregistrée sans code fantôme au même instant désigne, pendant les dix minutes de validité du code, l'empreinte d'un membre, à qui lit le fichier. Écrire le code fantôme pour toute demande rend les deux cas identiques dans cette base, comme le veut l'ADR 0021 (point 4), pour le prix d'une ligne par adresse demandée, effacée avec les autres. Gravité faible selon la grille de `docs/traitement-des-vulnerabilites.md` (accès au serveur requis, rien en production) : flux public. Écarté : l'écrire comme une limite assumée.
 - **D12. Troisième signal d'alerte : une même empreinte d'adresse à neuf demandes ou plus dans l'heure** (étape 20). Il couvre le blocage ciblé mené au rythme exact de la limite (trois demandes par quart d'heure, douze par heure), qui ne produit ni refus ni code épuisé. Il se calcule sur les demandes que la base de limitation garde déjà, sans donnée de plus, et ne dépend pas de l'appartenance de l'adresse une fois D11 en place. Mêmes règles que D8 : constante du code, une alerte par six heures au plus, ni adresse, ni IP, ni tribu dans l'e-mail. Neuf demandes en une heure pour une même adresse n'arrivent pas par maladresse.
 
+- **D13. Limite de D11 assumée** (lot C, revue de la PR #47, point 1 ; tranchée par le développeur le 2026-10-06). Qui lit la base de limitation peut apprendre si une adresse est membre d'une tribu, en demandant un code pour elle depuis son navigateur et en saisissant un code faux : le code fantôme d'une autre adresse perd un essai, celui d'un membre n'est jamais vérifié ; un code épuisé est compté dans la base de limitation pour une autre adresse, dans la base de la tribu pour un membre. Accepté : la base de limitation ne se lit qu'avec le répertoire de données, où les bases des tribus portent les adresses des membres en clair. Le code, D7 et l'e-mail ne changent pas ; ADR 0021 (point 4) et ADR 0023 le disent. Écarté : reporter sur le code fantôme chaque essai d'un membre et compter tout code épuisé dans la base de limitation.
+
 ## Notes d'exécution
 
 - **2026-10-06, mise à jour du plan** : décisions D1 à D10 confirmées par le développeur ; les deux premières questions ouvertes deviennent D11 (code fantôme pour toute demande) et D12 (troisième signal d'alerte), au lot C, qui gagne une étape : les étapes 17 à 31 du brouillon deviennent 18 à 32. Chemin des migrations corrigé (`internal/storage/migrations/`). Lots exécutés un à un : le suivant attend la fusion du précédent.
@@ -271,3 +274,12 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - Étape 13 : la réponse du serveur est gardée après remplacement de l'adresse du destinataire et du mot de passe, quelle que soit la casse ; `mail.ErrorAttrs` donne l'étape et le code aux enregistrements « login code not sent » et « SMTP check failed », que le lot C comptera.
   - Revue de la PR #46 : à l'étape d'authentification, la réponse du serveur ne garde que son code SMTP, son texte pouvant citer la commande `AUTH PLAIN`, dont le base64 porte le mot de passe (point 1). À noter pour la recette : le remplacement ne reconnaît que l'adresse entière du destinataire, une réponse qui cite la partie locale seule (`user alice.martin unknown`) passe telle quelle ; si le MX Plan répond ainsi, ne garder que le code SMTP et le code d'état étendu (`5.1.1`) (point 2). Le client se présente par `EHLO localhost`, valeur par défaut de `net/smtp`, qui apparaît dans l'en-tête `Received` ; `Client.Hello` avec l'hôte de `baseURL` si un filtre s'en formalise (point 3).
   - Étape 14 : non faite par Claude Code, faute de compte. Vérifié depuis le Dev Container le 2026-10-06 : le port 465 de `ssl0.ovh.net` est joignable, son certificat (TLS 1.2) porte le nom `ssl0.ovh.net` et passe la vérification de Go. Le 2026-10-06, le développeur renvoie l'essai d'un envoi réel à la recette, avec la réception sur les messageries des membres (« Ce que ce plan ne prouve pas »).
+- **Lot C** (`feature/enf-01-alertes`), 2026-10-06, Claude Code dans le Dev Container :
+  - Étape 16 : un signal d'alerte par seuil (demandes refusées, codes épuisés, demandes répétées), chacun avec sa dernière alerte : « une alerte par nature et par six heures » s'entend par signal ; un même e-mail nomme tous les signaux dus à une évaluation. Glossaire complété dès cette étape, avant le code. Une limite de D11 relevée et inscrite dans l'ADR 0023 et les questions ouvertes : les essais restants d'un code fantôme le distinguent, après un essai, de celui d'un membre, jamais vérifié.
+  - Étape 18 : la valeur des natures et des signaux est contrainte par un `CHECK` dans chaque table. La dernière alerte par signal n'est pas effacée : trois lignes au plus.
+  - Étape 19 : `CodeRequestCounts.Allowed` devient `Refusal`, qui nomme la limite ; une demande refusée par les deux limites compte une fois, par adresse.
+  - Étape 20 : l'alerte est écrite au journal, puis notée dans la base de limitation, puis envoyée par e-mail si elle a pu être notée (ordre fixé par le développeur à la revue de la PR #47 ; d'abord écrit en notant l'alerte avant de l'écrire au journal). Un envoi échoué ne la répète pas ; une base qui refuse de la noter répète l'enregistrement du journal à chaque évaluation, pas l'e-mail. Une tribu illisible n'empêche pas l'évaluation des autres. Nouveau paquet `internal/alert` (notificateur, texte de l'e-mail, échecs d'envoi), `Outbox.SendAlert`. En développement, l'administrateur est `admin@example.org` et l'e-mail part dans les logs.
+  - Étape 21 : chaque échec d'un envoi, code ou alerte, est compté par un `Mailer` qui enveloppe celui du SMTP ; le test du mode serveur en TCP provoque l'alerte (vérification du démarrage et deux codes non envoyés) et vérifie qu'aucune adresse n'est dans les logs.
+  - Le 2026-10-06, le développeur confirme deux interprétations de l'étape 16 et de l'étape 20 : une alerte par signal et par six heures, un même e-mail nommant tous les signaux dus ; l'e-mail distingue les codes de membres épuisés des codes fantômes épuisés.
+  - Étape 22 : les étapes godog appellent `CheckAlerts` avec l'horloge du scénario ; elles détectent un seuil faussé (essai fait en passant le seuil des refus à 11).
+  - Revue de la PR #47 : la limite de D11 était plus large que décrit ; le développeur l'assume (D13), documents réécrits sans changer le code (point 1). À noter : la fenêtre des compteurs ne couvre que de 50 à 60 minutes, seules comptant les tranches qui commencent après « maintenant moins une heure » (à 12 h 07, un refus de 11 h 08 tombe dans la tranche de 11 h 00, écartée) ; des refus étalés sur l'heure peuvent rester un cran sous le seuil. À reprendre avec la révision des seuils après les premières semaines de recette : une septième tranche couvre l'heure entière (point 2). Un destinataire refusé compte comme un échec d'envoi : un membre dont la boîte n'existe plus, qui demande trois codes dans l'heure, déclenche `smtp_failures` alors que le compte d'envoi fonctionne ; à regarder en recette avec les réponses réelles du MX Plan : ne compter que les étapes `connect` et `auth`, ou garder ce sens large et l'écrire dans l'ADR 0023 (point 3).

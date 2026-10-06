@@ -7,5 +7,8 @@
     "port": 465,
     "username": "no-reply@example.org",
     "from": "no-reply@example.org"
+  },
+  "alerts": {
+    "to": "admin@example.org"
   }
 }

@@ -4,6 +4,17 @@
 
 package ratelimitdb
 
+type AlertCounter struct {
+	Slot  string
+	Event string
+	N     int64
+}
+
+type AlertsSent struct {
+	Signal string
+	SentAt string
+}
+
 type CodeRequest struct {
 	ID        int64
 	At        string

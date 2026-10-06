@@ -253,6 +253,9 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	dir := t.TempDir()
 	configFile := writeConfig(t, dir, "localhost:0")
 	writeCredential(t)
+	if code := run([]string{"admin", "seed", "-config", configFile}, strings.NewReader(""), io.Discard, io.Discard); code != 0 {
+		t.Fatalf("admin seed: exit code %d", code)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	stdout := &syncBuffer{}
@@ -280,6 +283,26 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "data", "registry.db")); err != nil {
 		t.Errorf("registry not created in the data directory of the config file: %v", err)
 	}
+	// Two codes not sent, after the failed check: three failures, an alert (ADR 0023).
+	for _, email := range []string{"alice@exemple.fr", "bruno@exemple.fr"} {
+		req, err := http.NewRequest(http.MethodPost, addr+"/tribes/demo/api/login-codes", strings.NewReader(`{"email":"`+email+`"}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusAccepted {
+			t.Errorf("POST login-codes: status %d", resp.StatusCode)
+		}
+	}
+	alerted := waitForLog(t, stdout, "repeated SMTP failures")
+	if alerted["alert"] != "smtp_failures" || alerted["level"] != "ERROR" {
+		t.Errorf("alert record %v", alerted)
+	}
 	cancel()
 	select {
 	case <-done:
@@ -289,6 +312,9 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	assertJSONLines(t, stdout.String())
 	if strings.Contains(stdout.String(), testPassword) {
 		t.Errorf("logs contain the SMTP password: %s", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "exemple.fr") {
+		t.Errorf("logs contain an address: %s", stdout.String())
 	}
 }
 
