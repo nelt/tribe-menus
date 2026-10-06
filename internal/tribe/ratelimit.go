@@ -2,6 +2,7 @@ package tribe
 
 import (
 	"crypto/sha256"
+	"net/netip"
 	"time"
 )
 
@@ -29,13 +30,38 @@ type CodeRequest struct {
 	// EmailHash is the hash of the address with the slug: the same address has unrelated
 	// hashes in two tribes (ENF-02).
 	EmailHash []byte
-	// IPHash is the hash of the IP alone: the limit by IP holds for the whole instance.
+	// IPHash is the hash of the IP alone, normalized by ipKey: the limit by IP holds for the
+	// whole instance.
 	IPHash []byte
 }
 
 // NewCodeRequest returns the request of email for the tribe slug from ip.
 func NewCodeRequest(slug string, email Email, ip string) CodeRequest {
-	return CodeRequest{EmailHash: emailHash(slug, email), IPHash: hash(ip)}
+	return CodeRequest{EmailHash: emailHash(slug, email), IPHash: hash(ipKey(ip))}
+}
+
+// ipv6Prefix is the prefix an IPv6 counts for: the least a provider gives a subscriber
+// (plan production, D4). Without it, the limit by IP would be bypassed by changing the
+// address within one's own prefix.
+const ipv6Prefix = 64
+
+// ipKey is the form of the IP counted by the limit by IP: an IPv4 as is, an IPv4 mapped
+// in an IPv6 as the IPv4, an IPv6 as its /64 prefix, without zone. Anything else, such as
+// the unknown IP of a request behind the proxy, is kept as is.
+func ipKey(ip string) string {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return ip
+	}
+	addr = addr.Unmap().WithZone("")
+	if addr.Is4() {
+		return addr.String()
+	}
+	prefix, err := addr.Prefix(ipv6Prefix)
+	if err != nil {
+		return addr.String()
+	}
+	return prefix.String()
 }
 
 // emailHash hashes an address with the slug of the tribe. Neither contains a line feed;

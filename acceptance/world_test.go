@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -236,7 +237,7 @@ func (w *world) do(ctx context.Context, d *device, method, path string, body any
 		reader = strings.NewReader(string(data))
 	}
 	req := httptest.NewRequestWithContext(ctx, method, origin+path, reader)
-	req.RemoteAddr = d.ip + ":49152"
+	req.RemoteAddr = net.JoinHostPort(d.ip, "49152")
 	req.Header.Set("User-Agent", userAgent)
 	if method != http.MethodGet {
 		req.Header.Set("Origin", origin)

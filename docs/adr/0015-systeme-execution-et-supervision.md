@@ -25,7 +25,7 @@ Le serveur est un VPS OVHcloud (ADR 0007) qui fait tourner Caddy (ADR 0006) et l
 9. **Emplacements** :
    - binaires : `/opt/tribe-menus/<environnement>/releases/vX.Y.Z/`, lien `current` vers la version active ;
    - données : `/var/lib/tribe-menus/<environnement>/` (registre et un fichier par tribu), accessibles au seul service ;
-   - configuration non secrète : `/etc/tribe-menus/<environnement>/` ;
+   - configuration non secrète : `/etc/tribe-menus/<environnement>/` ; précisé le 2026-10-06 (plan `production`, D1 et D2) : un fichier `config.json`, en JSON lu strictement (clé inconnue ou manquante refusée), avec les clés `data` (répertoire des bases), `listen` (`"systemd"` pour le socket transmis, ou une adresse TCP) et `baseURL` (adresse publique de l'instance), complétées par l'envoi SMTP et les alertes ; le service est lancé par `tribe-menus serve -config <fichier>`, mode exclusif du mode développement `-dev` ; exemple dans `deploy/config.example.json` ;
    - site public : `/var/www/tribe-menus/`, servi par Caddy.
 10. **Secrets** (mot de passe SMTP…) : **credentials systemd**, chiffrés sur disque avec une clé propre à la machine (`systemd-creds`), déchiffrés au démarrage et présentés au seul service dans un répertoire privé, lus comme un fichier par le programme. Jamais en variables d'environnement.
 11. **Activation de socket systemd** : systemd crée le socket Unix, accessible au seul groupe de Caddy, et le transmet au programme. Pendant un redémarrage, les requêtes attendent dans le socket au lieu d'échouer.
