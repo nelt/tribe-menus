@@ -42,6 +42,16 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | supprimer une tribu | delete a tribe | EF-10 |
 | anonymiser (un membre) | anonymize | EF-11 |
 
+## Exploitation
+
+| Français | Anglais | Remarque |
+| --- | --- | --- |
+| fichier de configuration | config file | JSON, mode serveur seul, plan `production`, D1 |
+| mode serveur / mode développement | server mode / development mode | `serve -config` / `serve -dev`, plan `production`, D2 |
+| socket transmis par systemd | systemd socket | activation de socket, ADR 0015 |
+| adresse IP du client | client IP | ADR 0006, point 7 |
+| derrière le proxy | behind the proxy | écoute sur le socket transmis par systemd, plan `production`, D3 |
+
 ## Plats et ingrédients
 
 | Français | Anglais | Remarque |
