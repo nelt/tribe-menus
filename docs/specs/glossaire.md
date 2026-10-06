@@ -25,7 +25,7 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | demande de code | code request | ENF-01 |
 | limitation des demandes | rate limit | ENF-01 |
 | base de limitation | rate limit database | ADR 0021 |
-| code fantôme | decoy code | tribu inexistante ou adresse non membre active : jamais envoyé, ne peut pas réussir, ADR 0021 |
+| code fantôme | decoy code | écrit pour toute demande, vérifié pour une tribu inexistante ou une adresse non membre active : jamais envoyé, ne peut pas réussir, ADR 0021, ADR 0023 |
 | app installée / onglet | installed app / tab | mode de la session, EF-04 |
 | effacement automatique | purge | PT-07 |
 | anonymisé | anonymized | EF-11 |
@@ -51,6 +51,16 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | socket transmis par systemd | systemd socket | activation de socket, ADR 0015 |
 | adresse IP du client | client IP | ADR 0006, point 7 |
 | derrière le proxy | behind the proxy | écoute sur le socket transmis par systemd, plan `production`, D3 |
+| alerte | alert | enregistrement du journal portant l'attribut `alert`, ADR 0023 |
+| limites de demandes de code (alerte) | code request limits | `alert=code_request_limits`, ENF-01 |
+| échecs d'envoi (alerte) | SMTP failures | `alert=smtp_failures`, ADR 0015, point 15 |
+| signal (d'alerte) | alert signal | demandes refusées, codes épuisés, demandes répétées, ADR 0023 |
+| demande refusée | refused request | refusée par une limite, ENF-01 |
+| code épuisé | exhausted code | invalidé par son dernier essai erroné, réel ou fantôme |
+| demandes répétées (pour une adresse) | repeated requests | neuf demandes ou plus dans l'heure, plan `production`, D12 |
+| compteur (d'alerte) | alert counter | par tranche de dix minutes et par nature d'événement, sans empreinte |
+| tranche (de dix minutes) | slot | |
+| administrateur (de l'instance) | administrator | destinataire des alertes, clé `alerts.to` |
 
 ## Plats et ingrédients
 

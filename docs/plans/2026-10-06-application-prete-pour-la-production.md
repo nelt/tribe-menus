@@ -117,7 +117,7 @@ Points d'attention de la revue : injection dans les en-têtes ou l'enveloppe par
 
 Points d'attention de la revue : ce que les compteurs apprennent sur l'appartenance d'une adresse à une tribu ; contenu de l'e-mail d'alerte ; croissance des tables sous un flot de demandes.
 
-- [ ] **16. ADR 0023 : alertes de l'application** (D6 à D9), et specs.
+- [x] **16. ADR 0023 : alertes de l'application** (D6 à D9), et specs.
   - L'ADR fixe : ce qu'est une alerte (un enregistrement du journal de niveau erreur portant un attribut `alert`, relayé par le serveur) ; lesquelles sont aussi envoyées par e-mail par l'application ; ce qui est compté et où ; ce que l'e-mail contient. Il précise l'ADR 0015 (point 15) et l'ADR 0021 (ce que contiennent les bases).
   - ENF-01 : la phrase « limites atteintes de façon répétée » reçoit sa définition et ses seuils (D8).
   - `authentification.feature` : scénarios « Des demandes refusées à répétition sont signalées à l'administrateur », « Des codes épuisés à répétition sont signalés à l'administrateur », « Des demandes répétées pour une même adresse sont signalées à l'administrateur » (D12), « L'alerte ne nomme ni adresse ni tribu », « Une alerte n'est pas répétée tant qu'elle dure ».
@@ -219,6 +219,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Seuils de D8** : valeurs proposées sans mesure. À revoir après les premières semaines de recette, où tout faux positif sera visible.
 - **Nouvel essai d'envoi** : aucun en V1 ; le membre dispose de « Je n'ai rien reçu : renvoyer un code ». À reprendre si les logs de recette montrent des échecs passagers.
 - **Adresses hors ASCII** (D5) : refusées. À rouvrir si un membre en a une, avec la prise en charge de SMTPUTF8 par le MX Plan à vérifier d'abord.
+- **Essais sur un code fantôme de membre** (lot C, étape 16) : avec D11, le code fantôme d'un membre n'est jamais vérifié, celui d'une autre adresse l'est à chaque essai depuis le navigateur de la demande. Après un tel essai, ses essais restants le distinguent, pour qui lit la base de limitation ; avant, rien. Inscrit comme limite dans l'ADR 0023. Pour la lever : reporter aussi sur le code fantôme chaque essai d'un membre, un code accepté comptant comme un essai erroné, au prix d'une transaction de plus par essai et d'un compte des codes épuisés à prendre dans une seule base. À trancher par le développeur.
 - **Nombre de PR** : cinq lots, là où `socle` en avait trois. A et B peuvent se fondre si le développeur préfère moins de PR ; D et E restent séparés à cause des workflows.
 
 ## Décisions

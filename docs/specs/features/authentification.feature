@@ -156,6 +156,59 @@ Fonctionnalité: Connexion et session persistante
     Alors un code à 8 chiffres est envoyé à "alice@exemple.fr"
 
   @ENF-01
+  Plan du scénario: Des demandes refusées à répétition sont signalées à l'administrateur
+    Étant donné <nombre> demandes de code ont été refusées par les limites dans la dernière heure
+    Quand l'application vérifie les limites atteintes
+    Alors <résultat>
+
+    Exemples:
+      | nombre | résultat                                                             |
+      | 10     | l'administrateur reçoit une alerte sur les demandes de code refusées |
+      | 9      | aucune alerte n'est envoyée                                          |
+
+  @ENF-01
+  Plan du scénario: Des codes épuisés à répétition sont signalés à l'administrateur
+    Étant donné <nombre> codes ont été invalidés par des essais erronés dans la dernière heure
+    Quand l'application vérifie les limites atteintes
+    Alors <résultat>
+
+    Exemples:
+      | nombre | résultat                                                 |
+      | 5      | l'administrateur reçoit une alerte sur les codes épuisés |
+      | 4      | aucune alerte n'est envoyée                              |
+
+  @ENF-01
+  Plan du scénario: Des demandes répétées pour une même adresse sont signalées à l'administrateur
+    Étant donné "<adresse>" a demandé <nombre> codes pour la tribu "martin" dans la dernière heure
+    Quand l'application vérifie les limites atteintes
+    Alors <résultat>
+
+    Exemples:
+      | adresse            | nombre | résultat                                                     |
+      | alice@exemple.fr   | 9      | l'administrateur reçoit une alerte sur les demandes répétées |
+      | inconnu@exemple.fr | 9      | l'administrateur reçoit une alerte sur les demandes répétées |
+      | alice@exemple.fr   | 8      | aucune alerte n'est envoyée                                  |
+
+  @ENF-01
+  Scénario: L'alerte ne nomme ni adresse ni tribu
+    Étant donné 10 demandes de code ont été refusées par les limites dans la dernière heure
+    Et 5 codes ont été invalidés par des essais erronés dans la dernière heure
+    Et "alice@exemple.fr" a demandé 9 codes pour la tribu "martin" dans la dernière heure
+    Quand l'application vérifie les limites atteintes
+    Alors l'administrateur reçoit une alerte sur les demandes de code refusées
+    Et l'alerte ne contient ni adresse e-mail, ni adresse IP, ni le nom ou l'identifiant de la tribu
+
+  @ENF-01
+  Scénario: Une alerte n'est pas répétée tant qu'elle dure
+    Étant donné l'administrateur a reçu une alerte sur les demandes de code refusées
+    Quand 10 demandes de code sont refusées par les limites dans l'heure qui suit
+    Et l'application vérifie les limites atteintes
+    Alors aucune alerte n'est envoyée
+    Quand 10 demandes de code sont refusées par les limites 6 heures après l'alerte
+    Et l'application vérifie les limites atteintes
+    Alors l'administrateur reçoit une alerte sur les demandes de code refusées
+
+  @ENF-01
   Scénario: Un code ne sert qu'une fois
     Étant donné je me suis connecté à la tribu "martin" en tant que "alice@exemple.fr" avec un code
     Quand je saisis à nouveau ce code sur un autre appareil
