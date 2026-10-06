@@ -320,6 +320,7 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 	}
 	cfg.Tribes, cfg.Login = store, login
 	cfg.Version, cfg.Commit = version, commit
+	cfg.BehindProxy = opts.listen == config.ListenSystemd
 	handler, err := server.New(cfg)
 	if err != nil {
 		return err

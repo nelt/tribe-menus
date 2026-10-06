@@ -16,6 +16,8 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
 func TestSystemdSocketCount(t *testing.T) {
@@ -155,6 +157,34 @@ func TestServeOnSystemdSocket(t *testing.T) {
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || string(body) != "ok\n" {
 		t.Errorf("GET /healthz: status %d, body %q", resp.StatusCode, body)
+	}
+
+	// Behind the proxy, the IP of the client is the last of X-Forwarded-For (plan
+	// production, D3): the limit by IP holds for it, not for the socket.
+	requestCode := func(i int, forwarded string) int {
+		req, err := http.NewRequest("POST", "http://tribes.example.org/tribes/demo/api/login-codes", strings.NewReader(`{"email":"personne-`+strconv.Itoa(i)+`@example.org"}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Forwarded-For", forwarded)
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		return resp.StatusCode
+	}
+	for i := range tribe.IPRequestLimit {
+		if status := requestCode(i, "203.0.113.1, 198.51.100.9"); status != http.StatusAccepted {
+			t.Fatalf("request %d: status %d", i+1, status)
+		}
+	}
+	if status := requestCode(100, "198.51.100.9"); status != http.StatusTooManyRequests {
+		t.Errorf("request over the limit of the client IP: status %d, want %d", status, http.StatusTooManyRequests)
+	}
+	if status := requestCode(101, "198.51.100.9, 198.51.100.10"); status != http.StatusAccepted {
+		t.Errorf("request from another client IP: status %d, want %d", status, http.StatusAccepted)
 	}
 	client.CloseIdleConnections()
 

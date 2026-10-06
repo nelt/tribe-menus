@@ -55,6 +55,7 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^"([^"]*)" est membre révoqué de la tribu "([^"]*)"$`, w.givenRevokedMember)
 	sc.Step(`^"([^"]*)" a demandé (\d+) codes pour la tribu "([^"]*)" dans le dernier quart d'heure$`, w.givenRequestsByEmail)
 	sc.Step(`^(\d+) demandes de code depuis la même adresse IP ont été faites dans la dernière heure$`, w.givenRequestsByIP)
+	sc.Step(`^(\d+) demandes de code depuis l'adresse IP "([^"]*)" ont été faites dans la dernière heure$`, w.givenRequestsFromIP)
 	sc.Step(`^(\d+) demandes de code pour des membres de la tribu "([^"]*)" ont été faites dans la dernière heure$`, w.givenRequestsForMembers)
 	sc.Step(`^(\d+) demandes de code pour des adresses qui ne sont pas membres de la tribu "([^"]*)" ont été faites dans la dernière heure$`, w.givenRequestsForOthers)
 	sc.Step(`^je suis connecté à la tribu "([^"]*)" en tant que "([^"]*)"$`, func(ctx context.Context, slug, email string) error {
@@ -92,6 +93,11 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^"([^"]*)" demande un code pour la tribu "([^"]*)"$`, func(ctx context.Context, email, slug string) error {
 		return w.requestCode(ctx, w.newDevice(), slug, email)
+	})
+	sc.Step(`^"([^"]*)" demande un code pour la tribu "([^"]*)" depuis l'adresse IP "([^"]*)"$`, func(ctx context.Context, email, slug, ip string) error {
+		d := w.newDevice()
+		d.ip = ip
+		return w.requestCode(ctx, d, slug, email)
 	})
 	sc.Step(`^(?:elle|il) demande un nouveau code$`, func(ctx context.Context) error {
 		return w.requestCode(ctx, w.newDevice(), w.auth.home, string(w.auth.email))
@@ -275,8 +281,12 @@ func (w *world) givenRequestsByEmail(ctx context.Context, email string, n int, s
 }
 
 func (w *world) givenRequestsByIP(ctx context.Context, n int) error {
+	return w.givenRequestsFromIP(ctx, n, sharedIP)
+}
+
+func (w *world) givenRequestsFromIP(ctx context.Context, n int, ip string) error {
 	return w.givenRequests(ctx, n, func(i int) (string, string, string) {
-		return w.auth.home, fmt.Sprintf("personne-%d@exemple.fr", i), sharedIP
+		return w.auth.home, fmt.Sprintf("personne-%d@exemple.fr", i), ip
 	})
 }
 
