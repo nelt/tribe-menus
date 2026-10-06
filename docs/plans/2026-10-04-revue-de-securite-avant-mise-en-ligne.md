@@ -2,7 +2,7 @@
 
 - **Nom** : `revue-securite`
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 à 7 faites ; reste la clôture, étape 8)
+- **Statut** : terminé le 2026-10-06 (revue, corrections et protections du dépôt faites ; ce qui reste est inscrit dans la feuille de route, aux plans `production` et `recette`)
 
 ## Objectif
 
@@ -73,7 +73,8 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
   - Fait le 2026-10-05 : six commits (D1 avec le constat 2, D2, D3, D5 avec le constat 1, constats 3 et 4), points 5 à 11 et suites des constats 1 et 4 dans la feuille de route. Choix faits en route dans les notes d'exécution.
 - [x] **7. Protections du dépôt**, par le développeur avec l'aide d'une session : parcourir `docs/securite-depot.md`, cocher ce qui est en place depuis le passage en public (CodeQL, détection de secrets et blocage des pushes, Dependabot, revue des dépendances, ruleset de `main`), et lire les alertes ouvertes. Les sessions Claude n'ont pas accès aux alertes d'analyse de code : c'est au développeur de les consulter.
   - Fait le 2026-10-05 : réglages parcourus un à un par le développeur, relus par la session de revue là où l'API le permet ; aucune alerte ouverte d'analyse de code, de Dependabot ni de détection de secrets. Détail dans les notes d'exécution.
-- [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
+- [x] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` mis à jour, `CHANGELOG.md`.
+  - Fait le 2026-10-06 : critères de validation relus un à un (notes d'exécution).
 
 ## Critères de validation
 
@@ -85,7 +86,7 @@ Chaque essai a une chance sur un million. L'attaque demande au moins trois adres
 
 ## Questions ouvertes
 
-- **Outil d'analyse supplémentaire** (`gosec`, par exemple) : à n'ajouter que si CodeQL et `staticcheck` laissent un manque constaté, pour ne pas multiplier l'outillage (ADR 0009).
+- **Outil d'analyse supplémentaire** (`gosec`, par exemple) : à n'ajouter que si CodeQL et `staticcheck` laissent un manque constaté, pour ne pas multiplier l'outillage (ADR 0009). *Clos le 2026-10-06 : CodeQL est actif depuis l'étape 7 et aucun manque n'a été constaté ; rien n'est ajouté.*
 
 ## Décisions
 
@@ -228,8 +229,8 @@ Attendu : des fichiers en 0600 quel que soit le dossier, pour `serve` comme pour
 Premier rodage de `docs/traitement-des-vulnerabilites.md` :
 
 - **« Accès au serveur requis » classe le point 4 en gravité faible**, donc en traitement normal, alors que sa conséquence est la session de n'importe quel membre. *Confirmé par le développeur le 2026-10-05 : la grille reste telle quelle (D6).*
-- **Une faille lisible dans les specs** (point 1) est exposée avant tout correctif : le traitement accéléré ne raccourcit que ce qui suit le constat.
-- **Une fonction manquante** (point 5) se range mal sur l'axe 2, pensé pour un correctif.
+- **Une faille lisible dans les specs** (point 1) est exposée avant tout correctif : le traitement accéléré ne raccourcit que ce qui suit le constat. *Tranché le 2026-10-06 : elle se traite sans les précautions de neutralité (`canal-prive`, D10).*
+- **Une fonction manquante** (point 5) se range mal sur l'axe 2, pensé pour un correctif. *Tranché le 2026-10-06 : la grille ne change pas, le sujet relève de la feuille de route (`canal-prive`, D11).*
 
 ## Notes d'exécution
 
@@ -253,3 +254,10 @@ Premier rodage de `docs/traitement-des-vulnerabilites.md` :
   - **Restent décochées** : « aucun jeton classique » et « commits signés exigés » (ce dernier satisfait par la fusion *squash*, comme le dit le document).
   - **Application GitHub de Claude** : ses permissions comprennent l'écriture des workflows et des hooks, ce que le document ne disait pas ; il la décrit désormais, avec ce qui en limite la portée. Le développeur a accepté ce jour deux permissions de lecture supplémentaires (administration, files de fusion), qui n'ouvrent ni les alertes ni les avis de sécurité.
   - **Ce que la session n'a pas pu lire** : réglages d'Actions, webhooks, secrets, clés de déploiement, alertes, comptes ; ces points reposent sur les captures et les réponses du développeur.
+- **Étape 8, clôture** (2026-10-06) : critères de validation relus.
+  - **Constats « à corriger »** : les quatre ont un commit et un test qui échouait avant (PR #40), ainsi que le point relevé à la relecture de cette PR (arrêt du serveur avec un client lent).
+  - **Constats « à noter »** : les points 5 à 11 sont dans la feuille de route, chacun avec le plan qui le reprendra, avec les suites des constats 1 et 4 et la mesure des temps de réponse.
+  - **Décisions** : D1 à D3 et D5 sont dans les specs et dans le code ; leurs scénarios passent dans `make acceptance`.
+  - **CI et alertes** : `make ci` passe sur `main` ; aucune alerte ouverte d'analyse de code, de Dependabot ni de détection de secrets (étape 7).
+  - **Ce que la revue n'a pas couvert** est écrit dans « Ce qui n'a pas pu être vérifié » ; deux de ses points ont été levés depuis par la CI (`TestFileModes` avec `modernc.org/sqlite`, analyse CodeQL).
+  - **Rodage de la grille** des vulnérabilités fait (« Retour sur la grille », D6) : c'était l'étape 7 du plan `canal-prive`.

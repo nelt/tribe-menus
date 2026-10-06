@@ -2,7 +2,7 @@
 
 - **Nom** : `canal-prive` (fixé à la création : le nom reste, bien que le plan n'installe plus de canal privé)
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 à 6 faites, reste la mise à l'épreuve avec `revue-securite` ; il ne touche pas au code de l'application)
+- **Statut** : terminé le 2026-10-06 (il ne touche pas au code de l'application ; la répétition d'un traitement accéléré est inscrite au plan `recette`)
 
 ## Objectif
 
@@ -66,6 +66,11 @@ Prises le 2026-10-04 avec le développeur.
 - **D8. Ce qui ne touche pas la production relève du traitement normal** : une faille de la seule recette (données de démonstration), ou d'un code qui n'est pas encore déployé.
 - **D9. L'analyse est publiée après le déploiement**, avec le constat, pour garder la trace de la décision ; `CHANGELOG.md` ne décrit la faille qu'à ce moment.
 
+Le 2026-10-06, avec le développeur, après le rodage de la grille par `revue-securite` (étape 7).
+
+- **D10. Une faille qui se déduit d'un document déjà public se traite sans les précautions de neutralité.** Elle est exposée avant tout correctif (constat 1 de `revue-securite`, lisible dans ENF-01) : les précautions de neutralité ne protègent rien et ralentissent. Le niveau reste celui que donne la gravité ; seul le délai compte. Le signal d'arrêt ne change pas : la session remet d'abord son constat au développeur, et c'est lui qui constate que la faille est déjà publique. Une phrase l'écrit dans `docs/traitement-des-vulnerabilites.md`, sous les trois évaluations ; ni les niveaux ni la règle de décision ne changent.
+- **D11. La grille ne change pas pour une fonction manquante** (constat 5 de `revue-securite`, fermeture d'une session à distance). Ce n'est pas un défaut à corriger mais un sujet de la feuille de route : il s'y ordonne, sans passer par les trois évaluations.
+
 ## Étapes
 
 - [x] **1. Essais d'accès** aux avis de sécurité en brouillon et au fork privé temporaire, avec un avis factice créé par le développeur (notes d'exécution).
@@ -85,10 +90,12 @@ Prises le 2026-10-04 avec le développeur.
   - activer le signalement privé de vulnérabilités, auquel `SECURITY.md` renvoie ;
   - retirer du jeton du Dev Container le droit *Repository security advisories* ajouté pour les essais ;
   - fermer l'avis factice `GHSA-6658-5pv8-wrwf` et supprimer son fork temporaire.
-- [ ] **7. Mise à l'épreuve.**
+- [x] **7. Mise à l'épreuve.**
   - La grille est appliquée à chaque constat de `revue-securite`, même si tous relèvent du traitement normal (D8) : c'est le rodage de l'analyse, et ce qui frotte corrige le document de l'étape 3.
   - Un traitement accéléré ne peut être répété que sur une version déployée : la répétition, sur un faux constat, est inscrite au plan `recette`.
-- [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` et `CHANGELOG.md` mis à jour.
+  - Fait le 2026-10-05 par le plan `revue-securite` : dix des onze constats portent leurs trois évaluations et un niveau (trois accélérés, sept normaux) ; le onzième, la liste de ce qui revient à Caddy, n'est pas un défaut. Trois remarques en sortent (« Retour sur la grille » de ce plan). La première est tranchée : « accès au serveur requis » reste une gravité faible (`revue-securite`, D6). Les deux autres le sont le 2026-10-06 : une faille lisible dans un document public se traite sans les précautions de neutralité (D10) ; la grille ne change pas pour une fonction manquante (D11).
+- [x] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` et `CHANGELOG.md` mis à jour.
+  - Fait le 2026-10-06 : critères de validation relus (notes d'exécution).
 
 ## Ce que ce plan demande aux autres plans
 
@@ -160,3 +167,8 @@ Prises le 2026-10-04 avec le développeur.
   - *signalement d'un tiers* : lu par le seul développeur, le droit sur les avis de sécurité est retiré du jeton du Dev Container.
   - `docs/poste-de-developpement.md` n'est pas modifié : le jeton du Dev Container a retrouvé les droits qui y sont décrits.
 - **Constat fait en écrivant le déroulé** : seule une release étiquetée va en production (ADR 0012, 0016), donc une version corrective emporte tout ce que `main` contient de non publié. L'axe 2 de la grille (risque de livrer sans recette) en tient compte, et le plan `production` doit décrire dans `RELEASING.md` une version corrective préparée dans la PR du correctif.
+- **Étape 8, clôture** (2026-10-06) : critères de validation relus.
+  - **Signal d'arrêt et déroulés** : écrits dans `CLAUDE.md`, `docs/revue-de-pr.md` et `docs/traitement-des-vulnerabilites.md` ; aucun n'a encore servi, rien n'étant en production.
+  - **Constats de `revue-securite`** : dix portent leurs trois évaluations, le onzième n'est pas un défaut.
+  - **Droits des jetons** : le jeton du Dev Container a les droits que décrivent les ADR 0019 et 0020, sans les avis de sécurité. L'application GitHub de Claude, elle, a des permissions plus larges que ce que l'ADR 0020 décrit (écriture des workflows et des hooks), fixées par son éditeur : c'est écrit dans `docs/securite-depot.md` depuis le 2026-10-05, avec ce qui en limite la portée. Le critère est tenu pour ce qui se règle, et l'écart est documenté pour le reste.
+  - **`SECURITY.md`** : ne promet que le signalement privé, activé, et un correctif par une PR publique.

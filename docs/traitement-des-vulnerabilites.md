@@ -61,6 +61,8 @@ Si la revue en cours porte sur une PR, son commentaire « Revue » ne mentionne 
 
 « Moyen » est tout ce qui n'est franchement ni l'un ni l'autre.
 
+**Une faille qui se déduit d'un document déjà public** (specs, ADR, code publié) est exposée avant tout correctif : la discrétion n'y ajoute rien. On la traite au niveau que donne sa gravité, mais sans les précautions de neutralité, et on vise seulement le délai le plus court.
+
 **L'axe 2 compte ce qui attend sur `main`.** Seule une release étiquetée va en production (ADR 0012, 0016) : une version corrective emporte tout ce qui a été fusionné depuis la dernière release. Des stories non publiées, jamais passées en recette, élèvent le risque de livrer sans elle.
 
 ## Les trois niveaux
