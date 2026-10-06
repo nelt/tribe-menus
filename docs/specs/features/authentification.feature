@@ -123,6 +123,17 @@ Fonctionnalité: Connexion et session persistante
       | 30 demandes de code pour des membres de la tribu "martin" | pour la tribu "martin", depuis une autre adresse IP |
 
   @ENF-01
+  Plan du scénario: Une adresse IPv6 compte pour son préfixe /64
+    Étant donné 10 demandes de code depuis l'adresse IP "2001:db8:1:2::a" ont été faites dans la dernière heure
+    Quand "alice@exemple.fr" demande un code pour la tribu "martin" depuis l'adresse IP "<adresse>"
+    Alors <résultat>
+
+    Exemples:
+      | adresse         | résultat                                                  |
+      | 2001:db8:1:2::b | l'application affiche « Réessayez dans quelques minutes » |
+      | 2001:db8:1:3::a | un code à 8 chiffres est envoyé à "alice@exemple.fr"      |
+
+  @ENF-01
   Scénario: Des demandes pour des adresses qui ne sont pas membres ne bloquent pas la tribu
     Étant donné 30 demandes de code pour des adresses qui ne sont pas membres de la tribu "martin" ont été faites dans la dernière heure
     Quand "alice@exemple.fr" demande un code pour la tribu "martin"

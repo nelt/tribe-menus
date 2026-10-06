@@ -56,3 +56,39 @@ func TestNewCodeRequest(t *testing.T) {
 		}
 	}
 }
+
+func TestIPKey(t *testing.T) {
+	cases := []struct {
+		ip, want string
+	}{
+		{ip: "192.0.2.1", want: "192.0.2.1"},
+		{ip: "::ffff:192.0.2.1", want: "192.0.2.1"},
+		{ip: "2001:db8:1:2::a", want: "2001:db8:1:2::/64"},
+		{ip: "2001:db8:1:2:ffff:ffff:ffff:ffff", want: "2001:db8:1:2::/64"},
+		{ip: "2001:DB8:1:2::B", want: "2001:db8:1:2::/64"},
+		{ip: "2001:db8:1:3::a", want: "2001:db8:1:3::/64"},
+		{ip: "fe80::1%eth0", want: "fe80::/64"},
+		{ip: "::1", want: "::/64"},
+		{ip: "unknown", want: "unknown"},
+		{ip: "", want: ""},
+	}
+	for _, tc := range cases {
+		if got := ipKey(tc.ip); got != tc.want {
+			t.Errorf("ipKey(%q) = %q, want %q", tc.ip, got, tc.want)
+		}
+	}
+}
+
+// Two IPv6 of the same /64 share the limit by IP, two neighboring /64 do not (plan
+// production, D4).
+func TestNewCodeRequestIPv6Prefix(t *testing.T) {
+	a := NewCodeRequest("martin", "alice@exemple.fr", "2001:db8:1:2::a")
+	b := NewCodeRequest("martin", "alice@exemple.fr", "2001:db8:1:2::b")
+	c := NewCodeRequest("martin", "alice@exemple.fr", "2001:db8:1:3::a")
+	if !bytes.Equal(a.IPHash, b.IPHash) {
+		t.Error("two IPv6 of the same /64 have different hashes")
+	}
+	if bytes.Equal(a.IPHash, c.IPHash) {
+		t.Error("two neighboring /64 have the same hash")
+	}
+}

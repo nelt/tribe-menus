@@ -7,6 +7,8 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/nelt/tribe-menus/internal/storage"
@@ -155,7 +157,7 @@ func (a *api) requestCode(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &body) {
 		return
 	}
-	token, err := a.login.RequestCode(r.Context(), r.PathValue("tribe"), tribeOf(r), body.Email, clientIP(r))
+	token, err := a.login.RequestCode(r.Context(), r.PathValue("tribe"), tribeOf(r), body.Email, a.server.clientIP(r))
 	switch {
 	case err == nil:
 		setCodeRequestCookie(w, r, token, tribe.LoginCodeValidity)
@@ -290,14 +292,34 @@ func clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// clientIP is the IP of the client: the one of the TCP connection, in the mode without
-// proxy (ADR 0006, point 8). Reading X-Forwarded-For from Caddy will come here (point 7).
-func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+// unknownClientIP is the IP of every request behind the proxy without a readable
+// X-Forwarded-For: they share one limit by IP, stricter, never looser.
+const unknownClientIP = "unknown"
+
+// clientIP is the IP of the client. Behind the proxy, it is the last address of
+// X-Forwarded-For, the one Caddy writes: what comes before comes from the client (ADR 0006,
+// point 7; plan production, D3). Otherwise, the header is ignored and the IP is the one of
+// the TCP connection (point 8).
+func (s *server) clientIP(r *http.Request) string {
+	if !s.behindProxy {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			return r.RemoteAddr
+		}
+		return host
 	}
-	return host
+	values := r.Header.Values("X-Forwarded-For")
+	if len(values) > 0 {
+		last := values[len(values)-1]
+		if i := strings.LastIndexByte(last, ','); i >= 0 {
+			last = last[i+1:]
+		}
+		if addr, err := netip.ParseAddr(strings.TrimSpace(last)); err == nil {
+			return addr.String()
+		}
+	}
+	s.logger.Warn("client IP unknown behind the proxy: X-Forwarded-For missing or unreadable")
+	return unknownClientIP
 }
 
 // readJSON decodes the body of the request, or answers 400 and returns false.

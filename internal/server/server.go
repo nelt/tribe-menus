@@ -48,6 +48,10 @@ type Config struct {
 	// Version and Commit of the binary (ADR 0012) give the link to its source code.
 	Version string
 	Commit  string
+	// BehindProxy is true when the server listens on the socket passed by systemd, which only
+	// Caddy can open: the IP of the client is then read in X-Forwarded-For (ADR 0006, point
+	// 7; plan production, D3).
+	BehindProxy bool
 }
 
 type server struct {
@@ -55,6 +59,8 @@ type server struct {
 	dev       bool
 	logger    *slog.Logger
 	sourceURL string
+	// behindProxy: see Config.BehindProxy.
+	behindProxy bool
 	// index is parsed once at startup in production, nil in development.
 	index *template.Template
 }
@@ -64,7 +70,7 @@ func New(cfg Config) (http.Handler, error) {
 	if cfg.Web == nil {
 		return nil, errors.New("server: no front end")
 	}
-	s := &server{web: cfg.Web, dev: cfg.Dev, logger: cfg.Logger, sourceURL: sourceURL(cfg.Version, cfg.Commit)}
+	s := &server{web: cfg.Web, dev: cfg.Dev, logger: cfg.Logger, sourceURL: sourceURL(cfg.Version, cfg.Commit), behindProxy: cfg.BehindProxy}
 	if s.logger == nil {
 		s.logger = slog.Default()
 	}
