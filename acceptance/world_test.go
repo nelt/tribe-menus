@@ -19,6 +19,7 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/nelt/tribe-menus/internal/admin"
+	"github.com/nelt/tribe-menus/internal/alert"
 	"github.com/nelt/tribe-menus/internal/mail"
 	"github.com/nelt/tribe-menus/internal/server"
 	"github.com/nelt/tribe-menus/internal/storage"
@@ -59,7 +60,8 @@ type world struct {
 	outbox   *mail.Outbox
 	recorder *mail.Recorder
 
-	auth loginState
+	auth   loginState
+	alerts alertState
 }
 
 // loginState is what the login scenarios remember from step to step.
@@ -106,6 +108,7 @@ func (w *world) registerSteps(sc *godog.ScenarioContext) {
 	w.registerAdministrationSteps(sc)
 	w.registerLoginSteps(sc)
 	w.registerCompartmentSteps(sc)
+	w.registerAlertSteps(sc)
 }
 
 // reset prepares the world of a new scenario.
@@ -150,7 +153,12 @@ func (w *world) app(ctx context.Context) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	w.login = &tribe.Login{RateLimit: tribe.NewRateLimitDB(store.RateLimit()), Mailer: w.outbox, Now: w.clock}
+	w.login = &tribe.Login{
+		RateLimit: tribe.NewRateLimitDB(store.RateLimit()),
+		Mailer:    w.outbox,
+		Alerts:    &alert.Notifier{Logger: slog.New(slog.NewJSONHandler(&w.alerts.logs, nil)), Sender: w.outbox, To: adminEmail, Instance: origin},
+		Now:       w.clock,
+	}
 	handler, err := server.New(server.Config{
 		Web:    os.DirFS(webDir),
 		Logger: slog.New(slog.DiscardHandler),

@@ -753,7 +753,8 @@ func TestPurge(t *testing.T) {
 
 // TestLimitsSurviveRestart: after the databases are closed and opened again, as at a
 // restart of the server, the requests already made and the attempts already used still
-// count, for a real code as for a decoy code (ADR 0021).
+// count, for a real code as for a decoy code (ADR 0021), and so do the alert counters and
+// the last alert sent (ADR 0023).
 func TestLimitsSurviveRestart(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
@@ -804,6 +805,32 @@ func TestLimitsSurviveRestart(t *testing.T) {
 			t.Fatal("a wrong code was accepted")
 		}
 	}
+	// A refused request, codes exhausted, an alert sent.
+	if _, err := login.RequestCode(ctx, "martin", martin, "inconnu@exemple.fr", "192.0.2.2"); !errors.Is(err, ErrTooManyRequests) {
+		t.Fatalf("request beyond the limit: %v", err)
+	}
+	for _, email := range []string{"chloe@exemple.fr", "david@exemple.fr"} {
+		token, err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.3")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for range LoginCodeAttempts {
+			_, _, _ = login.OpenSession(ctx, "martin", martin, email, "wrong", token, Device{})
+		}
+	}
+	if err := login.RateLimit.SetAlertsSent(ctx, []AlertSignal{ExhaustedCodes}, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := martin.AddMember(ctx, "bruno@exemple.fr", "Bruno", 1, now); err != nil {
+		t.Fatal(err)
+	}
+	token, err := login.RequestCode(ctx, "martin", martin, "bruno@exemple.fr", "192.0.2.3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range LoginCodeAttempts {
+		_, _, _ = login.OpenSession(ctx, "martin", martin, "bruno@exemple.fr", "wrong", token, Device{})
+	}
 	if err := st.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -818,6 +845,27 @@ func TestLimitsSurviveRestart(t *testing.T) {
 		if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-2 {
 			t.Errorf("%s: attempt after restart: error = %v, want %d attempts left", email, err, LoginCodeAttempts-2)
 		}
+	}
+	counts, err := login.RateLimit.AlertCounts(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tribeCounts, err := martin.AlertCounts(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts.add(tribeCounts)
+	// The requests after the restart are refused too.
+	want := map[AlertEvent]int{EmailLimitRefusal: 3, DecoyCodeExhausted: 2, LoginCodeExhausted: 1}
+	if fmt.Sprint(counts.Events) != fmt.Sprint(want) {
+		t.Errorf("counters after restart = %v, want %v", counts.Events, want)
+	}
+	sent, err := login.RateLimit.AlertsSent(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sent[ExhaustedCodes].Equal(now) {
+		t.Errorf("alerts sent after restart = %v, want exhausted codes at %v", sent, now)
 	}
 }
 

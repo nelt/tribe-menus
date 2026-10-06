@@ -15,13 +15,8 @@ administration.feature: Une adresse anonymisée peut être ajoutée de nouveau
 administration.feature: Une confirmation erronée annule la suppression
 authentification.feature: Consultation hors ligne
 authentification.feature: Consultation hors ligne de la bibliothèque de plats
-authentification.feature: Des codes épuisés à répétition sont signalés à l'administrateur
-authentification.feature: Des demandes refusées à répétition sont signalées à l'administrateur
-authentification.feature: Des demandes répétées pour une même adresse sont signalées à l'administrateur
-authentification.feature: L'alerte ne nomme ni adresse ni tribu
 authentification.feature: La déconnexion efface les données de la tribu sur l'appareil
 authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
-authentification.feature: Une alerte n'est pas répétée tant qu'elle dure
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 bibliotheque-plats.feature: Créer un nouvel ingrédient pendant la saisie d'un plat
 bibliotheque-plats.feature: Créer un plat avec ses ingrédients

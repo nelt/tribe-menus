@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lots A et B faits, lot C en cours)
+- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lots A et B faits, lot C en revue)
 
 ## Objectif
 
@@ -141,7 +141,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
   - E-mail en français, en texte brut : nom de l'instance (`baseURL`), fenêtre, compteurs par nature, renvoi vers les journaux d'accès de Caddy. **Ni adresse e-mail, ni adresse IP, ni tribu.**
   - En développement, l'e-mail d'alerte part dans les logs comme les autres.
 - [x] **21. Échecs répétés d'envoi** (ADR 0015, point 15). Trois envois échoués en une heure, vérification du démarrage comprise : un enregistrement `alert=smtp_failures`, sans e-mail (D6), au plus un par six heures. Compteur en mémoire (D9).
-- [ ] **22. Scénarios et documentation du lot** : définitions d'étapes godog des scénarios de l'étape 16 (l'évaluation est appelée par l'étape, avec l'horloge du test) ; `TestLimitsSurviveRestart` étendu aux compteurs ; glossaire ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « alerte de D1 » retiré, relais des alertes inscrit au plan `recette`) ; cases cochées.
+- [x] **22. Scénarios et documentation du lot** : définitions d'étapes godog des scénarios de l'étape 16 (l'évaluation est appelée par l'étape, avec l'horloge du test) ; `TestLimitsSurviveRestart` étendu aux compteurs ; glossaire ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « alerte de D1 » retiré, relais des alertes inscrit au plan `recette`) ; cases cochées.
 
 ### Lot D : front à empreinte et archive (`feature/front-a-empreinte-et-archive`)
 
@@ -209,7 +209,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 
 - **Unité systemd** : `ExecStart=… serve -config /etc/tribe-menus/<environnement>/config.json` ; credential `smtp-password` ; un seul socket transmis ; `TimeoutStopSec` d'au moins 45 secondes (10 d'attente des requêtes, 30 d'un envoi en cours).
 - **Caddy** : son adresse de client en dernière position de `X-Forwarded-For`, `Host` transmis tel quel.
-- **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert`.
+- **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert` (ADR 0023) ; l'adresse de l'administrateur dans la clé `alerts.to` du fichier de configuration.
 - **Archive** : `deploy/` au complet.
 - **E-mail** (revue de la PR #46, points 2 et 3) : lire les réponses réelles du MX Plan à un destinataire refusé, et ne garder que les codes si elles citent la partie locale ; vérifier que `EHLO localhost` ne pénalise pas la réception hors des indésirables.
 
@@ -272,3 +272,10 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - Étape 13 : la réponse du serveur est gardée après remplacement de l'adresse du destinataire et du mot de passe, quelle que soit la casse ; `mail.ErrorAttrs` donne l'étape et le code aux enregistrements « login code not sent » et « SMTP check failed », que le lot C comptera.
   - Revue de la PR #46 : à l'étape d'authentification, la réponse du serveur ne garde que son code SMTP, son texte pouvant citer la commande `AUTH PLAIN`, dont le base64 porte le mot de passe (point 1). À noter pour la recette : le remplacement ne reconnaît que l'adresse entière du destinataire, une réponse qui cite la partie locale seule (`user alice.martin unknown`) passe telle quelle ; si le MX Plan répond ainsi, ne garder que le code SMTP et le code d'état étendu (`5.1.1`) (point 2). Le client se présente par `EHLO localhost`, valeur par défaut de `net/smtp`, qui apparaît dans l'en-tête `Received` ; `Client.Hello` avec l'hôte de `baseURL` si un filtre s'en formalise (point 3).
   - Étape 14 : non faite par Claude Code, faute de compte. Vérifié depuis le Dev Container le 2026-10-06 : le port 465 de `ssl0.ovh.net` est joignable, son certificat (TLS 1.2) porte le nom `ssl0.ovh.net` et passe la vérification de Go. Le 2026-10-06, le développeur renvoie l'essai d'un envoi réel à la recette, avec la réception sur les messageries des membres (« Ce que ce plan ne prouve pas »).
+- **Lot C** (`feature/enf-01-alertes`), 2026-10-06, Claude Code dans le Dev Container :
+  - Étape 16 : un signal d'alerte par seuil (demandes refusées, codes épuisés, demandes répétées), chacun avec sa dernière alerte : « une alerte par nature et par six heures » s'entend par signal ; un même e-mail nomme tous les signaux dus à une évaluation. Glossaire complété dès cette étape, avant le code. Une limite de D11 relevée et inscrite dans l'ADR 0023 et les questions ouvertes : les essais restants d'un code fantôme le distinguent, après un essai, de celui d'un membre, jamais vérifié.
+  - Étape 18 : la valeur des natures et des signaux est contrainte par un `CHECK` dans chaque table. La dernière alerte par signal n'est pas effacée : trois lignes au plus.
+  - Étape 19 : `CodeRequestCounts.Allowed` devient `Refusal`, qui nomme la limite ; une demande refusée par les deux limites compte une fois, par adresse.
+  - Étape 20 : l'alerte est notée dans la base de limitation avant d'être écrite et envoyée, pour qu'un envoi échoué ne la répète pas toutes les dix minutes ; l'enregistrement du journal reste. Une tribu illisible n'empêche pas l'évaluation des autres. Nouveau paquet `internal/alert` (notificateur, texte de l'e-mail, échecs d'envoi), `Outbox.SendAlert`. En développement, l'administrateur est `admin@example.org` et l'e-mail part dans les logs.
+  - Étape 21 : chaque échec d'un envoi, code ou alerte, est compté par un `Mailer` qui enveloppe celui du SMTP ; le test du mode serveur en TCP provoque l'alerte (vérification du démarrage et deux codes non envoyés) et vérifie qu'aucune adresse n'est dans les logs.
+  - Étape 22 : les étapes godog appellent `CheckAlerts` avec l'horloge du scénario ; elles détectent un seuil faussé (essai fait en passant le seuil des refus à 11).
