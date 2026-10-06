@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lot A en cours)
+- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lot A en revue)
 
 ## Objectif
 
@@ -64,29 +64,29 @@ Ce plan est exécuté par **Claude Code dans le Dev Container**, en cinq PR succ
 
 Points d'attention de la revue : ce qui se passe quand la configuration est incomplète ou contradictoire ; qui peut faire croire au serveur qu'il est derrière Caddy ; contenu des logs de démarrage.
 
-- [ ] **1. Fichier de configuration** (D1), paquet `internal/config`.
+- [x] **1. Fichier de configuration** (D1), paquet `internal/config`.
   - JSON lu par `encoding/json`, clé inconnue refusée (`DisallowUnknownFields`), un seul document par fichier.
   - Clés du lot : `data` (répertoire des bases, chemin absolu), `listen` (`"systemd"` ou une adresse TCP, ADR 0006, point 8), `baseURL` (adresse publique de l'instance, `https://…` sans chemin).
   - Lecture et validation en fonction pure, testée en tableau de cas : clé manquante, chemin relatif, adresse mal formée, clé inconnue, fichier vide. Le message d'erreur nomme la clé fautive, jamais une valeur.
   - `deploy/config.example.json` et un `deploy/README.md` de quelques lignes (ce que le dossier contient aujourd'hui, ce qui arrive avec `recette`). Un test lit l'exemple avec le vrai lecteur, pour qu'il ne se périme pas.
-- [ ] **2. Modes de `serve`** (D2 ; `revue-securite`, constat 8).
+- [x] **2. Modes de `serve`** (D2 ; `revue-securite`, constat 8).
   - `serve -config <fichier>` : mode serveur. `serve -dev` avec ses options actuelles : mode développement. **L'un des deux, jamais les deux, jamais aucun** ; `-addr`, `-data`, `-root` et `-mail-file` sont refusées avec `-config`.
   - `-dev` est aussi refusé quand un socket est transmis par systemd (variables `LISTEN_FDS` et `LISTEN_PID` désignant ce processus), au cas où une unité lancerait `serve -dev`.
   - `TestRun` complété : chaque combinaison refusée, avec son message et le code de sortie 2.
-- [ ] **3. Écoute sur le socket transmis par systemd** (ADR 0015, point 11).
+- [x] **3. Écoute sur le socket transmis par systemd** (ADR 0015, point 11).
   - `listen: "systemd"` : le serveur prend le descripteur 3 si `LISTEN_PID` est son propre identifiant et `LISTEN_FDS` vaut 1, puis retire ces variables de son environnement. Autre nombre de descripteurs, ou aucun : le serveur ne démarre pas et dit pourquoi. Un socket transmis alors que `listen` est une adresse TCP : refus aussi.
   - Le fichier du socket appartient à systemd : il ne doit pas être supprimé à l'arrêt (`SetUnlinkOnClose(false)`, à prouver par le test).
   - Tests : lecture des variables en fonction pure (environnement et identifiant de processus en paramètres) ; un test de `listenAndServe` sur un socket Unix créé par le test, qui appelle `/healthz`, arrête le serveur et vérifie que le fichier du socket existe encore.
-- [ ] **4. Logs en JSON sur la sortie standard** en mode serveur (ADR 0015, point 14) ; texte sur la sortie d'erreur en développement, comme aujourd'hui. Le log de démarrage donne la version, le commit, le mode d'écoute et le chemin du fichier de configuration.
-- [ ] **5. `admin init` et `admin seed` acceptent `-config`** : ils y lisent `data` et `baseURL`, à la place de `-data` et `-base-url`, refusées avec `-config`. Le script `tribe-menus-admin` du plan `recette` n'aura qu'à passer ce chemin (ADR 0015, point 13).
-- [ ] **6. Adresse IP du client** (D3, D4 ; ADR 0006, point 7). Specs et scénario d'abord.
+- [x] **4. Logs en JSON sur la sortie standard** en mode serveur (ADR 0015, point 14) ; texte sur la sortie d'erreur en développement, comme aujourd'hui. Le log de démarrage donne la version, le commit, le mode d'écoute et le chemin du fichier de configuration.
+- [x] **5. `admin init` et `admin seed` acceptent `-config`** : ils y lisent `data` et `baseURL`, à la place de `-data` et `-base-url`, refusées avec `-config`. Le script `tribe-menus-admin` du plan `recette` n'aura qu'à passer ce chemin (ADR 0015, point 13).
+- [x] **6. Adresse IP du client** (D3, D4 ; ADR 0006, point 7). Specs et scénario d'abord.
   - ENF-01 précisée : la limite par IP porte sur l'adresse du client telle que Caddy la transmet, et une adresse IPv6 compte pour son préfixe /64. ADR 0006 (point 7) et ADR 0021 (point 3, empreinte de l'IP) reçoivent un renvoi daté.
   - `authentification.feature` : un scénario « Deux adresses IPv6 du même préfixe /64 partagent la limite par IP », selon `conventions-gherkin.md` ; le harnais fixe déjà l'adresse du client.
   - `internal/tribe` : fonction pure qui normalise l'adresse avant l'empreinte (IPv4 entière, IPv4 encapsulée dans une IPv6 ramenée à l'IPv4, IPv6 réduite à son /64, zone retirée), testée en tableau de cas.
   - `internal/server` : `Config` reçoit un indicateur « derrière le proxy », vrai seulement quand le serveur écoute sur le socket de systemd. Dans ce cas, l'adresse du client est la **dernière** de `X-Forwarded-For` ; sinon l'en-tête est ignoré et l'adresse reste celle de la connexion TCP.
   - En-tête absent ou illisible derrière le proxy : la demande est comptée sous une même adresse « inconnue », commune à toutes les demandes dans ce cas, et un avertissement est journalisé. La limite devient plus stricte, jamais plus lâche.
   - Tests : en-tête forgé ignoré en mode TCP ; plusieurs adresses dans l'en-tête, la dernière gagne ; en-tête absent.
-- [ ] **7. Documentation du lot** : ADR 0015 précisé (format et clés du fichier, points 9 et 10) ; `CLAUDE.md` (modes de `serve`, `deploy/`) ; `CHANGELOG.md` ; feuille de route (points reportés « adresse IP du client » et « rien ne refuse `-dev` » retirés) ; cases cochées.
+- [x] **7. Documentation du lot** : ADR 0015 précisé (format et clés du fichier, points 9 et 10) ; `CLAUDE.md` (modes de `serve`, `deploy/`) ; `CHANGELOG.md` ; feuille de route (points reportés « adresse IP du client » et « rien ne refuse `-dev` » retirés) ; cases cochées.
 
 ### Lot B : envoi des e-mails par SMTP (`feature/envoi-smtp`)
 
@@ -250,4 +250,13 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
 
 ## Notes d'exécution
 
-- …
+- **2026-10-06, mise à jour du plan** : décisions D1 à D10 confirmées par le développeur ; les deux premières questions ouvertes deviennent D11 (code fantôme pour toute demande) et D12 (troisième signal d'alerte), au lot C, qui gagne une étape : les étapes 17 à 31 du brouillon deviennent 18 à 32. Chemin des migrations corrigé (`internal/storage/migrations/`). Lots exécutés un à un : le suivant attend la fusion du précédent.
+- **Lot A** (`feature/execution-sous-systemd`), 2026-10-06, Claude Code dans le Dev Container :
+  - Étapes 2 à 4 en un seul commit : elles réécrivent la même fonction `serve`.
+  - Port `0` accepté dans `listen` (port choisi par le système) : utile aux tests, sans effet sur un serveur.
+  - Erreurs du fichier de configuration écrites sur la sortie d'erreur avec le code de sortie 2, avant la création du journal JSON : journald les recueille aussi.
+  - Le front embarqué est vide quand `make test` tourne en CI : les tests du mode serveur remplacent `web.Dist` par un `fstest.MapFS` (variable `embeddedWeb`).
+  - Le socket transmis par systemd est simulé en plaçant le descripteur d'un socket Unix créé par le test (`systemdFirstFD`, 3 hors des tests). Le test prouve aussi, de bout en bout, que la limite par IP suit la dernière adresse de `X-Forwarded-For` sur ce socket.
+  - Hors du socket de systemd, `serve -config` en TCP ignore `X-Forwarded-For`, comme `-dev` (D3).
+  - ADR 0015 : point 9 précisé ici ; le point 10 (mot de passe SMTP en credential) le sera au lot B, avec sa lecture.
+  - Sans en-tête lisible derrière le proxy, l'avertissement ne cite pas la valeur reçue.

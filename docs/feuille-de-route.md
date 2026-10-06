@@ -29,7 +29,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `socle` | Socle de données et connexion | [`2026-10-03-socle-donnees-et-connexion.md`](plans/2026-10-03-socle-donnees-et-connexion.md) | terminé |
 | `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | terminé |
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | terminé |
-| `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | en cours : décisions confirmées (D1 à D12), lot A en cours |
+| `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | en cours : décisions confirmées (D1 à D12), lot A en revue |
 | `recette` | Serveur, recette et première release | à écrire | après `production` |
 
 ### `production` : application prête pour la production
@@ -66,14 +66,12 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Point | Origine | À reprendre |
 | --- | --- | --- |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
-| Adresse IP du client derrière Caddy ; IPv6 par préfixe /64 | revue de la PR #29 | `production` |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
 | Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | première story prouvée seulement dans le navigateur (C5 ou C7) |
 | Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |
 | Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant l'ouverture de la production |
 | Cookie de session sans préfixe `__Host-`, recette sous-domaine de la production | `revue-securite`, constat 6 | `recette`, avant la première session réelle |
 | `ParseEmail` accepte des adresses que l'envoi SMTP devra refuser | `revue-securite`, constat 7 | `production`, avec l'envoi SMTP |
-| Rien ne refuse `-dev` hors du développement | `revue-securite`, constat 8 | `production` |
 | Tribu de démonstration en `@exemple.fr`, domaine que le projet ne contrôle pas | `revue-securite`, constat 9 | `recette` |
 | `webcheck` ne connaît pas toutes les échappatoires au rendu échappé | `revue-securite`, constat 10 | premier écran qui affiche un texte saisi par un membre (EF-01, EF-02 ou bibliothèque de plats) |
 | Ce qui revient à Caddy : HSTS, en-têtes du site public, `Host` transmis tel quel, `/healthz` non transmis, délais et taille des requêtes, journaux d'accès | `revue-securite`, constat 11 | `recette` |
