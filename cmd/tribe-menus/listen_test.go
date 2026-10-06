@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -81,6 +82,36 @@ func TestListenRefusals(t *testing.T) {
 	}
 }
 
+// passSocket passes the socket of the listener as systemd does, then closes the listener: the
+// descriptor passed is a copy, whose only owner is listen, which closes it (review of PR #45,
+// point 2).
+func passSocket(t *testing.T, l interface {
+	File() (*os.File, error)
+	Close() error
+}) {
+	t.Helper()
+	f, err := l.File()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fd, err := syscall.Dup(int(f.Fd()))
+	closeErr := f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	if err := l.Close(); err != nil {
+		t.Fatal(err)
+	}
+	saved := systemdFirstFD
+	systemdFirstFD = fd
+	t.Cleanup(func() { systemdFirstFD = saved })
+	t.Setenv("LISTEN_PID", strconv.Itoa(os.Getpid()))
+	t.Setenv("LISTEN_FDS", "1")
+}
+
 // A unit that would run serve -dev is refused (plan revue-securite, finding 8).
 func TestServeRefusesDevUnderSystemd(t *testing.T) {
 	t.Setenv("LISTEN_PID", strconv.Itoa(os.Getpid()))
@@ -113,18 +144,8 @@ func TestServeOnSystemdSocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := unix.File()
-	if err != nil {
-		t.Fatal(err)
-	}
 	unix.SetUnlinkOnClose(false)
-	if err := unix.Close(); err != nil {
-		t.Fatal(err)
-	}
-	defer func(fd int) { systemdFirstFD = fd }(systemdFirstFD)
-	systemdFirstFD = int(f.Fd())
-	t.Setenv("LISTEN_PID", strconv.Itoa(os.Getpid()))
-	t.Setenv("LISTEN_FDS", "1")
+	passSocket(t, unix)
 	t.Setenv("LISTEN_FDNAMES", "tribe-menus.socket")
 	configFile := writeConfig(t, dir, "systemd")
 
