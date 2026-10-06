@@ -272,6 +272,11 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /healthz: status %d", resp.StatusCode)
 	}
+	// Nothing listens on the SMTP port of the test: the check fails, the server goes on.
+	failed := waitForLog(t, stdout, "SMTP check failed")
+	if e, _ := failed["error"].(string); !strings.HasPrefix(e, "smtp connect: ") {
+		t.Errorf("SMTP check failed: error %q, want the connect step", e)
+	}
 	if _, err := os.Stat(filepath.Join(dir, "data", "registry.db")); err != nil {
 		t.Errorf("registry not created in the data directory of the config file: %v", err)
 	}

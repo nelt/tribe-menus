@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -41,6 +42,9 @@ type timeouts struct {
 }
 
 var defaultTimeouts = timeouts{readHeader: 10 * time.Second, read: 20 * time.Second, write: 30 * time.Second, idle: 60 * time.Second}
+
+// smtpCheckTimeout bounds the check of the SMTP account at startup, as a sending.
+const smtpCheckTimeout = 30 * time.Second
 
 // shutdownTimeout is how long the shutdown waits for the requests in progress; the
 // connections still open then are closed. A variable for the tests.
@@ -353,6 +357,25 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 		started = append(started, "config", opts.configPath)
 	}
 	logger.Info("server started", started...)
+
+	// The SMTP account is checked once the server listens, without stopping it: /healthz
+	// does not depend on SMTP, so that an expired password does not roll a deployment back
+	// (ADR 0016; plan production, step 12).
+	var checked sync.WaitGroup
+	defer checked.Wait()
+	if opts.smtp != nil {
+		checked.Go(func() {
+			checkCtx, cancel := context.WithTimeout(ctx, smtpCheckTimeout)
+			defer cancel()
+			if err := opts.smtp.Check(checkCtx); err != nil {
+				if ctx.Err() == nil {
+					logger.Error("SMTP check failed", "error", err)
+				}
+				return
+			}
+			logger.Info("SMTP check passed")
+		})
+	}
 
 	served := make(chan error, 1)
 	go func() { served <- srv.Serve(listener) }()
