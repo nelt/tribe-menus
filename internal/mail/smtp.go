@@ -66,8 +66,12 @@ const (
 	redactedPassword  = "[password]"
 )
 
+// authRefused replaces the text of a reply to AUTH: a server may quote the command it
+// received, whose base64 carries the password (review of PR #46, point 1).
+const authRefused = "authentication refused"
+
 // stepError returns the error of the step, its text redacted of the recipient and of the
-// password.
+// password. A reply to AUTH keeps its code only.
 func (m *SMTPMailer) stepError(step string, err error, recipient string) error {
 	se := &SendError{Step: step, err: err}
 	text := err.Error()
@@ -75,6 +79,9 @@ func (m *SMTPMailer) stepError(step string, err error, recipient string) error {
 	if errors.As(err, &reply) {
 		se.Code = reply.Code
 		text = reply.Msg
+		if step == StepAuth {
+			text = authRefused
+		}
 	}
 	if recipient != "" {
 		text = replaceFold(text, recipient, redactedRecipient)

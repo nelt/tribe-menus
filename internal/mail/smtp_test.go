@@ -74,6 +74,8 @@ type fakeSMTP struct {
 	rcptReply string
 	// authReply, if set, refuses AUTH with this reply.
 	authReply string
+	// authEcho: the server refuses AUTH, quoting the command it received.
+	authEcho bool
 	// silent: the server accepts the connection and says nothing.
 	silent bool
 
@@ -137,6 +139,8 @@ func (f *fakeSMTP) serve(conn net.Conn) {
 			r.auth = arg
 			want := "PLAIN " + base64.StdEncoding.EncodeToString([]byte("\x00no-reply@example.org\x00"+f.password))
 			switch {
+			case f.authEcho:
+				reply("535 5.7.8 bad AUTH " + arg)
 			case f.authReply != "":
 				reply(f.authReply)
 			case arg != want:
@@ -313,6 +317,8 @@ func TestSendFailureLogs(t *testing.T) {
 	}{
 		{name: "recipient refused", server: func(f *fakeSMTP) { f.rcptReply = "550 5.1.1 <%s>: no such user (%S)" }, wantStep: StepTo, wantCode: 550},
 		{name: "authentication refused", server: func(f *fakeSMTP) { f.authReply = "535 5.7.8 bad credentials for s3cret-pass" }, wantStep: StepAuth, wantCode: 535},
+		// Review of PR #46, point 1: the password, encoded in the command quoted.
+		{name: "authentication refused, command quoted", server: func(f *fakeSMTP) { f.authEcho = true }, wantStep: StepAuth, wantCode: 535},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -330,7 +336,8 @@ func TestSendFailureLogs(t *testing.T) {
 				t.Errorf("record = %v, want an error with step %q and code %d", record, tc.wantStep, tc.wantCode)
 			}
 			lower := strings.ToLower(logs.String())
-			for _, secret := range []string{"alice@exemple.fr", "s3cret-pass", "12345678"} {
+			encoded := strings.ToLower(base64.StdEncoding.EncodeToString([]byte("\x00no-reply@example.org\x00s3cret-pass")))
+			for _, secret := range []string{"alice@exemple.fr", "s3cret-pass", "12345678", encoded, encoded[:24]} {
 				if strings.Contains(lower, secret) {
 					t.Errorf("logs contain %q: %s", secret, logs.String())
 				}
