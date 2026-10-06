@@ -3,6 +3,7 @@ package tribe
 
 import (
 	"errors"
+	"net/mail"
 	"regexp"
 	"strings"
 	"unicode"
@@ -11,8 +12,7 @@ import (
 var (
 	// ErrInvalidSlug is returned for a slug that does not follow the format of EF-08.
 	ErrInvalidSlug = errors.New("invalid slug")
-	// ErrInvalidEmail is returned for an address that is not of the form local@domain, with a
-	// dot inside the domain.
+	// ErrInvalidEmail is returned for an address that does not follow the rule of ParseEmail.
 	ErrInvalidEmail = errors.New("invalid email address")
 )
 
@@ -37,11 +37,31 @@ func ParseSlug(s string) (Slug, error) {
 	return Slug(s), nil
 }
 
-// Email is a normalized address: without spaces, in lower case.
+// Email is a normalized address: without spaces, in lower case, following the rule of
+// ParseEmail. It is written as is in the headers and the envelope of an email.
 type Email string
 
-// ParseEmail normalizes the address and checks that it has the form local@domain, with a
-// dot in the domain, neither first nor last (D16): alice@exemple is refused.
+const (
+	maxEmailLength = 254
+	maxLocalLength = 64
+)
+
+var (
+	// localPattern: dot-separated atoms of letters without accents, digits and
+	// !#$%&'*+/=?^_{|}~- (plan production, D5): no quotes, no comments, no dot first, last
+	// or doubled.
+	localPattern = regexp.MustCompile(`^[a-z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_{|}~-]+)*$`)
+	// domainPattern: at least two labels of letters, digits and hyphens, without hyphen first
+	// or last, 63 characters at most each (D16).
+	domainPattern = regexp.MustCompile(`^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
+)
+
+// ParseEmail normalizes the address (without spaces, in lower case) and checks the rule of
+// the specs (plan production, D5): ASCII only, a local part of atoms, a domain of labels
+// with a dot (D16), so that alice@exemple is refused. An input that does not follow it is
+// refused, not corrected. What the rule accepts is read back unchanged by net/mail, without
+// display name: it can be written as is in a header and in the envelope (plan
+// revue-securite, finding 7).
 func ParseEmail(s string) (Email, error) {
 	normalized := strings.ToLower(strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
@@ -50,8 +70,12 @@ func ParseEmail(s string) (Email, error) {
 		return r
 	}, s))
 	local, domain, found := strings.Cut(normalized, "@")
-	if !found || local == "" || strings.Contains(domain, "@") ||
-		!strings.Contains(domain, ".") || strings.HasPrefix(domain, ".") || strings.HasSuffix(domain, ".") {
+	if !found || len(normalized) > maxEmailLength || len(local) > maxLocalLength ||
+		!localPattern.MatchString(local) || !domainPattern.MatchString(domain) {
+		return "", ErrInvalidEmail
+	}
+	parsed, err := mail.ParseAddress(normalized)
+	if err != nil || parsed.Name != "" || parsed.Address != normalized {
 		return "", ErrInvalidEmail
 	}
 	return Email(normalized), nil

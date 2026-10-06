@@ -25,6 +25,22 @@ Fonctionnalité: Connexion et session persistante
     Et aucun e-mail n'est envoyé
 
   @ENF-01
+  Plan du scénario: Une adresse que l'e-mail ne saurait pas porter est refusée
+    Étant donné j'ouvre l'URL de la tribu "martin" sans être connecté
+    Quand je saisis "<adresse>"
+    Alors un message m'indique que l'adresse n'est pas valide
+    Et aucun e-mail n'est envoyé
+
+    Exemples:
+      | adresse                    |
+      | alice,bruno@exemple.fr     |
+      | alice@exemple.fr,autre.fr  |
+      | <alice>@exemple.fr         |
+      | Alice <alice@exemple.fr>   |
+      | chloé@exemple.fr           |
+      | alice..martin@exemple.fr   |
+
+  @ENF-01
   Scénario: Un membre d'une autre tribu ne reçoit pas de code
     Étant donné "david@exemple.fr" est membre actif de la tribu "durand" uniquement
     Et j'ouvre l'URL de la tribu "martin" sans être connecté
