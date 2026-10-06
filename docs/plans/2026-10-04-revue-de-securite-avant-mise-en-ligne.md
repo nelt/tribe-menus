@@ -229,8 +229,8 @@ Attendu : des fichiers en 0600 quel que soit le dossier, pour `serve` comme pour
 Premier rodage de `docs/traitement-des-vulnerabilites.md` :
 
 - **« Accès au serveur requis » classe le point 4 en gravité faible**, donc en traitement normal, alors que sa conséquence est la session de n'importe quel membre. *Confirmé par le développeur le 2026-10-05 : la grille reste telle quelle (D6).*
-- **Une faille lisible dans les specs** (point 1) est exposée avant tout correctif : le traitement accéléré ne raccourcit que ce qui suit le constat.
-- **Une fonction manquante** (point 5) se range mal sur l'axe 2, pensé pour un correctif.
+- **Une faille lisible dans les specs** (point 1) est exposée avant tout correctif : le traitement accéléré ne raccourcit que ce qui suit le constat. *Tranché le 2026-10-06 : elle se traite sans les précautions de neutralité (`canal-prive`, D10).*
+- **Une fonction manquante** (point 5) se range mal sur l'axe 2, pensé pour un correctif. *Tranché le 2026-10-06 : la grille ne change pas, le sujet relève de la feuille de route (`canal-prive`, D11).*
 
 ## Notes d'exécution
 
