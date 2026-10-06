@@ -211,6 +211,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Caddy** : son adresse de client en dernière position de `X-Forwarded-For`, `Host` transmis tel quel.
 - **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert`.
 - **Archive** : `deploy/` au complet.
+- **E-mail** (revue de la PR #46, points 2 et 3) : lire les réponses réelles du MX Plan à un destinataire refusé, et ne garder que les codes si elles citent la partie locale ; vérifier que `EHLO localhost` ne pénalise pas la réception hors des indésirables.
 
 ## Questions ouvertes
 
@@ -268,4 +269,5 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - Étape 10 : erreurs typées `SendError` (étape, code SMTP). L'échec de `QUIT` après un `DATA` accepté n'est pas une erreur.
   - Étape 11 : `smtp.from` doit être une adresse acceptée par `ParseEmail`, en minuscules ; `smtp.username` en ASCII imprimable. Le contrôle des clés (revue de la PR #45, point 3) parcourt le document une seconde fois avec `json.Decoder.Token` : clé en double ou d'une autre casse refusée, clés de `smtp` comprises. Fin de ligne finale du credential retirée (`\n` ou `\r\n`), espaces gardés. Erreur de credential sur la sortie d'erreur avec le code 2, comme celles du fichier de configuration.
   - Étape 13 : la réponse du serveur est gardée après remplacement de l'adresse du destinataire et du mot de passe, quelle que soit la casse ; `mail.ErrorAttrs` donne l'étape et le code aux enregistrements « login code not sent » et « SMTP check failed », que le lot C comptera.
+  - Revue de la PR #46 : à l'étape d'authentification, la réponse du serveur ne garde que son code SMTP, son texte pouvant citer la commande `AUTH PLAIN`, dont le base64 porte le mot de passe (point 1). À noter pour la recette : le remplacement ne reconnaît que l'adresse entière du destinataire, une réponse qui cite la partie locale seule (`user alice.martin unknown`) passe telle quelle ; si le MX Plan répond ainsi, ne garder que le code SMTP et le code d'état étendu (`5.1.1`) (point 2). Le client se présente par `EHLO localhost`, valeur par défaut de `net/smtp`, qui apparaît dans l'en-tête `Received` ; `Client.Hello` avec l'hôte de `baseURL` si un filtre s'en formalise (point 3).
   - Étape 14 : non faite par Claude Code, faute de compte. Vérifié depuis le Dev Container le 2026-10-06 : le port 465 de `ssl0.ovh.net` est joignable, son certificat (TLS 1.2) porte le nom `ssl0.ovh.net` et passe la vérification de Go. Le 2026-10-06, le développeur renvoie l'essai d'un envoi réel à la recette, avec la réception sur les messageries des membres (« Ce que ce plan ne prouve pas »).
