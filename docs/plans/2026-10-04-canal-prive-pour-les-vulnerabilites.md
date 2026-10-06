@@ -2,7 +2,7 @@
 
 - **Nom** : `canal-prive` (fixé à la création : le nom reste, bien que le plan n'installe plus de canal privé)
 - **Date** : 2026-10-04
-- **Statut** : en cours (étapes 1 à 6 faites, reste la mise à l'épreuve avec `revue-securite` ; il ne touche pas au code de l'application)
+- **Statut** : en cours (étapes 1 à 7 faites ; reste la clôture, une fois tranchées les deux remarques du rodage ; il ne touche pas au code de l'application)
 
 ## Objectif
 
@@ -85,9 +85,10 @@ Prises le 2026-10-04 avec le développeur.
   - activer le signalement privé de vulnérabilités, auquel `SECURITY.md` renvoie ;
   - retirer du jeton du Dev Container le droit *Repository security advisories* ajouté pour les essais ;
   - fermer l'avis factice `GHSA-6658-5pv8-wrwf` et supprimer son fork temporaire.
-- [ ] **7. Mise à l'épreuve.**
+- [x] **7. Mise à l'épreuve.**
   - La grille est appliquée à chaque constat de `revue-securite`, même si tous relèvent du traitement normal (D8) : c'est le rodage de l'analyse, et ce qui frotte corrige le document de l'étape 3.
   - Un traitement accéléré ne peut être répété que sur une version déployée : la répétition, sur un faux constat, est inscrite au plan `recette`.
+  - Fait le 2026-10-05 par le plan `revue-securite` : dix des onze constats portent leurs trois évaluations et un niveau (trois accélérés, sept normaux) ; le onzième, la liste de ce qui revient à Caddy, n'est pas un défaut. Trois remarques en sortent (« Retour sur la grille » de ce plan). La première est tranchée : « accès au serveur requis » reste une gravité faible (`revue-securite`, D6). Les deux autres restent à trancher avant la clôture : une faille lisible dans les specs est exposée avant tout correctif ; une fonction manquante se range mal sur l'axe 2.
 - [ ] **8. Clôture** : statut « terminé », `docs/feuille-de-route.md` et `CHANGELOG.md` mis à jour.
 
 ## Ce que ce plan demande aux autres plans
