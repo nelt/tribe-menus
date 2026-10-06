@@ -9,15 +9,16 @@ import (
 	"io"
 	"log"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/nelt/tribe-menus/internal/admin"
+	"github.com/nelt/tribe-menus/internal/config"
 	"github.com/nelt/tribe-menus/internal/mail"
 	"github.com/nelt/tribe-menus/internal/server"
 	"github.com/nelt/tribe-menus/internal/storage"
@@ -45,6 +46,10 @@ var defaultTimeouts = timeouts{readHeader: 10 * time.Second, read: 20 * time.Sec
 // connections still open then are closed. A variable for the tests.
 var shutdownTimeout = 10 * time.Second
 
+// embeddedWeb returns the front end embedded in the binary: a variable for the tests, run
+// before the front end is built.
+var embeddedWeb = web.Dist
+
 const (
 	// purgeInterval: login codes, sessions and rate limit rows are purged at startup, then
 	// at this interval (PT-07). The retention stated in the specs, ADR 0021 and the privacy
@@ -56,7 +61,7 @@ const (
 const usage = `Usage: tribe-menus <command> [flags]
 
 Commands:
-  serve        run the HTTP server
+  serve        run the HTTP server: -config <file> (server mode) or -dev (development mode)
   admin init   create a tribe, interactively (EF-08)
   admin seed   create the demonstration tribe "demo", if missing
   version      print the version
@@ -79,7 +84,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "serve":
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		return serve(ctx, args[1:], stderr)
+		return serve(ctx, args[1:], stdout, stderr)
 	case "admin":
 		// Signals are not caught: reading an answer does not watch a context, and the default
 		// SIGINT stops the process. Nothing is written before the last answer.
@@ -138,25 +143,71 @@ func withAdminCommand(ctx context.Context, data, baseURL string, stdin io.Reader
 	return do(&admin.Command{Store: store, In: stdin, Out: stdout, BaseURL: baseURL, Now: time.Now})
 }
 
-// serve runs the HTTP server until ctx is done.
-func serve(ctx context.Context, args []string, stderr io.Writer) int {
+// devFlags are the flags of the development mode, refused in server mode (plan
+// production, D2).
+var devFlags = []string{"addr", "data", "root", "mail-file"}
+
+// serve runs the HTTP server until ctx is done, in server mode (-config) or in development
+// mode (-dev), never both, never neither (plan production, D2).
+func serve(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	addr := flags.String("addr", "localhost:8080", "TCP address to listen on")
+	configPath := flags.String("config", "", "server mode: the config file")
 	dev := flags.Bool("dev", false, "development mode: read the front end and the public site from disk")
-	root := flags.String("root", ".", "repository root, used in development mode")
-	data := flags.String("data", "data", "directory of the databases")
+	addr := flags.String("addr", "localhost:8080", "development mode: TCP address to listen on")
+	root := flags.String("root", ".", "development mode: repository root")
+	data := flags.String("data", "data", "development mode: directory of the databases")
 	mailFile := flags.String("mail-file", "", "development mode: also append each email to this file, one JSON object per line (end-to-end tests)")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
-	if *mailFile != "" && !*dev {
-		fmt.Fprintln(stderr, "tribe-menus serve: -mail-file requires -dev")
+	fail := func(msg string) int {
+		fmt.Fprintf(stderr, "tribe-menus serve: %s\n", msg)
 		return 2
 	}
+	if flags.NArg() > 0 {
+		return fail("unexpected argument " + strconv.Quote(flags.Arg(0)))
+	}
+	switch {
+	case *dev && *configPath != "":
+		return fail("-dev and -config exclude each other")
+	case !*dev && *configPath == "":
+		return fail("want -config <file> (server mode) or -dev (development mode)")
+	}
 
-	logger := slog.New(slog.NewTextHandler(stderr, nil))
-	opts := serveOptions{addr: *addr, dev: *dev, root: *root, data: *data, mailFile: *mailFile}
+	if *dev {
+		// A unit that would run serve -dev: the development mode never runs under systemd
+		// (plan revue-securite, finding 8).
+		if n, err := systemdSocketCount(os.Getenv, os.Getpid()); n > 0 || err != nil {
+			return fail("-dev refused: a socket is passed by systemd")
+		}
+		logger := slog.New(slog.NewTextHandler(stderr, nil))
+		opts := serveOptions{listen: *addr, dev: true, root: *root, data: *data, mailFile: *mailFile}
+		return runServer(ctx, opts, logger)
+	}
+
+	for _, name := range devFlags {
+		if flagSet(flags, name) {
+			return fail("-" + name + " is a flag of the development mode, refused with -config")
+		}
+	}
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		return fail(err.Error())
+	}
+	logger := slog.New(slog.NewJSONHandler(stdout, nil))
+	opts := serveOptions{listen: cfg.Listen, configPath: *configPath, data: cfg.Data}
+	return runServer(ctx, opts, logger)
+}
+
+// flagSet reports whether the flag was given on the command line.
+func flagSet(flags *flag.FlagSet, name string) bool {
+	set := false
+	flags.Visit(func(f *flag.Flag) { set = set || f.Name == name })
+	return set
+}
+
+func runServer(ctx context.Context, opts serveOptions, logger *slog.Logger) int {
 	if err := migrateAndServe(ctx, opts, logger); err != nil {
 		logger.Error("server stopped", "error", err)
 		return 1
@@ -164,10 +215,14 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	return 0
 }
 
-// serveOptions are the flags of the serve command.
+// serveOptions are the options of the serve command, from its flags in development mode or
+// from the config file in server mode.
 type serveOptions struct {
-	addr string
-	dev  bool
+	// listen is config.ListenSystemd or a TCP address.
+	listen string
+	dev    bool
+	// configPath is the config file of the server mode.
+	configPath string
 	// root is the repository root, read in development mode.
 	root string
 	data string
@@ -249,12 +304,21 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 		return err
 	}
 
-	listener, err := net.Listen("tcp", opts.addr)
+	listener, err := listen(opts.listen, os.Getenv, os.Getpid())
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
 	srv := newHTTPServer(handler, slog.NewLogLogger(logger.Handler(), slog.LevelWarn), defaultTimeouts)
-	logger.Info("server started", "version", version, "commit", commit, "addr", "http://"+listener.Addr().String(), "dev", opts.dev)
+	started := []any{"version", version, "commit", commit, "dev", opts.dev}
+	if opts.listen == config.ListenSystemd {
+		started = append(started, "listen", "systemd", "addr", listener.Addr().String())
+	} else {
+		started = append(started, "listen", "tcp", "addr", "http://"+listener.Addr().String())
+	}
+	if opts.configPath != "" {
+		started = append(started, "config", opts.configPath)
+	}
+	logger.Info("server started", started...)
 
 	served := make(chan error, 1)
 	go func() { served <- srv.Serve(listener) }()
@@ -305,7 +369,7 @@ func serverConfig(dev bool, root string, logger *slog.Logger) (server.Config, er
 			Logger: logger,
 		}, nil
 	}
-	dist, err := web.Dist()
+	dist, err := embeddedWeb()
 	if err != nil {
 		return server.Config{}, fmt.Errorf("embedded front end: %w", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"io"
 	"net"
 	"net/http"
@@ -18,6 +19,9 @@ import (
 
 func TestRun(t *testing.T) {
 	data := t.TempDir()
+	configFile := writeConfig(t, data, "localhost:0")
+	invalidConfigFile := filepath.Join(data, "invalid.json")
+	writeFile(t, invalidConfigFile, `{"addr": "localhost:0"}`)
 	cases := []struct {
 		name       string
 		args       []string
@@ -30,7 +34,15 @@ func TestRun(t *testing.T) {
 		{name: "no command", args: nil, wantCode: 2, wantStderr: "Usage: tribe-menus"},
 		{name: "unknown command", args: []string{"frobnicate"}, wantCode: 2, wantStderr: `unknown command "frobnicate"`},
 		{name: "unknown serve flag", args: []string{"serve", "-nope"}, wantCode: 2, wantStderr: "flag provided but not defined: -nope"},
-		{name: "mail file without dev", args: []string{"serve", "-data", data, "-mail-file", filepath.Join(data, "mails.jsonl")}, wantCode: 2, wantStderr: "-mail-file requires -dev"},
+		{name: "serve without mode", args: []string{"serve", "-data", data}, wantCode: 2, wantStderr: "want -config <file> (server mode) or -dev (development mode)"},
+		{name: "serve with both modes", args: []string{"serve", "-dev", "-config", configFile}, wantCode: 2, wantStderr: "-dev and -config exclude each other"},
+		{name: "serve with an argument", args: []string{"serve", "-dev", "extra"}, wantCode: 2, wantStderr: `unexpected argument "extra"`},
+		{name: "addr with config", args: []string{"serve", "-config", configFile, "-addr", "localhost:0"}, wantCode: 2, wantStderr: "-addr is a flag of the development mode, refused with -config"},
+		{name: "data with config", args: []string{"serve", "-config", configFile, "-data", data}, wantCode: 2, wantStderr: "-data is a flag of the development mode, refused with -config"},
+		{name: "root with config", args: []string{"serve", "-config", configFile, "-root", "."}, wantCode: 2, wantStderr: "-root is a flag of the development mode, refused with -config"},
+		{name: "mail file with config", args: []string{"serve", "-config", configFile, "-mail-file", filepath.Join(data, "mails.jsonl")}, wantCode: 2, wantStderr: "-mail-file is a flag of the development mode, refused with -config"},
+		{name: "missing config file", args: []string{"serve", "-config", filepath.Join(data, "missing.json")}, wantCode: 2, wantStderr: "tribe-menus serve: config: open"},
+		{name: "invalid config file", args: []string{"serve", "-config", invalidConfigFile}, wantCode: 2, wantStderr: `tribe-menus serve: config: unknown key "addr"`},
 		{name: "invalid address", args: []string{"serve", "-dev", "-root", "testdata-missing", "-data", data, "-addr", "localhost:-1"}, wantCode: 1, wantStderr: "listen"},
 	}
 	for _, tc := range cases {
@@ -61,7 +73,7 @@ func TestServeDevAndShutdown(t *testing.T) {
 	done := make(chan int, 1)
 	data := filepath.Join(root, "data")
 	go func() {
-		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0"}, logs)
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0"}, io.Discard, logs)
 	}()
 
 	base := waitForAddress(t, logs)
@@ -123,7 +135,7 @@ func TestServeDevMailFile(t *testing.T) {
 	logs := &syncBuffer{}
 	done := make(chan int, 1)
 	go func() {
-		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0", "-mail-file", mailFile}, logs)
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", data, "-addr", "localhost:0", "-mail-file", mailFile}, io.Discard, logs)
 	}()
 	base := waitForAddress(t, logs)
 
@@ -243,6 +255,19 @@ func waitForAddress(t *testing.T, logs *syncBuffer) string {
 	return ""
 }
 
+// writeConfig writes a config file of the server mode in dir, with its data directory
+// in dir, and returns its path.
+func writeConfig(t *testing.T, dir, listen string) string {
+	t.Helper()
+	content, err := json.Marshal(map[string]string{"data": filepath.Join(dir, "data"), "listen": listen, "baseURL": "https://tribes.example.org"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := filepath.Join(dir, "config.json")
+	writeFile(t, name, string(content))
+	return name
+}
+
 func writeFile(t *testing.T, name, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
@@ -340,7 +365,7 @@ func TestShutdownWithSlowClient(t *testing.T) {
 	logs := &syncBuffer{}
 	done := make(chan int, 1)
 	go func() {
-		done <- serve(ctx, []string{"-dev", "-root", root, "-data", filepath.Join(root, "data"), "-addr", "localhost:0"}, logs)
+		done <- serve(ctx, []string{"-dev", "-root", root, "-data", filepath.Join(root, "data"), "-addr", "localhost:0"}, io.Discard, logs)
 	}()
 	base := waitForAddress(t, logs)
 

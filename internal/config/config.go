@@ -128,7 +128,7 @@ func validTCPAddress(addr string) bool {
 		return false
 	}
 	n, err := strconv.Atoi(port)
-	return err == nil && n > 0 && n <= 65535
+	return err == nil && n >= 0 && n <= 65535
 }
 
 func validBaseURL(s string) bool {
