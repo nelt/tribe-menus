@@ -498,6 +498,71 @@ func errorString(err error) string {
 	return err.Error()
 }
 
+// TestDecoyCodeForEveryRequest: the rate limit database keeps the same rows for a request
+// for a member and for another address, decoy code included, so that nothing it keeps
+// tells a member's address (ADR 0021, point 4; plan production, D11).
+func TestDecoyCodeForEveryRequest(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	tokens := map[string]string{}
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+			t.Fatal(err)
+		}
+		tokens[email] = f.token
+	}
+	if len(f.mailer.sent) != 1 {
+		t.Fatalf("sent = %v, want the code of Alice", f.mailer.sent)
+	}
+
+	rows := map[string][]string{}
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		h := emailHash("martin", Email(email))
+		var requests int
+		if err := f.store.RateLimit().QueryRowContext(ctx, "SELECT count(*) FROM code_requests WHERE email_hash = ?", h).Scan(&requests); err != nil {
+			t.Fatal(err)
+		}
+		var expiresAt string
+		var attempts int
+		var requestHash []byte
+		err := f.store.RateLimit().QueryRowContext(ctx, "SELECT expires_at, attempts_left, request_hash FROM decoy_codes WHERE email_hash = ?", h).Scan(&expiresAt, &attempts, &requestHash)
+		if err != nil {
+			t.Fatalf("%s: decoy code: %v", email, err)
+		}
+		rows[email] = []string{fmt.Sprint(requests), expiresAt, fmt.Sprint(attempts), fmt.Sprint(len(requestHash))}
+	}
+	if a, b := strings.Join(rows["alice@exemple.fr"], " "), strings.Join(rows["inconnu@exemple.fr"], " "); a != b {
+		t.Errorf("rate limit rows of a member %q, of another address %q: want the same", a, b)
+	}
+
+	// The decoy code of a member is never checked: its real code is.
+	if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, "alice@exemple.fr", f.mailer.last(t, "alice@exemple.fr"), tokens["alice@exemple.fr"], Device{}); err != nil {
+		t.Errorf("Alice's code: %v", err)
+	}
+}
+
+// TestRevokedAfterRequest: a member revoked after the request enters codes against its decoy
+// code, as an unknown address does.
+func TestRevokedAfterRequest(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	chloe, err := f.martin.AddMember(ctx, "chloe@exemple.fr", "Chloé", f.alice.ID, f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.requestCode(ctx, "martin", f.martin, "chloe@exemple.fr", "192.0.2.1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.martin.RevokeMember(ctx, chloe.ID, f.alice.ID, f.now); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = f.login.OpenSession(ctx, "martin", f.martin, "chloe@exemple.fr", f.mailer.last(t, "chloe@exemple.fr"), f.token, Device{})
+	var incorrect *IncorrectCodeError
+	if !errors.As(err, &incorrect) || incorrect.AttemptsLeft != LoginCodeAttempts-1 {
+		t.Errorf("code of a member revoked after the request: %v, want an incorrect code with %d attempts left", err, LoginCodeAttempts-1)
+	}
+}
+
 func TestRevokeMemberClosesSessions(t *testing.T) {
 	ctx := context.Background()
 	f := newLoginFixture(t)
@@ -565,7 +630,7 @@ func TestPurge(t *testing.T) {
 	if err := f.login.Purge(ctx, f.store); err != nil {
 		t.Fatal(err)
 	}
-	if r, d, c, s := counts(); r != 3 || d != 1 || c != 1 || s != 1 {
+	if r, d, c, s := counts(); r != 3 || d != 2 || c != 1 || s != 1 {
 		t.Errorf("nothing to purge yet: %d requests, %d decoys, %d codes, %d sessions", r, d, c, s)
 	}
 

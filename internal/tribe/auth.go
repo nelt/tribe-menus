@@ -46,15 +46,18 @@ func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail
 	if err != nil {
 		return "", fmt.Errorf("request code: %w", err)
 	}
+	// A decoy code for every request, before looking for the member: the rate limit
+	// database keeps the same rows for a member and for any other address (ADR 0021,
+	// point 4; plan production, D11). The decoy code of a member is never checked.
+	if err := l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(token, now)); err != nil {
+		return "", err
+	}
 
 	member, ok, err := activeMember(ctx, t, email)
 	if err != nil {
 		return "", err
 	}
 	if !ok {
-		if err := l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(token, now)); err != nil {
-			return "", err
-		}
 		return token, nil
 	}
 	code, err := newLoginCode()
