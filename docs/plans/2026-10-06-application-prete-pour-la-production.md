@@ -135,7 +135,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
   - `RateLimitStore.RecordCodeRequest` dit quelle limite a refusé, et compte le refus.
   - `Store.IssueLoginCode` compte le refus par la limite de la tribu ; `Store.OpenSession` et `CheckDecoyCode` comptent le code invalidé par son dernier essai.
   - Ni la réponse de l'API ni sa durée ne changent : les scénarios ENF-02 existants le prouvent déjà, à relancer.
-- [ ] **20. Évaluation et envoi.**
+- [x] **20. Évaluation et envoi.**
   - Avec l'effacement périodique, toutes les dix minutes : somme des compteurs de la dernière heure, base de limitation et toutes les tribus, et nombre d'empreintes d'adresse à neuf demandes ou plus dans l'heure, lu dans les demandes que la base de limitation garde déjà (D12) ; décision par une fonction pure (compteurs, dernière alerte, heure), testée en tableau de cas.
   - Seuil franchi et aucune alerte de cette nature depuis six heures : un enregistrement `alert=code_request_limits` dans le journal, et un e-mail à l'adresse `alerts.to` de la configuration (clé ajoutée, obligatoire en mode serveur), par le même `Mailer`.
   - E-mail en français, en texte brut : nom de l'instance (`baseURL`), fenêtre, compteurs par nature, renvoi vers les journaux d'accès de Caddy. **Ni adresse e-mail, ni adresse IP, ni tribu.**

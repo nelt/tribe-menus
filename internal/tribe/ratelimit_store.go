@@ -24,6 +24,13 @@ type RateLimitStore interface {
 	CheckDecoyCode(ctx context.Context, emailHash []byte, entered, requestToken string, now time.Time) error
 	// Purge deletes the rows out of their window.
 	Purge(ctx context.Context, now time.Time) error
+	// AlertCounts returns the counters of the window at now, and the number of address
+	// hashes with RepeatedRequestsThreshold requests or more in it.
+	AlertCounts(ctx context.Context, now time.Time) (AlertCounts, error)
+	// AlertsSent returns the time of the last alert on each signal.
+	AlertsSent(ctx context.Context) (map[AlertSignal]time.Time, error)
+	// SetAlertsSent records alerts on these signals at now.
+	SetAlertsSent(ctx context.Context, signals []AlertSignal, now time.Time) error
 }
 
 // RateLimitDB is the rate limit database: a thin adapter around ratelimitdb.
@@ -144,6 +151,64 @@ func (r *RateLimitDB) Purge(ctx context.Context, now time.Time) error {
 	}
 	if _, err := q.PurgeAlertCounters(ctx, formatTime(alertWindowStart(now))); err != nil {
 		return fmt.Errorf("purge alert counters: %w", err)
+	}
+	return nil
+}
+
+// AlertCounts implements RateLimitStore.
+func (r *RateLimitDB) AlertCounts(ctx context.Context, now time.Time) (AlertCounts, error) {
+	q := ratelimitdb.New(r.db)
+	since := formatTime(alertWindowStart(now))
+	rows, err := q.AlertCounts(ctx, since)
+	if err != nil {
+		return AlertCounts{}, fmt.Errorf("alert counts: %w", err)
+	}
+	var counts AlertCounts
+	events := map[AlertEvent]int{}
+	for _, row := range rows {
+		events[AlertEvent(row.Event)] = int(row.N)
+	}
+	counts.add(events)
+	repeated, err := q.CountRepeatedRequests(ctx, ratelimitdb.CountRepeatedRequestsParams{Since: since, MinRequests: RepeatedRequestsThreshold})
+	if err != nil {
+		return AlertCounts{}, fmt.Errorf("alert counts: repeated requests: %w", err)
+	}
+	counts.RepeatedAddresses = int(repeated)
+	return counts, nil
+}
+
+// AlertsSent implements RateLimitStore.
+func (r *RateLimitDB) AlertsSent(ctx context.Context) (map[AlertSignal]time.Time, error) {
+	rows, err := ratelimitdb.New(r.db).AlertsSent(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("alerts sent: %w", err)
+	}
+	sent := map[AlertSignal]time.Time{}
+	for _, row := range rows {
+		at, err := parseTime(row.SentAt)
+		if err != nil {
+			return nil, fmt.Errorf("alerts sent: %w", err)
+		}
+		sent[AlertSignal(row.Signal)] = at
+	}
+	return sent, nil
+}
+
+// SetAlertsSent implements RateLimitStore.
+func (r *RateLimitDB) SetAlertsSent(ctx context.Context, signals []AlertSignal, now time.Time) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("set alerts sent: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	q := ratelimitdb.New(tx)
+	for _, s := range signals {
+		if err := q.SetAlertSent(ctx, ratelimitdb.SetAlertSentParams{Signal: string(s), SentAt: formatTime(now)}); err != nil {
+			return fmt.Errorf("set alerts sent: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("set alerts sent: %w", err)
 	}
 	return nil
 }

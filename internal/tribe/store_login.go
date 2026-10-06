@@ -290,6 +290,19 @@ func (s *Store) Purge(ctx context.Context, now time.Time) error {
 	return nil
 }
 
+// AlertCounts returns the alert counters of the tribe in the window at now.
+func (s *Store) AlertCounts(ctx context.Context, now time.Time) (map[AlertEvent]int, error) {
+	rows, err := tribedb.New(s.db).AlertCounts(ctx, formatTime(alertWindowStart(now)))
+	if err != nil {
+		return nil, fmt.Errorf("alert counts: %w", err)
+	}
+	events := map[AlertEvent]int{}
+	for _, row := range rows {
+		events[AlertEvent(row.Event)] = int(row.N)
+	}
+	return events, nil
+}
+
 func sessionAudit(op AuditOperation, memberID, authorID, sessionID int64, device Device, now time.Time) tribedb.InsertAuditEntryParams {
 	return tribedb.InsertAuditEntryParams{
 		At:           formatTime(now),

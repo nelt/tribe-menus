@@ -9,11 +9,23 @@ import (
 
 const smtp = `"smtp": {"host": "smtp.example.org", "port": 465, "username": "no-reply@example.org", "from": "no-reply@example.org"}`
 
-var exampleSMTP = SMTP{Host: "smtp.example.org", Port: 465, Username: "no-reply@example.org", From: "no-reply@example.org"}
+const alerts = `"alerts": {"to": "admin@example.org"}`
 
-// withSMTP returns a config file with the keys data, listen and baseURL, and this smtp key.
+var (
+	exampleSMTP   = SMTP{Host: "smtp.example.org", Port: 465, Username: "no-reply@example.org", From: "no-reply@example.org"}
+	exampleAlerts = Alerts{To: "admin@example.org"}
+)
+
+// withSMTP returns a config file with the keys data, listen, baseURL and alerts, and this
+// smtp key.
 func withSMTP(smtp string) string {
-	return `{"data": "/srv", "listen": "systemd", "baseURL": "https://a.example.org", "smtp": ` + smtp + `}`
+	return `{"data": "/srv", "listen": "systemd", "baseURL": "https://a.example.org", "smtp": ` + smtp + `, ` + alerts + `}`
+}
+
+// withAlerts returns a config file with the keys data, listen, baseURL and smtp, and this
+// alerts key.
+func withAlerts(alerts string) string {
+	return `{"data": "/srv", "listen": "systemd", "baseURL": "https://a.example.org", ` + smtp + `, "alerts": ` + alerts + `}`
 }
 
 func TestRead(t *testing.T) {
@@ -25,13 +37,13 @@ func TestRead(t *testing.T) {
 	}{
 		{
 			name:    "systemd",
-			content: `{"data": "/var/lib/tribe-menus/recette", "listen": "systemd", "baseURL": "https://recette.example.org", ` + smtp + `}`,
-			want:    Config{Data: "/var/lib/tribe-menus/recette", Listen: "systemd", BaseURL: "https://recette.example.org", SMTP: exampleSMTP},
+			content: `{"data": "/var/lib/tribe-menus/recette", "listen": "systemd", "baseURL": "https://recette.example.org", ` + smtp + `, ` + alerts + `}`,
+			want:    Config{Data: "/var/lib/tribe-menus/recette", Listen: "systemd", BaseURL: "https://recette.example.org", SMTP: exampleSMTP, Alerts: exampleAlerts},
 		},
 		{
 			name:    "TCP",
-			content: `{"data": "/srv/data", "listen": "127.0.0.1:8080", "baseURL": "https://tribes.example.org:8443", ` + smtp + `}`,
-			want:    Config{Data: "/srv/data", Listen: "127.0.0.1:8080", BaseURL: "https://tribes.example.org:8443", SMTP: exampleSMTP},
+			content: `{"data": "/srv/data", "listen": "127.0.0.1:8080", "baseURL": "https://tribes.example.org:8443", ` + smtp + `, ` + alerts + `}`,
+			want:    Config{Data: "/srv/data", Listen: "127.0.0.1:8080", BaseURL: "https://tribes.example.org:8443", SMTP: exampleSMTP, Alerts: exampleAlerts},
 		},
 		{name: "empty file", content: "", wantErr: "config: empty file"},
 		{name: "blank file", content: " \n", wantErr: "config: empty file"},
@@ -65,6 +77,13 @@ func TestRead(t *testing.T) {
 		{name: "smtp from with a name", content: withSMTP(`{"host": "smtp.example.org", "port": 465, "username": "u", "from": "Melting Tribe <no-reply@example.org>"}`), wantErr: `key "smtp.from": want an email address`},
 		{name: "smtp from in upper case", content: withSMTP(`{"host": "smtp.example.org", "port": 465, "username": "u", "from": "No-Reply@example.org"}`), wantErr: `key "smtp.from": want an email address`},
 		{name: "smtp password", content: withSMTP(`{"host": "smtp.example.org", "port": 465, "username": "u", "from": "a@example.org", "password": "x"}`), wantErr: `unknown key "password"`},
+		{name: "missing alerts", content: `{"data": "/srv", "listen": "systemd", "baseURL": "https://a.example.org", ` + smtp + `}`, wantErr: `key "alerts.to": missing`},
+		{name: "null alerts", content: withAlerts(`null`), wantErr: `key "alerts.to": missing`},
+		{name: "empty alerts", content: withAlerts(`{}`), wantErr: `key "alerts.to": missing`},
+		{name: "alerts to with a name", content: withAlerts(`{"to": "Admin <admin@example.org>"}`), wantErr: `key "alerts.to": want an email address`},
+		{name: "alerts to in upper case", content: withAlerts(`{"to": "Admin@example.org"}`), wantErr: `key "alerts.to": want an email address`},
+		{name: "alerts to two addresses", content: withAlerts(`{"to": "a@example.org,b@example.org"}`), wantErr: `key "alerts.to": want an email address`},
+		{name: "unknown alerts key", content: withAlerts(`{"to": "admin@example.org", "cc": "b@example.org"}`), wantErr: `unknown key "cc"`},
 		// Review of PR #45, point 3: what encoding/json would accept.
 		{name: "key written twice", content: `{"data": "/srv", "listen": "systemd", "listen": "0.0.0.0:80", "baseURL": "https://a.example.org", ` + smtp + `}`, wantErr: `key "listen": written twice`},
 		{name: "key in upper case", content: `{"data": "/srv", "LISTEN": "systemd", "baseURL": "https://a.example.org", ` + smtp + `}`, wantErr: `unknown key "LISTEN"`},
@@ -103,6 +122,7 @@ func TestReadErrorsDoNotQuoteValues(t *testing.T) {
 		withSMTP(`{"host": "smtp.example.org", "port": 465, "username": "hunter2 x", "from": "a@example.org"}`),
 		withSMTP(`{"host": "smtp.example.org", "port": 465, "username": "u", "from": "hunter2"}`),
 		withSMTP(`{"host": "smtp.example.org", "port": 465, "username": "u", "from": "a@example.org", "password": "hunter2"}`),
+		withAlerts(`{"to": "hunter2"}`),
 	} {
 		_, err := Read(strings.NewReader(content))
 		if err == nil || strings.Contains(err.Error(), "hunter2") {

@@ -21,7 +21,9 @@ type CodeMailer interface {
 type Login struct {
 	RateLimit RateLimitStore
 	Mailer    CodeMailer
-	Now       func() time.Time
+	// Alerts receives the alerts on the code request limits reached repeatedly.
+	Alerts AlertNotifier
+	Now    func() time.Time
 }
 
 // RequestCode asks for a code for the address in the tribe of this slug, from ip. The
@@ -147,5 +149,48 @@ func (l *Login) Purge(ctx context.Context, dbs Databases) error {
 			errs = append(errs, fmt.Errorf("tribe %s: %w", slug, err))
 		}
 	}
+	return errors.Join(errs...)
+}
+
+// CheckAlerts sums the alert counters of the window, in the rate limit database and in
+// every tribe, and notifies the signals due (ADR 0023). The alert is recorded before it is
+// notified, so that a failing notification is not repeated. A failing tribe is reported,
+// after the evaluation of the others: it does not hide an alert.
+func (l *Login) CheckAlerts(ctx context.Context, dbs Databases) error {
+	now := l.Now()
+	counts, err := l.RateLimit.AlertCounts(ctx, now)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	slugs, err := dbs.Tribes(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	for _, slug := range slugs {
+		db, err := dbs.Tribe(ctx, slug)
+		var events map[AlertEvent]int
+		if err == nil {
+			events, err = NewStore(db).AlertCounts(ctx, now)
+		}
+		if err != nil {
+			errs = append(errs, fmt.Errorf("tribe %s: %w", slug, err))
+			continue
+		}
+		counts.add(events)
+	}
+
+	sent, err := l.RateLimit.AlertsSent(ctx)
+	if err != nil {
+		return errors.Join(append(errs, err)...)
+	}
+	due := DueAlerts(counts, sent, now)
+	if len(due) == 0 {
+		return errors.Join(errs...)
+	}
+	if err := l.RateLimit.SetAlertsSent(ctx, due, now); err != nil {
+		return errors.Join(append(errs, err)...)
+	}
+	l.Alerts.NotifyCodeRequestLimits(AlertReport{At: now, Signals: due, Counts: counts})
 	return errors.Join(errs...)
 }

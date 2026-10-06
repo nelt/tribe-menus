@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/nelt/tribe-menus/internal/admin"
+	"github.com/nelt/tribe-menus/internal/alert"
 	"github.com/nelt/tribe-menus/internal/config"
 	"github.com/nelt/tribe-menus/internal/mail"
 	"github.com/nelt/tribe-menus/internal/server"
@@ -58,8 +59,13 @@ const (
 	// purgeInterval: login codes, sessions and rate limit rows are purged at startup, then
 	// at this interval (PT-07). The retention stated in the specs, ADR 0021 and the privacy
 	// page (an hour and ten minutes at most for the hashes of addresses and IPs) is
-	// tribe.RateLimitRetention plus this interval: change them together.
+	// tribe.RateLimitRetention plus this interval: change them together. The alerts on the
+	// code request limits are checked just before each purge (ADR 0023, point 8).
 	purgeInterval = 10 * time.Minute
+
+	// devAlertsTo is the address of the administrator in development mode, where the alert
+	// emails go to the logs.
+	devAlertsTo = "admin@example.org"
 )
 
 const usage = `Usage: tribe-menus <command> [flags]
@@ -207,7 +213,7 @@ func serve(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			return fail("-dev refused: a socket is passed by systemd")
 		}
 		logger := slog.New(slog.NewTextHandler(stderr, nil))
-		opts := serveOptions{listen: *addr, dev: true, root: *root, data: *data, mailFile: *mailFile}
+		opts := serveOptions{listen: *addr, dev: true, root: *root, data: *data, mailFile: *mailFile, baseURL: "http://" + *addr, alertsTo: devAlertsTo}
 		return runServer(ctx, opts, logger)
 	}
 
@@ -225,7 +231,7 @@ func serve(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return fail(err.Error())
 	}
 	logger := slog.New(slog.NewJSONHandler(stdout, nil))
-	opts := serveOptions{listen: cfg.Listen, configPath: *configPath, data: cfg.Data, smtp: &mail.SMTPMailer{
+	opts := serveOptions{listen: cfg.Listen, configPath: *configPath, data: cfg.Data, baseURL: cfg.BaseURL, alertsTo: cfg.Alerts.To, smtp: &mail.SMTPMailer{
 		Host:     cfg.SMTP.Host,
 		Port:     cfg.SMTP.Port,
 		Username: cfg.SMTP.Username,
@@ -265,6 +271,10 @@ type serveOptions struct {
 	mailFile string
 	// smtp sends the emails in server mode (ADR 0014).
 	smtp *mail.SMTPMailer
+	// baseURL is the public address of the instance, named by the alert emails.
+	baseURL string
+	// alertsTo is the address of the administrator, who receives the alert emails.
+	alertsTo string
 }
 
 // migrateAndServe opens and migrates every database before listening, so that the server,
@@ -297,7 +307,12 @@ func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger
 	outbox := mail.NewOutbox(mailer, tribe.LoginCodeValidity, logger)
 	// Deferred after store.Close, hence run before: the sendings in progress end first (D11).
 	defer outbox.Wait()
-	login := &tribe.Login{RateLimit: tribe.NewRateLimitDB(store.RateLimit()), Mailer: outbox, Now: time.Now}
+	login := &tribe.Login{
+		RateLimit: tribe.NewRateLimitDB(store.RateLimit()),
+		Mailer:    outbox,
+		Alerts:    &alert.Notifier{Logger: logger, Sender: outbox, To: opts.alertsTo, Instance: opts.baseURL},
+		Now:       time.Now,
+	}
 
 	purgeCtx, stopPurge := context.WithCancel(ctx)
 	purged := make(chan struct{})
@@ -313,11 +328,15 @@ func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger
 	return listenAndServe(ctx, opts, logger, store, login)
 }
 
-// purgePeriodically purges at once, then at each interval until ctx is done.
+// purgePeriodically checks the alerts and purges at once, then at each interval until ctx
+// is done. The alerts are checked first, on counters not yet purged.
 func purgePeriodically(ctx context.Context, login *tribe.Login, dbs tribe.Databases, logger *slog.Logger) {
 	ticker := time.NewTicker(purgeInterval)
 	defer ticker.Stop()
 	for {
+		if err := login.CheckAlerts(ctx, dbs); err != nil && ctx.Err() == nil {
+			logger.Error("alert check failed", "error", err)
+		}
 		if err := login.Purge(ctx, dbs); err != nil && ctx.Err() == nil {
 			logger.Error("purge failed", "error", err)
 		}

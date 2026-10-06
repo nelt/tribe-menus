@@ -49,6 +49,24 @@ func TestOutbox(t *testing.T) {
 	}
 }
 
+func TestOutboxSendAlert(t *testing.T) {
+	r := &Recorder{}
+	var logs bytes.Buffer
+	o := NewOutbox(r, 10*time.Minute, slog.New(slog.NewTextHandler(&logs, nil)))
+	o.SendAlert(Message{To: "admin@example.org", Subject: "Alerte", Body: "Corps"})
+	o.Wait()
+	if got := r.Messages(); len(got) != 1 || got[0].To != "admin@example.org" || got[0].Body != "Corps" {
+		t.Errorf("messages = %+v", got)
+	}
+
+	failing := NewOutbox(failingMailer{}, 10*time.Minute, slog.New(slog.NewTextHandler(&logs, nil)))
+	failing.SendAlert(Message{To: "admin@example.org"})
+	failing.Wait()
+	if !strings.Contains(logs.String(), "alert email not sent") {
+		t.Errorf("logs = %q, want the failure", logs.String())
+	}
+}
+
 func TestOutboxFailureDoesNotLogTheCode(t *testing.T) {
 	var logs bytes.Buffer
 	o := NewOutbox(failingMailer{}, 10*time.Minute, slog.New(slog.NewTextHandler(&logs, nil)))

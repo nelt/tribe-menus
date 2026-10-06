@@ -1,7 +1,7 @@
-// Package mail sends the only email of the application, the login code (ENF-01, ADR 0014),
-// through a Mailer: by SMTP in server mode, in development to the logs (and to a file for
-// the end-to-end tests), in tests to memory. Sending happens in the background (Outbox),
-// outside of the request.
+// Package mail sends the emails of the application, the login code (ENF-01, ADR 0014) and
+// the alert to the administrator (ADR 0023), through a Mailer: by SMTP in server mode, in
+// development to the logs (and to a file for the end-to-end tests), in tests to memory.
+// Sending happens in the background (Outbox), outside of the request.
 package mail
 
 import (
@@ -147,6 +147,17 @@ func (o *Outbox) SendLoginCode(to, code string) {
 		defer cancel()
 		if err := o.mailer.Send(ctx, msg); err != nil {
 			o.logger.Error("login code not sent", ErrorAttrs(err)...)
+		}
+	})
+}
+
+// SendAlert sends an alert email in the background. A failure is logged.
+func (o *Outbox) SendAlert(msg Message) {
+	o.wg.Go(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+		defer cancel()
+		if err := o.mailer.Send(ctx, msg); err != nil {
+			o.logger.Error("alert email not sent", ErrorAttrs(err)...)
 		}
 	})
 }

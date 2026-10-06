@@ -820,3 +820,118 @@ func TestLimitsSurviveRestart(t *testing.T) {
 		}
 	}
 }
+
+type fakeNotifier struct{ reports []AlertReport }
+
+func (n *fakeNotifier) NotifyCodeRequestLimits(r AlertReport) { n.reports = append(n.reports, r) }
+
+// TestCheckAlerts: the counters of the rate limit database and of the tribes are summed over
+// the hour, and each signal is alerted on once per six hours at most (ADR 0023).
+func TestCheckAlerts(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	notifier := &fakeNotifier{}
+	f.login.Alerts = notifier
+	check := func() []AlertSignal {
+		t.Helper()
+		before := len(notifier.reports)
+		if err := f.login.CheckAlerts(ctx, f.store); err != nil {
+			t.Fatal(err)
+		}
+		switch len(notifier.reports) - before {
+		case 0:
+			return nil
+		case 1:
+			return notifier.reports[before].Signals
+		default:
+			t.Fatalf("%d reports for one check", len(notifier.reports)-before)
+			return nil
+		}
+	}
+	// refuse makes n requests refused by the limit by address, for a member and for others,
+	// each from its own IP.
+	ips := 0
+	ip := func() string {
+		ips++
+		return fmt.Sprintf("10.0.%d.%d", ips/256, ips%256)
+	}
+	f.addMembers(t, TribeRequestLimit)
+	addresses := 0
+	refuse := func(n int) {
+		t.Helper()
+		for range n {
+			addresses++
+			email := fmt.Sprintf("personne-%d@exemple.fr", addresses)
+			if addresses%2 == 0 {
+				email = fmt.Sprintf("membre-%d@exemple.fr", addresses/2%TribeRequestLimit)
+			}
+			for range EmailRequestLimit {
+				_ = f.requestCode(ctx, "martin", f.martin, email, ip())
+			}
+			if err := f.requestCode(ctx, "martin", f.martin, email, ip()); !errors.Is(err, ErrTooManyRequests) {
+				t.Fatalf("refusal for %s: %v", email, err)
+			}
+			f.advance(time.Minute)
+		}
+	}
+
+	refuse(RefusedRequestsThreshold - 1)
+	if got := check(); got != nil {
+		t.Errorf("below the threshold: alert on %v", got)
+	}
+	refuse(1)
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{RefusedRequests}) {
+		t.Errorf("at the threshold: alert on %v, want refused requests", got)
+	}
+	report := notifier.reports[len(notifier.reports)-1]
+	if report.Counts.Refused() != RefusedRequestsThreshold || !report.At.Equal(f.now) {
+		t.Errorf("report %+v", report)
+	}
+
+	f.advance(time.Hour)
+	refuse(RefusedRequestsThreshold)
+	if got := check(); got != nil {
+		t.Errorf("within six hours: alert on %v", got)
+	}
+	f.advance(AlertInterval)
+	refuse(RefusedRequestsThreshold)
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{RefusedRequests}) {
+		t.Errorf("after six hours: alert on %v, want refused requests", got)
+	}
+
+	// Exhausted codes, real ones counted in the tribe, decoy ones in the rate limit database.
+	f.advance(AlertInterval)
+	for i := range ExhaustedCodesThreshold {
+		email := "alice@exemple.fr"
+		if i%2 == 1 {
+			email = fmt.Sprintf("inconnu-%d@exemple.fr", i)
+		}
+		if err := f.requestCode(ctx, "martin", f.martin, email, ip()); err != nil {
+			t.Fatal(err)
+		}
+		for range LoginCodeAttempts {
+			_, _, _ = f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", f.token, Device{})
+		}
+		f.advance(time.Minute)
+	}
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{ExhaustedCodes}) {
+		t.Errorf("exhausted codes: alert on %v, want exhausted codes", got)
+	}
+
+	// Repeated requests for one address, at the pace of the limit.
+	f.advance(AlertInterval)
+	for i := range RepeatedRequestsThreshold {
+		if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", ip()); err != nil {
+			t.Fatalf("request %d: %v", i+1, err)
+		}
+		if i < RepeatedRequestsThreshold-2 {
+			if got := check(); got != nil {
+				t.Errorf("after %d requests: alert on %v", i+1, got)
+			}
+		}
+		f.advance(EmailRequestWindow / EmailRequestLimit)
+	}
+	if got := check(); fmt.Sprint(got) != fmt.Sprint([]AlertSignal{RepeatedRequests}) {
+		t.Errorf("repeated requests: alert on %v, want repeated requests", got)
+	}
+}
