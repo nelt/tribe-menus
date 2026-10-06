@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lots A et B faits, lot C en revue)
+- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A et B faits, lot C en revue)
 
 ## Objectif
 
@@ -189,7 +189,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Secret** : le mot de passe SMTP ne se trouve ni dans une option, ni dans l'environnement, ni dans le fichier de configuration, ni dans un log, y compris après un échec d'authentification.
 - **Logs** : après des envois réussis et échoués, les logs du mode serveur ne contiennent ni adresse e-mail, ni code, ni jeton.
 - **Alertes** : les seuils de D8 et de D12 déclenchent un e-mail à l'administrateur et un enregistrement `alert` ; rien en dessous ; une seule alerte par nature en six heures ; compteurs inchangés après un redémarrage ; l'e-mail ne nomme ni adresse ni tribu.
-- **Base de limitation** : elle ne contient toujours ni adresse ni IP en clair, et rien de ce qu'elle garde ne dépend de l'appartenance d'une adresse à une tribu, codes fantômes compris (D11).
+- **Base de limitation** : elle ne contient toujours ni adresse ni IP en clair ; à la demande, ce qu'elle garde ne dépend pas de l'appartenance d'une adresse à une tribu, codes fantômes compris (D11). Après un essai, les essais restants du code fantôme et le compteur des codes fantômes épuisés en dépendent : limite assumée (D13).
 - **Front** : modifier une source change le nom du fichier produit ; un fichier à empreinte est servi avec `immutable`, la page d'entrée avec `no-cache`.
 - **Archive** : deux `make dist` sur le même commit donnent la même empreinte ; l'archive contient le binaire `linux/amd64`, `site/` et `deploy/`.
 - **Release** : l'essai à blanc de `release.yml` dépose une archive vérifiable ; le job qui lance `make ci` n'a aucun droit d'écriture.
@@ -219,12 +219,12 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Seuils de D8** : valeurs proposées sans mesure. À revoir après les premières semaines de recette, où tout faux positif sera visible.
 - **Nouvel essai d'envoi** : aucun en V1 ; le membre dispose de « Je n'ai rien reçu : renvoyer un code ». À reprendre si les logs de recette montrent des échecs passagers.
 - **Adresses hors ASCII** (D5) : refusées. À rouvrir si un membre en a une, avec la prise en charge de SMTPUTF8 par le MX Plan à vérifier d'abord.
-- **Essais sur un code fantôme de membre** (lot C, étape 16) : avec D11, le code fantôme d'un membre n'est jamais vérifié, celui d'une autre adresse l'est à chaque essai depuis le navigateur de la demande. Après un tel essai, ses essais restants le distinguent, pour qui lit la base de limitation ; avant, rien. Inscrit comme limite dans l'ADR 0023. Pour la lever : reporter aussi sur le code fantôme chaque essai d'un membre, un code accepté comptant comme un essai erroné, au prix d'une transaction de plus par essai et d'un compte des codes épuisés à prendre dans une seule base. À trancher par le développeur.
+- **Essais sur un code fantôme de membre** (lot C, étape 16) : close le 2026-10-06 par D13 (limite assumée).
 - **Nombre de PR** : cinq lots, là où `socle` en avait trois. A et B peuvent se fondre si le développeur préfère moins de PR ; D et E restent séparés à cause des workflows.
 
 ## Décisions
 
-D1 à D10 proposées par la session qui a écrit le plan, confirmées telles quelles par le développeur le 2026-10-06 ; D11 et D12 tranchées par lui le même jour, à partir des deux premières questions ouvertes du brouillon.
+D1 à D10 proposées par la session qui a écrit le plan, confirmées telles quelles par le développeur le 2026-10-06 ; D11 et D12 tranchées par lui le même jour, à partir des deux premières questions ouvertes du brouillon ; D13 tranchée par lui à la revue de la PR #47.
 
 - **D1. Fichier de configuration en JSON, lu strictement.** La bibliothèque standard le lit sans dépendance, et une clé mal orthographiée arrête le démarrage au lieu d'être ignorée. Le fichier vit sur le serveur (`/etc/tribe-menus/<environnement>/`, ADR 0015, point 9), ce qui garde hors du dépôt les valeurs propres à l'instance (ADR 0011, point 5). Écartés : TOML ou YAML (une dépendance) ; des options dans l'unité systemd, versionnée dans `deploy/` (les valeurs de l'instance entreraient dans le dépôt) ; des variables d'environnement (l'ADR 0015 les écarte pour les secrets, et deux canaux de configuration valent moins qu'un).
 - **D2. Deux modes exclusifs, `-dev` ou `-config`.** L'écoute sur le socket et l'envoi SMTP ne s'expriment que dans le fichier de configuration : le constat 8 est tenu par construction, et le mode à moitié configuré d'aujourd'hui (ni développement, ni envoi) disparaît. Écarté : garder les options et ajouter un contrôle par combinaison dangereuse, liste qu'il faudrait tenir à jour.
@@ -250,6 +250,8 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
 - **D10. Noms fixes en développement, noms à empreinte dans tout build.** `make dev` recharge la page sans rien d'autre ; `make e2e`, qui construit le front, exerce le chemin de la production. Écarté : des noms à empreinte partout, qui obligeraient le serveur de développement à relire la liste à chaque requête.
 - **D11. Un code fantôme pour toute demande, membre ou non** (étape 17). Avant ce plan, la base de limitation n'écrit un code fantôme que pour une adresse qui n'est pas membre active : une demande enregistrée sans code fantôme au même instant désigne, pendant les dix minutes de validité du code, l'empreinte d'un membre, à qui lit le fichier. Écrire le code fantôme pour toute demande rend les deux cas identiques dans cette base, comme le veut l'ADR 0021 (point 4), pour le prix d'une ligne par adresse demandée, effacée avec les autres. Gravité faible selon la grille de `docs/traitement-des-vulnerabilites.md` (accès au serveur requis, rien en production) : flux public. Écarté : l'écrire comme une limite assumée.
 - **D12. Troisième signal d'alerte : une même empreinte d'adresse à neuf demandes ou plus dans l'heure** (étape 20). Il couvre le blocage ciblé mené au rythme exact de la limite (trois demandes par quart d'heure, douze par heure), qui ne produit ni refus ni code épuisé. Il se calcule sur les demandes que la base de limitation garde déjà, sans donnée de plus, et ne dépend pas de l'appartenance de l'adresse une fois D11 en place. Mêmes règles que D8 : constante du code, une alerte par six heures au plus, ni adresse, ni IP, ni tribu dans l'e-mail. Neuf demandes en une heure pour une même adresse n'arrivent pas par maladresse.
+
+- **D13. Limite de D11 assumée** (lot C, revue de la PR #47, point 1 ; tranchée par le développeur le 2026-10-06). Qui lit la base de limitation peut apprendre si une adresse est membre d'une tribu, en demandant un code pour elle depuis son navigateur et en saisissant un code faux : le code fantôme d'une autre adresse perd un essai, celui d'un membre n'est jamais vérifié ; un code épuisé est compté dans la base de limitation pour une autre adresse, dans la base de la tribu pour un membre. Accepté : la base de limitation ne se lit qu'avec le répertoire de données, où les bases des tribus portent les adresses des membres en clair. Le code, D7 et l'e-mail ne changent pas ; ADR 0021 (point 4) et ADR 0023 le disent. Écarté : reporter sur le code fantôme chaque essai d'un membre et compter tout code épuisé dans la base de limitation.
 
 ## Notes d'exécution
 
