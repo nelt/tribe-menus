@@ -54,12 +54,15 @@ func TestMessage(t *testing.T) {
 	}
 }
 
-func TestNotifyCodeRequestLimits(t *testing.T) {
+func TestNotifier(t *testing.T) {
 	var logs bytes.Buffer
 	r := &recorder{}
 	n := &Notifier{Logger: slog.New(slog.NewJSONHandler(&logs, nil)), Sender: r, To: "admin@example.org", Instance: "https://recette.example.org"}
-	n.NotifyCodeRequestLimits(report)
-
+	n.LogCodeRequestLimits(report)
+	if len(r.sent) != 0 {
+		t.Fatalf("sent = %+v, want nothing before SendCodeRequestLimits", r.sent)
+	}
+	n.SendCodeRequestLimits(report)
 	if len(r.sent) != 1 || r.sent[0].To != "admin@example.org" {
 		t.Fatalf("sent = %+v, want one email to the administrator", r.sent)
 	}

@@ -140,7 +140,9 @@ type AlertReport struct {
 	Counts  AlertCounts
 }
 
-// AlertNotifier writes an alert to the log and sends it to the administrator.
+// AlertNotifier writes an alert to the log, the alert of reference that the server relays,
+// and sends it to the administrator (ADR 0023, points 1 and 5).
 type AlertNotifier interface {
-	NotifyCodeRequestLimits(r AlertReport)
+	LogCodeRequestLimits(r AlertReport)
+	SendCodeRequestLimits(r AlertReport)
 }

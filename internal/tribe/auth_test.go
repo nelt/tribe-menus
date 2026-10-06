@@ -869,9 +869,42 @@ func TestLimitsSurviveRestart(t *testing.T) {
 	}
 }
 
-type fakeNotifier struct{ reports []AlertReport }
+// fakeNotifier keeps the alerts written to the log and those sent by email.
+type fakeNotifier struct{ logged, reports []AlertReport }
 
-func (n *fakeNotifier) NotifyCodeRequestLimits(r AlertReport) { n.reports = append(n.reports, r) }
+func (n *fakeNotifier) LogCodeRequestLimits(r AlertReport)  { n.logged = append(n.logged, r) }
+func (n *fakeNotifier) SendCodeRequestLimits(r AlertReport) { n.reports = append(n.reports, r) }
+
+// unrecordedAlerts is a rate limit database that refuses to record the alerts sent.
+type unrecordedAlerts struct{ *RateLimitDB }
+
+func (unrecordedAlerts) SetAlertsSent(context.Context, []AlertSignal, time.Time) error {
+	return errors.New("disk full")
+}
+
+// TestCheckAlertsUnrecorded: an alert that cannot be recorded is written to the log, at each
+// check, but not sent by email (ADR 0023, point 8).
+func TestCheckAlertsUnrecorded(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	notifier := &fakeNotifier{}
+	f.login.Alerts = notifier
+	f.login.RateLimit = unrecordedAlerts{f.login.RateLimit.(*RateLimitDB)}
+	for i := range RepeatedRequestsThreshold {
+		if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", fmt.Sprintf("198.51.100.%d", i)); err != nil {
+			t.Fatal(err)
+		}
+		f.advance(EmailRequestWindow / EmailRequestLimit)
+	}
+	for check := 1; check <= 2; check++ {
+		if err := f.login.CheckAlerts(ctx, f.store); err == nil || !strings.Contains(err.Error(), "disk full") {
+			t.Errorf("check %d: error = %v, want the one of the database", check, err)
+		}
+		if len(notifier.logged) != check || len(notifier.reports) != 0 {
+			t.Errorf("check %d: %d alerts logged, %d sent; want %d logged, none sent", check, len(notifier.logged), len(notifier.reports), check)
+		}
+	}
+}
 
 // TestCheckAlerts: the counters of the rate limit database and of the tribes are summed over
 // the hour, and each signal is alerted on once per six hours at most (ADR 0023).
@@ -885,6 +918,9 @@ func TestCheckAlerts(t *testing.T) {
 		before := len(notifier.reports)
 		if err := f.login.CheckAlerts(ctx, f.store); err != nil {
 			t.Fatal(err)
+		}
+		if len(notifier.logged) != len(notifier.reports) {
+			t.Fatalf("%d alerts logged, %d sent", len(notifier.logged), len(notifier.reports))
 		}
 		switch len(notifier.reports) - before {
 		case 0:

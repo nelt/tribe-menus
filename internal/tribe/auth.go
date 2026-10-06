@@ -153,9 +153,10 @@ func (l *Login) Purge(ctx context.Context, dbs Databases) error {
 }
 
 // CheckAlerts sums the alert counters of the window, in the rate limit database and in
-// every tribe, and notifies the signals due (ADR 0023). The alert is recorded before it is
-// notified, so that a failing notification is not repeated. A failing tribe is reported,
-// after the evaluation of the others: it does not hide an alert.
+// every tribe, and notifies the signals due (ADR 0023, point 8). The alert is written to
+// the log first, then recorded, then sent by email only if it was recorded: a database that
+// refuses the record repeats the log record at each check, never the email. A failing tribe
+// is reported, after the evaluation of the others: it does not hide an alert.
 func (l *Login) CheckAlerts(ctx context.Context, dbs Databases) error {
 	now := l.Now()
 	counts, err := l.RateLimit.AlertCounts(ctx, now)
@@ -188,9 +189,11 @@ func (l *Login) CheckAlerts(ctx context.Context, dbs Databases) error {
 	if len(due) == 0 {
 		return errors.Join(errs...)
 	}
+	report := AlertReport{At: now, Signals: due, Counts: counts}
+	l.Alerts.LogCodeRequestLimits(report)
 	if err := l.RateLimit.SetAlertsSent(ctx, due, now); err != nil {
 		return errors.Join(append(errs, err)...)
 	}
-	l.Alerts.NotifyCodeRequestLimits(AlertReport{At: now, Signals: due, Counts: counts})
+	l.Alerts.SendCodeRequestLimits(report)
 	return errors.Join(errs...)
 }

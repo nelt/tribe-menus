@@ -36,8 +36,8 @@ type Notifier struct {
 
 var _ tribe.AlertNotifier = (*Notifier)(nil)
 
-// NotifyCodeRequestLimits implements tribe.AlertNotifier.
-func (n *Notifier) NotifyCodeRequestLimits(r tribe.AlertReport) {
+// LogCodeRequestLimits implements tribe.AlertNotifier.
+func (n *Notifier) LogCodeRequestLimits(r tribe.AlertReport) {
 	signals := make([]string, len(r.Signals))
 	for i, s := range r.Signals {
 		signals[i] = string(s)
@@ -48,6 +48,10 @@ func (n *Notifier) NotifyCodeRequestLimits(r tribe.AlertReport) {
 	}
 	attrs = append(attrs, "repeated_addresses", r.Counts.RepeatedAddresses)
 	n.Logger.Error("code request limits reached repeatedly", attrs...)
+}
+
+// SendCodeRequestLimits implements tribe.AlertNotifier.
+func (n *Notifier) SendCodeRequestLimits(r tribe.AlertReport) {
 	n.Sender.SendAlert(Message(n.To, n.Instance, r))
 }
 
