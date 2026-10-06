@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing/fstest"
 	"time"
 
 	"github.com/cucumber/godog"
@@ -33,7 +34,8 @@ const (
 	originHost = "meltingtribe.test"
 	origin     = "https://" + originHost
 	userAgent  = "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"
-	webDir     = "../web/src"
+	// indexSource is the template of the index page; the scenarios exercise the API only.
+	indexSource = "../web/src/index.html"
 )
 
 // today is the date of the scenarios: the test clock starts there.
@@ -159,8 +161,13 @@ func (w *world) app(ctx context.Context) (http.Handler, error) {
 		Alerts:    &alert.Notifier{Logger: slog.New(slog.NewJSONHandler(&w.alerts.logs, nil)), Sender: w.outbox, To: adminEmail, Instance: origin},
 		Now:       w.clock,
 	}
+	index, err := os.ReadFile(indexSource)
+	if err != nil {
+		return nil, fmt.Errorf("read the index page: %w", err)
+	}
 	handler, err := server.New(server.Config{
-		Web:    os.DirFS(webDir),
+		// A front end as built, without files named after their content.
+		Web:    fstest.MapFS{"index.html": {Data: index}, "files.json": {Data: []byte("[]")}},
 		Logger: slog.New(slog.DiscardHandler),
 		Tribes: store,
 		Login:  w.login,
