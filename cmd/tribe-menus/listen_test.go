@@ -146,7 +146,7 @@ func fakeWeb(t *testing.T) {
 	t.Helper()
 	saved := embeddedWeb
 	embeddedWeb = func() (fs.FS, error) {
-		return fstest.MapFS{"index.html": {Data: []byte(`<base href="{{.Base}}">`)}}, nil
+		return fstest.MapFS{"index.html": {Data: []byte(`<base href="{{.Base}}">`)}, "files.json": {Data: []byte(`[]`)}}, nil
 	}
 	t.Cleanup(func() { embeddedWeb = saved })
 }

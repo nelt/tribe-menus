@@ -12,10 +12,15 @@ import (
 
 func webFS() fstest.MapFS {
 	return fstest.MapFS{
-		"index.html":  {Data: []byte(`<base href="{{.Base}}"><meta name="source-url" content="{{.SourceURL}}">`)},
-		"main.js":     {Data: []byte(`console.log("app");`)},
-		"app.css":     {Data: []byte(`body{}`)},
-		"assets/a.js": {Data: []byte(`// nested`)},
+		"index.html":               {Data: []byte(`<base href="{{.Base}}"><meta name="source-url" content="{{.SourceURL}}">`)},
+		"main.js":                  {Data: []byte(`console.log("app");`)},
+		"app.css":                  {Data: []byte(`body{}`)},
+		"assets/a.js":              {Data: []byte(`// nested`)},
+		"app-K3JQ2X7A.css":         {Data: []byte(`body{}`)},
+		"app-K3JQ2X7A.css.map":     {Data: []byte(`{}`)},
+		"Figtree[wght]-YQNG.woff2": {Data: []byte(`font`)},
+		"OFL-Figtree.txt":          {Data: []byte(`SIL Open Font License`)},
+		"files.json":               {Data: []byte(`["Figtree[wght]-YQNG.woff2", "app-K3JQ2X7A.css"]`)},
 	}
 }
 
@@ -83,6 +88,39 @@ func TestRoutes(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestCacheHeaders(t *testing.T) {
+	cases := []struct {
+		name       string
+		dev        bool
+		target     string
+		wantStatus int
+		want       string
+	}{
+		{name: "listed file", target: "/tribes/demo/app-K3JQ2X7A.css", wantStatus: http.StatusOK, want: immutableCache},
+		{name: "listed file with brackets", target: "/tribes/demo/Figtree%5Bwght%5D-YQNG.woff2", wantStatus: http.StatusOK, want: immutableCache},
+		{name: "sourcemap", target: "/tribes/demo/app-K3JQ2X7A.css.map", wantStatus: http.StatusOK, want: revalidateCache},
+		{name: "unlisted file", target: "/tribes/demo/OFL-Figtree.txt", wantStatus: http.StatusOK, want: revalidateCache},
+		{name: "tribe root", target: "/tribes/demo/", wantStatus: http.StatusOK, want: revalidateCache},
+		{name: "index page", target: "/tribes/demo/index.html", wantStatus: http.StatusOK, want: revalidateCache},
+		{name: "client-side route", target: "/tribes/demo/planning", wantStatus: http.StatusOK, want: revalidateCache},
+		{name: "list not served", target: "/tribes/demo/files.json", wantStatus: http.StatusNotFound},
+		{name: "development: listed file", dev: true, target: "/tribes/demo/app-K3JQ2X7A.css", wantStatus: http.StatusOK, want: revalidateCache},
+		{name: "development: list not served", dev: true, target: "/tribes/demo/files.json", wantStatus: http.StatusNotFound},
+		{name: "health check", target: "/healthz", wantStatus: http.StatusOK, want: "no-store"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := get(newHandler(t, Config{Web: webFS(), Dev: tc.dev}), tc.target)
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.wantStatus)
+			}
+			if got := rec.Header().Get("Cache-Control"); got != tc.want {
+				t.Errorf("Cache-Control = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 
@@ -168,13 +206,30 @@ func TestSite(t *testing.T) {
 }
 
 func TestFrontEndNotBuilt(t *testing.T) {
-	built := webFS()
-	delete(built, "index.html")
+	for _, missing := range []string{"index.html", "files.json"} {
+		t.Run("production refuses to start without "+missing, func(t *testing.T) {
+			web := webFS()
+			delete(web, missing)
+			_, err := New(Config{Web: web, Logger: slog.New(slog.DiscardHandler)})
+			if err == nil || !strings.Contains(err.Error(), "front end not built") {
+				t.Fatalf("New error = %v, want front end not built", err)
+			}
+		})
+	}
 
-	t.Run("production refuses to start", func(t *testing.T) {
-		_, err := New(Config{Web: built, Logger: slog.New(slog.DiscardHandler)})
-		if err == nil || !strings.Contains(err.Error(), "front end not built") {
-			t.Fatalf("New error = %v, want front end not built", err)
+	t.Run("production refuses an unreadable list", func(t *testing.T) {
+		web := webFS()
+		web["files.json"] = &fstest.MapFile{Data: []byte(`{"files": []}`)}
+		if _, err := New(Config{Web: web, Logger: slog.New(slog.DiscardHandler)}); err == nil || !strings.Contains(err.Error(), "parse files.json") {
+			t.Fatalf("New error = %v, want parse files.json", err)
+		}
+	})
+
+	t.Run("development starts without the list", func(t *testing.T) {
+		web := webFS()
+		delete(web, "files.json")
+		if rec := get(newHandler(t, Config{Web: web, Dev: true}), "/tribes/demo/main.js"); rec.Code != http.StatusOK {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
 		}
 	})
 

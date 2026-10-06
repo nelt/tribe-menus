@@ -66,3 +66,34 @@ test("an unknown tribe shows the same screens as an existing one (ENF-02)", asyn
   await expect(page.getByText("Si alice@exemple.fr fait partie de la tribu, un code à 8 chiffres vient d’y être envoyé.")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
+
+test("the page loads its files under the names given by the build, without error (ADR 0012)", async ({ page }) => {
+  // A refusal of the CSP is written to the console. Failed loads are not: the API answers 401
+  // without a session, and the status of each file is checked below.
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && !message.text().startsWith("Failed to load resource")) {
+      errors.push(message.text());
+    }
+  });
+  page.on("pageerror", (error) => errors.push(error.message));
+  const loaded: string[] = [];
+  page.on("response", (response) => {
+    const type = response.request().resourceType();
+    if (["script", "stylesheet", "font", "image"].includes(type)) {
+      expect(response.status(), response.url()).toBe(200);
+      loaded.push(decodeURIComponent(new URL(response.url()).pathname));
+    }
+  });
+
+  await page.goto("/tribes/demo/");
+  await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+
+  // A name ends with the hash of its content, as esbuild writes it.
+  for (const extension of ["js", "css", "svg", "woff2"]) {
+    expect(loaded, extension).toContainEqual(expect.stringMatching(new RegExp(`^/tribes/demo/[^/]+-[A-Z0-9]{8}\\.${extension}$`)));
+  }
+  expect(loaded.filter((path) => !/-[A-Z0-9]{8}\.[a-z0-9]+$/.test(path))).toEqual([]);
+  expect(errors).toEqual([]);
+});
