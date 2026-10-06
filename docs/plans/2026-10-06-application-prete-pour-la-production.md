@@ -131,7 +131,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
   - Base de limitation (`internal/storage/migrations/ratelimit/`) : demandes refusées par la limite par adresse, par la limite par IP, codes fantômes épuisés ; et la date de la dernière alerte envoyée, par nature d'alerte.
   - Base de la tribu (`internal/storage/migrations/tribe/`) : demandes refusées par la limite de la tribu, codes réels épuisés.
   - Requêtes sqlc, `make generate`. Effacement automatique des tranches sorties de la fenêtre, avec le reste (PT-07).
-- [ ] **19. Comptage**, dans la transaction qui constate l'événement.
+- [x] **19. Comptage**, dans la transaction qui constate l'événement.
   - `RateLimitStore.RecordCodeRequest` dit quelle limite a refusé, et compte le refus.
   - `Store.IssueLoginCode` compte le refus par la limite de la tribu ; `Store.OpenSession` et `CheckDecoyCode` comptent le code invalidé par son dernier essai.
   - Ni la réponse de l'API ni sa durée ne changent : les scénarios ENF-02 existants le prouvent déjà, à relancer.

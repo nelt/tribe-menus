@@ -35,11 +35,11 @@ func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail
 	}
 	now := l.Now()
 	req := NewCodeRequest(slug, email, ip)
-	allowed, err := l.RateLimit.RecordCodeRequest(ctx, req, now)
+	refusal, err := l.RateLimit.RecordCodeRequest(ctx, req, now)
 	if err != nil {
 		return "", err
 	}
-	if !allowed {
+	if refusal != "" {
 		return "", ErrTooManyRequests
 	}
 	token, err := newToken()

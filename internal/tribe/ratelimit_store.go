@@ -13,13 +13,14 @@ import (
 // RateLimitStore keeps the code requests and the decoy codes of the instance (ADR 0021).
 type RateLimitStore interface {
 	// RecordCodeRequest records the request at now if the limits by address and by IP allow
-	// it, and reports whether they did. Counting and recording are atomic.
-	RecordCodeRequest(ctx context.Context, req CodeRequest, now time.Time) (bool, error)
+	// it. Otherwise it counts the refusal for the alerts and returns it: EmailLimitRefusal or
+	// IPLimitRefusal; "" when the request is allowed. Counting and recording are atomic.
+	RecordCodeRequest(ctx context.Context, req CodeRequest, now time.Time) (AlertEvent, error)
 	// ReplaceDecoyCode stores a decoy code for the address hash, replacing the previous one.
 	ReplaceDecoyCode(ctx context.Context, emailHash []byte, code LoginCode) error
 	// CheckDecoyCode records an attempt on the decoy code of the address hash, with the
 	// token of its request: it returns ErrNewCodeNeeded or *IncorrectCodeError, as for a
-	// real code.
+	// real code. A decoy code invalidated by the attempt is counted for the alerts.
 	CheckDecoyCode(ctx context.Context, emailHash []byte, entered, requestToken string, now time.Time) error
 	// Purge deletes the rows out of their window.
 	Purge(ctx context.Context, now time.Time) error
@@ -38,10 +39,10 @@ func NewRateLimitDB(db *sql.DB) *RateLimitDB {
 var _ RateLimitStore = (*RateLimitDB)(nil)
 
 // RecordCodeRequest implements RateLimitStore.
-func (r *RateLimitDB) RecordCodeRequest(ctx context.Context, req CodeRequest, now time.Time) (bool, error) {
+func (r *RateLimitDB) RecordCodeRequest(ctx context.Context, req CodeRequest, now time.Time) (AlertEvent, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return false, fmt.Errorf("record code request: %w", err)
+		return "", fmt.Errorf("record code request: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 	q := ratelimitdb.New(tx)
@@ -49,27 +50,30 @@ func (r *RateLimitDB) RecordCodeRequest(ctx context.Context, req CodeRequest, no
 	emailSince, ipSince := RequestWindows(now)
 	byEmail, err := q.CountCodeRequestsByEmail(ctx, ratelimitdb.CountCodeRequestsByEmailParams{EmailHash: req.EmailHash, At: formatTime(emailSince)})
 	if err != nil {
-		return false, fmt.Errorf("record code request: count by address: %w", err)
+		return "", fmt.Errorf("record code request: count by address: %w", err)
 	}
 	byIP, err := q.CountCodeRequestsByIP(ctx, ratelimitdb.CountCodeRequestsByIPParams{IpHash: req.IPHash, At: formatTime(ipSince)})
 	if err != nil {
-		return false, fmt.Errorf("record code request: count by IP: %w", err)
+		return "", fmt.Errorf("record code request: count by IP: %w", err)
 	}
 	counts := CodeRequestCounts{Email: int(byEmail), IP: int(byIP)}
-	if !counts.Allowed() {
-		return false, nil
+	refusal := counts.Refusal()
+	if refusal != "" {
+		err = q.IncrementAlertCounter(ctx, ratelimitdb.IncrementAlertCounterParams{Slot: alertSlot(now), Event: string(refusal)})
+	} else {
+		err = q.InsertCodeRequest(ctx, ratelimitdb.InsertCodeRequestParams{
+			At:        formatTime(now),
+			EmailHash: req.EmailHash,
+			IpHash:    req.IPHash,
+		})
 	}
-	if err := q.InsertCodeRequest(ctx, ratelimitdb.InsertCodeRequestParams{
-		At:        formatTime(now),
-		EmailHash: req.EmailHash,
-		IpHash:    req.IPHash,
-	}); err != nil {
-		return false, fmt.Errorf("record code request: %w", err)
+	if err != nil {
+		return "", fmt.Errorf("record code request: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		return false, fmt.Errorf("record code request: %w", err)
+		return "", fmt.Errorf("record code request: %w", err)
 	}
-	return true, nil
+	return refusal, nil
 }
 
 // ReplaceDecoyCode implements RateLimitStore.
@@ -115,6 +119,9 @@ func (r *RateLimitDB) CheckDecoyCode(ctx context.Context, emailHash []byte, ente
 		err = q.SetDecoyCodeAttempts(ctx, ratelimitdb.SetDecoyCodeAttemptsParams{AttemptsLeft: int64(after.AttemptsLeft), EmailHash: emailHash})
 	} else {
 		err = q.DeleteDecoyCode(ctx, emailHash)
+	}
+	if err == nil && exhausted(checkErr) {
+		err = q.IncrementAlertCounter(ctx, ratelimitdb.IncrementAlertCounterParams{Slot: alertSlot(now), Event: string(DecoyCodeExhausted)})
 	}
 	if err != nil {
 		return fmt.Errorf("check decoy code: record attempt: %w", err)

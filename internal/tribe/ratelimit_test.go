@@ -7,19 +7,21 @@ import (
 	"time"
 )
 
-func TestCodeRequestCountsAllowed(t *testing.T) {
+func TestCodeRequestCountsRefusal(t *testing.T) {
 	cases := []struct {
 		counts CodeRequestCounts
-		want   bool
+		want   AlertEvent
 	}{
-		{counts: CodeRequestCounts{}, want: true},
-		{counts: CodeRequestCounts{Email: 2, IP: 9}, want: true},
-		{counts: CodeRequestCounts{Email: 3}, want: false},
-		{counts: CodeRequestCounts{IP: 10}, want: false},
+		{counts: CodeRequestCounts{}, want: ""},
+		{counts: CodeRequestCounts{Email: 2, IP: 9}, want: ""},
+		{counts: CodeRequestCounts{Email: 3}, want: EmailLimitRefusal},
+		{counts: CodeRequestCounts{IP: 10}, want: IPLimitRefusal},
+		// A request refused by both limits counts once.
+		{counts: CodeRequestCounts{Email: 3, IP: 10}, want: EmailLimitRefusal},
 	}
 	for _, tc := range cases {
-		if got := tc.counts.Allowed(); got != tc.want {
-			t.Errorf("%+v.Allowed() = %v, want %v", tc.counts, got, tc.want)
+		if got := tc.counts.Refusal(); got != tc.want {
+			t.Errorf("%+v.Refusal() = %q, want %q", tc.counts, got, tc.want)
 		}
 	}
 }

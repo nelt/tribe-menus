@@ -498,6 +498,106 @@ func errorString(err error) string {
 	return err.Error()
 }
 
+// alertCounts returns the alert counters of a database, summed by event over every slot.
+func alertCounts(t *testing.T, db *sql.DB) map[AlertEvent]int {
+	t.Helper()
+	rows, err := db.QueryContext(context.Background(), "SELECT event, sum(n) FROM alert_counters GROUP BY event")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	counts := map[AlertEvent]int{}
+	for rows.Next() {
+		var event string
+		var n int
+		if err := rows.Scan(&event, &n); err != nil {
+			t.Fatal(err)
+		}
+		counts[AlertEvent(event)] = n
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return counts
+}
+
+// TestAlertCounters: each refused request and each code invalidated by its last attempt is
+// counted once, in the database that sees it (ADR 0023; plan production, D7).
+func TestAlertCounters(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	f.addMembers(t, TribeRequestLimit)
+	ip := func(i int) string { return fmt.Sprintf("198.51.100.%d", i) }
+
+	// Limit by address, for a member and for another address.
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		for i := range EmailRequestLimit + 1 {
+			err := f.requestCode(ctx, "martin", f.martin, email, ip(100+i))
+			if i == EmailRequestLimit && !errors.Is(err, ErrTooManyRequests) {
+				t.Fatalf("%s: request %d: %v, want ErrTooManyRequests", email, i+1, err)
+			}
+		}
+	}
+	// Limit by IP.
+	for i := range IPRequestLimit + 1 {
+		err := f.requestCode(ctx, "martin", f.martin, fmt.Sprintf("personne-%d@exemple.fr", i), "203.0.113.7")
+		if i == IPRequestLimit && !errors.Is(err, ErrTooManyRequests) {
+			t.Fatalf("IP request %d: %v, want ErrTooManyRequests", i+1, err)
+		}
+	}
+	// Limit by tribe: Alice's 3 requests already count, the last 3 members are refused.
+	for i := range TribeRequestLimit {
+		err := f.requestCode(ctx, "martin", f.martin, fmt.Sprintf("membre-%d@exemple.fr", i), ip(i%(IPRequestLimit-1)+1))
+		if err != nil && !errors.Is(err, ErrTooManyRequests) {
+			t.Fatal(err)
+		}
+	}
+	f.advance(time.Hour)
+
+	// Codes out of attempts, real and decoy; attempts from another browser and on an
+	// expired code exhaust nothing.
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+			t.Fatal(err)
+		}
+		for range LoginCodeAttempts + 1 {
+			_, _, _ = f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", "another browser", Device{})
+		}
+		for range LoginCodeAttempts {
+			if _, _, err := f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", f.token, Device{}); err == nil {
+				t.Fatal("a wrong code was accepted")
+			}
+		}
+		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+			t.Fatal(err)
+		}
+		f.advance(LoginCodeValidity)
+		for range LoginCodeAttempts {
+			_, _, _ = f.login.OpenSession(ctx, "martin", f.martin, email, "00000000", f.token, Device{})
+		}
+	}
+
+	want := map[AlertEvent]int{EmailLimitRefusal: 2, IPLimitRefusal: 1, DecoyCodeExhausted: 1}
+	if got := alertCounts(t, f.store.RateLimit()); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("counters of the rate limit database = %v, want %v", got, want)
+	}
+	want = map[AlertEvent]int{TribeLimitRefusal: 3, LoginCodeExhausted: 1}
+	if got := alertCounts(t, f.martin.db); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("counters of the tribe database = %v, want %v", got, want)
+	}
+
+	// Purged once out of the window.
+	f.advance(AlertWindow)
+	if err := f.login.Purge(ctx, f.store); err != nil {
+		t.Fatal(err)
+	}
+	for name, db := range map[string]*sql.DB{"rate limit": f.store.RateLimit(), "tribe": f.martin.db} {
+		if got := alertCounts(t, db); len(got) != 0 {
+			t.Errorf("counters of the %s database after an hour: %v, want none", name, got)
+		}
+	}
+}
+
 // TestDecoyCodeForEveryRequest: the rate limit database keeps the same rows for a request
 // for a member and for another address, decoy code included, so that nothing it keeps
 // tells a member's address (ADR 0021, point 4; plan production, D11).

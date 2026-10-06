@@ -22,8 +22,9 @@ type Session struct {
 }
 
 // IssueLoginCode stores the code of a member, replacing the previous one, unless the limit
-// by tribe is reached: it then returns ErrTooManyRequests. Only the requests for active
-// members are counted here (ENF-01; plan revue-securite, D2).
+// by tribe is reached: it then counts the refusal for the alerts and returns
+// ErrTooManyRequests. Only the requests for active members are counted here (ENF-01; plan
+// revue-securite, D2).
 func (s *Store) IssueLoginCode(ctx context.Context, memberID int64, code LoginCode, now time.Time) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -37,6 +38,12 @@ func (s *Store) IssueLoginCode(ctx context.Context, memberID int64, code LoginCo
 		return fmt.Errorf("issue login code: count requests: %w", err)
 	}
 	if !TribeRequestAllowed(int(n)) {
+		if err := q.IncrementAlertCounter(ctx, tribedb.IncrementAlertCounterParams{Slot: alertSlot(now), Event: string(TribeLimitRefusal)}); err != nil {
+			return fmt.Errorf("issue login code: count refusal: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("issue login code: count refusal: %w", err)
+		}
 		return ErrTooManyRequests
 	}
 	if err := q.InsertCodeRequest(ctx, formatTime(now)); err != nil {
@@ -60,7 +67,7 @@ func (s *Store) IssueLoginCode(ctx context.Context, memberID int64, code LoginCo
 // OpenSession checks the code entered by the member, with the token of its request, and,
 // when it is accepted, opens a session for the device and traces it. It returns the session
 // and its token, or ErrNewCodeNeeded, or *IncorrectCodeError; the attempt is recorded in
-// every case.
+// every case, and a code invalidated by its last attempt is counted for the alerts.
 func (s *Store) OpenSession(ctx context.Context, memberID int64, entered, requestToken string, device Device, now time.Time) (Session, string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -86,6 +93,9 @@ func (s *Store) OpenSession(ctx context.Context, memberID int64, entered, reques
 		err = q.SetLoginCodeAttempts(ctx, tribedb.SetLoginCodeAttemptsParams{AttemptsLeft: int64(after.AttemptsLeft), MemberID: memberID})
 	} else {
 		err = q.DeleteLoginCode(ctx, memberID)
+	}
+	if err == nil && exhausted(checkErr) {
+		err = q.IncrementAlertCounter(ctx, tribedb.IncrementAlertCounterParams{Slot: alertSlot(now), Event: string(LoginCodeExhausted)})
 	}
 	if err != nil {
 		return Session{}, "", fmt.Errorf("open session: record attempt: %w", err)
