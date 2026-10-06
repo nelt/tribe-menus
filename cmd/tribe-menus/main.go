@@ -106,10 +106,31 @@ func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stder
 	}
 	flags := flag.NewFlagSet("admin "+args[0], flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	data := flags.String("data", "data", "directory of the databases")
-	baseURL := flags.String("base-url", "http://localhost:8080", "address of the instance, to show the URL of the tribe")
+	configPath := flags.String("config", "", "the config file of the server mode, for its data and baseURL keys")
+	data := flags.String("data", "data", "directory of the databases, without -config")
+	baseURL := flags.String("base-url", "http://localhost:8080", "address of the instance, to show the URL of the tribe, without -config")
 	if err := flags.Parse(args[1:]); err != nil {
 		return 2
+	}
+	if flags.NArg() > 0 {
+		fmt.Fprintf(stderr, "tribe-menus admin %s: unexpected argument %q\n", args[0], flags.Arg(0))
+		return 2
+	}
+	// The script tribe-menus-admin of the server passes the config file of the service
+	// (ADR 0015, point 13).
+	if *configPath != "" {
+		for _, name := range []string{"data", "base-url"} {
+			if flagSet(flags, name) {
+				fmt.Fprintf(stderr, "tribe-menus admin %s: -%s is refused with -config\n", args[0], name)
+				return 2
+			}
+		}
+		cfg, err := config.Load(*configPath)
+		if err != nil {
+			fmt.Fprintf(stderr, "tribe-menus admin %s: %v\n", args[0], err)
+			return 2
+		}
+		*data, *baseURL = cfg.Data, cfg.BaseURL
 	}
 
 	err := withAdminCommand(ctx, *data, *baseURL, stdin, stdout, func(cmd *admin.Command) error {

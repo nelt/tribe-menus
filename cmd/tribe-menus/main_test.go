@@ -168,6 +168,8 @@ func TestServeDevMailFile(t *testing.T) {
 
 func TestAdmin(t *testing.T) {
 	data := t.TempDir()
+	configDir := t.TempDir()
+	configFile := writeConfig(t, configDir, "systemd")
 	cases := []struct {
 		name       string
 		args       []string
@@ -193,6 +195,18 @@ func TestAdmin(t *testing.T) {
 		},
 		{name: "seed", args: []string{"admin", "seed", "-data", data}, wantStdout: "http://localhost:8080/tribes/demo/"},
 		{name: "seed again", args: []string{"admin", "seed", "-data", data}, wantStdout: "existe déjà"},
+		{
+			name:       "init with config",
+			args:       []string{"admin", "init", "-config", configFile},
+			stdin:      "Les Petit\npetit\nalice@exemple.fr\n\n",
+			wantStdout: "https://tribes.example.org/tribes/petit/",
+		},
+		{name: "seed with config", args: []string{"admin", "seed", "-config", configFile}, wantStdout: "https://tribes.example.org/tribes/demo/"},
+		{name: "seed again with config", args: []string{"admin", "seed", "-config", configFile}, wantStdout: "existe déjà"},
+		{name: "data with config", args: []string{"admin", "seed", "-config", configFile, "-data", data}, wantCode: 2, wantStderr: "tribe-menus admin seed: -data is refused with -config"},
+		{name: "base URL with config", args: []string{"admin", "init", "-config", configFile, "-base-url", "https://a.example.org"}, wantCode: 2, wantStderr: "tribe-menus admin init: -base-url is refused with -config"},
+		{name: "invalid config", args: []string{"admin", "seed", "-config", filepath.Join(configDir, "missing.json")}, wantCode: 2, wantStderr: "tribe-menus admin seed: config: open"},
+		{name: "unexpected argument", args: []string{"admin", "seed", "extra"}, wantCode: 2, wantStderr: `tribe-menus admin seed: unexpected argument "extra"`},
 		{name: "input closed", args: []string{"admin", "init", "-data", data}, stdin: "Les Leroy\n", wantCode: 1, wantStderr: "tribe-menus admin init: input closed"},
 	}
 	for _, tc := range cases {
