@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -41,6 +42,9 @@ type timeouts struct {
 }
 
 var defaultTimeouts = timeouts{readHeader: 10 * time.Second, read: 20 * time.Second, write: 30 * time.Second, idle: 60 * time.Second}
+
+// smtpCheckTimeout bounds the check of the SMTP account at startup, as a sending.
+const smtpCheckTimeout = 30 * time.Second
 
 // shutdownTimeout is how long the shutdown waits for the requests in progress; the
 // connections still open then are closed. A variable for the tests.
@@ -216,8 +220,18 @@ func serve(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return fail(err.Error())
 	}
+	password, err := readCredential(os.Getenv, smtpPasswordCredential)
+	if err != nil {
+		return fail(err.Error())
+	}
 	logger := slog.New(slog.NewJSONHandler(stdout, nil))
-	opts := serveOptions{listen: cfg.Listen, configPath: *configPath, data: cfg.Data}
+	opts := serveOptions{listen: cfg.Listen, configPath: *configPath, data: cfg.Data, smtp: &mail.SMTPMailer{
+		Host:     cfg.SMTP.Host,
+		Port:     cfg.SMTP.Port,
+		Username: cfg.SMTP.Username,
+		Password: password,
+		From:     cfg.SMTP.From,
+	}}
 	return runServer(ctx, opts, logger)
 }
 
@@ -249,6 +263,8 @@ type serveOptions struct {
 	data string
 	// mailFile, in development mode only, receives a copy of each email (D6).
 	mailFile string
+	// smtp sends the emails in server mode (ADR 0014).
+	smtp *mail.SMTPMailer
 }
 
 // migrateAndServe opens and migrates every database before listening, so that the server,
@@ -269,14 +285,14 @@ func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger
 	}()
 	logger.Info("databases migrated", "data", opts.data)
 
-	// Sending email over SMTP comes with the deployment (ADR 0014): until then, the codes
-	// are written to the logs in development, and not sent otherwise.
-	var mailer mail.Mailer = mail.Unconfigured{}
+	// By SMTP in server mode (ADR 0014); in development, to the logs, and to a file for the
+	// end-to-end tests.
+	var mailer mail.Mailer = opts.smtp
 	if opts.dev {
 		mailer = mail.LogMailer{Logger: logger}
-	}
-	if opts.dev && opts.mailFile != "" {
-		mailer = mail.Mailers{mailer, &mail.FileMailer{Path: opts.mailFile}}
+		if opts.mailFile != "" {
+			mailer = mail.Mailers{mailer, &mail.FileMailer{Path: opts.mailFile}}
+		}
 	}
 	outbox := mail.NewOutbox(mailer, tribe.LoginCodeValidity, logger)
 	// Deferred after store.Close, hence run before: the sendings in progress end first (D11).
@@ -341,6 +357,25 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 		started = append(started, "config", opts.configPath)
 	}
 	logger.Info("server started", started...)
+
+	// The SMTP account is checked once the server listens, without stopping it: /healthz
+	// does not depend on SMTP, so that an expired password does not roll a deployment back
+	// (ADR 0016; plan production, step 12).
+	var checked sync.WaitGroup
+	defer checked.Wait()
+	if opts.smtp != nil {
+		checked.Go(func() {
+			checkCtx, cancel := context.WithTimeout(ctx, smtpCheckTimeout)
+			defer cancel()
+			if err := opts.smtp.Check(checkCtx); err != nil {
+				if ctx.Err() == nil {
+					logger.Error("SMTP check failed", mail.ErrorAttrs(err)...)
+				}
+				return
+			}
+			logger.Info("SMTP check passed")
+		})
+	}
 
 	served := make(chan error, 1)
 	go func() { served <- srv.Serve(listener) }()

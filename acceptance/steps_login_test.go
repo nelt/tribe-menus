@@ -145,6 +145,7 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^une session est ouverte pour cet appareil$`, w.sessionOpenForDevice)
 	sc.Step(`^l'application affiche le même message que pour une adresse membre$`, w.sameAnswerAsMember)
 	sc.Step(`^aucun e-mail n'est envoyé$`, w.noMailSinceAction)
+	sc.Step(`^un message m'indique que l'adresse n'est pas valide$`, func() error { return w.lastError(http.StatusBadRequest, "invalid_email") })
 	sc.Step(`^je ne suis pas connecté(?: sur cet autre appareil)?$`, w.notConnected)
 	sc.Step(`^un message m'indique que le code est incorrect$`, func() error { return w.lastError(http.StatusBadRequest, "incorrect_code") })
 	sc.Step(`^un message m'invite à demander un nouveau code$`, func() error { return w.lastError(http.StatusBadRequest, "new_code_needed") })

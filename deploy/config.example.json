@@ -1,5 +1,11 @@
 {
   "data": "/var/lib/tribe-menus/recette",
   "listen": "systemd",
-  "baseURL": "https://recette.example.org"
+  "baseURL": "https://recette.example.org",
+  "smtp": {
+    "host": "smtp.example.org",
+    "port": 465,
+    "username": "no-reply@example.org",
+    "from": "no-reply@example.org"
+  }
 }

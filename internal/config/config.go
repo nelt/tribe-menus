@@ -13,8 +13,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
 // ListenSystemd is the value of the listen key for the socket passed by systemd (ADR 0015,
@@ -32,6 +36,29 @@ type Config struct {
 	Listen string `json:"listen"`
 	// BaseURL is the public address of the instance, https://host without path.
 	BaseURL string `json:"baseURL"`
+	// SMTP is the server sending the emails (ADR 0014). Its password is not here: it is a
+	// systemd credential (ADR 0015, point 10).
+	SMTP SMTP `json:"smtp"`
+}
+
+// SMTP is the smtp key of the config file.
+type SMTP struct {
+	// Host is the name of the server, which its certificate must carry.
+	Host string `json:"host"`
+	// Port is the port of TLS from the start, 465 for the MX Plan.
+	Port int `json:"port"`
+	// Username is the account of the authentication.
+	Username string `json:"username"`
+	// From is the sending address.
+	From string `json:"from"`
+}
+
+// keys are the keys of the config file, exactly: a nested map for an object.
+var keys = map[string]map[string]bool{
+	"data":    nil,
+	"listen":  nil,
+	"baseURL": nil,
+	"smtp":    {"host": true, "port": true, "username": true, "from": true},
 }
 
 // Systemd reports whether the server listens on the socket passed by systemd, hence behind
@@ -72,6 +99,9 @@ func Read(r io.Reader) (Config, error) {
 	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
 		return Config{}, errors.New("config: more than one JSON document")
 	}
+	if err := checkKeys(content); err != nil {
+		return Config{}, fmt.Errorf("config: %w", err)
+	}
 	if err := c.validate(); err != nil {
 		return Config{}, fmt.Errorf("config: %w", err)
 	}
@@ -85,7 +115,7 @@ func decodeError(err error) error {
 		if typeErr.Field == "" {
 			return errors.New("invalid JSON: not an object")
 		}
-		return fmt.Errorf("key %q: want a %s", typeErr.Field, typeErr.Type)
+		return fmt.Errorf("key %q: want %s", typeErr.Field, kindName(typeErr.Type.Kind()))
 	}
 	if field, ok := strings.CutPrefix(err.Error(), "json: unknown field "); ok {
 		return fmt.Errorf("unknown key %s", field)
@@ -98,6 +128,93 @@ func decodeError(err error) error {
 		return errors.New("invalid JSON: unexpected end")
 	}
 	return errors.New("invalid JSON: not an object")
+}
+
+// checkKeys refuses what encoding/json accepts: a key written twice, of which it keeps the
+// last value, and a key in another case, which it matches anyway (review of PR #45, point
+// 3). content is a JSON object already decoded once.
+func checkKeys(content []byte) error {
+	dec := json.NewDecoder(bytes.NewReader(content))
+	if _, err := dec.Token(); err != nil { // {
+		return fmt.Errorf("invalid JSON: %w", err)
+	}
+	seen := map[string]bool{}
+	for dec.More() {
+		key, err := nextKey(dec, seen, "")
+		if err != nil {
+			return err
+		}
+		nested, known := keys[key]
+		if !known {
+			return fmt.Errorf("unknown key %q", key)
+		}
+		if nested == nil {
+			if err := skipValue(dec); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := checkNestedKeys(dec, key, nested); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkNestedKeys checks the keys of the object of the key parent.
+func checkNestedKeys(dec *json.Decoder, parent string, nested map[string]bool) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return fmt.Errorf("invalid JSON: %w", err)
+	}
+	if tok != json.Delim('{') {
+		return nil // null: the key is missing, which validate says
+	}
+	seen := map[string]bool{}
+	for dec.More() {
+		key, err := nextKey(dec, seen, parent+".")
+		if err != nil {
+			return err
+		}
+		if !nested[key] {
+			return fmt.Errorf("unknown key %q", parent+"."+key)
+		}
+		if err := skipValue(dec); err != nil {
+			return err
+		}
+	}
+	_, err = dec.Token() // }
+	return err
+}
+
+func nextKey(dec *json.Decoder, seen map[string]bool, prefix string) (string, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return "", fmt.Errorf("invalid JSON: %w", err)
+	}
+	key, _ := tok.(string)
+	if seen[key] {
+		return "", fmt.Errorf("key %q: written twice", prefix+key)
+	}
+	seen[key] = true
+	return key, nil
+}
+
+func skipValue(dec *json.Decoder) error {
+	var v json.RawMessage
+	return dec.Decode(&v)
+}
+
+// kindName names the JSON type of a Go kind of the config.
+func kindName(k reflect.Kind) string {
+	switch k {
+	case reflect.String:
+		return "a string"
+	case reflect.Int:
+		return "a number"
+	default:
+		return "an object"
+	}
 }
 
 func (c Config) validate() error {
@@ -115,8 +232,34 @@ func (c Config) validate() error {
 	case !validBaseURL(c.BaseURL):
 		return errors.New(`key "baseURL": want https://host, without path`)
 	}
+	return c.SMTP.validate()
+}
+
+func (s SMTP) validate() error {
+	switch {
+	case s.Host == "":
+		return missing("smtp.host")
+	case !hostPattern.MatchString(s.Host):
+		return errors.New(`key "smtp.host": want a host name`)
+	case s.Port == 0:
+		return missing("smtp.port")
+	case s.Port < 0 || s.Port > 65535:
+		return errors.New(`key "smtp.port": want a port number`)
+	case s.Username == "":
+		return missing("smtp.username")
+	case strings.ContainsFunc(s.Username, func(r rune) bool { return r < 0x21 || r > 0x7e }):
+		return errors.New(`key "smtp.username": want printable ASCII`)
+	case s.From == "":
+		return missing("smtp.from")
+	}
+	if from, err := tribe.ParseEmail(s.From); err != nil || string(from) != s.From {
+		return errors.New(`key "smtp.from": want an email address, in lower case`)
+	}
 	return nil
 }
+
+// hostPattern: labels of letters, digits and hyphens.
+var hostPattern = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*$`)
 
 func missing(key string) error {
 	return fmt.Errorf("key %q: missing", key)

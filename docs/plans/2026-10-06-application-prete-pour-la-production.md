@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lot A en revue)
+- **Statut** : en cours (décisions D1 à D12 confirmées par le développeur le 2026-10-06 ; lot A fait, lot B en revue)
 
 ## Objectif
 
@@ -92,26 +92,26 @@ Points d'attention de la revue : ce qui se passe quand la configuration est inco
 
 Points d'attention de la revue : injection dans les en-têtes ou l'enveloppe par une adresse saisie ; ce que les logs gardent d'un échec ; où le mot de passe peut apparaître ; durée de réponse inchangée, que le code parte ou non.
 
-- [ ] **8. Règle d'adresse resserrée** (D5 ; `revue-securite`, constat 7). Specs et scénario d'abord.
+- [x] **8. Règle d'adresse resserrée** (D5 ; `revue-securite`, constat 7). Specs et scénario d'abord.
   - `gestion-membres-et-sessions.md` (identification du membre) : partie locale faite de lettres sans accent, chiffres et `.!#$%&'*+/=?^_{|}~-`, sans point en tête, en fin ni doublé, 64 caractères au plus ; domaine fait de labels de lettres, chiffres et tirets, sans tiret en tête ni en fin ; 254 caractères au plus ; ASCII seul. Une saisie non conforme est refusée, pas corrigée.
   - `authentification.feature` : un `Plan du scénario` d'adresses refusées, avec celles du constat 7 (`a,b@c.d`, `a@c.d,e.f`, `<a>@c.d`) et une adresse accentuée.
   - `ParseEmail` : la règle ci-dessus, puis un contrôle croisé : l'adresse relue par `net/mail` doit redonner exactement la même adresse, sans nom. Tableau de cas étendu, octet nul compris. La règle vaut pour `admin init`, comme aujourd'hui.
-- [ ] **9. Composition du message**, fonction pure du paquet `mail`, testée octet par octet.
+- [x] **9. Composition du message**, fonction pure du paquet `mail`, testée octet par octet.
   - En-têtes : `From` (« Melting Tribe » et l'adresse d'envoi) et `To` écrits par `net/mail`, `Subject` encodé (RFC 2047), `Date`, `Message-ID` aléatoire sous le domaine de l'adresse d'envoi, `MIME-Version`, `Content-Type: text/plain; charset=utf-8`, `Content-Transfer-Encoding: quoted-printable`, `Auto-Submitted: auto-generated`.
   - Fins de ligne CRLF, corps encodé par `mime/quotedprintable`. Le texte du message ne change pas (ADR 0014, point 4).
-- [ ] **10. `SMTPMailer`** (ADR 0014, points 1 et 4).
+- [x] **10. `SMTPMailer`** (ADR 0014, points 1 et 4).
   - Connexion TLS directe (port 465), TLS 1.2 au minimum, certificat vérifié pour le nom du serveur ; authentification `PLAIN` ; `MAIL FROM` et `RCPT TO` avec les adresses nues ; un message par connexion.
   - Le délai du contexte (30 secondes, `sendTimeout`) borne toute la conversation, connexion comprise.
   - Test avec un serveur SMTP factice dans le processus, en TLS, avec un certificat créé par le test : message reçu conforme à l'étape 9 ; authentification refusée ; destinataire refusé ; serveur muet jusqu'au délai ; certificat d'un autre nom refusé.
-- [ ] **11. Secret et configuration.**
+- [x] **11. Secret et configuration.**
   - Clés ajoutées : `smtp.host`, `smtp.port`, `smtp.username`, `smtp.from`. Elles sont obligatoires en mode serveur.
   - Mot de passe : fichier `smtp-password` du répertoire que désigne `CREDENTIALS_DIRECTORY`, lu au démarrage (ADR 0015, point 10). Variable absente, fichier absent ou vide : le serveur ne démarre pas. Aucune option, aucune variable d'environnement et aucune clé de configuration ne peut porter le mot de passe ; le message d'erreur et les logs ne le contiennent jamais.
   - `mail.Unconfigured` et `ErrNotConfigured` disparaissent : hors `-dev`, il y a toujours un envoi réel.
   - Clé écrite deux fois, ou dans une autre casse (`"LISTEN"`, `"baseurl"`), refusée comme une clé inconnue, clés imbriquées comprises : `encoding/json` garde la dernière valeur et ignore la casse (revue de la PR #45, point 3).
-- [ ] **12. Vérification au démarrage**, sans bloquer : une fois le serveur à l'écoute, il ouvre une connexion SMTP, s'authentifie et la referme. Un échec est journalisé comme un échec d'envoi (étape 13) ; le serveur continue, et `/healthz` ne dépend pas du SMTP, pour qu'un mot de passe périmé ne déclenche pas un retour arrière (ADR 0016).
-- [ ] **13. Ce qu'un échec laisse dans les logs.** Un enregistrement d'erreur par envoi échoué, avec l'étape (connexion, authentification, expéditeur, destinataire, contenu) et le code de réponse SMTP. Le texte de la réponse du serveur n'est gardé qu'après remplacement de l'adresse du destinataire. Test : après un `RCPT TO` refusé avec l'adresse dans la réponse, les logs ne la contiennent pas.
-- [ ] **14. Essai réel, par le développeur, facultatif** : `serve -config` sur le poste, avec un fichier de configuration et un mot de passe hors du dépôt, `listen` en TCP, et un code reçu dans sa propre boîte. Si le port 465 ne sort pas du Dev Container, l'essai attend la recette ; le dire dans les notes d'exécution.
-- [ ] **15. Documentation du lot** : exemple de configuration et son test ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « `ParseEmail` » retiré) ; cases cochées.
+- [x] **12. Vérification au démarrage**, sans bloquer : une fois le serveur à l'écoute, il ouvre une connexion SMTP, s'authentifie et la referme. Un échec est journalisé comme un échec d'envoi (étape 13) ; le serveur continue, et `/healthz` ne dépend pas du SMTP, pour qu'un mot de passe périmé ne déclenche pas un retour arrière (ADR 0016).
+- [x] **13. Ce qu'un échec laisse dans les logs.** Un enregistrement d'erreur par envoi échoué, avec l'étape (connexion, authentification, expéditeur, destinataire, contenu) et le code de réponse SMTP. Le texte de la réponse du serveur n'est gardé qu'après remplacement de l'adresse du destinataire. Test : après un `RCPT TO` refusé avec l'adresse dans la réponse, les logs ne la contiennent pas.
+- [ ] **14. Essai réel, par le développeur, facultatif** (renvoyé à la recette le 2026-10-06) : `serve -config` sur le poste, avec un fichier de configuration et un mot de passe hors du dépôt, `listen` en TCP, et un code reçu dans sa propre boîte. Si le port 465 ne sort pas du Dev Container, l'essai attend la recette ; le dire dans les notes d'exécution.
+- [x] **15. Documentation du lot** : exemple de configuration et son test ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route (point reporté « `ParseEmail` » retiré) ; cases cochées.
 
 ### Lot C : alertes à l'administrateur (`feature/enf-01-alertes`)
 
@@ -211,6 +211,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Caddy** : son adresse de client en dernière position de `X-Forwarded-For`, `Host` transmis tel quel.
 - **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert`.
 - **Archive** : `deploy/` au complet.
+- **E-mail** (revue de la PR #46, points 2 et 3) : lire les réponses réelles du MX Plan à un destinataire refusé, et ne garder que les codes si elles citent la partie locale ; vérifier que `EHLO localhost` ne pénalise pas la réception hors des indésirables.
 
 ## Questions ouvertes
 
@@ -262,3 +263,11 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - ADR 0015 : point 9 précisé ici ; le point 10 (mot de passe SMTP en credential) le sera au lot B, avec sa lecture.
   - Sans en-tête lisible derrière le proxy, l'avertissement ne cite pas la valeur reçue.
   - Revue de la PR #45 : un socket transmis par systemd qui n'est pas un socket Unix (unité écrite avec `ListenStream=8080`) est refusé, sans quoi n'importe qui atteignant le port écrirait `X-Forwarded-For` (point 1) ; le test du socket ne ferme plus deux fois le même descripteur (point 2). Point 3, à noter : une clé en double ou dans une autre casse est acceptée par `encoding/json` (`{"listen":"systemd","listen":"0.0.0.0:80"}` est lu avec la seconde valeur) ; à refuser au lot B, étape 11, quand le fichier reçoit les clés `smtp.*`.
+- **Lot B** (`feature/envoi-smtp`), 2026-10-06, Claude Code dans le Dev Container :
+  - Étape 8 : la règle refuse aussi l'accent grave (`` ` ``) de la RFC 5322, absent de la liste de D5, et l'antislash ; une adresse refusée garde le message du front « Cette adresse ne semble pas complète ». Scénario « Une adresse que l'e-mail ne saurait pas porter est refusée ». `chloé@exemple.fr`, acceptée jusqu'ici, est refusée (D5).
+  - Étape 9 : `compose` refuse en plus toute adresse qui n'est pas nue, et un sujet ou un identifiant contenant une fin de ligne : défense en profondeur derrière `ParseEmail`.
+  - Étape 10 : erreurs typées `SendError` (étape, code SMTP). L'échec de `QUIT` après un `DATA` accepté n'est pas une erreur.
+  - Étape 11 : `smtp.from` doit être une adresse acceptée par `ParseEmail`, en minuscules ; `smtp.username` en ASCII imprimable. Le contrôle des clés (revue de la PR #45, point 3) parcourt le document une seconde fois avec `json.Decoder.Token` : clé en double ou d'une autre casse refusée, clés de `smtp` comprises. Fin de ligne finale du credential retirée (`\n` ou `\r\n`), espaces gardés. Erreur de credential sur la sortie d'erreur avec le code 2, comme celles du fichier de configuration.
+  - Étape 13 : la réponse du serveur est gardée après remplacement de l'adresse du destinataire et du mot de passe, quelle que soit la casse ; `mail.ErrorAttrs` donne l'étape et le code aux enregistrements « login code not sent » et « SMTP check failed », que le lot C comptera.
+  - Revue de la PR #46 : à l'étape d'authentification, la réponse du serveur ne garde que son code SMTP, son texte pouvant citer la commande `AUTH PLAIN`, dont le base64 porte le mot de passe (point 1). À noter pour la recette : le remplacement ne reconnaît que l'adresse entière du destinataire, une réponse qui cite la partie locale seule (`user alice.martin unknown`) passe telle quelle ; si le MX Plan répond ainsi, ne garder que le code SMTP et le code d'état étendu (`5.1.1`) (point 2). Le client se présente par `EHLO localhost`, valeur par défaut de `net/smtp`, qui apparaît dans l'en-tête `Received` ; `Client.Hello` avec l'hôte de `baseURL` si un filtre s'en formalise (point 3).
+  - Étape 14 : non faite par Claude Code, faute de compte. Vérifié depuis le Dev Container le 2026-10-06 : le port 465 de `ssl0.ovh.net` est joignable, son certificat (TLS 1.2) porte le nom `ssl0.ovh.net` et passe la vérification de Go. Le 2026-10-06, le développeur renvoie l'essai d'un envoi réel à la recette, avec la réception sur les messageries des membres (« Ce que ce plan ne prouve pas »).

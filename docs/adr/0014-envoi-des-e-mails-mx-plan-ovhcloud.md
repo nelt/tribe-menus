@@ -18,7 +18,7 @@ Le domaine `codingmatters.org` dispose déjà d'un MX Plan OVHcloud actif, qui f
    - **DKIM** activé pour le MX Plan ;
    - **DMARC** d'abord en observation (`p=none`, avec adresse de réception des rapports), puis durci (`quarantine`, puis `reject`) une fois les rapports vérifiés.
 4. **Côté application** :
-   - envoi par `net/smtp` de la bibliothèque standard (connexion TLS directe sur le port 465), sans dépendance ;
+   - envoi par `net/smtp` de la bibliothèque standard (connexion TLS directe sur le port 465), sans dépendance ; précisé le 2026-10-06 (plan `production`, lot B) : TLS 1.2 au moins et certificat vérifié pour le nom du serveur, authentification `PLAIN`, un message par connexion, 30 secondes au plus par envoi ; serveur, compte et adresse d'envoi dans le fichier de configuration (clé `smtp`), mot de passe en credential systemd (ADR 0015, point 10) ; compte vérifié au démarrage sans bloquer le service ; un échec est journalisé avec l'étape et le code SMTP, sans l'adresse du destinataire ;
    - l'envoi est caché derrière une petite interface (`Mailer`), avec une implémentation SMTP pour la production et une implémentation qui écrit dans les logs pour le développement et les tests (ADR 0009) ; changer de fournisseur ne touche que cette implémentation ;
    - message en texte brut, court, en français, avec le code, sa durée de validité et le nom de l'application ; sans lien cliquable ni nom de tribu (ENF-02).
 5. **Protection du quota** : la limitation des demandes de code (par adresse, par IP et par tribu) prévue par ENF-01 protège aussi le quota d'envoi horaire du compte.

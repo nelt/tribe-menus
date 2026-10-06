@@ -165,6 +165,7 @@ func TestServeOnSystemdSocket(t *testing.T) {
 	unix.SetUnlinkOnClose(false)
 	passSocket(t, unix)
 	t.Setenv("LISTEN_FDNAMES", "tribe-menus.socket")
+	writeCredential(t)
 	configFile := writeConfig(t, dir, "systemd")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -251,6 +252,7 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	fakeWeb(t)
 	dir := t.TempDir()
 	configFile := writeConfig(t, dir, "localhost:0")
+	writeCredential(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	stdout := &syncBuffer{}
@@ -270,6 +272,11 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /healthz: status %d", resp.StatusCode)
 	}
+	// Nothing listens on the SMTP port of the test: the check fails, the server goes on.
+	failed := waitForLog(t, stdout, "SMTP check failed")
+	if e, _ := failed["error"].(string); !strings.HasPrefix(e, "smtp connect: ") {
+		t.Errorf("SMTP check failed: error %q, want the connect step", e)
+	}
 	if _, err := os.Stat(filepath.Join(dir, "data", "registry.db")); err != nil {
 		t.Errorf("registry not created in the data directory of the config file: %v", err)
 	}
@@ -280,6 +287,9 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 		t.Fatal("server did not stop")
 	}
 	assertJSONLines(t, stdout.String())
+	if strings.Contains(stdout.String(), testPassword) {
+		t.Errorf("logs contain the SMTP password: %s", stdout.String())
+	}
 }
 
 // waitForLog returns the first JSON record of logs with this message.
