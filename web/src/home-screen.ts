@@ -4,6 +4,7 @@ import { LitElement, html, nothing } from "lit";
 import type { Api, Session } from "./api.ts";
 import { networkErrorMessage } from "./login.ts";
 import { alertMessage, footer } from "./templates.ts";
+import { symbolURL } from "./identity.ts";
 
 export class HomeScreen extends LitElement {
   static override properties = {
@@ -25,7 +26,7 @@ export class HomeScreen extends LitElement {
   override render() {
     return html`<div class="home">
       <main class="home-main">
-        <img class="home-symbol" src="symbole.svg" alt="" width="320" height="320">
+        <img class="home-symbol" src=${symbolURL} alt="" width="320" height="320">
         <h1 class="home-title">${this.session.tribe.name}</h1>
         <button class="button-danger" type="button" @click=${this.#signOut}>Se déconnecter</button>
         ${this.failed ? alertMessage("home-error", networkErrorMessage) : nothing}

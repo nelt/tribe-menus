@@ -16,6 +16,7 @@ import {
   pasteIntoCode,
 } from "./login.ts";
 import { alertMessage, footer } from "./templates.ts";
+import { logotypeURL, symbolURL } from "./identity.ts";
 
 const errorId = "login-error";
 
@@ -72,8 +73,8 @@ export class LoginScreen extends LitElement {
     const step = this.state.step;
     return html`<div class="login ${step === "code" ? "login--code" : ""}">
       <header class="login-brand">
-        <img class="login-symbol" src="symbole.svg" alt="" width="320" height="320">
-        <h1 class="login-logotype"><img src="logotype.svg" alt="Melting Tribe" width="411" height="100"></h1>
+        <img class="login-symbol" src=${symbolURL} alt="" width="320" height="320">
+        <h1 class="login-logotype"><img src=${logotypeURL} alt="Melting Tribe" width="411" height="100"></h1>
         <p class="login-tagline">Les menus de la semaine, en tribu</p>
       </header>
       <main class="login-main">${step === "email" ? this.#emailForm() : this.#codeForm()}</main>
