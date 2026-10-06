@@ -112,6 +112,24 @@ func passSocket(t *testing.T, l interface {
 	t.Setenv("LISTEN_FDS", "1")
 }
 
+// A TCP socket passed by systemd is refused: anyone reaching the port could write
+// X-Forwarded-For (review of PR #45, point 1).
+func TestListenRefusesSystemdTCPSocket(t *testing.T) {
+	tcp, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	passSocket(t, tcp.(*net.TCPListener))
+	l, err := listen("systemd", os.Getenv, os.Getpid())
+	if err == nil {
+		_ = l.Close()
+		t.Fatal("listen accepted a TCP socket passed by systemd")
+	}
+	if want := "systemd socket: tcp, want a Unix socket"; err.Error() != want {
+		t.Errorf("error = %q, want %q", err, want)
+	}
+}
+
 // A unit that would run serve -dev is refused (plan revue-securite, finding 8).
 func TestServeRefusesDevUnderSystemd(t *testing.T) {
 	t.Setenv("LISTEN_PID", strconv.Itoa(os.Getpid()))

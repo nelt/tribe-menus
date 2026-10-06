@@ -40,7 +40,10 @@ func systemdSocketCount(getenv func(string) string, pid int) (int, error) {
 
 // listen returns the listener of the server: the socket passed by systemd for
 // config.ListenSystemd, or a TCP socket on the address otherwise. A socket passed by
-// systemd that the address does not expect is refused, as well as a count other than one.
+// systemd that the address does not expect is refused, as well as a count other than one,
+// and a socket other than a Unix one: behind the proxy, X-Forwarded-For is trusted because
+// only the group of Caddy can open the socket (plan production, D3), which a TCP port does
+// not ensure.
 func listen(addr string, getenv func(string) string, pid int) (net.Listener, error) {
 	n, err := systemdSocketCount(getenv, pid)
 	if err != nil {
@@ -71,9 +74,12 @@ func listen(addr string, getenv func(string) string, pid int) (net.Listener, err
 	if err != nil {
 		return nil, fmt.Errorf("systemd socket: %w", err)
 	}
-	// The file of the socket belongs to systemd, which keeps it across restarts.
-	if unix, ok := listener.(*net.UnixListener); ok {
-		unix.SetUnlinkOnClose(false)
+	unix, ok := listener.(*net.UnixListener)
+	if !ok {
+		_ = listener.Close()
+		return nil, fmt.Errorf("systemd socket: %s, want a Unix socket", listener.Addr().Network())
 	}
-	return listener, nil
+	// The file of the socket belongs to systemd, which keeps it across restarts.
+	unix.SetUnlinkOnClose(false)
+	return unix, nil
 }
