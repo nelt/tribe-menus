@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Design : canevas de référence refait à partir du dépôt, daté du 2026-10-06 (code de connexion à 8 chiffres, page Confidentialité) ; canevas de travail de l'identité accordé ; titre du lien mis à jour dans `docs/design/README.md`.
 - Plan `production` confirmé (D1 à D12) ; `production/A` : fichier de configuration JSON du mode serveur (`internal/config`, `deploy/config.example.json`) ; `serve -config` ou `serve -dev`, jamais les deux, `-dev` refusé sous systemd (constat 8) ; écoute sur le socket Unix transmis par systemd ; logs JSON en mode serveur ; `admin -config` ; adresse IP du client lue dans `X-Forwarded-For` derrière Caddy, IPv6 comptée par préfixe /64 (ENF-01).
 - Plan `production` (application prête pour la production), en brouillon : cinq lots (exécution derrière systemd et Caddy, envoi SMTP, alertes à l'administrateur, front à empreinte et archive, workflows et procédure de release), décisions D1 à D10 proposées, à confirmer ; feuille de route accordée.
 - Plan `revue-securite` terminé : critères de validation relus, question de l'outil d'analyse supplémentaire close (rien d'ajouté) ; plan `canal-prive` terminé : grille des vulnérabilités rodée sur les constats de la revue ; une faille qui se déduit d'un document déjà public se traite sans les précautions de neutralité (`docs/traitement-des-vulnerabilites.md`, D10), la grille ne change pas pour une fonction manquante (D11).
