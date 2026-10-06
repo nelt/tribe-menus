@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/smtp"
 	"net/textproto"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -40,30 +41,65 @@ type SMTPMailer struct {
 
 var _ Mailer = (*SMTPMailer)(nil)
 
-// SendError is a failed sending: the step of the conversation, and the SMTP reply code when
-// the server gave one.
+// SendError is a failed sending: the step of the conversation, the SMTP reply code when the
+// server gave one, and the text of the error, where the address of the recipient and the
+// password are replaced: a server readily quotes the recipient in its reply (plan
+// production, step 13). Error never gives more than this text.
 type SendError struct {
 	Step string
 	Code int
-	err  error
+	// Reply is the text of the error, redacted.
+	Reply string
+	err   error
 }
 
 func (e *SendError) Error() string {
-	if e.Code != 0 {
-		return fmt.Sprintf("smtp %s: %d: %v", e.Step, e.Code, e.err)
-	}
-	return fmt.Sprintf("smtp %s: %v", e.Step, e.err)
+	return fmt.Sprintf("smtp %s: %s", e.Step, e.Reply)
 }
 
+// Unwrap gives the error unredacted, for errors.Is: never log it.
 func (e *SendError) Unwrap() error { return e.err }
 
-func stepError(step string, err error) error {
+// Placeholders of what a SendError never quotes.
+const (
+	redactedRecipient = "[recipient]"
+	redactedPassword  = "[password]"
+)
+
+// stepError returns the error of the step, its text redacted of the recipient and of the
+// password.
+func (m *SMTPMailer) stepError(step string, err error, recipient string) error {
 	se := &SendError{Step: step, err: err}
+	text := err.Error()
 	var reply *textproto.Error
 	if errors.As(err, &reply) {
 		se.Code = reply.Code
+		text = reply.Msg
 	}
+	if recipient != "" {
+		text = replaceFold(text, recipient, redactedRecipient)
+	}
+	if m.Password != "" {
+		text = replaceFold(text, m.Password, redactedPassword)
+	}
+	se.Reply = text
 	return se
+}
+
+// replaceFold replaces every occurrence of old in s, whatever the case.
+func replaceFold(s, old, replacement string) string {
+	return regexp.MustCompile("(?i)"+regexp.QuoteMeta(old)).ReplaceAllLiteralString(s, replacement)
+}
+
+// ErrorAttrs are the attributes of a log record for a failed sending: the error, and for a
+// SendError its step and SMTP code.
+func ErrorAttrs(err error) []any {
+	attrs := []any{"error", err.Error()}
+	var se *SendError
+	if errors.As(err, &se) {
+		attrs = append(attrs, "step", se.Step, "code", se.Code)
+	}
+	return attrs
 }
 
 // Send implements Mailer. The deadline of ctx bounds the whole conversation, connection
@@ -77,22 +113,22 @@ func (m *SMTPMailer) Send(ctx context.Context, msg Message) error {
 	if err != nil {
 		return err
 	}
-	return m.converse(ctx, func(c *smtp.Client) error {
+	return m.converse(ctx, msg.To, func(c *smtp.Client) error {
 		if err := c.Mail(m.From); err != nil {
-			return stepError(StepFrom, err)
+			return m.stepError(StepFrom, err, msg.To)
 		}
 		if err := c.Rcpt(msg.To); err != nil {
-			return stepError(StepTo, err)
+			return m.stepError(StepTo, err, msg.To)
 		}
 		w, err := c.Data()
 		if err != nil {
-			return stepError(StepData, err)
+			return m.stepError(StepData, err, msg.To)
 		}
 		if _, err := w.Write(data); err != nil {
-			return stepError(StepData, err)
+			return m.stepError(StepData, err, msg.To)
 		}
 		if err := w.Close(); err != nil {
-			return stepError(StepData, err)
+			return m.stepError(StepData, err, msg.To)
 		}
 		return nil
 	})
@@ -101,11 +137,12 @@ func (m *SMTPMailer) Send(ctx context.Context, msg Message) error {
 // Check connects, authenticates and leaves, without sending anything: the check at startup
 // (plan production, step 12).
 func (m *SMTPMailer) Check(ctx context.Context) error {
-	return m.converse(ctx, func(*smtp.Client) error { return nil })
+	return m.converse(ctx, "", func(*smtp.Client) error { return nil })
 }
 
-// converse opens a connection, authenticates, runs do and quits.
-func (m *SMTPMailer) converse(ctx context.Context, do func(*smtp.Client) error) error {
+// converse opens a connection, authenticates, runs do and quits. recipient is redacted
+// from the errors.
+func (m *SMTPMailer) converse(ctx context.Context, recipient string, do func(*smtp.Client) error) error {
 	dialer := &tls.Dialer{Config: &tls.Config{
 		ServerName: m.Host,
 		MinVersion: tls.VersionTLS12,
@@ -113,12 +150,12 @@ func (m *SMTPMailer) converse(ctx context.Context, do func(*smtp.Client) error) 
 	}}
 	conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(m.Host, strconv.Itoa(m.Port)))
 	if err != nil {
-		return stepError(StepConnect, err)
+		return m.stepError(StepConnect, err, recipient)
 	}
 	defer conn.Close()
 	if deadline, ok := ctx.Deadline(); ok {
 		if err := conn.SetDeadline(deadline); err != nil {
-			return stepError(StepConnect, err)
+			return m.stepError(StepConnect, err, recipient)
 		}
 	}
 	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
@@ -126,11 +163,11 @@ func (m *SMTPMailer) converse(ctx context.Context, do func(*smtp.Client) error) 
 
 	c, err := smtp.NewClient(conn, m.Host)
 	if err != nil {
-		return stepError(StepConnect, err)
+		return m.stepError(StepConnect, err, recipient)
 	}
 	defer c.Close()
 	if err := c.Auth(smtp.PlainAuth("", m.Username, m.Password, m.Host)); err != nil {
-		return stepError(StepAuth, err)
+		return m.stepError(StepAuth, err, recipient)
 	}
 	if err := do(c); err != nil {
 		return err

@@ -369,7 +369,7 @@ func listenAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger,
 			defer cancel()
 			if err := opts.smtp.Check(checkCtx); err != nil {
 				if ctx.Err() == nil {
-					logger.Error("SMTP check failed", "error", err)
+					logger.Error("SMTP check failed", mail.ErrorAttrs(err)...)
 				}
 				return
 			}

@@ -146,7 +146,7 @@ func (o *Outbox) SendLoginCode(to, code string) {
 		ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 		defer cancel()
 		if err := o.mailer.Send(ctx, msg); err != nil {
-			o.logger.Error("login code not sent", "error", err)
+			o.logger.Error("login code not sent", ErrorAttrs(err)...)
 		}
 	})
 }

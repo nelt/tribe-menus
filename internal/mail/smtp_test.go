@@ -2,6 +2,7 @@ package mail
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -10,7 +11,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"math/big"
 	"net"
 	"net/textproto"
@@ -66,7 +69,8 @@ type fakeSMTP struct {
 	rootCAs *x509.CertPool
 	// password accepted by AUTH PLAIN for the user "no-reply@example.org".
 	password string
-	// rcptReply, if set, refuses RCPT TO with this reply ("%s" is the recipient).
+	// rcptReply, if set, refuses RCPT TO with this reply ("%s" is the recipient, "%S" the
+	// recipient in upper case).
 	rcptReply string
 	// authReply, if set, refuses AUTH with this reply.
 	authReply string
@@ -147,7 +151,7 @@ func (f *fakeSMTP) serve(conn net.Conn) {
 			r.to = arg
 			if f.rcptReply != "" {
 				rcpt := strings.TrimSuffix(strings.TrimPrefix(arg, "TO:<"), ">")
-				reply(strings.ReplaceAll(f.rcptReply, "%s", rcpt))
+				reply(strings.NewReplacer("%s", rcpt, "%S", strings.ToUpper(rcpt)).Replace(f.rcptReply))
 				continue
 			}
 			reply("250 2.1.5 ok")
@@ -295,4 +299,42 @@ func closedPort(t *testing.T) int {
 		t.Fatal(err)
 	}
 	return port
+}
+
+// TestSendFailureLogs: an email not sent leaves one error record with the step and the SMTP
+// code, but neither the address of the recipient, which the server quotes, nor the
+// password, nor the code (plan production, step 13).
+func TestSendFailureLogs(t *testing.T) {
+	cases := []struct {
+		name     string
+		server   func(*fakeSMTP)
+		wantStep string
+		wantCode int
+	}{
+		{name: "recipient refused", server: func(f *fakeSMTP) { f.rcptReply = "550 5.1.1 <%s>: no such user (%S)" }, wantStep: StepTo, wantCode: 550},
+		{name: "authentication refused", server: func(f *fakeSMTP) { f.authReply = "535 5.7.8 bad credentials for s3cret-pass" }, wantStep: StepAuth, wantCode: 535},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFakeSMTP(t, tc.server)
+			var logs bytes.Buffer
+			o := NewOutbox(f.mailer(), 10*time.Minute, slog.New(slog.NewJSONHandler(&logs, nil)))
+			o.SendLoginCode("alice@exemple.fr", "12345678")
+			o.Wait()
+
+			var record map[string]any
+			if err := json.Unmarshal(logs.Bytes(), &record); err != nil {
+				t.Fatalf("logs = %q, want one JSON record: %v", logs.String(), err)
+			}
+			if record["level"] != "ERROR" || record["msg"] != "login code not sent" || record["step"] != tc.wantStep || record["code"] != float64(tc.wantCode) {
+				t.Errorf("record = %v, want an error with step %q and code %d", record, tc.wantStep, tc.wantCode)
+			}
+			lower := strings.ToLower(logs.String())
+			for _, secret := range []string{"alice@exemple.fr", "s3cret-pass", "12345678"} {
+				if strings.Contains(lower, secret) {
+					t.Errorf("logs contain %q: %s", secret, logs.String())
+				}
+			}
+		})
+	}
 }
