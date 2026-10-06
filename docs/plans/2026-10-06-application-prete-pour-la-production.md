@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A, B et C faits, lot D en cours)
+- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A, B et C faits, lot D en revue)
 
 ## Objectif
 
@@ -145,23 +145,23 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 
 ### Lot D : front à empreinte et archive (`feature/front-a-empreinte-et-archive`)
 
-- [ ] **23. Noms de fichiers avec empreinte** (ADR 0012, point 2 ; D10).
+- [x] **23. Noms de fichiers avec empreinte** (ADR 0012, point 2 ; D10).
   - `web/scripts/build.mjs` : `main.ts` et `app.css` deviennent deux points d'entrée d'esbuild, nommés d'après leur contenu ; polices et fichiers d'identité passent par le chargeur de fichiers, et le CSS comme le code y font référence par le nom produit. Sourcemaps liées, publiées (ADR 0011, point 8). Le texte de l'OFL reste copié à côté des polices (ADR 0011, point 3).
   - `index.html` est écrit par le build à partir de `web/src/index.html`, avec les noms produits ; les marques du gabarit Go (`{{.Base}}`, `{{.SourceURL}}`) sont conservées.
   - Le build écrit la liste des fichiers produits (`metafile` d'esbuild), qui servira au pré-cache du service worker.
   - En mode surveillance (`make dev`), les noms restent fixes : on recharge la page, rien de plus.
   - Si un nom de police avec crochets (`Figtree[wght].woff2`) gêne esbuild, renommer le fichier produit, pas la source ; le signaler dans les notes.
-- [ ] **24. En-têtes de cache**, `internal/server`.
+- [x] **24. En-têtes de cache**, `internal/server`.
   - Fichier de la liste : `Cache-Control: public, max-age=31536000, immutable`. Page d'entrée et tout autre fichier : `Cache-Control: no-cache`. L'API garde `no-store`.
   - La liste elle-même n'est pas servie.
   - Tests en tableau de cas sur un front factice (`fstest.MapFS`) ; le parcours Playwright, qui construit le front, prouve que la page charge ses fichiers sous leurs nouveaux noms, sans erreur de CSP.
-- [ ] **25. Archive** (ADR 0012, point 3).
+- [x] **25. Archive** (ADR 0012, point 3).
   - `make build` construit pour `linux/amd64`, quelle que soit la machine.
   - Outil `internal/tools/dist` (ADR 0010 : rien de plus long que deux lignes dans le Makefile) : archive `tribe-menus-<version>-linux-amd64.tar.gz` avec le binaire, `site/` et `deploy/`, et son empreinte SHA-256 dans un fichier voisin. Entrées triées, dates, propriétaires et droits fixés : deux exécutions sur le même commit donnent la même empreinte.
   - Cible `make dist`, ajoutée à la fin de `make ci`.
   - Test : contenu et droits des entrées, empreinte stable d'une exécution à l'autre.
-- [ ] **26. Notes de version** : outil du projet qui extrait de `CHANGELOG.md` la section d'une version, en fonction pure testée en tableau de cas (section absente, dernière section, « Non publié » refusé).
-- [ ] **27. Documentation du lot** : `CLAUDE.md` (`make dist`, noms à empreinte) ; `CHANGELOG.md` ; cases cochées.
+- [x] **26. Notes de version** : outil du projet qui extrait de `CHANGELOG.md` la section d'une version, en fonction pure testée en tableau de cas (section absente, dernière section, « Non publié » refusé).
+- [x] **27. Documentation du lot** : `CLAUDE.md` (`make dist`, noms à empreinte) ; `CHANGELOG.md` ; cases cochées.
 
 ### Lot E : workflows et procédure de release (`feature/chaine-de-release`), poussé depuis l'hôte
 
@@ -210,7 +210,7 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 - **Unité systemd** : `ExecStart=… serve -config /etc/tribe-menus/<environnement>/config.json` ; credential `smtp-password` ; un seul socket transmis ; `TimeoutStopSec` d'au moins 45 secondes (10 d'attente des requêtes, 30 d'un envoi en cours).
 - **Caddy** : son adresse de client en dernière position de `X-Forwarded-For`, `Host` transmis tel quel.
 - **Alertes** : un relais qui envoie par `msmtp` tout enregistrement du journal de l'application portant l'attribut `alert` (ADR 0023) ; l'adresse de l'administrateur dans la clé `alerts.to` du fichier de configuration.
-- **Archive** : `deploy/` au complet.
+- **Archive** : `deploy/` au complet ; l'archive se déballe dans un répertoire `tribe-menus-<version>-linux-amd64/`, et son fichier `.sha256` se vérifie par `sha256sum -c` (lot D).
 - **E-mail** (revue de la PR #46, points 2 et 3) : lire les réponses réelles du MX Plan à un destinataire refusé, et ne garder que les codes si elles citent la partie locale ; vérifier que `EHLO localhost` ne pénalise pas la réception hors des indésirables.
 
 ## Questions ouvertes
@@ -283,3 +283,8 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - Le 2026-10-06, le développeur confirme deux interprétations de l'étape 16 et de l'étape 20 : une alerte par signal et par six heures, un même e-mail nommant tous les signaux dus ; l'e-mail distingue les codes de membres épuisés des codes fantômes épuisés.
   - Étape 22 : les étapes godog appellent `CheckAlerts` avec l'horloge du scénario ; elles détectent un seuil faussé (essai fait en passant le seuil des refus à 11).
   - Revue de la PR #47 : la limite de D11 était plus large que décrit ; le développeur l'assume (D13), documents réécrits sans changer le code (point 1). À noter : la fenêtre des compteurs ne couvre que de 50 à 60 minutes, seules comptant les tranches qui commencent après « maintenant moins une heure » (à 12 h 07, un refus de 11 h 08 tombe dans la tranche de 11 h 00, écartée) ; des refus étalés sur l'heure peuvent rester un cran sous le seuil. À reprendre avec la révision des seuils après les premières semaines de recette : une septième tranche couvre l'heure entière (point 2). Un destinataire refusé compte comme un échec d'envoi : un membre dont la boîte n'existe plus, qui demande trois codes dans l'heure, déclenche `smtp_failures` alors que le compte d'envoi fonctionne ; à regarder en recette avec les réponses réelles du MX Plan : ne compter que les étapes `connect` et `auth`, ou garder ce sens large et l'écrire dans l'ADR 0023 (point 3).
+- **Lot D** (`feature/front-a-empreinte-et-archive`), 2026-10-06, Claude Code dans le Dev Container :
+  - Étape 23 : les fichiers d'identité sont importés par le code (`web/src/identity.ts`), qui reçoit leur nom produit ; esbuild écrit tout à plat à la racine de `web/dist`, polices comprises, les textes de l'OFL à côté d'elles. Les crochets des noms de polices (`Figtree[wght]-YQNGOSXI.woff2`) ne gênent ni esbuild ni le navigateur : rien n'est renommé. La liste, `files.json`, est un tableau trié des noms produits, sourcemaps exclues : leur nom suit celui du fichier, mais leur contenu peut changer sans lui. En mode surveillance, ni empreinte ni liste.
+  - Étape 24 : la liste est exigée en mode serveur, comme `index.html` ; en développement elle n'est pas lue et tout est servi avec `no-cache`, noms à empreinte compris (le serveur des tests Playwright tourne en `-dev` sur un front construit). Le parcours réel vérifie que les quatre sortes de fichiers sont chargées sous un nom à empreinte, et qu'aucune erreur, de CSP ou autre, n'atteint la console.
+  - Étape 25 : trois choix à confirmer par le développeur. `LICENSE` entre dans l'archive, à côté de ce que liste l'ADR 0012 (point 3) : l'AGPL demande que la licence accompagne le binaire. Les entrées sont rangées sous un répertoire `tribe-menus-<version>-linux-amd64/`, pour que le déballage ne se répande pas dans le répertoire courant. Toutes les dates valent le 1er janvier 1970 : constantes, elles ne dépendent ni du poste ni de Git ; le commit reste donné par `tribe-menus version`. Deux `make dist` successifs, front et binaire reconstruits, donnent la même archive (vérifié par `cmp`). Un lien symbolique dans `site/` ou `deploy/` est refusé.
+  - Étape 26 : outil `internal/tools/relnotes` ; la section d'une version commence au titre `## X.Y.Z`, suivi ou non de ` — date`, et s'arrête au titre suivant de même niveau ; ses sous-titres (`### Migrations`) en font partie.
