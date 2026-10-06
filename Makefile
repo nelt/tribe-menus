@@ -6,7 +6,7 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev seed generate lint test acceptance e2e vuln build ci
+.PHONY: help tools dev seed generate lint test acceptance e2e vuln build dist ci
 
 help: ## List the targets
 	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -48,8 +48,11 @@ vuln: ## Known vulnerabilities in Go and npm dependencies
 	go tool govulncheck ./...
 	cd web && npm audit
 
-build: ## Front end, then static binary in bin/ (VERSION, COMMIT)
+build: ## Front end, then static binary for linux/amd64 in bin/ (VERSION, COMMIT)
 	cd web && npm run build
-	CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)" -o bin/tribe-menus ./cmd/tribe-menus
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)" -o bin/tribe-menus ./cmd/tribe-menus
 
-ci: lint test acceptance e2e vuln build ## All checks required by the CI, in order
+dist: build ## Archive in dist/: binary, site/, deploy/ and LICENSE, with its SHA-256 (VERSION)
+	go run ./internal/tools/dist -version $(VERSION)
+
+ci: lint test acceptance e2e vuln build dist ## All checks required by the CI, in order
