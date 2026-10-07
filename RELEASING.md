@@ -97,7 +97,33 @@ gh run list --workflow release.yml --limit 1
 gh run download <identifiant> --name release-essai-<numéro> --dir /tmp/essai
 ```
 
-Puis les vérifications de l'étape 10, avec ce nom de version.
+Puis les vérifications de l'étape 10, avec ce nom de version, et **le binaire de l'archive lancé une fois** : c'est le seul moment où il tourne avec son front et sa liste de fichiers embarqués, hors des tests. Le binaire est en `linux/amd64` : sur un poste ARM, faire l'essai dans une machine ou un conteneur de cette architecture.
+
+```sh
+cd /tmp/essai && tar -xzf tribe-menus-essai-<numéro>-linux-amd64.tar.gz
+bin=$PWD/tribe-menus-essai-<numéro>-linux-amd64/tribe-menus
+mkdir -p data credentials && echo essai > credentials/smtp-password
+cat > config.json <<EOF
+{
+  "data": "$PWD/data",
+  "listen": "127.0.0.1:8090",
+  "baseURL": "https://essai.example.org",
+  "smtp": {"host": "smtp.example.org", "port": 465, "username": "no-reply@example.org", "from": "no-reply@example.org"},
+  "alerts": {"to": "admin@example.org"}
+}
+EOF
+$bin admin seed -config config.json
+CREDENTIALS_DIRECTORY=$PWD/credentials $bin serve -config config.json
+```
+
+Le mot de passe SMTP est exigé au démarrage, mais n'importe quelle valeur convient : la vérification du compte échoue (« SMTP check failed » dans les logs) sans arrêter le serveur. `baseURL` doit être en `https://`, même si l'essai se fait en HTTP. Dans un autre terminal :
+
+```sh
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/healthz
+curl -sS -D - http://127.0.0.1:8090/tribes/demo/
+```
+
+Attendu : `200` pour `/healthz` ; la page de la tribu `demo` avec `Cache-Control: no-cache`, qui référence `main-<empreinte>.js` et `app-<empreinte>.css` ; l'un de ces fichiers, demandé sous `/tribes/demo/`, avec `Cache-Control: public, max-age=31536000, immutable`. Ctrl-C arrête le serveur.
 
 ## Workflows planifiés
 
