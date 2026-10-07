@@ -34,7 +34,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
    - les scénarios `@manuel` (ADR 0005), dont la liste est tenue ci-dessous ;
    - les stories de la section, sur un vrai appareil.
 
-   Un défaut trouvé se corrige par une PR ordinaire ; la PR de release est ensuite mise à jour avec `main`.
+   L'artefact est gardé trois jours (`ci.yml`) : déployer en recette dans ce délai, ou relancer la CI de la PR (`gh run rerun <identifiant>`), qui en produit un nouveau. Un défaut trouvé se corrige par une PR ordinaire ; la PR de release est ensuite mise à jour avec `main`.
 7. **Fusion** par le développeur.
 8. **Étiquette annotée**, posée par le développeur (seul le propriétaire du dépôt peut créer une étiquette `v*`, et elle ne se déplace ni ne se supprime) sur le commit de fusion :
 
