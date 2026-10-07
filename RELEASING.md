@@ -63,7 +63,10 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
 
     La dernière commande affiche `tribe-menus vX.Y.Z (<commit>)`, avec le commit de l'étiquette.
 
-Si le workflow échoue, la release n'est pas publiée. Corriger par une PR ordinaire et publier le numéro suivant : l'étiquette posée ne se déplace pas.
+Si le workflow échoue, la release n'est pas publiée. Selon la cause :
+
+- **panne passagère** (téléchargement, runner, service de GitHub) : relancer l'exécution sur la même étiquette, par `gh run rerun <identifiant>`, ou `gh run rerun <identifiant> --failed` pour ne reprendre que le job `publish` quand le build a réussi (son artefact est gardé sept jours) ;
+- **défaut dans le code étiqueté** : corriger par une PR ordinaire et publier le numéro suivant, l'étiquette posée ne se déplaçant pas.
 
 ## Version corrective d'une vulnérabilité
 
