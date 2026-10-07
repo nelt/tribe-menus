@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A à D faits, lot E en revue)
+- **Statut** : terminé le 2026-10-07 (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A à E faits ; étape 14 renvoyée à la recette)
 
 ## Objectif
 
@@ -176,8 +176,8 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
   - Version corrective préparée dans la PR du correctif (`docs/traitement-des-vulnerabilites.md`, niveaux accéléré et urgent) : ce que la branche contient, ce que la version emporte de `main`, termes neutres.
   - Migrations signalées dans les notes de version (ADR 0012, point 6).
   - Workflows planifiés désactivés par GitHub après 60 jours sans activité : comment les réactiver (plan `ci`, notes d'exécution).
-- [ ] **31. Essai à blanc**, par le développeur : `release.yml` lancé à la demande sur `main` ; l'archive déposée est téléchargée, son empreinte vérifiée, `tribe-menus version` affiche la version attendue ; le binaire de l'archive, lancé une fois par `serve -config` (front et liste embarqués), répond à `/healthz` et sert la page d'une tribu (revue de la PR #48, point 3). Résultat dans les notes d'exécution.
-- [ ] **32. Clôture** : `CLAUDE.md` (« `release.yml` viendra avec le déploiement » retiré), `docs/securite-depot.md` si un réglage a changé, statut « terminé », feuille de route, `CHANGELOG.md`.
+- [x] **31. Essai à blanc**, par le développeur : `release.yml` lancé à la demande sur `main` ; l'archive déposée est téléchargée, son empreinte vérifiée, `tribe-menus version` affiche la version attendue ; le binaire de l'archive, lancé une fois par `serve -config` (front et liste embarqués), répond à `/healthz` et sert la page d'une tribu (revue de la PR #48, point 3). Résultat dans les notes d'exécution.
+- [x] **32. Clôture** : `CLAUDE.md` (« `release.yml` viendra avec le déploiement » retiré), `docs/securite-depot.md` si un réglage a changé, statut « terminé », feuille de route, `CHANGELOG.md`.
 
 ## Critères de validation
 
@@ -295,3 +295,5 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - Étape 30 : `RELEASING.md` tient aussi la liste des scénarios `@manuel` (ADR 0005). Une release ratée ne se rattrape pas en déplaçant l'étiquette (ruleset `versions-immuables`) : on publie le numéro suivant.
   - Étapes 31 et 32 : un workflow ne se lance à la demande que s'il existe sur la branche par défaut ; l'essai à blanc attend donc la fusion de ce lot, et la clôture (statut, feuille de route) le suit dans une petite PR. `CLAUDE.md` est accordé dès ce lot ; `docs/securite-depot.md` reçoit une case sur `release.yml`, à cocher après l'essai à blanc et la première release.
   - Revue de la PR #49 : l'essai à blanc de `RELEASING.md` lance le binaire de l'archive par `serve -config`, en TCP, avec un credential `smtp-password` quelconque, et vérifie `/healthz`, la page d'une tribu et l'en-tête `immutable` d'un fichier à empreinte ; commandes rejouées telles qu'écrites sur l'archive de `make dist` du poste (point 1). Une release qui échoue sur une panne passagère se relance sur la même étiquette (`gh run rerun`, `--failed` pour le seul job `publish`) ; le numéro suivant ne sert que pour un défaut du code étiqueté (point 2). À noter : l'essai à blanc n'exerce ni le contrôle de l'étiquette, ni l'extraction des notes, ni `publish` ; inscrit dans « Ce que ce plan ne prouve pas » (point 3).
+  - Étape 31, 2026-10-07 : `gh workflow run release.yml` depuis l'hôte est refusé (`HTTP 403: Resource not accessible by personal access token`) : lancer un workflow demande *Actions* en écriture, que n'a pas le jeton du poste. Lancé depuis l'interface web par le développeur (exécution n° 1, `37575047865`) : job `build` réussi, `publish` sauté. Vérifié dans le Dev Container par Claude Code, en suivant `RELEASING.md` : `sha256sum -c` passe ; `tribe-menus version` affiche `essai-1 (44e1121)`, commit de fusion de la PR #49 ; `serve -config` démarre (« SMTP check failed » au journal, sans arrêt), `/healthz` répond 200, la page de la tribu `demo` est servie en `no-cache` et ses deux fichiers à empreinte (`main-R2MVMWCU.js`, `app-AHJISFJJ.css`) en `immutable`. Le binaire construit par la CI sert donc son front et sa liste embarqués en mode serveur (revue de la PR #48, point 3).
+  - Étape 32 : `RELEASING.md` corrigé, l'essai à blanc et la réactivation des workflows passent par l'interface web ; dans `docs/securite-depot.md`, la case de `release.yml` est scindée : le job `build` est coché, le job `publish` attend la première release réelle (plan `recette`). L'étape 14, essai réel de l'envoi par le compte du MX Plan, reste ouverte : la recette la reprend (réception du code sur les messageries réelles).
