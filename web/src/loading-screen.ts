@@ -1,6 +1,7 @@
 // Loading at startup (docs/design maquette Chargement): the symbol breathes and drops of
 // soup fall; on a slow or absent network, a message and "Réessayer". No tribe name.
 import { LitElement, html } from "lit";
+import { symbolURL } from "./identity.ts";
 
 const drop = (n: number) =>
   html`<svg class="drop drop-${n}" width="12" height="16" viewBox="0 0 12 16" aria-hidden="true">
@@ -21,7 +22,7 @@ export class LoadingScreen extends LitElement {
 
   override render() {
     return html`<div class="loading">
-      <img class="loading-symbol" src="symbole.svg" alt="" width="320" height="320">
+      <img class="loading-symbol" src=${symbolURL} alt="" width="320" height="320">
       ${this.slow
         ? html`<div class="loading-slow" role="status">
             <p class="loading-message">Le réseau est lent ou absent.</p>

@@ -3,6 +3,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -21,6 +22,13 @@ import (
 const (
 	tribesPrefix  = "/tribes/"
 	indexTemplate = "index.html"
+	// filesList lists the files of the front end named after their content (web/scripts/build.mjs).
+	filesList = "files.json"
+
+	// immutableCache is for a file named after its content, which never changes (ADR 0012, point
+	// 2); revalidateCache for the index page and any other file.
+	immutableCache  = "public, max-age=31536000, immutable"
+	revalidateCache = "no-cache"
 
 	contentSecurityPolicy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
 
@@ -63,6 +71,9 @@ type server struct {
 	behindProxy bool
 	// index is parsed once at startup in production, nil in development.
 	index *template.Template
+	// immutable holds the files named after their content, read from the list at startup in
+	// production; nil in development, where the names do not change (plan production, D10).
+	immutable map[string]bool
 }
 
 // New returns the HTTP handler of the application.
@@ -83,6 +94,14 @@ func New(cfg Config) (http.Handler, error) {
 			return nil, err
 		}
 		s.index = index
+		immutable, err := readFilesList(cfg.Web)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("server: front end not built, run make build: %w", err)
+		}
+		if err != nil {
+			return nil, err
+		}
+		s.immutable = immutable
 	}
 
 	mux := http.NewServeMux()
@@ -123,6 +142,23 @@ func parseIndex(web fs.FS) (*template.Template, error) {
 	return index, nil
 }
 
+// readFilesList reads the list of the files named after their content.
+func readFilesList(web fs.FS) (map[string]bool, error) {
+	data, err := fs.ReadFile(web, filesList)
+	if err != nil {
+		return nil, fmt.Errorf("server: read %s: %w", filesList, err)
+	}
+	var files []string
+	if err := json.Unmarshal(data, &files); err != nil {
+		return nil, fmt.Errorf("server: parse %s: %w", filesList, err)
+	}
+	immutable := make(map[string]bool, len(files))
+	for _, file := range files {
+		immutable[file] = true
+	}
+	return immutable, nil
+}
+
 func withCommonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
@@ -157,15 +193,20 @@ func redirectToTribeRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 // serveApp serves a file of the front end if it exists, and the index page otherwise,
-// so that the client-side router handles the path.
+// so that the client-side router handles the path. The list of the files is not served.
 func (s *server) serveApp(w http.ResponseWriter, r *http.Request) {
 	rest := r.PathValue("rest")
 	if rest != "" && rest != indexTemplate {
-		if !fs.ValidPath(rest) {
+		if !fs.ValidPath(rest) || rest == filesList {
 			http.NotFound(w, r)
 			return
 		}
 		if info, err := fs.Stat(s.web, rest); err == nil && info.Mode().IsRegular() {
+			if s.immutable[rest] {
+				w.Header().Set("Cache-Control", immutableCache)
+			} else {
+				w.Header().Set("Cache-Control", revalidateCache)
+			}
 			http.ServeFileFS(w, r, s.web, rest)
 			return
 		}
@@ -199,6 +240,7 @@ func (s *server) renderIndex(w http.ResponseWriter, tribe string) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", revalidateCache)
 	_, _ = w.Write(body.Bytes())
 }
 

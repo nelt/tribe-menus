@@ -11,10 +11,15 @@ Chaque version déployée doit pouvoir être rattachée à un commit précis et 
 
 1. **Ce qui tourne en production est construit par la CI, jamais sur un poste de développement.**
 2. **Étapes de `make build`** :
-   - **front** : esbuild produit des fichiers minifiés dont le nom contient une empreinte de leur contenu (`app.3f9a1c.js`) ; sourcemaps générées et publiées (ADR 0011) ;
+   - **front** : esbuild produit des fichiers minifiés dont le nom contient une empreinte de leur contenu (`main-R2MVMWCU.js`) ; sourcemaps générées et publiées (ADR 0011) ;
    - **service worker** : un script de build (API d'esbuild) écrit la liste des fichiers à pré-cacher et la version du service worker ; les sourcemaps en sont exclues ;
    - **binaire** : `CGO_ENABLED=0 go build -trimpath`, pour `linux/amd64`, avec la version et le commit injectés (`-ldflags -X`), affichés par `tribe-menus version`, dans les logs de démarrage et dans le lien vers le code source (ADR 0011).
-3. **Artefact livré** : une archive contenant le binaire (front embarqué), le site public (`site/`), les fichiers de `deploy/`, et une empreinte SHA-256 publiée à côté de l'archive.
+3. **Artefact livré** : une archive contenant le binaire (front embarqué), le site public (`site/`), les fichiers de `deploy/`, et une empreinte SHA-256 publiée à côté de l'archive. Précisé le 2026-10-07 (plan `production`, lot D, revue de la PR #48) :
+   - l'archive `tribe-menus-<version>-linux-amd64.tar.gz` est écrite par `make dist` (outil `internal/tools/dist`) ; elle contient aussi `LICENSE`, que l'AGPL demande de joindre au binaire ;
+   - ses entrées sont rangées sous un répertoire `tribe-menus-<version>-linux-amd64/` : le binaire `tribe-menus`, `LICENSE`, `site/` et `deploy/` ;
+   - entrées triées par nom ; toutes datées du 1er janvier 1970 ; propriétaire et groupe 0, sans nom ; droits 0755 pour les répertoires, le binaire et les fichiers marqués exécutables dans le dépôt, 0644 pour les autres ; tout autre type de fichier (lien symbolique) est refusé. Deux exécutions sur le même commit donnent la même archive ;
+   - l'empreinte est dans un fichier voisin `<archive>.sha256`, au format de `sha256sum` (`<empreinte>  <nom de l'archive>`), que `sha256sum -c` vérifie ;
+   - l'archive est faite à partir du répertoire de travail, pas de Git : en CI, le dépôt est propre.
 4. **Versions** : versionnage sémantique adapté à une application.
    - `0.x` pendant la construction de la V1, `1.0.0` quand la V1 est complète ;
    - version mineure : nouvelles stories ; correctif : corrections seules.
