@@ -2,7 +2,7 @@
 
 - **Nom** : `production`
 - **Date** : 2026-10-06
-- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A, B et C faits, lot D en revue)
+- **Statut** : en cours (décisions D1 à D13 confirmées par le développeur le 2026-10-06 ; lots A à D faits, lot E en revue)
 
 ## Objectif
 
@@ -165,13 +165,13 @@ Points d'attention de la revue : ce que les compteurs apprennent sur l'appartena
 
 ### Lot E : workflows et procédure de release (`feature/chaine-de-release`), poussé depuis l'hôte
 
-- [ ] **28. `ci.yml`** : l'artefact d'une PR devient l'archive et son empreinte (ADR 0016, points 6 et 7), à la place de `bin/tribe-menus` et `site/`.
-- [ ] **29. `release.yml`** (ADR 0012, point 5 ; ADR 0013).
+- [x] **28. `ci.yml`** : l'artefact d'une PR devient l'archive et son empreinte (ADR 0016, points 6 et 7), à la place de `bin/tribe-menus` et `site/`.
+- [x] **29. `release.yml`** (ADR 0012, point 5 ; ADR 0013).
   - Déclenché par une étiquette `v*`, et à la demande pour un essai à blanc qui ne publie rien.
   - Contrôles avant tout : l'étiquette a la forme `vX.Y.Z`, son commit appartient à `main`, `CHANGELOG.md` a une section pour cette version.
   - Deux jobs. Le premier, jeton en lecture seule, lance `make tools` puis `make ci` avec la version de l'étiquette et dépose l'archive. Le second, seul à avoir `contents: write`, crée la release avec l'archive, son empreinte et les notes extraites : il n'exécute aucun code du dépôt ni des dépendances.
   - Actions de GitHub seules, épinglées par empreinte ; `gh` pour créer la release ; aucun secret (`docs/securite-depot.md`, section 4). `make lint` (actionlint) passe.
-- [ ] **30. `RELEASING.md`** (ADR 0012, point 5 ; ADR 0022).
+- [x] **30. `RELEASING.md`** (ADR 0012, point 5 ; ADR 0022).
   - Release ordinaire : PR `release/vX.Y.Z`, recette de son archive, fusion, étiquette annotée, release publiée, vérification de l'empreinte. Le déploiement est une action distincte, renvoyée à la documentation de `recette`.
   - Version corrective préparée dans la PR du correctif (`docs/traitement-des-vulnerabilites.md`, niveaux accéléré et urgent) : ce que la branche contient, ce que la version emporte de `main`, termes neutres.
   - Migrations signalées dans les notes de version (ADR 0012, point 6).
@@ -289,3 +289,8 @@ D1 à D10 proposées par la session qui a écrit le plan, confirmées telles que
   - Étape 25 : trois choix, confirmés par le développeur le 2026-10-07 (revue de la PR #48) et inscrits dans l'ADR 0012 (point 3). `LICENSE` entre dans l'archive, à côté de ce que liste l'ADR 0012 (point 3) : l'AGPL demande que la licence accompagne le binaire. Les entrées sont rangées sous un répertoire `tribe-menus-<version>-linux-amd64/`, pour que le déballage ne se répande pas dans le répertoire courant. Toutes les dates valent le 1er janvier 1970 : constantes, elles ne dépendent ni du poste ni de Git ; le commit reste donné par `tribe-menus version`. Deux `make dist` successifs, front et binaire reconstruits, donnent la même archive (vérifié par `cmp`). Un lien symbolique dans `site/` ou `deploy/` est refusé.
   - Étape 26 : outil `internal/tools/relnotes` ; la section d'une version commence au titre `## X.Y.Z`, suivi ou non de ` — date`, et s'arrête au titre suivant de même niveau ; ses sous-titres (`### Migrations`) en font partie.
   - Revue de la PR #48 : le test `web/scripts/build.test.mjs` prouve que le nom d'un fichier suit son contenu, et lui seul (point 2). À noter : rien ne lance le binaire construit avec son front embarqué ; le mode serveur refuse de démarrer sans `files.json`, ce que les tests ne prouvent que sur un front factice, le serveur des tests Playwright tournant en `-dev` sur le disque : ajouté à l'essai à blanc du lot E, étape 31 (point 3). L'archive prend les fichiers du répertoire de travail, suivis ou non par Git : sans effet en CI, à savoir pour un `make dist` sur un poste (ADR 0012, point 3).
+- **Lot E** (`feature/chaine-de-release`), 2026-10-07, Claude Code dans le Dev Container, poussé depuis l'hôte par le développeur :
+  - Étape 28 : l'artefact `tribe-menus-pr-<numéro>` contient l'archive et son fichier `.sha256`, rien d'autre.
+  - Étape 29 : la version est l'étiquette telle quelle (`v0.1.0`, archive `tribe-menus-v0.1.0-linux-amd64.tar.gz`) ; à la demande, `essai-<numéro d'exécution>`, sans contrôle de `CHANGELOG.md` ni notes ni release (« Non publié » n'est pas une version). Le contrôle « commit sur `main` » s'applique aussi à l'essai à blanc. Le job `build` ne restaure aucun cache (Go, npm, navigateurs Playwright) : une release se construit sans rien hériter d'une exécution précédente, pour quelques minutes de plus. Notes extraites avant `make tools`, pour échouer tôt ; l'empreinte de l'archive est vérifiée dans chaque job. Le job `publish` télécharge l'artefact (`actions/download-artifact` v8.0.1, épinglée) et crée la release par `gh release create --verify-tag`, sans checkout.
+  - Étape 30 : `RELEASING.md` tient aussi la liste des scénarios `@manuel` (ADR 0005). Une release ratée ne se rattrape pas en déplaçant l'étiquette (ruleset `versions-immuables`) : on publie le numéro suivant.
+  - Étapes 31 et 32 : un workflow ne se lance à la demande que s'il existe sur la branche par défaut ; l'essai à blanc attend donc la fusion de ce lot, et la clôture (statut, feuille de route) le suit dans une petite PR. `CLAUDE.md` est accordé dès ce lot ; `docs/securite-depot.md` reçoit une case sur `release.yml`, à cocher après l'essai à blanc et la première release.
