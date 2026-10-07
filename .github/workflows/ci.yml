@@ -64,14 +64,16 @@ jobs:
           VERSION: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'dev' }}
         run: make ci VERSION="$VERSION"
 
-      - name: Keep the pull request build
+      # The archive of make dist and its SHA-256, deployed to the staging
+      # environment (ADR 0016, points 6 and 7).
+      - name: Keep the pull request archive
         if: success() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tribe-menus-pr-${{ github.event.pull_request.number }}
           path: |
-            bin/tribe-menus
-            site/
+            dist/tribe-menus-pr-${{ github.event.pull_request.number }}-linux-amd64.tar.gz
+            dist/tribe-menus-pr-${{ github.event.pull_request.number }}-linux-amd64.tar.gz.sha256
           retention-days: 3
           if-no-files-found: error
 

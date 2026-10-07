@@ -56,6 +56,7 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 - [x] Aucune donnée venant d'une PR (titre, branche, corps) interpolée directement dans un script de workflow (injection de commande).
 - [x] Aucun secret ni clé de déploiement chez GitHub : le déploiement est manuel, par SSH depuis le poste de l'administrateur (ADR 0016).
 - [x] Workflows analysés en CI par **actionlint** (écrit en Go, épinglé par `go tool`).
+- [ ] `release.yml` (plan `production`, lot E) : le job `build`, qui exécute le code du dépôt et de ses dépendances, n'a que la lecture et ne restaure aucun cache ; seul le job `publish` a `contents: write`, et il ne lance que `sha256sum` et `gh` sur les fichiers construits. Contrôles avant le build : étiquette `vX.Y.Z`, commit sur `main`, section dans `CHANGELOG.md`. À cocher après l'essai à blanc et la première release.
 
 ## 5. Sécurité du code et des dépendances
 
