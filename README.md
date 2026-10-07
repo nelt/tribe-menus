@@ -30,6 +30,6 @@ Le projet sert aussi à expérimenter un flux de travail hybride avec Claude :
 
 Copyright © 2026 Nel Taurisson et les contributeurs de Melting Tribe.
 
-Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU Affero General Public License publiée par la Free Software Foundation, en version 3 ou (à votre choix) toute version ultérieure. Il est distribué sans aucune garantie ; voir [`LICENSE`](LICENSE). Les polices, quand le dépôt en contiendra, restent sous leur propre licence (OFL), dans leur dossier.
+Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU Affero General Public License publiée par la Free Software Foundation, en version 3 ou (à votre choix) toute version ultérieure. Il est distribué sans aucune garantie ; voir [`LICENSE`](LICENSE). Les polices restent sous leur propre licence (OFL), dont le texte est dans leur dossier, [`web/src/fonts/`](web/src/fonts/).
 
 Contribuer : [`CONTRIBUTING.md`](CONTRIBUTING.md). Signaler une vulnérabilité : [`SECURITY.md`](SECURITY.md).
