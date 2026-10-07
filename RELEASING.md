@@ -94,8 +94,9 @@ Vérifiés sur téléphone en recette avant chaque release (ADR 0005). La liste 
 
 `release.yml` lancé à la demande construit une version `essai-<numéro d'exécution>` sans rien publier : pas de contrôle de `CHANGELOG.md`, pas de notes, pas de release. Il sert à vérifier la chaîne après une modification du workflow ou de `make dist`.
 
+Le lancer depuis l'interface web : onglet *Actions*, workflow **release**, bouton « Run workflow », branche `main`. `gh workflow run release.yml --ref main` demande un jeton qui a *Actions* en écriture, ce que n'ont ni le jeton du poste ni celui du Dev Container (refus `HTTP 403: Resource not accessible by personal access token`). L'artefact `release-essai-<numéro>` est en bas de la page de l'exécution, ou se télécharge avec la lecture des *Actions*, qu'ont les deux jetons :
+
 ```sh
-gh workflow run release.yml --ref main
 gh run list --workflow release.yml --limit 1
 gh run download <identifiant> --name release-essai-<numéro> --dir /tmp/essai
 ```
@@ -130,11 +131,4 @@ Attendu : `200` pour `/healthz` ; la page de la tribu `demo` avec `Cache-Control
 
 ## Workflows planifiés
 
-Sur un dépôt public, GitHub désactive un workflow planifié après 60 jours sans activité dans le dépôt (`ci.yml` hebdomadaire, `devcontainer.yml`). Pour le réactiver : onglet *Actions*, choisir le workflow, « Enable workflow » ; ou depuis l'hôte :
-
-```sh
-gh workflow enable ci.yml
-gh workflow enable devcontainer.yml
-```
-
-Le jeton du Dev Container n'a pas le droit de le faire (ADR 0020).
+Sur un dépôt public, GitHub désactive un workflow planifié après 60 jours sans activité dans le dépôt (`ci.yml` hebdomadaire, `devcontainer.yml`). Pour le réactiver : onglet *Actions*, choisir le workflow, « Enable workflow ». Les commandes `gh workflow enable ci.yml` et `gh workflow enable devcontainer.yml` demandent, comme `gh workflow run`, un jeton qui a *Actions* en écriture : ni celui du poste ni celui du Dev Container (ADR 0020).
