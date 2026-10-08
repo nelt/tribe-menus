@@ -116,7 +116,8 @@ cat > config.json <<EOF
   "alerts": {"to": "admin@example.org"}
 }
 EOF
-$bin admin seed -config config.json
+echo "essai@example.org Essai" > members
+$bin admin seed -config config.json -members members
 CREDENTIALS_DIRECTORY=$PWD/credentials $bin serve -config config.json
 ```
 

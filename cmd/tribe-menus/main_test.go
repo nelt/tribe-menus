@@ -172,6 +172,15 @@ func TestAdmin(t *testing.T) {
 	data := t.TempDir()
 	configDir := t.TempDir()
 	configFile := writeConfig(t, configDir, "systemd")
+	writeFile := func(name, content string) string {
+		path := filepath.Join(t.TempDir(), name)
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	membersFile := writeFile("members", "recette-alice@example.org Alice\nrecette-bruno@example.org Bruno\n")
+	invalidMembers := writeFile("invalid", "recette-alice@example.org Alice\nbruno\n")
 	cases := []struct {
 		name       string
 		args       []string
@@ -203,8 +212,14 @@ func TestAdmin(t *testing.T) {
 			stdin:      "Les Petit\npetit\nalice@exemple.fr\n\n",
 			wantStdout: "https://tribes.example.org/tribes/petit/",
 		},
-		{name: "seed with config", args: []string{"admin", "seed", "-config", configFile}, wantStdout: "https://tribes.example.org/tribes/demo/"},
-		{name: "seed again with config", args: []string{"admin", "seed", "-config", configFile}, wantStdout: "existe déjà"},
+		// With -config, the members come from a file: the addresses in @exemple.fr never reach
+		// an instance that sends real emails (plan recette, D3).
+		{name: "seed with config without members", args: []string{"admin", "seed", "-config", configFile}, wantCode: 2, wantStderr: "tribe-menus admin seed: -members is required with -config"},
+		{name: "seed with invalid members", args: []string{"admin", "seed", "-config", configFile, "-members", invalidMembers}, wantCode: 1, wantStderr: "tribe-menus admin seed: members file, line 2: invalid email address"},
+		{name: "seed with missing members file", args: []string{"admin", "seed", "-config", configFile, "-members", filepath.Join(configDir, "missing")}, wantCode: 1, wantStderr: "tribe-menus admin seed: open"},
+		{name: "seed with config", args: []string{"admin", "seed", "-config", configFile, "-members", membersFile}, wantStdout: "créée : https://tribes.example.org/tribes/demo/"},
+		{name: "seed again with config", args: []string{"admin", "seed", "-config", configFile, "-members", membersFile}, wantStdout: "existe déjà"},
+		{name: "members with init", args: []string{"admin", "init", "-data", data, "-members", membersFile}, wantCode: 2, wantStderr: "flag provided but not defined: -members"},
 		{name: "data with config", args: []string{"admin", "seed", "-config", configFile, "-data", data}, wantCode: 2, wantStderr: "tribe-menus admin seed: -data is refused with -config"},
 		{name: "base URL with config", args: []string{"admin", "init", "-config", configFile, "-base-url", "https://a.example.org"}, wantCode: 2, wantStderr: "tribe-menus admin init: -base-url is refused with -config"},
 		{name: "invalid config", args: []string{"admin", "seed", "-config", filepath.Join(configDir, "missing.json")}, wantCode: 2, wantStderr: "tribe-menus admin seed: config: open"},

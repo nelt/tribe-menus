@@ -253,7 +253,11 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	dir := t.TempDir()
 	configFile := writeConfig(t, dir, "localhost:0")
 	writeCredential(t)
-	if code := run([]string{"admin", "seed", "-config", configFile}, strings.NewReader(""), io.Discard, io.Discard); code != 0 {
+	members := filepath.Join(dir, "members")
+	if err := os.WriteFile(members, []byte("alice@example.org Alice\nbruno@example.org Bruno\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if code := run([]string{"admin", "seed", "-config", configFile, "-members", members}, strings.NewReader(""), io.Discard, io.Discard); code != 0 {
 		t.Fatalf("admin seed: exit code %d", code)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -284,7 +288,7 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 		t.Errorf("registry not created in the data directory of the config file: %v", err)
 	}
 	// Two codes not sent, after the failed check: three failures, an alert (ADR 0023).
-	for _, email := range []string{"alice@exemple.fr", "bruno@exemple.fr"} {
+	for _, email := range []string{"alice@example.org", "bruno@example.org"} {
 		req, err := http.NewRequest(http.MethodPost, addr+"/tribes/demo/api/login-codes", strings.NewReader(`{"email":"`+email+`"}`))
 		if err != nil {
 			t.Fatal(err)
@@ -313,8 +317,10 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	if strings.Contains(stdout.String(), testPassword) {
 		t.Errorf("logs contain the SMTP password: %s", stdout.String())
 	}
-	if strings.Contains(stdout.String(), "exemple.fr") {
-		t.Errorf("logs contain an address: %s", stdout.String())
+	for _, local := range []string{"alice", "bruno"} {
+		if strings.Contains(stdout.String(), local) {
+			t.Errorf("logs contain the address of %s: %s", local, stdout.String())
+		}
 	}
 }
 
