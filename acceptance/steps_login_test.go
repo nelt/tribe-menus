@@ -22,8 +22,6 @@ import (
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
-const sessionCookie = "session"
-
 var loginCodePattern = regexp.MustCompile(`\b[0-9]{8}\b`)
 
 // apiError is the body of an error response of the API.
@@ -63,6 +61,9 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^je me suis connecté à la tribu "([^"]*)" en tant que "([^"]*)" avec un code$`, func(ctx context.Context, slug, email string) error {
 		return w.signIn(ctx, w.newDevice(), slug, email)
+	})
+	sc.Step(`^je suis connecté à la tribu "([^"]*)" en tant que "([^"]*)" dans mon navigateur$`, func(ctx context.Context, slug, email string) error {
+		return w.signIn(ctx, w.namedDevice(myBrowser), slug, email)
 	})
 	sc.Step(`^"([^"]*)" est connecté à la tribu "([^"]*)" dans son navigateur$`, func(ctx context.Context, email, slug string) error {
 		return w.signIn(ctx, w.namedDevice(email), slug, email)
@@ -174,7 +175,15 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^ma session expire (\d+) jours après aujourd'hui$`, w.sessionExpiresAfter)
 	sc.Step(`^je vois l'écran de connexion$`, func() error { return w.loginScreen("") })
 	sc.Step(`^le cookie de session est marqué HttpOnly, Secure et SameSite=Lax$`, w.cookieAttributes)
+	sc.Step(`^le cookie de session porte le préfixe __Host-, sans attribut Domain, avec Path=/$`, w.cookieHostPrefixed)
 	sc.Step(`^le jeton de session n'est pas stocké en clair côté serveur$`, w.tokenHashed)
+	sc.Step(`^je me déconnecte de la tribu "([^"]*)"$`, w.signOutOf)
+	sc.Step(`^je ne suis plus connecté à la tribu "([^"]*)"$`, func(ctx context.Context, slug string) error {
+		return w.sessionStatus(ctx, slug, http.StatusUnauthorized)
+	})
+	sc.Step(`^je suis toujours connecté à la tribu "([^"]*)"$`, func(ctx context.Context, slug string) error {
+		return w.sessionStatus(ctx, slug, http.StatusOK)
+	})
 }
 
 // declareTribe names a tribe of the scenario; it is created with its first member.
@@ -505,8 +514,9 @@ func (w *world) getSession(ctx context.Context) error {
 }
 
 // openURL opens the URL of the tribe from the device: the page, then the session, as the
-// front end does when it starts. The cookies of the device's other tribes are also sent to
-// this tribe, as a client ignoring their Path would: the server must find nothing with them.
+// front end does when it starts. The browser sends the cookies of the device's other tribes
+// too (Path=/, ADR 0024); their values are also sent under the names of this tribe, as a
+// client renaming them would: the server must find nothing with them.
 func (w *world) openURL(ctx context.Context, d *device, slug string) error {
 	w.tribe = tribe.Slug(slug)
 	w.auth.opened = nil
@@ -523,12 +533,19 @@ func (w *world) openURL(ctx context.Context, d *device, slug string) error {
 		if otherSlug == slug {
 			continue
 		}
-		cookies := d.jar.Cookies(originURL(tribePath(otherSlug, "")))
-		if len(cookies) == 0 {
+		var renamed []*http.Cookie
+		for _, c := range d.jar.Cookies(originURL(tribePath(otherSlug, ""))) {
+			for _, kind := range []string{sessionCookie, codeRequestCookie} {
+				if c.Name == cookieName(kind, otherSlug) {
+					renamed = append(renamed, &http.Cookie{Name: cookieName(kind, slug), Value: c.Value, Path: "/"})
+				}
+			}
+		}
+		if len(renamed) == 0 {
 			continue
 		}
 		foreign := &device{jar: newJar(), ip: d.ip}
-		foreign.jar.SetCookies(originURL(tribePath(slug, "")), cookies)
+		foreign.jar.SetCookies(originURL("/"), renamed)
 		rec, err := w.do(ctx, foreign, http.MethodGet, tribePath(slug, "api/session"), nil)
 		if err != nil {
 			return err
@@ -593,8 +610,8 @@ func (w *world) sessionOpenForDevice(ctx context.Context) error {
 		return fmt.Errorf("%d sessions for %s, want 1", len(sessions), w.auth.email)
 	}
 	cookies := w.currentDevice().jar.Cookies(originURL(tribePath(string(w.tribe), "")))
-	if len(cookies) != 1 || cookies[0].Name != sessionCookie {
-		return fmt.Errorf("cookies of the device: %v, want the session cookie", cookies)
+	if len(cookies) != 1 || cookies[0].Name != cookieName(sessionCookie, string(w.tribe)) {
+		return fmt.Errorf("cookies of the device: %v, want the session cookie of the tribe", cookies)
 	}
 	return nil
 }
@@ -774,6 +791,42 @@ func (w *world) cookieAttributes() error {
 	return nil
 }
 
+// cookieHostPrefixed checks the name and the scope of the session cookie (ADR 0024): the
+// prefix __Host-, which the browser accepts only from the host itself, and the name of the
+// tribe of the session.
+func (w *world) cookieHostPrefixed() error {
+	cookie := findCookie(w.auth.signIn)
+	if cookie == nil {
+		return errors.New("no session cookie set")
+	}
+	if cookie.Name != cookieName(sessionCookie, string(w.tribe)) || !cookie.Secure || cookie.Domain != "" || cookie.Path != "/" {
+		return fmt.Errorf("cookie %s, want %s with Secure, Path=/ and no Domain", cookie, cookieName(sessionCookie, string(w.tribe)))
+	}
+	return nil
+}
+
+// signOutOf signs out of the tribe from the current device.
+func (w *world) signOutOf(ctx context.Context, slug string) error {
+	rec, err := w.do(ctx, w.currentDevice(), http.MethodDelete, tribePath(slug, "api/session"), nil)
+	if err != nil {
+		return err
+	}
+	w.auth.last = rec
+	return w.lastStatus(http.StatusNoContent)
+}
+
+// sessionStatus checks the answer of the tribe to the session request of the current device.
+func (w *world) sessionStatus(ctx context.Context, slug string, status int) error {
+	rec, err := w.do(ctx, w.currentDevice(), http.MethodGet, tribePath(slug, "api/session"), nil)
+	if err != nil {
+		return err
+	}
+	if rec.Code != status {
+		return fmt.Errorf("GET session of %s: status %d, want %d; body %s", slug, rec.Code, status, rec.Body)
+	}
+	return nil
+}
+
 // tokenHashed checks that no file of the data directory contains the token, and that the
 // sessions hold its SHA-256 hash.
 func (w *world) tokenHashed(ctx context.Context) error {
@@ -822,7 +875,7 @@ func findCookie(rec *httptest.ResponseRecorder) *http.Cookie {
 		return nil
 	}
 	for _, c := range rec.Result().Cookies() {
-		if c.Name == sessionCookie {
+		if strings.HasPrefix(c.Name, "__Host-"+sessionCookie+"-") {
 			return c
 		}
 	}
