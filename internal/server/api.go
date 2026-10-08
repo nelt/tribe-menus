@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net"
@@ -15,13 +17,25 @@ import (
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
+// Kinds of cookies of a tribe, each named by cookieName.
 const (
 	sessionCookie = "session"
 	// codeRequestCookie holds the token of the last code request of the browser: a code is
 	// entered only from the browser that requested it (ENF-01; plan revue-securite, D5).
-	codeRequestCookie = "code_request"
-	maxBodyBytes      = 4 << 10
+	codeRequestCookie = "code-request"
 )
+
+const maxBodyBytes = 4 << 10
+
+// cookieName is the name of a cookie of the tribe (ADR 0024): the prefix __Host-, which the
+// browser accepts only with Secure, Path=/ and no Domain, so from this very host; then the
+// kind, and the first 16 hexadecimal characters of the SHA-256 hash of the slug, which
+// separates the tribes now that the path does not. Valid, and of the same length, for any
+// slug, in the format or not, of a tribe or not (ENF-02).
+func cookieName(kind, slug string) string {
+	sum := sha256.Sum256([]byte(slug))
+	return "__Host-" + kind + "-" + hex.EncodeToString(sum[:8])
+}
 
 // Tribes gives the database of a tribe by its slug, or storage.ErrUnknownTribe.
 type Tribes interface {
@@ -118,7 +132,7 @@ func (a *api) withTribe(next http.Handler) http.Handler {
 // renews the cookie with the sliding expiry. A cookie without valid session is cleared.
 func (a *api) withSession(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(sessionCookie)
+		cookie, err := r.Cookie(cookieName(sessionCookie, r.PathValue("tribe")))
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
@@ -187,7 +201,7 @@ func (a *api) openSession(w http.ResponseWriter, r *http.Request) {
 	store := tribeOf(r)
 	device := tribe.DetectDevice(r.UserAgent(), body.InstalledApp)
 	var requestToken string
-	if cookie, err := r.Cookie(codeRequestCookie); err == nil {
+	if cookie, err := r.Cookie(cookieName(codeRequestCookie, r.PathValue("tribe"))); err == nil {
 		requestToken = cookie.Value
 	}
 	session, token, err := a.login.OpenSession(r.Context(), r.PathValue("tribe"), store, body.Email, body.Code, requestToken, device)
@@ -247,12 +261,12 @@ func (a *api) writeSession(w http.ResponseWriter, r *http.Request, status int, s
 	})
 }
 
-// setSessionCookie sets the session cookie of the tribe of the request (ADR 0001, 0006).
+// setSessionCookie sets the session cookie of the tribe of the request (ADR 0001, 0024).
 func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expires time.Time) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookie,
+		Name:     cookieName(sessionCookie, r.PathValue("tribe")),
 		Value:    token,
-		Path:     tribeBase(r.PathValue("tribe")),
+		Path:     "/",
 		MaxAge:   int(tribe.SessionLifetime / time.Second),
 		Expires:  expires,
 		HttpOnly: true,
@@ -269,9 +283,9 @@ func setCodeRequestCookie(w http.ResponseWriter, r *http.Request, token string, 
 		maxAge = -1
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     codeRequestCookie,
+		Name:     cookieName(codeRequestCookie, r.PathValue("tribe")),
 		Value:    token,
-		Path:     tribeBase(r.PathValue("tribe")),
+		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   true,
@@ -283,8 +297,8 @@ func setCodeRequestCookie(w http.ResponseWriter, r *http.Request, token string, 
 func clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	w.Header().Del("Set-Cookie")
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookie,
-		Path:     tribeBase(r.PathValue("tribe")),
+		Name:     cookieName(sessionCookie, r.PathValue("tribe")),
+		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,

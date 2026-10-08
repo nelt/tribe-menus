@@ -99,8 +99,8 @@ func (w *world) sameAsUnknownTribe(ctx context.Context) error {
 		return fmt.Errorf("%d responses, %d for an unknown tribe", len(opened), len(unknown))
 	}
 	for i := range opened {
-		got := strings.ReplaceAll(answer(opened[i]), slug, "<slug>")
-		want := strings.ReplaceAll(answer(unknown[i]), unknownSlug, "<slug>")
+		got := strings.ReplaceAll(sameNames(answer(opened[i]), slug), slug, "<slug>")
+		want := strings.ReplaceAll(sameNames(answer(unknown[i]), unknownSlug), unknownSlug, "<slug>")
 		if got != want {
 			return fmt.Errorf("response %d: %q, for an unknown tribe %q", i+1, got, want)
 		}
@@ -180,4 +180,13 @@ func (w *world) signInNotAudited(ctx context.Context, slug string) error {
 		}
 	}
 	return nil
+}
+
+// sameNames replaces the names of the cookies of the tribe in the answer by their kind: they
+// differ from one tribe to another, existing or not (ADR 0024).
+func sameNames(answer, slug string) string {
+	for _, kind := range []string{sessionCookie, codeRequestCookie} {
+		answer = strings.ReplaceAll(answer, cookieName(kind, slug), "<"+kind+">")
+	}
+	return answer
 }

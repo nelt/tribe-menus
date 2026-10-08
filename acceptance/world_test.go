@@ -2,6 +2,8 @@ package acceptance
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -275,6 +277,20 @@ func newJar() *cookiejar.Jar {
 // originURL is the URL of a path of the instance, as the cookie jars see it.
 func originURL(path string) *url.URL {
 	return &url.URL{Scheme: "https", Host: originHost, Path: path}
+}
+
+// Kinds of cookies of a tribe, and the device of "je" when the scenario names it.
+const (
+	sessionCookie     = "session"
+	codeRequestCookie = "code-request"
+	myBrowser         = "mon navigateur"
+)
+
+// cookieName is the name of a cookie of the tribe (ADR 0024): the prefix __Host-, its kind,
+// and the first 16 hexadecimal characters of the SHA-256 hash of the slug.
+func cookieName(kind, slug string) string {
+	sum := sha256.Sum256([]byte(slug))
+	return "__Host-" + kind + "-" + hex.EncodeToString(sum[:])[:16]
 }
 
 func tribePath(slug, rest string) string {

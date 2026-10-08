@@ -1,5 +1,6 @@
 // The real login journey, against the server with the demonstration tribe (D14, D15):
-// Chromium only, WebKit refusing the Secure cookie on http://localhost. Two code requests
+// Chromium only, WebKit refusing the Secure cookies on http://localhost, prefixed __Host- or
+// not (ADR 0024). Two code requests
 // per run, under the limit of 10 per hour for an IP address.
 import { readFile } from "node:fs/promises";
 import { type Page, expect, test } from "@playwright/test";
@@ -42,12 +43,20 @@ test("sign in with the code received by email, then sign out", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
   await expect(page).toHaveURL(/\/tribes\/demo\/$/);
 
+  // The browser keeps the session cookie of the tribe, prefixed __Host- (ADR 0024); the
+  // cookie of the code request is deleted.
+  const cookies = await page.context().cookies();
+  expect(cookies.map((c) => ({ name: c.name, path: c.path, httpOnly: c.httpOnly, secure: c.secure, sameSite: c.sameSite }))).toEqual([
+    { name: expect.stringMatching(/^__Host-session-[0-9a-f]{16}$/), path: "/", httpOnly: true, secure: true, sameSite: "Lax" },
+  ]);
+
   // The session survives a reload.
   await page.reload();
   await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
 
   await page.getByRole("button", { name: "Se déconnecter" }).click();
   await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
+  expect(await page.context().cookies()).toEqual([]);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
 });

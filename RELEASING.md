@@ -22,7 +22,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
    git diff --name-only --diff-filter=A vA.B.C..HEAD -- internal/storage/migrations/
    ```
 
-   S'il y en a, ajouter à la fin de la section une sous-section `### Migrations` : une ligne par migration, avec la base touchée (registre, tribu, limitation) et ce qu'elle change. Une migration ajoute sans casser : la version précédente doit pouvoir tourner sur la base migrée, pour que le retour arrière reste possible. Si ce n'est pas le cas, l'écrire en tête de la sous-section : le retour arrière passera par l'instantané pris avant le déploiement (ADR 0016, point 2).
+   S'il y en a, ajouter à la fin de la section une sous-section `### Migrations` : une ligne par migration, avec la base touchée (registre, tribu, limitation) et ce qu'elle change. Le binaire refuse de démarrer sur une base dont la version de schéma dépasse la sienne (précisé le 2026-10-08, plan `recette`, D7) : après une version qui migre, le retour à la précédente restaure l'instantané pris avant le déploiement (ADR 0016, point 2) et perd ce qui a été écrit depuis. L'écrire en tête de la sous-section.
 4. **Vérifier les notes**, telles que la release les publiera :
 
    ```sh
@@ -116,7 +116,8 @@ cat > config.json <<EOF
   "alerts": {"to": "admin@example.org"}
 }
 EOF
-$bin admin seed -config config.json
+echo "essai@example.org Essai" > members
+$bin admin seed -config config.json -members members
 CREDENTIALS_DIRECTORY=$PWD/credentials $bin serve -config config.json
 ```
 
