@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-10-07
+- **Mise à jour** : 2026-10-08
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -30,17 +30,17 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | terminé |
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | terminé |
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
-| `recette` | Serveur, recette et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | brouillon, décisions à confirmer |
+| `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | prêt, suivant |
 
 ### `production` : application prête pour la production
 
 Ce qui manque au binaire, sans toucher au serveur : envoi SMTP réel et alerte sur échecs répétés (ADR 0014) ; alerte à l'administrateur sur les limites de demandes de code atteintes de façon répétée (ENF-01, `revue-securite`, D1) ; fichier de configuration et secrets en credentials systemd, écoute sur le socket transmis par systemd, logs en JSON (ADR 0015) ; lecture de `X-Forwarded-For` pour les seules requêtes venant de Caddy, avec le décompte des IPv6 par préfixe /64 (ADR 0006, point 7) ; refus de `-dev` avec l'écoute sur le socket de systemd ou une configuration SMTP, en-tête `To` et enveloppe construits par `net/mail` avec une règle de `ParseEmail` resserrée (`revue-securite`, constats 7 et 8); noms de fichiers du front avec empreinte, `release.yml`, `RELEASING.md` (ADR 0012), qui décrit aussi une version corrective préparée dans la PR du correctif (ADR 0022).
 
-### `recette` : serveur, recette et première release
+### `recette` : serveur, recette, ouverture de la production et première release
 
 `deploy/provision.sh`, unité systemd confinée, configuration de Caddy, script `tribe-menus-deploy` avec instantané et retour arrière (ADR 0015, 0016) ; DNS et e-mail (CAA, DNSSEC, SPF, DKIM, DMARC, boîtes `no-reply@` et `server@`, ADR 0007 et 0014) ; déploiement en recette et vérification sur téléphone : scénarios `@manuel`, connexion sous Safari (`socle`, D14), réception du code sur les messageries réelles ; ce que la revue de sécurité renvoie à Caddy et au serveur (`revue-securite`, constats 4, 6, 9 et 11 : HSTS, cookie `__Host-` ou recette hors du nom d'hôte de production, dossier de données en 0700 et `UMask=0077`, adresses de la tribu de recette) ; relecture de sécurité des scripts de déploiement dans leurs PR, puis contrôle du serveur en place ; ce que demande le traitement des vulnérabilités (`canal-prive`) : déploiement en production tenant dans une séance, recette ciblée sur une archive de PR, retour arrière fiable, mesure d'attente documentée, répétition d'un traitement accéléré sur un faux constat ; ce que le plan `production` lui remet (« Ce que ce plan ne prouve pas », « Ce que ce plan demande à `recette` ») : unité lancée avec `serve -config`, adresse du client en dernière position de `X-Forwarded-For`, relais par `msmtp` des alertes écrites dans le journal (enregistrements portant l'attribut `alert`, ADR 0023) et adresse de l'administrateur dans `alerts.to`, `deploy/` au complet dans l'archive, première release par une étiquette (contrôle de l'étiquette, notes de version et job `publish` de `release.yml`, que l'essai à blanc n'exerce pas).
 
-Le plan est écrit (2026-10-07) : quatre lots, deux PR de release (`v0.1.0`, puis `v0.1.1` pour la répétition du traitement accéléré), et les gestes du développeur regroupés en cinq séances, chacune avec sa check-list. Il vise une seule instance, `recette` : la production est créée à son ouverture.
+Le plan est prêt (décisions confirmées le 2026-10-08) : cinq lots (cookies `__Host-` et tribu de recette, provisionnement, déploiement et supervision, site public minimal, suites de la recette), deux PR de release (`v0.1.0`, puis `v0.1.1` pour la répétition du traitement accéléré), et les gestes du développeur regroupés en cinq séances, chacune avec sa check-list. **La production ouvre dans ce plan**, avec la seule tribu du développeur (`recette`, D1).
 
 ## Décisions d'ordonnancement
 
@@ -49,8 +49,8 @@ Le 2026-10-04, avec le développeur.
 - **Le déploiement passe avant le métier.** Il rend l'application utilisable ailleurs qu'en local et permet les vérifications renvoyées à la recette.
 - **Une revue de sécurité précède le déploiement**, pour ne pas livrer de vulnérabilité : `revue-securite` porte sur le code existant, `recette` relit ses propres scripts.
 - **Le traitement des vulnérabilités est fixé avant la revue de sécurité.** Le dépôt étant public, tout ce que les sessions Claude s'écrivent par les PR l'est aussi, vulnérabilités comprises. `canal-prive` a écarté l'idée d'un canal privé et retient une analyse de risques, qui choisit pour chaque vulnérabilité un traitement normal, accéléré ou urgent ; `revue-securite` rode la grille sur ses constats, avant qu'une version soit en ligne.
-- **Le premier déploiement vise la recette seule.** À la fin de `socle`, l'application ne fait que connecter un membre ; la production ouvre quand le planning existe.
-- **Le site public attend l'ouverture de la production** : mentions légales et page Confidentialité doivent être en ligne en même temps qu'elle, pas avant.
+- **Le premier déploiement vise la recette seule.** À la fin de `socle`, l'application ne fait que connecter un membre ; la production ouvre quand le planning existe. *Révisé le 2026-10-08 (`recette`, D1) : la production ouvre dans le plan `recette`, avec la seule tribu du développeur, pour se placer au plus tôt dans ses conditions ; c'est l'invitation de la famille qui attend le planning.*
+- **Le site public attend l'ouverture de la production** : mentions légales et page Confidentialité doivent être en ligne en même temps qu'elle, pas avant. *Toujours vrai au 2026-10-08 : les deux ouvrent ensemble, dans le plan `recette` (lot D).*
 
 ## Ensuite, sans ordre arrêté
 
@@ -60,7 +60,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 - **Métier** : bibliothèque de plats, planning des repas, listes de courses ; avec eux, les scénarios de compartimentage des données métier (ENF-02).
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
 - **Administration** : EF-09, EF-10, EF-11.
-- **Ouverture de la production** : site public dans `site/`, boîte `contact@codingmatters.org`, première release déployée en production.
+- **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
 - **Sauvegarde hors site** par Litestream (ADR 0007, point 3).
 
 ## Points reportés, à reprendre dans un plan
@@ -71,7 +71,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
 | Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | première story prouvée seulement dans le navigateur (C5 ou C7) |
 | Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |
-| Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant l'ouverture de la production |
+| Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant d'inviter un autre membre que le développeur (`recette`, D1) |
 | Cookie de session sans préfixe `__Host-`, recette sous-domaine de la production | `revue-securite`, constat 6 | `recette`, avant la première session réelle |
 | Tribu de démonstration en `@exemple.fr`, domaine que le projet ne contrôle pas | `revue-securite`, constat 9 | `recette` |
 | `webcheck` ne connaît pas toutes les échappatoires au rendu échappé | `revue-securite`, constat 10 | premier écran qui affiche un texte saisi par un membre (EF-01, EF-02 ou bibliothèque de plats) |
