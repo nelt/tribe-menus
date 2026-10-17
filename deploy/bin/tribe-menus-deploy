@@ -1,0 +1,726 @@
+#!/usr/bin/env bash
+# Installs a version of the application in an environment, with a snapshot of its
+# databases, and goes back to the previous version by itself when the new one does not
+# answer (ADR 0016; plan recette, D1, D6, D7). Installed by provision.sh.
+#
+#   sudo tribe-menus-deploy [--env production|recette] <version>
+#   sudo tribe-menus-deploy --env recette --pr <number>
+#   sudo tribe-menus-deploy [--env production|recette] --rollback [--restore-data]
+#   sudo tribe-menus-deploy [--env production|recette] --snapshot
+#   sudo tribe-menus-deploy [--env production|recette] --restore <snapshot>
+#
+# A version (vX.Y.Z) is the archive of the published release, read without a token. A pull
+# request is the archive the CI kept for its last commit, read with the GitHub token of the
+# server: in recette only, and only for a pull request of the owner of the repository, from
+# a branch of the repository itself.
+#
+# The script installs the application and its site (the site of the environment is a link
+# to the site of the current version), and nothing else: units, Caddy and the scripts of the
+# server change only through provision.sh (D6).
+#
+# Procedures: deploy/README.md.
+set -euo pipefail
+
+readonly REPOSITORY=nelt/tribe-menus
+readonly PLATFORM=linux-amd64
+readonly TOKEN_CREDENTIAL=/etc/tribe-menus/server/github-token.cred
+# Versions kept in releases/, with their snapshots (ADR 0016, point 1.7).
+readonly KEEP=5
+# Seconds given to a new version to answer /healthz: it answers once every database has
+# been migrated (ADR 0003).
+readonly HEALTH_WAIT=60
+
+readonly VERSION_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+$'
+readonly PR_PATTERN='^[1-9][0-9]{0,6}$'
+# Snapshots of backups/: before a deployment, or taken on demand.
+readonly SNAPSHOT_PATTERN='^(avant|manuel)-[A-Za-z0-9][A-Za-z0-9._-]*$'
+# Names of the databases in a data directory (internal/storage): the registry, the rate
+# limit database and one file per tribe, under a random name.
+readonly TRIBE_FILE_PATTERN='^tribes/[0-9a-f]{32}\.db$'
+
+die() {
+	printf 'tribe-menus-deploy: %s\n' "$*" >&2
+	exit 1
+}
+
+say() {
+	printf '%s\n' "$*"
+}
+
+usage() {
+	cat >&2 <<'EOF'
+Usage: tribe-menus-deploy [--env production|recette] <version>
+       tribe-menus-deploy --env recette --pr <number>
+       tribe-menus-deploy [--env production|recette] --rollback [--restore-data]
+       tribe-menus-deploy [--env production|recette] --snapshot
+       tribe-menus-deploy [--env production|recette] --restore <snapshot>
+EOF
+	exit 2
+}
+
+# SERVICE_USER runs the commands on the databases, which belong to it. Empty in the tests,
+# which run them as themselves.
+SERVICE_USER=
+
+as_service() {
+	if [[ -n $SERVICE_USER ]]; then
+		runuser -u "$SERVICE_USER" -- "$@"
+	else
+		"$@"
+	fi
+}
+
+# --- Archive ----------------------------------------------------------------------------
+
+# check_sum checks that the .sha256 file next to an archive names it and gives its SHA-256.
+# For a pull request, both come from the same artifact: it proves the transfer only.
+check_sum() {
+	local archive=$1 base=$2 line want got
+	line=$(<"$archive.sha256")
+	[[ $line =~ ^([0-9a-f]{64})\ \ (.+)$ ]] || die "SHA-256 file: unexpected content"
+	want=${BASH_REMATCH[1]}
+	[[ ${BASH_REMATCH[2]} == "$base.tar.gz" ]] || die "SHA-256 file: names another archive"
+	got=$(sha256sum -- "$archive" | cut -d' ' -f1)
+	[[ $got == "$want" ]] || die "SHA-256 of the archive does not match"
+}
+
+# check_archive refuses an archive with anything but files and directories under its top
+# directory base/: no absolute path, no .., no link, no device, no odd character.
+check_archive() {
+	local archive=$1 base=$2 names lines name line
+	local name_pattern="^$base(/[A-Za-z0-9._@+-]+)*/?\$"
+	names=$(tar -tzf "$archive") || die "archive unreadable"
+	while IFS= read -r name; do
+		[[ $name =~ $name_pattern ]] || die "archive: unexpected entry name"
+		[[ /$name/ != */../* && /$name/ != */./* ]] || die "archive: unexpected entry name"
+	done <<<"$names"
+	# The names are checked: no space, the type is the first character of each line.
+	lines=$(tar -tvzf "$archive") || die "archive unreadable"
+	while IFS= read -r line; do
+		[[ $line == -* || $line == d* ]] || die "archive: entry neither a file nor a directory"
+	done <<<"$lines"
+}
+
+# unpack extracts a checked archive into dir, which receives the content of base/.
+unpack() {
+	local archive=$1 base=$2 dir=$3
+	tar -xzf "$archive" -C "$dir" --no-same-owner --no-overwrite-dir --strip-components=1 -- "$base"
+	[[ -f $dir/tribe-menus && -x $dir/tribe-menus ]] || die "archive: no binary"
+	[[ -d $dir/site && -d $dir/deploy ]] || die "archive: no site/ or deploy/"
+}
+
+# --- Databases --------------------------------------------------------------------------
+
+# databases prints the databases of a data directory, relative to it: registry.db,
+# ratelimit.db, then the tribes. A file of another form in tribes/ stops the script.
+databases() {
+	local data=$1 file
+	if [[ -f $data/registry.db ]]; then
+		printf 'registry.db\n'
+	fi
+	if [[ -f $data/ratelimit.db ]]; then
+		printf 'ratelimit.db\n'
+	fi
+	if [[ -d $data/tribes ]]; then
+		for file in "$data"/tribes/*.db; do
+			[[ -e $file ]] || continue
+			file=tribes/${file##*/}
+			[[ $file =~ $TRIBE_FILE_PATTERN ]] || die "$data/$file: unexpected database name"
+			printf '%s\n' "$file"
+		done
+	fi
+	return 0
+}
+
+schema_version() {
+	as_service sqlite3 -readonly -bail "$1" 'PRAGMA user_version;'
+}
+
+# snapshot copies the registry and each tribe database into dir, by VACUUM INTO, with the
+# schema version of every database in dir/schema. The rate limit database is not copied:
+# losing it resets counters and decoy codes, nothing else (ADR 0021, point 6); its version
+# is kept, to know whether a rollback must set it aside.
+snapshot() {
+	local data=$1 dir=$2 list db version schema=""
+	list=$(databases "$data")
+	as_service mkdir -p -- "$dir/tribes"
+	while IFS= read -r db; do
+		[[ -n $db ]] || continue
+		version=$(schema_version "$data/$db")
+		schema+="$db $version"$'\n'
+		if [[ $db != ratelimit.db ]]; then
+			as_service sqlite3 -readonly -bail "$data/$db" "VACUUM INTO '$dir/$db';"
+		fi
+	done <<<"$list"
+	printf '%s' "$schema" | as_service tee -- "$dir/schema" >/dev/null
+	date --iso-8601=seconds | as_service tee -- "$dir/taken" >/dev/null
+}
+
+# recorded prints the version recorded in a snapshot for a database, or for any tribe when
+# the database is a tribe that the snapshot does not have; nothing if unknown.
+recorded() {
+	local dir=$1 db=$2 file version
+	while read -r file version; do
+		if [[ $file == "$db" ]]; then
+			printf '%s' "$version"
+			return
+		fi
+	done <"$dir/schema"
+	if [[ $db == tribes/* ]]; then
+		while read -r file version; do
+			if [[ $file == tribes/* ]]; then
+				printf '%s' "$version"
+				return
+			fi
+		done <"$dir/schema"
+	fi
+}
+
+# schema_changed succeeds when the schema of the registry or of a tribe changed since the
+# snapshot was taken: the previous version would refuse these databases (plan recette, D7).
+# It prints why.
+schema_changed() {
+	local data=$1 dir=$2 list db want got changed=1
+	list=$(databases "$data")
+	while IFS= read -r db; do
+		[[ -n $db && $db != ratelimit.db ]] || continue
+		want=$(recorded "$dir" "$db")
+		got=$(schema_version "$data/$db")
+		if [[ -z $want ]]; then
+			say "  $db: created since the snapshot, schema of the previous version unknown"
+			changed=0
+		elif [[ $got != "$want" ]]; then
+			say "  $db: schema version $got, $want in the snapshot"
+			changed=0
+		fi
+	done <<<"$list"
+	return "$changed"
+}
+
+# ratelimit_changed succeeds when the schema of the rate limit database changed since the
+# snapshot.
+ratelimit_changed() {
+	local data=$1 dir=$2 want got
+	[[ -f $data/ratelimit.db ]] || return 1
+	want=$(recorded "$dir" ratelimit.db)
+	got=$(schema_version "$data/ratelimit.db")
+	[[ $got != "$want" ]]
+}
+
+# set_aside moves a database and its WAL files from data into aside, keeping its path.
+set_aside() {
+	local data=$1 aside=$2 db=$3 suffix
+	as_service mkdir -p -- "$aside/tribes"
+	for suffix in "" -wal -shm; do
+		if [[ -e $data/$db$suffix ]]; then
+			as_service mv -- "$data/$db$suffix" "$aside/$db$suffix"
+		fi
+	done
+}
+
+# drop_ratelimit sets the rate limit database aside when its schema changed since the
+# snapshot: the previous version would refuse it, and losing it is harmless.
+drop_ratelimit() {
+	local data=$1 dir=$2 aside=$3
+	if ratelimit_changed "$data" "$dir"; then
+		set_aside "$data" "$aside" ratelimit.db
+		say "Rate limit database set aside (schema changed): counters and decoy codes reset."
+	fi
+}
+
+# restore puts the databases of the snapshot back, the service being stopped. What the
+# data directory had is moved into aside, never deleted: tribes created since the snapshot
+# included.
+restore() {
+	local data=$1 dir=$2 aside=$3 list db
+	list=$(databases "$data")
+	while IFS= read -r db; do
+		[[ -n $db && $db != ratelimit.db ]] || continue
+		set_aside "$data" "$aside" "$db"
+		if [[ ! -f $dir/$db ]]; then
+			say "  $db: created since the snapshot, set aside"
+		fi
+	done <<<"$list"
+	while read -r db _; do
+		[[ -n $db && $db != ratelimit.db ]] || continue
+		as_service cp -- "$dir/$db" "$data/$db"
+		as_service chmod 0600 -- "$data/$db"
+	done <"$dir/schema"
+	drop_ratelimit "$data" "$dir" "$aside"
+}
+
+# --- Service ----------------------------------------------------------------------------
+
+# Paths of the environment, set by setup.
+ENV='' RELEASES='' CURRENT='' PREVIOUS='' DATA='' BACKUPS='' SOCKET=''
+
+setup() {
+	ENV=$1
+	SERVICE_USER=tribe-menus-$ENV
+	RELEASES=/opt/tribe-menus/$ENV/releases
+	CURRENT=/opt/tribe-menus/$ENV/current
+	PREVIOUS=/opt/tribe-menus/$ENV/previous
+	DATA=/var/lib/tribe-menus/$ENV
+	BACKUPS=$DATA/backups
+	SOCKET=/run/tribe-menus/$ENV.sock
+	[[ $(id -u) == 0 ]] || die "run as root: sudo tribe-menus-deploy"
+	if [[ ! -d $RELEASES || ! -d $DATA ]] || ! id -u -- "$SERVICE_USER" >/dev/null 2>&1; then
+		die "$ENV is not provisioned: run provision.sh"
+	fi
+	[[ -f /etc/tribe-menus/$ENV/config.json ]] || die "/etc/tribe-menus/$ENV/config.json missing: run provision.sh"
+	[[ -s /etc/tribe-menus/$ENV/smtp-password.cred ]] ||
+		die "SMTP password of $ENV missing: sudo tribe-menus-credential $ENV smtp-password"
+	# One deployment at a time on the server.
+	exec 9>/run/lock/tribe-menus-deploy.lock
+	flock -n 9 || die "another deployment is running"
+	umask 077
+	cd /
+}
+
+unit() {
+	printf 'tribe-menus@%s.%s' "$ENV" "$1"
+}
+
+# in_maintenance succeeds when tribe-menus-maintenance put the environment on hold.
+in_maintenance() {
+	[[ $(systemctl is-enabled "$(unit socket)" 2>/dev/null || true) == masked ]]
+}
+
+# The hold is lifted for a deployment, and put back if it fails: the version left in
+# service is the previous one, which the hold was protecting.
+HOLD=0
+
+lift_hold() {
+	if in_maintenance; then
+		HOLD=1
+		systemctl unmask --quiet "$(unit socket)" "$(unit service)"
+		say "The environment was on hold: lifted for the deployment."
+	fi
+}
+
+put_hold_back() {
+	if ((HOLD)); then
+		systemctl stop "$(unit socket)" "$(unit service)"
+		systemctl mask --quiet "$(unit socket)" "$(unit service)"
+		say "Hold put back: the waiting page is served."
+	fi
+}
+
+# name_of prints the name of the release a link points to, or nothing.
+name_of() {
+	local target
+	target=$(readlink -- "$1" 2>/dev/null) || return 0
+	printf '%s' "${target##*/}"
+}
+
+# point makes a link point to a release, atomically.
+point() {
+	local link=$1 name=$2
+	ln -sfn -- "releases/$name" "$link.new"
+	mv -fT -- "$link.new" "$link"
+}
+
+healthy() {
+	local i
+	for ((i = 0; i < HEALTH_WAIT; i++)); do
+		if [[ $(curl --silent --max-time 5 --unix-socket "$SOCKET" http://localhost/healthz 2>/dev/null) == ok ]]; then
+			return 0
+		fi
+		sleep 1
+	done
+	return 1
+}
+
+start() {
+	systemctl reset-failed --quiet "$(unit socket)" "$(unit service)" 2>/dev/null || true
+	systemctl enable --quiet "$(unit socket)"
+	systemctl start "$(unit socket)"
+	systemctl restart "$(unit service)"
+}
+
+stop() {
+	systemctl stop "$(unit socket)" "$(unit service)"
+}
+
+journal() {
+	say "Last lines of the journal of $(unit service):"
+	journalctl --unit "$(unit service)" --lines 15 --no-pager --output cat | sed 's/^/  /' || true
+}
+
+# prune keeps the KEEP most recent releases, the current and previous ones always, their
+# snapshots, and the KEEP last sets of databases put aside.
+prune() {
+	local keep=" " kept=0 name dir n aside=()
+	for name in "$(name_of "$CURRENT")" "$(name_of "$PREVIOUS")"; do
+		if [[ -n $name && $keep != *" $name "* ]]; then
+			keep+="$name "
+			kept=$((kept + 1))
+		fi
+	done
+	while IFS= read -r name; do
+		if ((kept < KEEP)) && [[ $keep != *" $name "* ]]; then
+			keep+="$name "
+			kept=$((kept + 1))
+		fi
+	done < <(ls -1t -- "$RELEASES")
+	for dir in "$RELEASES"/*; do
+		if [[ -d $dir && $keep != *" ${dir##*/} "* ]]; then
+			rm -rf -- "$dir"
+		fi
+	done
+	for dir in "$BACKUPS"/avant-*; do
+		if [[ -d $dir && $keep != *" ${dir##*/avant-} "* ]]; then
+			rm -rf -- "$dir"
+		fi
+	done
+	# Their names are dates: the last ones sort last.
+	for dir in "$BACKUPS"/remplacees-*; do
+		if [[ -d $dir ]]; then
+			aside+=("$dir")
+		fi
+	done
+	for ((n = 0; n < ${#aside[@]} - KEEP; n++)); do
+		rm -rf -- "${aside[n]}"
+	done
+}
+
+# --- Sources ----------------------------------------------------------------------------
+
+curl_get() {
+	curl --fail --silent --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 \
+		--connect-timeout 20 --max-time 600 "$@"
+}
+
+# auth_header prints the header of the GitHub token, decrypted from its credential. It goes
+# to curl through a pipe: never in a command line, the environment or a file in clear.
+auth_header() {
+	printf 'Authorization: Bearer '
+	systemd-creds decrypt --name=github-token "$TOKEN_CREDENTIAL" -
+	printf '\n'
+}
+
+github() {
+	curl_get -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+		-H @<(auth_header) "https://api.github.com/repos/$REPOSITORY/$1"
+}
+
+# fetch_release downloads the archive of a published release and its SHA-256 into dir.
+fetch_release() {
+	local version=$1 dir=$2 base=tribe-menus-$1-$PLATFORM
+	local url=https://github.com/$REPOSITORY/releases/download/$version
+	say "Downloading release $version"
+	curl_get --location -o "$dir/$base.tar.gz" "$url/$base.tar.gz" || die "release $version not found"
+	curl_get --location -o "$dir/$base.tar.gz.sha256" "$url/$base.tar.gz.sha256" || die "SHA-256 of $version not found"
+}
+
+# HEAD_SHA is the last commit of the pull request, set by fetch_pr.
+HEAD_SHA=
+
+# fetch_pr downloads the archive the CI kept for the last commit of a pull request of the
+# owner of the repository, and its SHA-256, into dir (ADR 0016, point 6).
+fetch_pr() {
+	local number=$1 dir=$2 name=tribe-menus-pr-$1 pr artifact run id location
+	[[ -s $TOKEN_CREDENTIAL ]] || die "GitHub token missing: sudo tribe-menus-credential server github-token"
+	say "Reading pull request #$number"
+	pr=$(github "pulls/$number") || die "pull request #$number not found"
+	jq -e --arg repo "$REPOSITORY" '.state == "open"
+		and .user.login == .base.repo.owner.login
+		and .head.repo.full_name == $repo
+		and .base.repo.full_name == $repo' <<<"$pr" >/dev/null ||
+		die "pull request #$number refused: it must be open, by the owner of the repository, from one of its branches"
+	HEAD_SHA=$(jq -r '.head.sha' <<<"$pr")
+	[[ $HEAD_SHA =~ ^[0-9a-f]{40}$ ]] || die "pull request #$number: unexpected commit"
+
+	artifact=$(github "actions/artifacts?name=$name&per_page=100" | jq -c --arg name "$name" --arg sha "$HEAD_SHA" '
+		[.artifacts[] | select(.name == $name and .expired == false
+			and .workflow_run.head_sha == $sha
+			and .workflow_run.head_repository_id == .workflow_run.repository_id)][0] // empty') ||
+		die "pull request #$number: artifacts unreadable"
+	[[ -n $artifact ]] || die "pull request #$number: no archive for its last commit ${HEAD_SHA:0:12} (CI not finished, failed, or archive expired)"
+	id=$(jq -r '.id' <<<"$artifact")
+	run=$(jq -r '.workflow_run.id' <<<"$artifact")
+	[[ $id =~ ^[0-9]+$ && $run =~ ^[0-9]+$ ]] || die "pull request #$number: unexpected artifact"
+	github "actions/runs/$run" | jq -e --arg repo "$REPOSITORY" --arg sha "$HEAD_SHA" '
+		.event == "pull_request" and .path == ".github/workflows/ci.yml"
+		and .conclusion == "success" and .head_sha == $sha
+		and .head_repository.full_name == $repo' >/dev/null ||
+		die "pull request #$number: the archive does not come from a successful ci.yml run of its last commit"
+
+	say "Downloading the archive of commit ${HEAD_SHA:0:12}"
+	# The download address is a redirection to a signed URL, followed without the token.
+	location=$(curl_get -H @<(auth_header) -o /dev/null -w '%{redirect_url}' \
+		"https://api.github.com/repos/$REPOSITORY/actions/artifacts/$id/zip") || die "archive not downloadable"
+	[[ $location == https://* ]] || die "archive not downloadable"
+	curl_get -o "$dir/artifact.zip" "$location" || die "archive not downloadable"
+	[[ $(unzip -Z1 "$dir/artifact.zip" | LC_ALL=C sort) == "$(printf '%s\n' "$name-$PLATFORM.tar.gz" "$name-$PLATFORM.tar.gz.sha256")" ]] ||
+		die "artifact: unexpected content"
+	unzip -p "$dir/artifact.zip" "$name-$PLATFORM.tar.gz" >"$dir/$name-$PLATFORM.tar.gz"
+	unzip -p "$dir/artifact.zip" "$name-$PLATFORM.tar.gz.sha256" >"$dir/$name-$PLATFORM.tar.gz.sha256"
+}
+
+# --- Commands ---------------------------------------------------------------------------
+
+# go_back puts the previous release back after a failed deployment of name, restoring the
+# snapshot taken just before if the schema changed: the new version never answered, so no
+# request was served by it (D7).
+go_back() {
+	local name=$1 old=$2 snap=$BACKUPS/avant-$1 aside
+	aside=$BACKUPS/remplacees-$(date +%Y%m%dT%H%M%S)
+	stop
+	if [[ -z $old ]]; then
+		rm -f -- "$CURRENT"
+		put_hold_back
+		say "No previous version: the service stays stopped, the waiting page is served."
+		return
+	fi
+	point "$CURRENT" "$old"
+	if schema_changed "$DATA" "$snap"; then
+		say "Restoring the snapshot taken before $name (nothing served by $name is lost)."
+		restore "$DATA" "$snap" "$aside"
+	else
+		drop_ratelimit "$DATA" "$snap" "$aside"
+	fi
+	if ((HOLD)); then
+		put_hold_back
+		say "Back to $old, on hold."
+		return
+	fi
+	start
+	if healthy; then
+		say "Back to $old, which answers."
+	else
+		say "Back to $old, which does not answer either."
+		journal
+	fi
+}
+
+# Downloads, and the release being unpacked, removed at exit.
+TMP='' STAGING=''
+
+cleanup() {
+	rm -rf -- "${TMP:-}" "${STAGING:-}"
+}
+
+deploy() {
+	local source=$1 base version name old line
+	trap cleanup EXIT
+	TMP=$(mktemp -d /var/tmp/tribe-menus-deploy.XXXXXX)
+	version=$source
+	case $source in
+	pr-*)
+		fetch_pr "${source#pr-}" "$TMP"
+		name=$source-${HEAD_SHA:0:12}
+		;;
+	*)
+		fetch_release "$source" "$TMP"
+		name=$source
+		;;
+	esac
+	base=tribe-menus-$version-$PLATFORM
+	check_sum "$TMP/$base.tar.gz" "$base"
+	check_archive "$TMP/$base.tar.gz" "$base"
+
+	old=$(name_of "$CURRENT")
+	if [[ $name == "$old" ]]; then
+		say "$name is already the version of $ENV."
+		if in_maintenance; then
+			say "The environment is on hold: sudo tribe-menus-maintenance $ENV off"
+		fi
+		return
+	fi
+	# Unpacked next to the releases, readable by the user of the service, which runs it.
+	STAGING=$(mktemp -d "$RELEASES/.new.XXXXXX")
+	chmod 0755 -- "$STAGING"
+	unpack "$TMP/$base.tar.gz" "$base" "$STAGING"
+	chmod -R u=rwX,go=rX -- "$STAGING"
+	line=$(runuser -u "$SERVICE_USER" -- "$STAGING/tribe-menus" version) || die "the binary does not run"
+	[[ $line == "tribe-menus $version ("* ]] || die "the binary is not version $version"
+	say "Installing $line in $ENV, as $name"
+	rm -rf -- "${RELEASES:?}/$name"
+	mv -T -- "$STAGING" "$RELEASES/$name"
+	STAGING=
+	touch -- "$RELEASES/$name"
+
+	lift_hold
+	as_service mkdir -p -- "$BACKUPS"
+	as_service rm -rf -- "$BACKUPS/avant-$name"
+	say "Snapshot of the databases: $BACKUPS/avant-$name"
+	snapshot "$DATA" "$BACKUPS/avant-$name"
+
+	point "$CURRENT" "$name"
+	start
+	if ! healthy; then
+		say "$name does not answer /healthz."
+		journal
+		go_back "$name" "$old"
+		logger -t tribe-menus-deploy "$ENV: $name failed, back to ${old:-nothing}"
+		die "deployment of $name failed"
+	fi
+	if [[ -n $old ]]; then
+		point "$PREVIOUS" "$old"
+	fi
+	prune
+	logger -t tribe-menus-deploy "$ENV: $name deployed, previous ${old:-none}"
+	say "$name is in service in $ENV (previous: ${old:-none})."
+	if ((HOLD)); then
+		say "The hold is lifted."
+	fi
+}
+
+rollback() {
+	local restore_data=$1 current previous snap aside changed=1
+	current=$(name_of "$CURRENT")
+	previous=$(name_of "$PREVIOUS")
+	[[ -n $current ]] || die "no version in service in $ENV"
+	[[ -n $previous && -x $RELEASES/$previous/tribe-menus ]] ||
+		die "no previous version to go back to (one rollback only: deploy the version wanted)"
+	snap=$BACKUPS/avant-$current
+	say "Going back from $current to $previous in $ENV"
+	if [[ -f $snap/schema ]]; then
+		if schema_changed "$DATA" "$snap"; then
+			changed=0
+		fi
+	else
+		say "  no snapshot taken before $current"
+		changed=0
+	fi
+	if ((changed == 0)); then
+		[[ -f $snap/schema ]] || die "the schema may have changed and there is no snapshot to restore"
+		if ((!restore_data)); then
+			say "The schema changed since $current was deployed: $previous would refuse the databases."
+			say "With --restore-data, the snapshot taken on $(<"$snap/taken") is restored: everything written"
+			say "since is lost (set aside in $BACKUPS/, not deleted)."
+			die "nothing done"
+		fi
+	elif ((restore_data)); then
+		say "No migration since the snapshot: the data are kept, --restore-data ignored."
+	fi
+
+	lift_hold
+	stop
+	point "$CURRENT" "$previous"
+	aside=$BACKUPS/remplacees-$(date +%Y%m%dT%H%M%S)
+	if ((changed == 0)); then
+		say "Restoring the snapshot taken on $(<"$snap/taken")."
+		restore "$DATA" "$snap" "$aside"
+	elif [[ -f $snap/schema ]]; then
+		drop_ratelimit "$DATA" "$snap" "$aside"
+	fi
+	rm -f -- "$PREVIOUS"
+	start
+	if ! healthy; then
+		journal
+		logger -t tribe-menus-deploy "$ENV: rollback to $previous does not answer"
+		die "$previous does not answer /healthz"
+	fi
+	logger -t tribe-menus-deploy "$ENV: rolled back from $current to $previous"
+	say "$previous is in service in $ENV. To return to $current, deploy it again."
+}
+
+# take_snapshot takes a snapshot on demand, the version in service running: to copy off
+# the server before rebuilding it (deploy/README.md).
+take_snapshot() {
+	local dir
+	[[ -n $(name_of "$CURRENT") ]] || die "no version in service in $ENV"
+	dir=$BACKUPS/manuel-$(date +%Y%m%dT%H%M%S)
+	as_service mkdir -p -- "$BACKUPS"
+	snapshot "$DATA" "$dir"
+	logger -t tribe-menus-deploy "$ENV: snapshot $dir"
+	say "Snapshot taken: $dir"
+}
+
+# restore_snapshot puts a snapshot of backups/ back, under the version in service, which
+# must know its schema. What the data directory had is set aside, not deleted.
+restore_snapshot() {
+	local name=$1 dir=$BACKUPS/$1 current aside
+	current=$(name_of "$CURRENT")
+	[[ -n $current ]] || die "no version in service in $ENV: deploy one first"
+	[[ -f $dir/schema && -f $dir/registry.db ]] || die "$dir: not a snapshot"
+	# A snapshot copied from another server belongs to root: it goes to the service.
+	chown -R -- "$SERVICE_USER:$SERVICE_USER" "$dir"
+	chmod -R u=rwX,go= -- "$dir"
+	aside=$BACKUPS/remplacees-$(date +%Y%m%dT%H%M%S)
+	say "Restoring $name in $ENV, under $current: what the databases have now is set aside in $aside."
+	lift_hold
+	stop
+	restore "$DATA" "$dir" "$aside"
+	start
+	if ! healthy; then
+		journal
+		put_hold_back
+		logger -t tribe-menus-deploy "$ENV: restore of $name does not answer"
+		die "$current does not answer /healthz with the restored databases: the snapshot may be newer than it"
+	fi
+	logger -t tribe-menus-deploy "$ENV: $name restored, set aside in $aside"
+	say "$name restored in $ENV."
+}
+
+main() {
+	local env=production source="" rollback=0 restore_data=0 action=""
+	while (($#)); do
+		case $1 in
+		--env)
+			(($# >= 2)) || usage
+			env=$2
+			shift 2
+			;;
+		--pr)
+			[[ $# -ge 2 && -z $source && $2 =~ $PR_PATTERN ]] || usage
+			source=pr-$2
+			shift 2
+			;;
+		--rollback)
+			rollback=1
+			shift
+			;;
+		--snapshot)
+			[[ -z $action ]] || usage
+			action=snapshot
+			shift
+			;;
+		--restore)
+			[[ $# -ge 2 && -z $action && $2 =~ $SNAPSHOT_PATTERN ]] || usage
+			action=restore source=$2
+			shift 2
+			;;
+		--restore-data)
+			restore_data=1
+			shift
+			;;
+		v*)
+			[[ -z $source && $1 =~ $VERSION_PATTERN ]] || usage
+			source=$1
+			shift
+			;;
+		*) usage ;;
+		esac
+	done
+	[[ $env == production || $env == recette ]] || usage
+	if [[ -n $action ]]; then
+		[[ $rollback == 0 && $restore_data == 0 ]] || usage
+		[[ $action == restore || -z $source ]] || usage
+	elif ((rollback)); then
+		[[ -z $source ]] || usage
+	else
+		[[ -n $source && $restore_data == 0 ]] || usage
+	fi
+	# Only published releases go to production (ADR 0016, point 4).
+	if [[ $env == production && $source == pr-* ]]; then
+		die "a pull request is deployed in recette only: --env recette"
+	fi
+	setup "$env"
+	if [[ $action == snapshot ]]; then
+		take_snapshot
+	elif [[ $action == restore ]]; then
+		restore_snapshot "$source"
+	elif ((rollback)); then
+		rollback "$restore_data"
+	else
+		deploy "$source"
+	fi
+}
+
+# Sourced by the tests, which call the functions on their own directories.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+	main "$@"
+fi
