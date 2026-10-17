@@ -32,7 +32,7 @@ Chaque version déployée doit pouvoir être rattachée à un commit précis et 
    6. le déploiement est une action distincte (ADR 0016) : publier une version ne la déploie pas, et revenir en arrière consiste à redéployer une version antérieure.
 6. **Garde-fous** :
    - une règle GitHub protège les étiquettes `v*` : seul le propriétaire du dépôt peut les créer, et elles ne peuvent être ni déplacées ni supprimées ;
-   - les migrations de base (appliquées au démarrage, ADR 0003) sont signalées dans les notes de version ; d'une version à la suivante, elles ajoutent sans casser, pour qu'un retour à la version précédente reste possible.
+   - les migrations de base (appliquées au démarrage, ADR 0003) sont signalées dans les notes de version ; d'une version à la suivante, elles ajoutent sans casser, pour qu'un retour à la version précédente reste possible. *Précisé le 2026-10-08 (plan `recette`, D7) : le binaire refuse de démarrer sur une base dont la version de schéma dépasse la sienne, pour ne jamais faire tourner un code ancien sur des tables qu'il ne connaît pas. La version précédente ne tourne donc pas sur une base migrée : revenir sur une version qui a migré restaure l'instantané pris avant son déploiement (ADR 0016, point 2), automatiquement quand elle n'a jamais répondu à `/healthz`, sur demande explicite ensuite, ce qui perd les écritures faites depuis. Une migration n'en doit pas moins garder les données existantes.*
 
 ## Alternatives envisagées
 
