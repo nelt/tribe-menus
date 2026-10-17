@@ -72,8 +72,6 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | première story prouvée seulement dans le navigateur (C5 ou C7) |
 | Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |
 | Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant d'inviter un autre membre que le développeur (`recette`, D1) |
-| Cookie de session sans préfixe `__Host-`, recette sous-domaine de la production | `revue-securite`, constat 6 | `recette`, avant la première session réelle |
-| Tribu de démonstration en `@exemple.fr`, domaine que le projet ne contrôle pas | `revue-securite`, constat 9 | `recette` |
 | `webcheck` ne connaît pas toutes les échappatoires au rendu échappé | `revue-securite`, constat 10 | premier écran qui affiche un texte saisi par un membre (EF-01, EF-02 ou bibliothèque de plats) |
 | Ce qui revient à Caddy : HSTS, en-têtes du site public, `Host` transmis tel quel, `/healthz` non transmis, délais et taille des requêtes, journaux d'accès | `revue-securite`, constat 11 | `recette` |
 | Dossier de données en 0700 et `UMask=0077` dans l'unité systemd | `revue-securite`, constat 4 | `recette` |

@@ -73,7 +73,8 @@ const usage = `Usage: tribe-menus <command> [flags]
 Commands:
   serve        run the HTTP server: -config <file> (server mode) or -dev (development mode)
   admin init   create a tribe, interactively (EF-08)
-  admin seed   create the demonstration tribe "demo", if missing
+  admin seed   create the demonstration tribe "demo", if missing; -members <file> gives its
+               members, one per line, address then display name (required with -config)
   version      print the version
 `
 
@@ -119,6 +120,10 @@ func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stder
 	configPath := flags.String("config", "", "the config file of the server mode, for its data and baseURL keys")
 	data := flags.String("data", "data", "directory of the databases, without -config")
 	baseURL := flags.String("base-url", "http://localhost:8080", "address of the instance, to show the URL of the tribe, without -config")
+	var members *string
+	if args[0] == "seed" {
+		members = flags.String("members", "", "file of the members of the demonstration tribe, one per line: address, then display name; required with -config")
+	}
 	if err := flags.Parse(args[1:]); err != nil {
 		return 2
 	}
@@ -141,11 +146,25 @@ func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stder
 			return 2
 		}
 		*data, *baseURL = cfg.Data, cfg.BaseURL
+		// An instance in server mode sends real emails: the demonstration tribe takes its
+		// addresses from a file of the server, never the @exemple.fr ones (plan recette, D3).
+		if members != nil && *members == "" {
+			fmt.Fprintf(stderr, "tribe-menus admin %s: -members is required with -config\n", args[0])
+			return 2
+		}
 	}
 
+	var seedMembers []admin.SeedMember
+	if members != nil && *members != "" {
+		var err error
+		if seedMembers, err = readMembers(*members); err != nil {
+			fmt.Fprintf(stderr, "tribe-menus admin %s: %v\n", args[0], err)
+			return 1
+		}
+	}
 	err := withAdminCommand(ctx, *data, *baseURL, stdin, stdout, func(cmd *admin.Command) error {
 		if args[0] == "seed" {
-			return cmd.Seed(ctx)
+			return cmd.Seed(ctx, seedMembers)
 		}
 		return cmd.Init(ctx)
 	})
@@ -154,6 +173,20 @@ func runAdmin(ctx context.Context, args []string, stdin io.Reader, stdout, stder
 		return 1
 	}
 	return 0
+}
+
+// readMembers reads the members file of admin seed.
+func readMembers(path string) (members []admin.SeedMember, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close members file: %w", closeErr)
+		}
+	}()
+	return admin.ParseMembers(f)
 }
 
 // withAdminCommand runs do with an admin command on the databases of the data directory.

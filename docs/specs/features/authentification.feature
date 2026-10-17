@@ -244,7 +244,18 @@ Fonctionnalité: Connexion et session persistante
   Scénario: Le cookie de session n'est pas lisible par le code de la page
     Étant donné je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
     Alors le cookie de session est marqué HttpOnly, Secure et SameSite=Lax
+    Et le cookie de session porte le préfixe __Host-, sans attribut Domain, avec Path=/
     Et le jeton de session n'est pas stocké en clair côté serveur
+
+  @ENF-01
+  Scénario: Deux tribus ouvertes dans le même navigateur gardent chacune leur session
+    Étant donné la tribu "Les Durand" d'identifiant "durand"
+    Et "alice@exemple.fr" est membre actif de la tribu "durand"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr" dans mon navigateur
+    Et je suis connecté à la tribu "durand" en tant que "alice@exemple.fr" dans mon navigateur
+    Quand je me déconnecte de la tribu "durand"
+    Alors je ne suis plus connecté à la tribu "durand"
+    Et je suis toujours connecté à la tribu "martin"
 
   @ENF-01
   Scénario: Consultation hors ligne

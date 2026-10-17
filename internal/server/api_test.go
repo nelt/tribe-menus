@@ -81,7 +81,7 @@ func (f *apiFixture) signIn(t *testing.T, slug, email string) *http.Cookie {
 	if rec.Code != http.StatusAccepted {
 		t.Fatalf("login-codes: status %d", rec.Code)
 	}
-	request := cookieOf(t, rec, codeRequestCookie)
+	request := cookieOf(t, rec, cookieName(codeRequestCookie, slug))
 	f.outbox.Wait()
 	msgs := f.recorder.Messages()
 	code := eightDigits.FindString(msgs[len(msgs)-1].Body)
@@ -89,15 +89,15 @@ func (f *apiFixture) signIn(t *testing.T, slug, email string) *http.Cookie {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("sessions: status %d, body %s", rec.Code, rec.Body)
 	}
-	if cleared := cookieOf(t, rec, codeRequestCookie); cleared.MaxAge >= 0 {
+	if cleared := cookieOf(t, rec, cookieName(codeRequestCookie, slug)); cleared.MaxAge >= 0 {
 		t.Errorf("cookie of the code request after sign in = %+v, want it deleted", cleared)
 	}
-	return sessionCookieOf(t, rec)
+	return sessionCookieOf(t, rec, slug)
 }
 
-func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
+func sessionCookieOf(t *testing.T, rec *httptest.ResponseRecorder, slug string) *http.Cookie {
 	t.Helper()
-	return cookieOf(t, rec, sessionCookie)
+	return cookieOf(t, rec, cookieName(sessionCookie, slug))
 }
 
 func cookieOf(t *testing.T, rec *httptest.ResponseRecorder, name string) *http.Cookie {
@@ -111,17 +111,49 @@ func cookieOf(t *testing.T, rec *httptest.ResponseRecorder, name string) *http.C
 	return nil
 }
 
+// TestCookieNames: a name per tribe, prefixed __Host-, valid and of the same length for any
+// slug, in the format or not (ADR 0024).
+func TestCookieNames(t *testing.T) {
+	if got, want := cookieName(sessionCookie, "martin"), "__Host-session-b6f8d434a847fb0f"; got != want {
+		t.Errorf("cookieName(session, martin) = %q, want %q", got, want)
+	}
+	pattern := regexp.MustCompile(`^__Host-(session|code-request)-[0-9a-f]{16}$`)
+	seen := map[string]string{}
+	for _, slug := range []string{"martin", "durand", "", "Martin", "les martin", "é", "a/b", "a;b=c", strings.Repeat("x", 5000)} {
+		for _, kind := range []string{sessionCookie, codeRequestCookie} {
+			name := cookieName(kind, slug)
+			if !pattern.MatchString(name) {
+				t.Errorf("cookieName(%s, %q) = %q", kind, slug, name)
+			}
+			if err := (&http.Cookie{Name: name, Value: "v"}).Valid(); err != nil {
+				t.Errorf("cookieName(%s, %q): %v", kind, slug, err)
+			}
+			if other, ok := seen[name]; ok {
+				t.Errorf("cookieName(%s, %q) = cookieName of %q", kind, slug, other)
+			}
+			seen[name] = slug
+		}
+	}
+}
+
 // TestCodeRequestCookie: the code request sets a cookie of the tribe, valid as long as the
 // code, without which an attempt consumes nothing (D5).
 func TestCodeRequestCookie(t *testing.T) {
 	f := newAPIFixture(t)
 	rec := f.do("POST", "/tribes/martin/api/login-codes", `{"email":"alice@exemple.fr"}`)
-	request := cookieOf(t, rec, codeRequestCookie)
+	request := cookieOf(t, rec, cookieName(codeRequestCookie, "martin"))
 	if !request.HttpOnly || !request.Secure || request.SameSite != http.SameSiteLaxMode ||
-		request.Path != "/tribes/martin/" || request.MaxAge != 600 || len(request.Value) != 43 {
+		request.Path != "/" || request.Domain != "" || request.MaxAge != 600 || len(request.Value) != 43 {
 		t.Errorf("cookie = %+v", request)
 	}
-	for _, cookies := range [][]*http.Cookie{nil, {{Name: codeRequestCookie, Value: "forged"}}} {
+	// Without the cookie, with a forged one, under the former name, or under the name of
+	// another tribe, an attempt consumes nothing.
+	for _, cookies := range [][]*http.Cookie{
+		nil,
+		{{Name: request.Name, Value: "forged"}},
+		{{Name: "code_request", Value: request.Value}},
+		{{Name: cookieName(codeRequestCookie, "durand"), Value: request.Value}},
+	} {
 		for range 3 {
 			rec := f.do("POST", "/tribes/martin/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`, cookies...)
 			if rec.Code != http.StatusBadRequest || strings.TrimSpace(rec.Body.String()) != `{"error":"new_code_needed"}` {
@@ -140,7 +172,7 @@ func TestSignInAndOut(t *testing.T) {
 	cookie := f.signIn(t, "martin", "alice@exemple.fr")
 
 	if !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode ||
-		cookie.Path != "/tribes/martin/" || cookie.MaxAge != 90*24*60*60 || len(cookie.Value) < 40 {
+		cookie.Path != "/" || cookie.Domain != "" || cookie.MaxAge != 90*24*60*60 || len(cookie.Value) < 40 {
 		t.Errorf("cookie = %+v", cookie)
 	}
 
@@ -152,16 +184,27 @@ func TestSignInAndOut(t *testing.T) {
 	if got.Tribe.Name != "Les Martin" || got.Member.Email != "alice@exemple.fr" {
 		t.Errorf("GET session = %+v", got)
 	}
-	if renewed := sessionCookieOf(t, rec); renewed.Value != cookie.Value || renewed.MaxAge != cookie.MaxAge {
+	if renewed := sessionCookieOf(t, rec, "martin"); renewed.Value != cookie.Value || renewed.MaxAge != cookie.MaxAge {
 		t.Errorf("renewed cookie = %+v", renewed)
 	}
 
-	// The session of martin opens nothing in durand.
-	if rec := f.do("GET", "/tribes/durand/api/session", "", cookie); rec.Code != http.StatusUnauthorized || strings.Contains(rec.Body.String(), "Durand") {
-		t.Errorf("GET durand session with martin's cookie: status %d, body %s", rec.Code, rec.Body)
+	// The session of martin opens nothing in durand, sent as the browser does (Path=/) or
+	// under the name of durand; nor in martin under the former name.
+	for _, tc := range []struct {
+		slug   string
+		cookie *http.Cookie
+	}{
+		{"durand", cookie},
+		{"durand", &http.Cookie{Name: cookieName(sessionCookie, "durand"), Value: cookie.Value}},
+		{"martin", &http.Cookie{Name: "session", Value: cookie.Value}},
+	} {
+		rec := f.do("GET", "/tribes/"+tc.slug+"/api/session", "", tc.cookie)
+		if rec.Code != http.StatusUnauthorized || strings.Contains(rec.Body.String(), "Durand") {
+			t.Errorf("GET %s session with cookie %s: status %d, body %s", tc.slug, tc.cookie.Name, rec.Code, rec.Body)
+		}
 	}
 
-	if rec := f.do("DELETE", "/tribes/martin/api/session", "", cookie); rec.Code != http.StatusNoContent || sessionCookieOf(t, rec).MaxAge >= 0 {
+	if rec := f.do("DELETE", "/tribes/martin/api/session", "", cookie); rec.Code != http.StatusNoContent || sessionCookieOf(t, rec, "martin").MaxAge >= 0 {
 		t.Errorf("DELETE session: status %d, cookies %v", rec.Code, rec.Result().Cookies())
 	}
 	if rec := f.do("GET", "/tribes/martin/api/session", "", cookie); rec.Code != http.StatusUnauthorized {
@@ -203,8 +246,8 @@ func TestAPIErrors(t *testing.T) {
 
 func TestInvalidCookieIsCleared(t *testing.T) {
 	f := newAPIFixture(t)
-	rec := f.do("GET", "/tribes/martin/api/session", "", &http.Cookie{Name: sessionCookie, Value: "forged"})
-	if rec.Code != http.StatusUnauthorized || sessionCookieOf(t, rec).MaxAge >= 0 {
+	rec := f.do("GET", "/tribes/martin/api/session", "", &http.Cookie{Name: cookieName(sessionCookie, "martin"), Value: "forged"})
+	if cleared := sessionCookieOf(t, rec, "martin"); rec.Code != http.StatusUnauthorized || cleared.MaxAge >= 0 || cleared.Path != "/" {
 		t.Errorf("status %d, cookies %v; want 401 and the cookie cleared", rec.Code, rec.Result().Cookies())
 	}
 }
@@ -262,6 +305,9 @@ func TestUnknownTribeAnswersAlike(t *testing.T) {
 				jars[slug][c.Name] = c
 			}
 			c.Value = strings.Repeat("v", len(c.Value))
+			for _, kind := range []string{sessionCookie, codeRequestCookie} {
+				c.Name = strings.ReplaceAll(c.Name, cookieName(kind, slug), "<"+kind+">")
+			}
 			set = append(set, strings.ReplaceAll(c.String(), slug, "<slug>"))
 		}
 		return strings.Join([]string{
