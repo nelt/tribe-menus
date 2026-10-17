@@ -1,7 +1,7 @@
 # 0007. Hébergement : VPS OVHcloud et DNS
 
 - **Date** : 2026-09-27
-- **Statut** : accepté
+- **Statut** : accepté ; point 1 remplacé par l'ADR 0025
 
 ## Contexte
 
@@ -11,13 +11,13 @@ Critères : hébergement dans l'UE (ou juridiction équivalente), coût, simplic
 
 ## Décision
 
-1. **Serveur** : VPS OVHcloud, gamme VPS-1 (2 vCores, 4 Go de RAM, 40 Go NVMe au moment du choix), dans un datacenter français. Trafic illimité, sauvegarde quotidienne et protection anti-DDoS incluses.
+1. **Serveur** : VPS OVHcloud, gamme VPS-1 (2 vCores, 4 Go de RAM, 40 Go NVMe au moment du choix), dans un datacenter français. Trafic illimité, sauvegarde quotidienne et protection anti-DDoS incluses. *Remplacé le 2026-10-17 : VPS PulseHeberg (ADR 0025).*
 2. **DNS** : la zone `codingmatters.org` reste chez OVHcloud.
    - enregistrements A et AAAA `tribe-menus.codingmatters.org` vers le VPS ; *nom remplacé par `meltingtribe.codingmatters.org` (ADR 0017)* ;
    - enregistrement **CAA** n'autorisant que Let's Encrypt (`letsencrypt.org`) à émettre des certificats pour le domaine ;
    - **DNSSEC** activé.
    Caddy valide le domaine par HTTP-01 ou TLS-ALPN-01, sans accès à l'API DNS : aucun plugin n'est nécessaire.
-3. **Sauvegarde hors site : reportée à une version ultérieure.** À terme, les données seront répliquées chez un autre fournisseur par Litestream (ADR 0003), la cible étant fixée par un ADR dédié. **En V1, la seule sauvegarde est celle incluse par OVHcloud** (quotidienne, conservée un jour, dans le même datacenter).
+3. **Sauvegarde hors site : reportée à une version ultérieure.** À terme, les données seront répliquées chez un autre fournisseur par Litestream (ADR 0003), la cible étant fixée par un ADR dédié. **En V1, la seule sauvegarde est celle incluse par OVHcloud** (quotidienne, conservée un jour, dans le même datacenter). *Précisé le 2026-10-17 : chez PulseHeberg, cette sauvegarde n'est pas contractuelle ; décision à prendre avant l'ouverture de la production (ADR 0025, point 4).*
 
 ## Alternatives envisagées
 
