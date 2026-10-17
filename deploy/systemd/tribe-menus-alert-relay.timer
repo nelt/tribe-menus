@@ -1,0 +1,13 @@
+# Every five minutes (plan recette, D9). Installed by provision.sh.
+
+[Unit]
+Description=Melting Tribe: relay of the alerts of the application, every five minutes
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

@@ -13,9 +13,11 @@ Wants=network-online.target
 AssertPathExists=/opt/tribe-menus/%i/current/tribe-menus
 AssertPathExists=/etc/tribe-menus/%i/config.json
 AssertPathExists=/etc/tribe-menus/%i/smtp-password.cred
-# Restarts on failure, five in five minutes at most, then the unit stays failed.
+# Restarts on failure, five in five minutes at most, then the unit stays failed and the
+# administrator receives an email (ADR 0015, point 15).
 StartLimitIntervalSec=5min
 StartLimitBurst=5
+OnFailure=tribe-menus-failure@%i.service
 
 [Service]
 Type=exec

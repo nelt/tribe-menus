@@ -1,0 +1,14 @@
+# Email to the administrator when the service of an environment fails: started by its
+# OnFailure=, once systemd gives up restarting it (ADR 0015, point 15). Installed by
+# provision.sh.
+
+[Unit]
+Description=Melting Tribe: failure alert (%i)
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tribe-menus-alert failure %i
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
