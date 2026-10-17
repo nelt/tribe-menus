@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Runs the admin command of the installed version under the user of the service, with the
+# config file of the environment (ADR 0015, point 13). Installed by provision.sh.
+#
+#   sudo tribe-menus-admin production|recette init
+#   sudo tribe-menus-admin production|recette seed -members <file>
+#
+# The members file (one per line: address, then display name) is read by root, then given
+# to the user of the service as a private copy: it may stay in the home directory of the
+# administrator.
+set -euo pipefail
+
+die() {
+	printf 'tribe-menus-admin: %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	cat >&2 <<'EOF'
+Usage: tribe-menus-admin production|recette init
+       tribe-menus-admin production|recette seed -members <file>
+EOF
+	exit 2
+}
+
+(($# >= 2)) || usage
+env=$1 command=$2
+shift 2
+[[ $env == production || $env == recette ]] || usage
+user=tribe-menus-$env
+binary=/opt/tribe-menus/$env/current/tribe-menus
+config=/etc/tribe-menus/$env/config.json
+
+[[ $(id -u) == 0 ]] || die "run as root: sudo tribe-menus-admin $env $command $*"
+[[ -x $binary ]] || die "no version installed in $env"
+[[ -f $config ]] || die "$config missing: run provision.sh"
+
+# Files the command creates belong to the service alone (plan revue-securite, finding 4).
+umask 077
+cd /
+
+case $command in
+init)
+	(($# == 0)) || usage
+	exec runuser -u "$user" -- "$binary" admin init -config "$config"
+	;;
+seed)
+	[[ $# == 2 && $1 == -members ]] || usage
+	file=$2
+	[[ -f $file && -r $file ]] || die "$file: missing or unreadable"
+	# A tribe that exists already does not change: read the file before (review of PR #52).
+	printf 'Members of the demonstration tribe in %s, the first one being the first member:\n' "$env"
+	grep -Ev '^[[:space:]]*(#|$)' -- "$file" | sed 's/^/  /' || true
+	[[ -t 0 ]] || die "run from a terminal, to confirm"
+	read -r -p "Create the demonstration tribe with these members? [y/N] " answer
+	[[ $answer == y || $answer == Y ]] || die "nothing done"
+	copy=$(mktemp)
+	trap 'rm -f -- "$copy"' EXIT
+	cat -- "$file" >"$copy"
+	chown -- "$user" "$copy"
+	runuser -u "$user" -- "$binary" admin seed -config "$config" -members "$copy"
+	;;
+*) usage ;;
+esac
