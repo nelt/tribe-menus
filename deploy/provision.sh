@@ -534,9 +534,14 @@ table inet filter {
 EOF
 	nft --check --file /etc/nftables.conf || die "nft refuses /etc/nftables.conf"
 	systemctl enable --quiet nftables
-	if ((changed)) || ! systemctl is-active --quiet nftables; then
-		# Atomic: the established connections, this SSH session among them, are kept.
-		systemctl restart nftables
+	# Never restart: the unit of Debian flushes the rules on stop, leaving the input open
+	# until they are loaded again. Its reload runs nft -f on the file, whose flush ruleset
+	# and rules apply in a single transaction: the established connections, this SSH
+	# session among them, are kept (review of PR #55, point 1).
+	if ! systemctl is-active --quiet nftables; then
+		systemctl start nftables
+	elif ((changed)); then
+		systemctl reload nftables
 	fi
 }
 
