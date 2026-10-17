@@ -397,9 +397,10 @@ APT::Periodic::Unattended-Upgrade "1";
 EOF
 	put 0644 root:root /etc/apt/apt.conf.d/51tribe-menus-unattended-upgrades <<'EOF'
 // Produced by provision.sh: do not edit (deploy/README.md).
-// Security fixes of Debian and the packages of the Caddy repository; a report by email to
-// root when something changed, and a restart at 3:30 when one is needed, which the report
-// announces and that shutdown -c cancels (ADR 0015, point 5).
+// Added to the patterns of 50unattended-upgrades of Debian, which installs the stable
+// updates too: security fixes of Debian and the packages of the Caddy repository. A report
+// by email to root when something changed, and a restart at 3:30 when one is needed, which
+// the report announces and that shutdown -c cancels (ADR 0015, point 5).
 Unattended-Upgrade::Origins-Pattern {
 	"origin=Debian,codename=${distro_codename}-security,label=Debian-Security";
 	"origin=cloudsmith/caddy/stable,codename=any-version";
