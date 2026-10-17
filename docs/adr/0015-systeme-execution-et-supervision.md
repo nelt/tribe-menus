@@ -5,7 +5,7 @@
 
 ## Contexte
 
-Le serveur est un VPS OVHcloud (ADR 0007) qui fait tourner Caddy (ADR 0006) et le binaire Go de l'application (ADR 0002), avec ses bases SQLite (ADR 0003). Il n'y a qu'un seul serveur et pas de sauvegarde hors site en V1 : il doit pouvoir être reconstruit à l'identique, et chaque couche doit être durcie. Les e-mails sortants passent par le MX Plan (ADR 0014).
+Le serveur est un VPS OVHcloud (ADR 0007) *(PulseHeberg depuis le 2026-10-17, ADR 0025)* qui fait tourner Caddy (ADR 0006) et le binaire Go de l'application (ADR 0002), avec ses bases SQLite (ADR 0003). Il n'y a qu'un seul serveur et pas de sauvegarde hors site en V1 : il doit pouvoir être reconstruit à l'identique, et chaque couche doit être durcie. Les e-mails sortants passent par le MX Plan (ADR 0014).
 
 ## Décision
 

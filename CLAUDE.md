@@ -33,7 +33,7 @@ Décidée (voir `docs/adr/`).
 - **Front-end** : SPA TypeScript avec Lit, esbuild, service worker écrit dans le projet, embarquée dans le binaire Go (ADR 0004).
 - **Tests** : godog sur les `.feature` contre l'API, Playwright pour les scénarios `@ui`, `go test` et `node:test` pour les tests unitaires (ADR 0005).
 - **Exposition** : Caddy en reverse proxy (TLS automatique) sur `meltingtribe.codingmatters.org` ; site public statique à `/`, application sous `/tribes/<identifiant>/` (ADR 0006, nom d'hôte ADR 0017) ; cookies préfixés `__Host-`, `Path=/`, un nom par tribu tiré de l'empreinte de l'identifiant (ADR 0024).
-- **Hébergement** : VPS OVHcloud (VPS-1), DNS `codingmatters.org` chez OVHcloud (ADR 0007).
+- **Hébergement** : VPS PulseHeberg (CLASSIC-2, Paris, Debian 13 ; image ouverte en `root` seul) ; DNS `codingmatters.org` et MX Plan chez OVHcloud ; sauvegarde de l'hébergeur non contractuelle, décision avant l'ouverture de la production (ADR 0007, 0025).
 - **Dépôt** : `tribe-menus`, module `github.com/nelt/tribe-menus`, un paquet Go par domaine dans `internal/`, front dans `web/`, site public dans `site/` (ADR 0008).
 - **Nom** : marque « Melting Tribe » côté utilisateurs ; `tribe-menus` reste le nom technique (dépôt, module, service) (ADR 0017).
 - **Langue** : code entièrement en anglais ; specs en français ; traduction des termes métier fixée par `docs/specs/glossaire.md` (ADR 0008).

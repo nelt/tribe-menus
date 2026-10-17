@@ -24,7 +24,7 @@ Mettre l'application en ligne, en recette **et en production**, sur un serveur p
 
 - **Claude Code dans le Dev Container** écrit le code et les scripts, en cinq PR (lots A à E, D18), prépare les PR de release et lance les contrôles qui se font de l'extérieur du serveur.
 - **Une session cloud**, qui n'a pas écrit le code, relit chaque lot selon `docs/revue-de-pr.md`.
-- **Le développeur** arbitre, fusionne, et fait ce que personne d'autre ne peut faire : espace client OVHcloud, SSH sur le serveur, téléphones, étiquettes. Ces gestes sont **regroupés en cinq séances**, chacune avec sa check-list (section « Étapes manuelles », D13).
+- **Le développeur** arbitre, fusionne, et fait ce que personne d'autre ne peut faire : espaces clients OVHcloud et PulseHeberg (ADR 0025), SSH sur le serveur, téléphones, étiquettes. Ces gestes sont **regroupés en cinq séances**, chacune avec sa check-list (section « Étapes manuelles », D13).
 
 **Hors périmètre**, renvoyé à l'invitation d'un autre membre que le développeur : fermer une session à distance et révoquer un membre (`revue-securite`, constat 5). Renvoyé plus loin : durcissement de DMARC (ADR 0014, point 3), sauvegarde hors site (ADR 0007), sonde externe (ADR 0015), attestation de provenance (ADR 0012).
 
@@ -70,7 +70,7 @@ Tout ce qui demande le développeur en personne est regroupé ici. Hors de ces s
 
 | Séance | Sujet | Où | Quand | Durée visée |
 | --- | --- | --- | --- | --- |
-| **S1** | Comptes et DNS | espace client OVHcloud, GitHub, poste | dès maintenant, pendant les lots A et B | 1 h |
+| **S1** | Comptes et DNS | espaces clients OVHcloud et PulseHeberg, GitHub, poste | dès maintenant, pendant les lots A et B | 1 h |
 | **S2** | Serveur | SSH depuis l'hôte | PR du lot C ouverte, CI verte | 1 h 30 |
 | **S3** | Recette sur appareils | téléphones, ordinateur, une commande SSH | PR `release/v0.1.0` ouverte | 1 h |
 | **S4** | Première release, ouverture de la production, retours arrière | hôte, SSH, téléphone | S3 sans défaut ouvert | 2 h |
@@ -81,7 +81,7 @@ Les durées sont des estimations, à corriger dans les notes d'exécution. S3 et
 **Règles communes.**
 
 - **Avant chaque séance**, Claude Code donne ce qu'elle demande : numéro de PR, identifiant de l'exécution de la CI, commandes exactes à jour (`deploy/README.md`).
-- **Rien ne se corrige à la main sur le serveur.** Ce qui manque ou échoue est un défaut d'un script : il est noté, corrigé dans la PR, redéployé. Si une correction manuelle a quand même été nécessaire pour avancer, et tant que la production n'a pas de données, le VPS est réinstallé depuis l'espace client et S2 est rejouée : c'est la preuve qu'il se reconstruit.
+- **Rien ne se corrige à la main sur le serveur.** Ce qui manque ou échoue est un défaut d'un script : il est noté, corrigé dans la PR, redéployé. Si une correction manuelle a quand même été nécessaire pour avancer, et tant que la production n'a pas de données, le VPS est réinstallé depuis l'espace client PulseHeberg et S2 est rejouée : c'est la preuve qu'il se reconstruit.
 - **Après chaque séance**, le développeur remet à Claude Code le rapport de `tribe-menus-check` et ce qu'il a observé ; Claude Code coche la check-list dans ce plan et consigne le reste dans les notes d'exécution.
 - **Les commandes sont écrites ici telles que le plan les propose** ; leur forme définitive est celle de `deploy/README.md`, que les lots B et C écrivent.
 
@@ -91,35 +91,35 @@ La zone DNS et DNSSEC mettent des heures à se propager : c'est la séance à fa
 
 Poste :
 
-- [ ] Clé SSH ed25519 réservée au serveur, protégée par une phrase de passe, créée sur l'hôte (pas dans le Dev Container).
+- [x] Clé SSH ed25519 réservée au serveur, protégée par une phrase de passe, créée sur l'hôte (pas dans le Dev Container).
 
 Serveur (ADR 0007) :
 
-- [ ] VPS-1 commandé : datacenter français, Debian 13, clé publique déposée à la commande. Conditions d'engagement relues avant de valider.
-- [ ] Sauvegarde automatique quotidienne active sur le VPS.
-- [ ] Adresses IPv4 et IPv6 notées dans le gestionnaire de mots de passe, nulle part ailleurs.
+- [x] VPS-1 commandé : datacenter français, Debian 13, clé publique déposée à la commande. Conditions d'engagement relues avant de valider. *Le 2026-10-17 : VPS CLASSIC-2 chez PulseHeberg, à Paris (ADR 0025).*
+- [ ] Sauvegarde automatique quotidienne active sur le VPS. *Le 2026-10-17 : non contractuelle chez PulseHeberg ; décision avant S4 (ADR 0025, point 4 ; questions ouvertes).*
+- [x] Adresses IPv4 et IPv6 notées dans le gestionnaire de mots de passe, nulle part ailleurs.
 
 E-mail (ADR 0014, 0015) :
 
-- [ ] Boîte `no-reply@codingmatters.org` créée dans le MX Plan ; mot de passe généré, dans le gestionnaire.
-- [ ] Boîte `server@codingmatters.org` créée de même.
-- [ ] Boîte `contact@codingmatters.org` créée de même, avant la publication du site (`docs/design/README.md`).
-- [ ] Adresse de l'administrateur choisie : elle recevra les alertes de l'application et du serveur, et les rapports DMARC.
-- [ ] Adresses de recette (D3) : redirections `recette-alice@`, `recette-bruno@`, `recette-chloe@` et `recette-david@codingmatters.org` vers la boîte du développeur ; aucune redirection pour `recette-inconnu@codingmatters.org`, qui doit rester inexistante.
+- [x] Boîte `no-reply@codingmatters.org` créée dans le MX Plan ; mot de passe généré, dans le gestionnaire.
+- [x] Boîte `server@codingmatters.org` créée de même.
+- [x] Boîte `contact@codingmatters.org` créée de même, avant la publication du site (`docs/design/README.md`).
+- [x] Adresse de l'administrateur choisie : elle recevra les alertes de l'application et du serveur, et les rapports DMARC.
+- [x] Adresses de recette (D3) : redirections `recette-alice@`, `recette-bruno@`, `recette-chloe@` et `recette-david@codingmatters.org` vers la boîte du développeur ; aucune redirection pour `recette-inconnu@codingmatters.org`, qui doit rester inexistante.
 
 Zone `codingmatters.org` :
 
-- [ ] Existant relevé avant toute modification (SPF, DKIM, DMARC, CAA) : le domaine porte déjà du courrier.
-- [ ] Enregistrements A et AAAA de `meltingtribe.codingmatters.org` et de `recette.meltingtribe.codingmatters.org` vers le VPS (ADR 0017, point 3).
-- [ ] Certificats déjà émis pour le domaine consultés (journaux Certificate Transparency, `crt.sh`), puis CAA n'autorisant que `letsencrypt.org`. Si un autre nom du domaine obtient ses certificats ailleurs : CAA posé sur `meltingtribe.codingmatters.org` seulement, et noté.
-- [ ] DNSSEC activé.
-- [ ] SPF autorisant les serveurs d'envoi du MX Plan.
-- [ ] DKIM activé pour le MX Plan.
-- [ ] DMARC en observation (`p=none`), rapports vers l'adresse de l'administrateur.
+- [x] Existant relevé avant toute modification (SPF, DKIM, DMARC, CAA) : le domaine porte déjà du courrier.
+- [x] Enregistrements A et AAAA de `meltingtribe.codingmatters.org` et de `recette.meltingtribe.codingmatters.org` vers le VPS (ADR 0017, point 3).
+- [x] Certificats déjà émis pour le domaine consultés (journaux Certificate Transparency, `crt.sh`), puis CAA n'autorisant que `letsencrypt.org`. Si un autre nom du domaine obtient ses certificats ailleurs : CAA posé sur `meltingtribe.codingmatters.org` seulement, et noté.
+- [x] DNSSEC activé.
+- [x] SPF autorisant les serveurs d'envoi du MX Plan.
+- [x] DKIM activé pour le MX Plan.
+- [x] DMARC en observation (`p=none`), rapports vers l'adresse de l'administrateur.
 
 GitHub (ADR 0016, point 6) :
 
-- [ ] Jeton à portée fine réservé au serveur : dépôt `tribe-menus` seul, *Actions* et *Metadata* en lecture, avec une date d'expiration ; dans le gestionnaire jusqu'à S2.
+- [x] Jeton à portée fine réservé au serveur : dépôt `tribe-menus` seul, *Actions* et *Metadata* en lecture, avec une date d'expiration ; dans le gestionnaire jusqu'à S2.
 
 Ce que la séance ne vérifie pas elle-même : l'émission des certificats en S2 prouve A, AAAA et CAA ; le contrôle externe (étape 23) relit DNSSEC, SPF, DKIM et DMARC.
 
@@ -130,7 +130,7 @@ Prérequis : S1 faite, lot B fusionné, PR du lot C ouverte avec une CI verte.
 Amorçage :
 
 - [ ] Archive de la PR du lot C téléchargée sur l'hôte (`gh run download`), empreinte vérifiée (`sha256sum -c`), copiée sur le serveur (`scp`).
-- [ ] Première connexion SSH avec le compte de l'image ; empreinte de la clé d'hôte du serveur notée dans le gestionnaire.
+- [ ] Première connexion SSH avec le compte de l'image (`root` chez PulseHeberg, ADR 0025) ; empreinte de la clé d'hôte du serveur notée dans le gestionnaire.
 - [ ] `/etc/tribe-menus/instance.conf` écrit à partir de `deploy/instance.example.conf` (D4).
 - [ ] `sudo ./deploy/provision.sh production recette`, depuis l'archive déballée.
 
@@ -279,7 +279,7 @@ Points d'attention de la revue : ce qui tourne en `root` et sur quelles entrées
 - [ ] **7. Valeurs de l'instance** (D4). `deploy/instance.example.conf` : noms d'hôte de la production et de la recette, adresse de l'administrateur, serveur et comptes SMTP de l'application et du serveur, nom du compte d'administration. `provision.sh` lit `/etc/tribe-menus/instance.conf`, refuse une clé inconnue ou manquante en la nommant, et en tire le `config.json` de chaque environnement (`jq`), les blocs de site de Caddy et la configuration de `msmtp`. Ces fichiers sont produits, jamais retouchés à la main.
 - [ ] **8. `deploy/provision.sh` : système** (ADR 0015, points 1 à 7). Idempotent, relançable, il prend en argument les environnements à créer (`production recette`).
   - Paquets : ceux de Debian 13 (`nftables`, `unattended-upgrades`, `msmtp-mta`, `sqlite3`, `jq`, `curl`, `unzip`) et Caddy (étape 12).
-  - SSH : clé seule, ni mot de passe ni `root`, compte d'administration personnel seul admis, `sudo` avec mot de passe (D14) ; le compte de l'image est retiré au second lancement, fait depuis ce compte.
+  - SSH : clé seule, ni mot de passe ni `root`, compte d'administration personnel seul admis, `sudo` avec mot de passe (D14) ; le compte de l'image est retiré au second lancement, fait depuis ce compte. *Précisé le 2026-10-17 : l'image PulseHeberg n'ouvre que `root` ; le premier lancement crée le compte d'administration, le second ferme la connexion SSH de `root` (ADR 0025, point 3).*
   - `nftables` : 22, 80 et 443 en TCP en entrée, ICMP et ICMPv6 nécessaires, IPv4 et IPv6 ; aucun port UDP (D16).
   - `unattended-upgrades` : correctifs de sécurité de Debian et paquets du dépôt de Caddy ; redémarrage à 3 h 30 si nécessaire, annoncé par e-mail.
   - journald persistant, plafonné, un mois de conservation (PT-07) ; synchronisation de l'heure.
@@ -293,6 +293,7 @@ Points d'attention de la revue : ce qui tourne en `root` et sur quelles entrées
   - Confinement : aucun privilège ni capacité, système de fichiers en lecture seule hors du répertoire de données, `/home` invisible, `/tmp` privé, appels système `@system-service`, familles réseau Unix, IPv4 et IPv6. La note de `systemd-analyze security` est relevée ; chaque réglage laissé ouvert est justifié dans `deploy/README.md`.
   - Le service ne démarre pas tant que `config.json`, le credential ou une version installée manque, et le dit.
 - [ ] **12. Caddy** (ADR 0006 ; constat 11 ; D15, D16). Paquet du dépôt du projet Caddy, clé de signature épinglée par son empreinte, sans plugin.
+  - Émetteur ACME : Let's Encrypt seul, sans le repli par défaut vers ZeroSSL, que le CAA posé en S1 refuserait (ADR 0007, point 2).
   - Options globales : `admin off`, adresse de contact ACME, HTTP/1.1 et HTTP/2 seuls, délais de lecture et d'inactivité, taille maximale du corps.
   - Un bloc par nom d'hôte, chacun vers le socket de son instance : `/tribes/*` transmis au socket, `Host` tel quel, adresse du client écrite par Caddy dans `X-Forwarded-For` à la place de ce que le client envoie ; `/healthz` jamais transmis ; `/` servi depuis le site de l'environnement (D8), avec ses en-têtes de sécurité, dont une CSP propre au site.
   - HSTS sur les deux noms d'hôte, une journée d'abord (à allonger après quelques semaines sans incident, point reporté) ; `X-Robots-Tag: noindex` et `Disallow: /` sur tout le nom d'hôte de la recette.
@@ -301,7 +302,7 @@ Points d'attention de la revue : ce qui tourne en `root` et sur quelles entrées
   - `caddy validate` sur la configuration produite, dans `provision.sh`.
 - [ ] **13. `tribe-menus-admin`** (ADR 0015, point 13) : `sudo tribe-menus-admin <environnement> init|seed …` lance la sous-commande sous l'utilisateur du service, avec `-config`.
 - [ ] **14. Documentation du lot** : `deploy/README.md` (contenu du dossier, première installation, saisie des secrets) ; ADR 0015 précisé (D4, D5, D8, D14 à D16) ; ADR 0011 (point 5) précisé : les valeurs de l'instance vivent dans un fichier du serveur, pas chez GitHub, comme le veut l'ADR 0016 ; ADR 0006 (D15, D16) ; `CLAUDE.md` ; `CHANGELOG.md` ; cases cochées.
-- [ ] **15. Séance 1**, par le développeur, en parallèle des lots A et B : check-list S1.
+- [x] **15. Séance 1**, par le développeur, en parallèle des lots A et B : check-list S1. Faite du 2026-10-13 au 2026-10-17 ; la sauvegarde reste à décider avant S4.
 
 ### Lot C : déploiement, supervision et contrôles (`feature/deploiement-et-supervision`)
 
@@ -343,7 +344,7 @@ Peut avancer en parallèle des lots B et C. Points d'attention de la revue : auc
 
 - [ ] **25. Pages du site**, dans `site/`, d'après les maquettes `identite/Site`, `SiteMobile`, `Mentions` et `Confidentialite` et `docs/design/README.md` (« Site public ») : présentation, mentions légales, Confidentialité. HTML et CSS statiques, sans JavaScript ; polices et fichiers d'identité servis depuis le site ; balises Open Graph avec `partage.png` ; `robots.txt` gardé.
 - [ ] **26. Version dans les pages** (D17 ; ADR 0011, point 2). `site/*.html` porte les marques `{{VERSION}}` et `{{COMMIT}}`, que `internal/tools/dist` remplace en construisant l'archive : le pied de page « Code source de cette version » mène à l'étiquette, ou au commit pour une archive de PR. L'archive reste reproductible. Test : aucune marque ne reste dans l'archive, et deux exécutions donnent la même empreinte. La date de mise à jour des textes reste écrite à la main.
-- [ ] **27. Textes** : mentions légales (éditeur à titre personnel, directeur de la publication, `contact@codingmatters.org`, hébergeur, licences) et Confidentialité (données traitées, deux cookies, durées de conservation, journaux du serveur un mois, droits), accordés à ce que font l'application et le serveur au terme de ce plan. **Relus par le développeur dans la PR**, avant la fusion.
+- [ ] **27. Textes** : mentions légales (éditeur à titre personnel, directeur de la publication, `contact@codingmatters.org`, hébergeur — SAS PulseHeberg, ADR 0025 —, licences) et Confidentialité (données traitées, deux cookies, durées de conservation, journaux du serveur un mois, droits), accordés à ce que font l'application et le serveur au terme de ce plan. **Relus par le développeur dans la PR**, avant la fusion.
 - [ ] **28. Documentation du lot** : `docs/design/README.md` si une maquette a dû être interprétée ; `CLAUDE.md` ; `CHANGELOG.md` ; feuille de route ; cases cochées.
 
 ### Première release : `v0.1.0`
@@ -406,6 +407,7 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
 
 - **Filtrage des sorties** du serveur : aucun en V1 ; les services confinés n'ont besoin que du SMTP. À rouvrir si la surface change.
 - **Avis de sécurité publié** après une version corrective (`canal-prive`, question ouverte) : la répétition de S5 ne le tranche pas.
+- **Sauvegarde des données en V1**, à trancher avant S4 : la sauvegarde de PulseHeberg n'est pas contractuelle (ADR 0025, point 4). Accepter ce niveau, ou avancer la sauvegarde hors site (ADR 0007, point 3).
 - **Textes légaux** : écrits d'après `docs/design/README.md` et relus par le développeur (étape 27) ; aucune relecture juridique n'est prévue.
 
 ## Décisions
@@ -442,3 +444,4 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Étape 4** : le refus était déjà fixé par `internal/storage/storage_test.go` (« database newer than the binary ») et `TestServeRefusesUnmigratedDatabases` ; aucun test ajouté.
   - **Étape 5** : la page Confidentialité ne nomme pas les cookies ; `docs/design/README.md` précise seulement qu'ils sont propres à une tribu.
   - **Revue de la PR #52** (2026-10-17), rien à corriger. Point à noter : `admin seed` ne modifie pas une tribu existante, donc une adresse valide mais mal saisie dans le fichier des membres en S2 (`recette-alcie@…`) ne se corrige qu'en supprimant la tribu de recette, ce qu'aucune commande ne fait. **À traiter au lot B** (étape 13, `tribe-menus-admin`) **ou au lot C** : écrire dans `deploy/README.md` comment recréer la tribu de recette, ou faire relire le fichier avant `seed` dans la check-list S2. Pour information, sans suite : seules les lignes entières sont des commentaires (`… Alice # note` donne le nom « Alice # note ») ; un fichier avec une marque d'ordre d'octets UTF-8 est refusé à la ligne 1 sans dire pourquoi ; les anciens cookies `session` et `code_request` restent dans les navigateurs de développement, ignorés.
+- **2026-10-17** : séance S1 faite avec le développeur, dans une session cloud. Écart : VPS commandé chez PulseHeberg (CLASSIC-2, Paris, Debian 13), DNS et MX Plan restant chez OVHcloud (ADR 0025) ; image ouverte en `root` seul (étape 8 précisée) ; sauvegarde non contractuelle, décision ajoutée aux questions ouvertes. Existant relevé avant toute modification : SPF déjà présent (`include:mx.ovh.com`), DKIM déjà actif (sélecteur géré par OVHcloud), ni DMARC ni CAA. Créés : boîtes `no-reply@`, `server@` et `contact@` ; redirection `admin@` vers la boîte personnelle du développeur, adresse de l'administrateur (alertes et rapports DMARC, qui exigent une adresse du domaine) ; redirections de recette, aucune pour `recette-inconnu@` ; DMARC `p=none` ; A et AAAA des deux noms d'hôte (TTL de 6 heures, valeur par défaut) ; CAA `0 issue "letsencrypt.org"` à la racine, après lecture des journaux CT (quatre certificats en cours, tous de Let's Encrypt, pour l'hébergement web OVHcloud) ; DNSSEC, DS publié et réponses validées ; jeton GitHub vérifié (HTTP 200). Constats : un message de `contact@` vers `admin@`, transféré vers Gmail, passe SPF, DKIM et ARC mais arrive en spam (pas de DMARC à ce moment-là) — test à rejouer ; la signature DKIM d'OVHcloud ne couvre que l'en-tête `From` ; le webmail écrit l'adresse IP de l'expéditeur dans `X-Originating-IP`. Caddy limité à Let's Encrypt (étape 12). Séance étalée sur plusieurs jours, la durée visée d'1 h n'a pas été mesurée.
