@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-10-08
+- **Mise à jour** : 2026-10-17
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -30,7 +30,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | terminé |
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | terminé |
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
-| `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | prêt, suivant |
+| `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | en cours |
 
 ### `production` : application prête pour la production
 
@@ -73,6 +73,3 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |
 | Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant d'inviter un autre membre que le développeur (`recette`, D1) |
 | `webcheck` ne connaît pas toutes les échappatoires au rendu échappé | `revue-securite`, constat 10 | premier écran qui affiche un texte saisi par un membre (EF-01, EF-02 ou bibliothèque de plats) |
-| Ce qui revient à Caddy : HSTS, en-têtes du site public, `Host` transmis tel quel, `/healthz` non transmis, délais et taille des requêtes, journaux d'accès | `revue-securite`, constat 11 | `recette` |
-| Dossier de données en 0700 et `UMask=0077` dans l'unité systemd | `revue-securite`, constat 4 | `recette` |
-| Temps de réponse : membre ou non, tribu existante ou non, sur `POST sessions` d'abord | `revue-securite`, ce qui n'a pas pu être vérifié | `recette` |
