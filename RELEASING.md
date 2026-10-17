@@ -2,7 +2,7 @@
 
 Procédure de release de Melting Tribe (ADR 0012, point 5). Claude Code peut la suivre pour préparer la PR de release ; l'étiquette, la fusion et le déploiement reviennent au développeur.
 
-Une **version** est une archive `tribe-menus-vX.Y.Z-linux-amd64.tar.gz`, son empreinte SHA-256 et ses notes, publiées dans une release GitHub par le workflow `release.yml` quand une étiquette `vX.Y.Z` est posée sur `main`. Publier une version ne la déploie pas : le déploiement est une action distincte (ADR 0016), décrite par le plan `recette`.
+Une **version** est une archive `tribe-menus-vX.Y.Z-linux-amd64.tar.gz`, son empreinte SHA-256 et ses notes, publiées dans une release GitHub par le workflow `release.yml` quand une étiquette `vX.Y.Z` est posée sur `main`. Publier une version ne la déploie pas : le déploiement est une action distincte (ADR 0016), décrite dans `deploy/README.md` (« Déployer », « Revenir en arrière et restaurer »).
 
 ## Choisir le numéro
 
@@ -22,7 +22,15 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
    git diff --name-only --diff-filter=A vA.B.C..HEAD -- internal/storage/migrations/
    ```
 
-   S'il y en a, ajouter à la fin de la section une sous-section `### Migrations` : une ligne par migration, avec la base touchée (registre, tribu, limitation) et ce qu'elle change. Le binaire refuse de démarrer sur une base dont la version de schéma dépasse la sienne (précisé le 2026-10-08, plan `recette`, D7) : après une version qui migre, le retour à la précédente restaure l'instantané pris avant le déploiement (ADR 0016, point 2) et perd ce qui a été écrit depuis. L'écrire en tête de la sous-section.
+   S'il y en a, ajouter à la fin de la section une sous-section `### Migrations` : une ligne par migration, avec la base touchée (registre, tribu, limitation) et ce qu'elle change. Le binaire refuse de démarrer sur une base dont la version de schéma dépasse la sienne (précisé le 2026-10-08, plan `recette`, D7) : après une version qui migre, le retour à la précédente restaure l'instantané pris avant le déploiement (ADR 0016, point 2) et perd ce qui a été écrit depuis (`tribe-menus-deploy --rollback --restore-data`). L'écrire en tête de la sous-section.
+
+   **Provisionnement** (plan `recette`, D6) : lister de même ce qui a changé dans `deploy/` hors de `deploy/bin/tribe-menus-deploy` :
+
+   ```sh
+   git diff --stat vA.B.C..HEAD -- deploy/
+   ```
+
+   S'il y a des changements, ajouter une sous-section `### Serveur` qui demande de relancer le provisionnement après le déploiement (`deploy/README.md`, « Relancer le provisionnement ») et dit ce qui change. `tribe-menus-deploy` lui-même est installé par le provisionnement : sa nouvelle version sert au déploiement suivant.
 4. **Vérifier les notes**, telles que la release les publiera :
 
    ```sh
@@ -30,7 +38,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
    ```
 
 5. **PR** intitulée `Release X.Y.Z`, commit signé (`git commit -s`), `make ci` avant de pousser. La ligne de `CHANGELOG.md` de cette PR, c'est la section renommée : pas de ligne en plus.
-6. **Recette** : le développeur déploie l'archive de la PR en recette (artefact `tribe-menus-pr-<numéro>` de la CI) et y vérifie, sur téléphone :
+6. **Recette** : le développeur déploie l'archive de la PR en recette (`sudo tribe-menus-deploy --env recette --pr <numéro>`, qui lit l'artefact `tribe-menus-pr-<numéro>` de la CI) et y vérifie, sur téléphone :
    - les scénarios `@manuel` (ADR 0005), dont la liste est tenue ci-dessous ;
    - les stories de la section, sur un vrai appareil.
 
@@ -62,6 +70,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
     ```
 
     La dernière commande affiche `tribe-menus vX.Y.Z (<commit>)`, avec le commit de l'étiquette.
+11. **Déploiement** par le développeur, en production : `sudo tribe-menus-deploy vX.Y.Z`, puis le provisionnement si les notes le demandent (`deploy/README.md`).
 
 Si le workflow échoue, la release n'est pas publiée. Selon la cause :
 

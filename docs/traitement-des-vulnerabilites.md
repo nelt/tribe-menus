@@ -133,12 +133,12 @@ Le diff reste lisible par qui sait lire : la neutralité ne cache pas la faille,
 
 ### Mesures d'attente
 
-Ce qui réduit le risque pendant que le correctif se prépare, à la main du développeur :
+Ce qui réduit le risque pendant que le correctif se prépare, à la main du développeur. Commandes exactes et détail dans `deploy/README.md` (« Mettre en attente », « Revenir en arrière et restaurer ») ; précisé le 2026-10-17 (plan `recette`, étape 18) :
 
-- arrêter l'application en production (`systemctl stop`, ADR 0015) : acceptable pour une application familiale, et toujours possible ;
-- revenir à une version antérieure qui n'a pas le défaut (`tribe-menus-deploy --rollback`, ADR 0016).
+- **mettre l'application en attente**, acceptable pour une application familiale, et toujours possible : `sudo tribe-menus-maintenance production on`. Le socket et le service sont arrêtés et masqués (arrêter le service seul ne suffit pas : la première requête le relancerait par le socket), y compris après un redémarrage du serveur ; Caddy sert la page d'attente en 503, le site public reste en ligne. Levée par `sudo tribe-menus-maintenance production off`, ou par le déploiement de la version corrective, qui la lève s'il réussit et la remet s'il échoue ;
+- **revenir à la version antérieure** qui n'a pas le défaut : `sudo tribe-menus-deploy --rollback`. Si une migration a changé le schéma depuis, le script refuse sans `--restore-data`, qui restaure l'instantané pris avant le déploiement et perd ce qui a été écrit depuis ; ou déployer une version plus ancienne par son numéro, qui ne démarre que si elle connaît le schéma.
 
-Le plan `recette` documentera les commandes exactes, et ce qui peut être coupé sans tout arrêter.
+Rien ne se coupe à moitié : l'application n'a qu'une fonction, la connexion, et ses routes ne se désactivent pas une à une. Le site public, servi par Caddy, reste en ligne dans tous les cas.
 
 ## Publication
 
