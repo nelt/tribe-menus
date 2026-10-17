@@ -19,8 +19,8 @@ Le domaine `codingmatters.org` est disponible.
 1. **Nom d'hôte** : `tribe-menus.codingmatters.org` ; environnement de recette sur `recette.tribe-menus.codingmatters.org` (ADR 0016). *Remplacés par `meltingtribe.codingmatters.org` et `recette.meltingtribe.codingmatters.org` (ADR 0017).*
 2. **Caddy en reverse proxy**, seul processus exposé sur les ports 80 et 443 :
    - certificats obtenus et renouvelés automatiquement auprès de Let's Encrypt ; redirection de HTTP vers HTTPS ; en-tête HSTS ;
-   - paquet officiel, **sans plugin** (pas de compilation sur mesure) ;
-   - API d'administration désactivée (`admin off`) ;
+   - paquet officiel, **sans plugin** (pas de compilation sur mesure) ; *précisé le 2026-10-17 (plan `recette`, D15) : paquet du dépôt apt du projet Caddy, dont la clé de signature est livrée dans `deploy/`, suivi par `unattended-upgrades`, plutôt que celui de Debian 13, plus ancien et figé ; une préférence apt interdit à ce dépôt tout autre paquet ;*
+   - API d'administration désactivée (`admin off`) ; *HTTP/1.1 et HTTP/2 seuls, HTTP/3 coupé (2026-10-17, plan `recette`, D16) : le pare-feu n'ouvre aucun port UDP ; certificats de Let's Encrypt seul, sans le repli vers ZeroSSL, que le CAA du domaine refuserait ;*
    - chaque application écoute sur un **socket Unix** (pas de port local), accessible au seul utilisateur de Caddy, et créé par systemd (activation de socket, ADR 0015) ; ajouter une application revient à ajouter un bloc de configuration avec son nom d'hôte.
 3. **Découpage des chemins** sur `tribe-menus.codingmatters.org` :
    - `/` : **site public statique**, servi directement par Caddy. Première itération : trois pages (présentation, mentions légales, politique de confidentialité). Sources dans le dépôt, dossier `site/`, déployées indépendamment de l'application ;

@@ -1,0 +1,65 @@
+# Service of an environment of Melting Tribe (ADR 0015, points 8 to 12), installed by
+# provision.sh and started by its socket. Each setting left open is explained in
+# deploy/README.md ("Confinement du service").
+
+[Unit]
+Description=Melting Tribe (%i)
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+Requires=tribe-menus@%i.socket
+After=tribe-menus@%i.socket network-online.target
+Wants=network-online.target
+# What the socket waits for, in case the service is started by hand: the failure names
+# the missing file.
+AssertPathExists=/opt/tribe-menus/%i/current/tribe-menus
+AssertPathExists=/etc/tribe-menus/%i/config.json
+AssertPathExists=/etc/tribe-menus/%i/smtp-password.cred
+# Restarts on failure, five in five minutes at most, then the unit stays failed.
+StartLimitIntervalSec=5min
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=tribe-menus-%i
+Group=tribe-menus-%i
+ExecStart=/opt/tribe-menus/%i/current/tribe-menus serve -config /etc/tribe-menus/%i/config.json
+# Decrypted by systemd at start, for this service only, into $CREDENTIALS_DIRECTORY.
+LoadCredentialEncrypted=smtp-password:/etc/tribe-menus/%i/smtp-password.cred
+Restart=on-failure
+RestartSec=5s
+# The server waits 10 seconds for the requests in progress, and the sendings of codes
+# for their own timeout (30 seconds).
+TimeoutStopSec=45s
+# Databases created in 0600 (plan revue-securite, finding 4).
+UMask=0077
+
+# Confinement.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateUsers=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/tribe-menus/%i
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateIPC=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+# Unix for the socket and the journal, IPv4 and IPv6 for SMTP and DNS.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

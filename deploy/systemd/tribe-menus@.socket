@@ -1,0 +1,25 @@
+# Socket of an environment of Melting Tribe (ADR 0015, point 11), installed by
+# provision.sh. Only root and the group of Caddy can open it: the application trusts the
+# X-Forwarded-For of a request that comes through it (ADR 0006, point 7).
+#
+# It listens only once a version, the config file and the SMTP credential are in place:
+# until then, Caddy finds no socket and serves the waiting page, instead of holding the
+# request while systemd fails to start the service.
+
+[Unit]
+Description=Melting Tribe socket (%i)
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+ConditionPathExists=/opt/tribe-menus/%i/current/tribe-menus
+ConditionPathExists=/etc/tribe-menus/%i/config.json
+ConditionPathExists=/etc/tribe-menus/%i/smtp-password.cred
+
+[Socket]
+ListenStream=/run/tribe-menus/%i.sock
+SocketUser=root
+SocketGroup=caddy
+SocketMode=0660
+DirectoryMode=0755
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
