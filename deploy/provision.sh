@@ -28,7 +28,10 @@ readonly SHARE_DIR=/usr/share/tribe-menus
 readonly STATE_DIR=/var/lib/tribe-menus/provision
 # Marks that root may no longer connect by SSH (ADR 0025, point 3).
 readonly ROOT_SSH_CLOSED=$STATE_DIR/root-ssh-closed
-readonly SCRIPTS=(tribe-menus-credential tribe-menus-admin)
+readonly SCRIPTS=(tribe-menus-credential tribe-menus-admin tribe-menus-deploy tribe-menus-maintenance tribe-menus-alert tribe-menus-check)
+readonly UNITS=(tribe-menus@.socket tribe-menus@.service tribe-menus-failure@.service
+	tribe-menus-alert-relay.service tribe-menus-alert-relay.timer tribe-menus-disk.service tribe-menus-disk.timer)
+readonly TIMERS=(tribe-menus-alert-relay.timer tribe-menus-disk.timer)
 readonly DEBIAN_PACKAGES=(sudo tzdata nftables unattended-upgrades msmtp-mta sqlite3 jq curl unzip ca-certificates)
 
 die() {
@@ -550,16 +553,20 @@ EOF
 }
 
 install_files() {
-	local script
+	local script unit
 	step "Scripts and units"
 	for script in "${SCRIPTS[@]}"; do
 		install -m 0755 -- "$DEPLOY_DIR/bin/$script" "$BIN_DIR/$script"
 	done
 	install -d -m 0755 -- "$SHARE_DIR"
 	install -m 0644 -- "$DEPLOY_DIR/caddy/attente.html" "$SHARE_DIR/attente.html"
-	install -m 0644 -- "$DEPLOY_DIR/systemd/tribe-menus@.socket" /etc/systemd/system/tribe-menus@.socket
-	install -m 0644 -- "$DEPLOY_DIR/systemd/tribe-menus@.service" /etc/systemd/system/tribe-menus@.service
+	for unit in "${UNITS[@]}"; do
+		install -m 0644 -- "$DEPLOY_DIR/systemd/$unit" "/etc/systemd/system/$unit"
+	done
 	systemctl daemon-reload
+	# Supervision (ADR 0015, point 15): relay of the alerts of the application, disk.
+	install -d -m 0700 /var/lib/tribe-menus/alert
+	systemctl enable --now --quiet "${TIMERS[@]}"
 }
 
 # configure_environment creates the user, the directories and the configuration of an
@@ -575,8 +582,20 @@ configure_environment() {
 	install -d -m 0750 -o root -g "$user" "/etc/tribe-menus/$env"
 	install -d -m 0755 /var/lib/tribe-menus
 	install -d -m 0700 -o "$user" -g "$user" "/var/lib/tribe-menus/$env"
-	install -d -m 0755 /var/www/tribe-menus "/var/www/tribe-menus/$env"
+	# The site of the environment is the one of its current version (D8): it changes with
+	# the link current, in the same move, rollback included.
+	install -d -m 0755 /var/www/tribe-menus
+	if [[ -d /var/www/tribe-menus/$env && ! -L /var/www/tribe-menus/$env ]]; then
+		rmdir -- "/var/www/tribe-menus/$env" || die "/var/www/tribe-menus/$env: directory not empty, the site is now a link"
+	fi
+	ln -sfn -- "/opt/tribe-menus/$env/current/site" "/var/www/tribe-menus/$env"
 	render_config "$env" | put 0640 "root:$user" "/etc/tribe-menus/$env/config.json"
+	# On hold (tribe-menus-maintenance), the units stay masked: the service restarts at the
+	# end of the hold, and reads the new configuration then.
+	if [[ $(systemctl is-enabled "tribe-menus@$env.socket" 2>/dev/null || true) == masked ]]; then
+		printf '%s is on hold: left so (sudo tribe-menus-maintenance %s off)\n' "$env" "$env"
+		return
+	fi
 	systemctl enable --quiet "tribe-menus@$env.socket"
 	if ((changed)); then
 		systemctl try-restart "tribe-menus@$env.service"
