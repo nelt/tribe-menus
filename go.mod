@@ -2,7 +2,7 @@ module github.com/nelt/tribe-menus
 
 go 1.27
 
-toolchain go1.27.1
+toolchain go1.27.2
 
 tool (
 	github.com/rhysd/actionlint/cmd/actionlint
