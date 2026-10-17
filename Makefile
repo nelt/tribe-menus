@@ -11,8 +11,9 @@ COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 help: ## List the targets
 	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
 
-tools: ## Install dependencies, Playwright browsers and their system libraries (idempotent)
+tools: ## Install dependencies, Playwright browsers and their system libraries, shellcheck if missing (idempotent)
 	go mod download
+	command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck; }
 	cd web && npm ci --ignore-scripts && npx playwright install --with-deps chromium webkit
 
 dev: ## Rebuild the front end on change and serve on http://localhost:8080 (Ctrl-C stops both)
@@ -25,7 +26,7 @@ seed: ## Create the demonstration tribe in data/ (http://localhost:8080/tribes/d
 generate: ## Generate the data access code from the SQL queries (sqlc)
 	go tool sqlc generate
 
-lint: ## gofmt, go vet, staticcheck, generated code up to date, tsc, webcheck and actionlint
+lint: ## gofmt, go vet, staticcheck, generated code up to date, tsc, webcheck, actionlint and shellcheck
 	@unformatted=$$(gofmt -l .); test -z "$$unformatted" || { echo "gofmt needed:"; echo "$$unformatted"; exit 1; }
 	go vet ./...
 	go tool staticcheck ./...
@@ -33,6 +34,7 @@ lint: ## gofmt, go vet, staticcheck, generated code up to date, tsc, webcheck an
 	cd web && npm run typecheck
 	go run ./internal/tools/webcheck
 	go tool actionlint -shellcheck= -pyflakes=
+	shellcheck deploy/provision.sh deploy/bin/*
 
 test: ## Go and TypeScript unit tests
 	go test ./...
