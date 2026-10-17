@@ -522,6 +522,9 @@ table inet filter {
 		icmp type { destination-unreachable, time-exceeded, parameter-problem, echo-request } accept
 		icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request } accept
 		icmpv6 type { nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } ip6 hoplimit 255 accept
+		# Queries of the router, without which switches that snoop MLD stop forwarding the
+		# neighbour solicitations (RFC 4890, 4.4.1; review of PR #55, point 2).
+		icmpv6 type mld-listener-query ip6 saddr fe80::/10 accept
 		tcp dport { 22, 80, 443 } accept
 	}
 	chain forward {
