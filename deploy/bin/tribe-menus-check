@@ -179,12 +179,13 @@ check_units() {
 			info "$env on hold (tribe-menus-maintenance $env off)"
 			continue
 		fi
-		check "$env: socket listening" systemctl is-active --quiet "tribe-menus@$env.socket"
-		if [[ -x /opt/tribe-menus/$env/current/tribe-menus ]]; then
-			check "$env: application answers /healthz" healthy "$env"
-		else
-			info "$env: no version installed"
+		# Without a version, the socket does not listen, on purpose: the waiting page is served.
+		if [[ ! -x /opt/tribe-menus/$env/current/tribe-menus ]]; then
+			info "$env: no version installed, waiting page served"
+			continue
 		fi
+		check "$env: socket listening" systemctl is-active --quiet "tribe-menus@$env.socket"
+		check "$env: application answers /healthz" healthy "$env"
 	done < <(environments)
 	failed=$(systemctl --failed --no-legend --plain | awk '{ print $1 }' | tr '\n' ' ')
 	if [[ -z $failed ]]; then ok "no failed unit"; else fail "failed units: $failed"; fi
@@ -239,9 +240,22 @@ check_service() {
 	fi
 }
 
+# admin_address prints the address of the administrator, which the aliases of msmtp give
+# to root: an unqualified To: root would be completed by the mail server with its own host
+# name (séance S2).
+admin_address() {
+	local address
+	address=$(sed -n 's/^root: //p' /etc/tribe-menus/aliases 2>/dev/null | head -n 1)
+	if [[ $address =~ ^[a-z0-9._+-]+@[a-z0-9.-]+$ ]]; then
+		printf '%s' "$address"
+	else
+		printf 'root'
+	fi
+}
+
 send_test_email() {
 	section "Email"
-	if printf 'To: root\nSubject: Melting Tribe : essai de tribe-menus-check\n\nEssai du relais du serveur, rien n'"'"'est à faire.\n' |
+	if printf 'To: %s\nSubject: Melting Tribe : essai de tribe-menus-check\n\nEssai du relais du serveur, rien n'"'"'est à faire.\n' "$(admin_address)" |
 		/usr/sbin/sendmail -i -- root; then
 		ok "test email handed to msmtp: check that the administrator received it"
 	else
