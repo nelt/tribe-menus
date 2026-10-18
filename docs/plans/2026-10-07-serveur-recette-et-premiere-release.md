@@ -136,7 +136,7 @@ Amorçage :
 
 Accès (D14) :
 
-- [ ] Dans un second terminal, **avant de fermer le premier** : connexion par clé avec le compte d'administration personnel ; connexion refusée pour `root` et par mot de passe. *Le 2026-10-18 : connexion par clé faite ; refus constatés dans la configuration effective (`tribe-menus-check`, `sshd -T`), essais de connexion à confirmer par le développeur.*
+- [x] Dans un second terminal, **avant de fermer le premier** : connexion par clé avec le compte d'administration personnel ; connexion refusée pour `root` et par mot de passe. *Le 2026-10-18 : connexion par clé faite ; `root` et la connexion sans clé refusés (`Permission denied (publickey)`), comme le constate aussi `tribe-menus-check`.*
 - [x] Mot de passe `sudo` de ce compte, choisi au premier lancement, rangé dans le gestionnaire.
 - [x] `sudo /root/tribe-menus-<version>-linux-amd64/deploy/provision.sh production recette` depuis ce compte : il ne change rien d'autre que la fermeture de SSH à `root`.
 
