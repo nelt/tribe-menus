@@ -695,3 +695,45 @@ relay_env recette "$ROOT/state"
 		t.Errorf("sent after a run without news: %q", sent)
 	}
 }
+
+// The report of tribe-menus-check names no host: journalctl writes the host name in its
+// short formats unless told not to (review of PR #56, point 4).
+func TestReportWithoutHostName(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-check"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	prelude := `
+set -euo pipefail
+source "$SCRIPT"
+environments() { printf 'recette\n'; }
+journalctl() {
+	local arg host=machine-de-l-instance short=0
+	for arg in "$@"; do
+		case $arg in
+		--no-hostname) host="" ;;
+		--output) ;;
+		short-iso) short=1 ;;
+		esac
+	done
+	if ((short)); then
+		printf '2026-10-18T10:00:00+0200 %s tribe-menus-deploy[1]: recette: v0.1.0 deployed\n' "$host"
+	else
+		printf '{"level":"WARN","msg":"client IP unknown behind the proxy: X-Forwarded-For missing or unreadable"}\n'
+	fi
+}
+report
+`
+	cmd := exec.Command("bash", "-c", prelude)
+	cmd.Env = append(os.Environ(), "SCRIPT="+script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("report: %v\n%s", err, out)
+	}
+	if strings.Contains(string(out), "machine-de-l-instance") {
+		t.Errorf("report names the host:\n%s", out)
+	}
+	if !strings.Contains(string(out), "v0.1.0 deployed") || !strings.Contains(string(out), "client IP unknown") {
+		t.Errorf("report incomplete:\n%s", out)
+	}
+}

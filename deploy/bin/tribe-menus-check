@@ -291,7 +291,7 @@ report() {
 		sort | uniq -c | sed 's/^ */  /' || true
 	printf 'Alert relay, deployments, holds:\n'
 	journalctl --identifier tribe-menus-alert --identifier tribe-menus-deploy --identifier tribe-menus-maintenance \
-		--since=-1h --output short-iso --no-pager --quiet | sed 's/^/  /' || true
+		--since=-1h --output short-iso --no-hostname --no-pager --quiet | sed 's/^/  /' || true
 }
 
 # --- Drill -------------------------------------------------------------------------------
