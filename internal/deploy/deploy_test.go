@@ -452,3 +452,172 @@ func TestPrune(t *testing.T) {
 		t.Errorf("backups:\n%s\nwant:\n%s", got, want)
 	}
 }
+
+// fakeServer is the shell prelude of the recovery tests: tribe-menus-deploy sourced in a
+// temporary root, systemctl, curl, runuser and the download replaced. systemctl keeps the
+// masked units in a file and fails restart when FAIL_RESTART is set; /healthz answers when
+// HEALTHY is set, after a SIGHUP to the script when HUP_FIRST is set.
+const fakeServer = `
+set -euo pipefail
+source "$SCRIPT"
+ROOT=$PWD
+ENV=recette SERVICE_USER='' RELEASES=$ROOT/releases CURRENT=$ROOT/current PREVIOUS=$ROOT/previous
+DATA=$ROOT/data BACKUPS=$ROOT/data/backups SOCKET=$ROOT/sock
+systemctl() {
+	local command=$1
+	shift
+	case $command in
+	is-enabled) if grep -qx "$1" "$ROOT/masked" 2>/dev/null; then echo masked; else echo enabled; fi ;;
+	mask) shift; printf '%s\n' "$@" >>"$ROOT/masked" ;;
+	unmask) shift; for u in "$@"; do grep -vx "$u" "$ROOT/masked" >"$ROOT/masked.new" || true; mv "$ROOT/masked.new" "$ROOT/masked"; done ;;
+	restart) [[ -z ${FAIL_RESTART:-} ]] ;;
+	esac
+}
+curl() {
+	if [[ -n ${HUP_FIRST:-} && ! -e $ROOT/hup ]]; then
+		touch "$ROOT/hup"
+		kill -HUP $$
+	fi
+	if [[ -n ${HEALTHY:-} ]]; then echo ok; fi
+}
+runuser() { shift 3; "$@"; }
+logger() { :; }
+journalctl() { :; }
+chown() { :; }
+sleep() { :; }
+fetch_release() {
+	cp "$ROOT/archive/tribe-menus-$1-linux-amd64.tar.gz" "$ROOT/archive/tribe-menus-$1-linux-amd64.tar.gz.sha256" "$2/"
+}
+trap on_exit EXIT
+`
+
+// recoveryRoot prepares a root with v0.1.0 in service, v0.0.9 as previous, the archive of
+// v0.2.0 to deploy, and the environment on hold or not.
+func recoveryRoot(t *testing.T, onHold bool) string {
+	t.Helper()
+	root := t.TempDir()
+	for _, v := range []string{"v0.0.9", "v0.1.0"} {
+		dir := filepath.Join(root, "releases", v)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "tribe-menus"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for link, target := range map[string]string{"current": "releases/v0.1.0", "previous": "releases/v0.0.9"} {
+		if err := os.Symlink(target, filepath.Join(root, link)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	snap := filepath.Join(root, "data", "backups", "avant-v0.1.0")
+	if err := os.MkdirAll(snap, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for name, content := range map[string]string{"schema": "registry.db 1\n", "taken": "2026-10-17T10:00:00+02:00\n", "registry.db": ""} {
+		if err := os.WriteFile(filepath.Join(snap, name), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	const v = "tribe-menus-v0.2.0-linux-amd64"
+	archiveDir := filepath.Join(root, "archive")
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	binary := []byte("#!/bin/sh\necho 'tribe-menus v0.2.0 (abcdef0)'\n")
+	for _, h := range []tar.Header{
+		{Name: v + "/", Typeflag: tar.TypeDir, Mode: 0o755},
+		{Name: v + "/tribe-menus", Typeflag: tar.TypeReg, Mode: 0o755, Size: int64(len(binary))},
+		{Name: v + "/site/", Typeflag: tar.TypeDir, Mode: 0o755},
+		{Name: v + "/deploy/", Typeflag: tar.TypeDir, Mode: 0o755},
+	} {
+		if err := tw.WriteHeader(&h); err != nil {
+			t.Fatal(err)
+		}
+		if h.Typeflag == tar.TypeReg {
+			if _, err := tw.Write(binary); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	archive := filepath.Join(archiveDir, v+".tar.gz")
+	if err := os.WriteFile(archive, buf.Bytes(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(buf.Bytes())
+	if err := os.WriteFile(archive+".sha256", []byte(hex.EncodeToString(sum[:])+"  "+v+".tar.gz\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	masked := ""
+	if onHold {
+		masked = "tribe-menus@recette.socket\ntribe-menus@recette.service\n"
+	}
+	if err := os.WriteFile(filepath.Join(root, "masked"), []byte(masked), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+// A deployment, a rollback or a restore that fails or is interrupted puts the environment
+// back: the previous version in service, the hold back if there was one; a failed restore
+// puts it on hold (review of PR #56, points 1 and 2).
+func TestRecovery(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-deploy"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name       string
+		command    string
+		env        []string
+		onHold     bool
+		wantOK     bool
+		wantLink   string
+		wantMasked bool
+	}{
+		{name: "restart fails", command: "deploy v0.2.0", env: []string{"FAIL_RESTART=1"}, wantLink: "releases/v0.1.0"},
+		{name: "restart fails, on hold", command: "deploy v0.2.0", env: []string{"FAIL_RESTART=1"}, onHold: true, wantLink: "releases/v0.1.0", wantMasked: true},
+		{name: "no answer, on hold", command: "deploy v0.2.0", onHold: true, wantLink: "releases/v0.1.0", wantMasked: true},
+		{name: "SIGHUP during the wait", command: "deploy v0.2.0", env: []string{"HEALTHY=1", "HUP_FIRST=1"}, wantOK: true, wantLink: "releases/v0.2.0"},
+		{name: "deployed, hold lifted", command: "deploy v0.2.0", env: []string{"HEALTHY=1"}, onHold: true, wantOK: true, wantLink: "releases/v0.2.0"},
+		{name: "rollback without answer, on hold", command: "rollback 0", onHold: true, wantLink: "releases/v0.0.9", wantMasked: true},
+		{name: "restore without answer", command: "restore_snapshot avant-v0.1.0", wantLink: "releases/v0.1.0", wantMasked: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			root := recoveryRoot(t, tc.onHold)
+			cmd := exec.Command("bash", "-c", fakeServer+tc.command)
+			cmd.Dir = root
+			cmd.Env = append(append(os.Environ(), "SCRIPT="+script), tc.env...)
+			out, err := cmd.CombinedOutput()
+			if tc.wantOK != (err == nil) {
+				t.Fatalf("%s: %v, want ok = %v\n%s", tc.command, err, tc.wantOK, out)
+			}
+			link, err := os.Readlink(filepath.Join(root, "current"))
+			if err != nil || link != tc.wantLink {
+				t.Errorf("current -> %s (%v), want %s\n%s", link, err, tc.wantLink, out)
+			}
+			masked, err := os.ReadFile(filepath.Join(root, "masked"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := ""
+			if tc.wantMasked {
+				want = "tribe-menus@recette.socket\ntribe-menus@recette.service\n"
+			}
+			if string(masked) != want {
+				t.Errorf("masked units %q, want %q\n%s", masked, want, out)
+			}
+		})
+	}
+}

@@ -497,13 +497,67 @@ go_back() {
 # Downloads, and the release being unpacked, removed at exit.
 TMP='' STAGING=''
 
-cleanup() {
+# RECOVER names what puts the environment back as it was when an operation that changed it
+# fails or stops: set by critical, run once by on_exit (review of PR #56, points 1 and 2).
+RECOVER=''
+
+# critical starts the part of an operation that changes the environment: from there, a
+# signal no longer stops the script (an interrupted SSH session included), and a failure
+# runs the recovery given.
+critical() {
+	trap '' INT HUP TERM
+	RECOVER=$1
+}
+
+# done_critical ends it: the operation succeeded, nothing is to put back.
+done_critical() {
+	RECOVER=''
+}
+
+on_exit() {
+	local status=$? recover=$RECOVER
+	set +e
+	trap '' INT HUP TERM
+	RECOVER=''
+	if [[ $status != 0 && -n $recover ]]; then
+		"$recover"
+	fi
 	rm -rf -- "${TMP:-}" "${STAGING:-}"
+	exit "$status"
+}
+
+# Names of the deployment in progress, for its recovery.
+OLD_NAME='' NEW_NAME=''
+
+# recover_deploy puts the previous version back if the link moved, the hold back if there
+# was one.
+recover_deploy() {
+	say "Deployment of $NEW_NAME failed or interrupted: putting $ENV back as it was."
+	if [[ $(name_of "$CURRENT") != "$OLD_NAME" ]]; then
+		go_back "$NEW_NAME" "$OLD_NAME"
+	else
+		put_hold_back
+	fi
+	logger -t tribe-menus-deploy "$ENV: $NEW_NAME failed, back to ${OLD_NAME:-nothing}"
+}
+
+# recover_rollback puts the hold back if there was one: the databases may already be those
+# of the snapshot, the version left is not started again.
+recover_rollback() {
+	put_hold_back
+	logger -t tribe-menus-deploy "$ENV: rollback failed"
+}
+
+# recover_restore puts the environment on hold, whether it was or not: the version in
+# service refuses the restored databases, and would restart on them in a loop.
+recover_restore() {
+	HOLD=1
+	put_hold_back
+	logger -t tribe-menus-deploy "$ENV: restore failed, on hold"
 }
 
 deploy() {
 	local source=$1 base version name old line
-	trap cleanup EXIT
 	TMP=$(mktemp -d /var/tmp/tribe-menus-deploy.XXXXXX)
 	version=$source
 	case $source in
@@ -538,9 +592,12 @@ deploy() {
 	say "Installing $line in $ENV, as $name"
 	rm -rf -- "${RELEASES:?}/$name"
 	mv -T -- "$STAGING" "$RELEASES/$name"
-	STAGING=
+	STAGING=''
 	touch -- "$RELEASES/$name"
 
+	OLD_NAME=$old NEW_NAME=$name
+	say "From here, Ctrl-C is ignored: a failure puts $ENV back as it was."
+	critical recover_deploy
 	lift_hold
 	as_service mkdir -p -- "$BACKUPS"
 	as_service rm -rf -- "$BACKUPS/avant-$name"
@@ -552,10 +609,9 @@ deploy() {
 	if ! healthy; then
 		say "$name does not answer /healthz."
 		journal
-		go_back "$name" "$old"
-		logger -t tribe-menus-deploy "$ENV: $name failed, back to ${old:-nothing}"
 		die "deployment of $name failed"
 	fi
+	done_critical
 	if [[ -n $old ]]; then
 		point "$PREVIOUS" "$old"
 	fi
@@ -596,6 +652,8 @@ rollback() {
 		say "No migration since the snapshot: the data are kept, --restore-data ignored."
 	fi
 
+	say "From here, Ctrl-C is ignored."
+	critical recover_rollback
 	lift_hold
 	stop
 	point "$CURRENT" "$previous"
@@ -610,9 +668,9 @@ rollback() {
 	start
 	if ! healthy; then
 		journal
-		logger -t tribe-menus-deploy "$ENV: rollback to $previous does not answer"
 		die "$previous does not answer /healthz"
 	fi
+	done_critical
 	logger -t tribe-menus-deploy "$ENV: rolled back from $current to $previous"
 	say "$previous is in service in $ENV. To return to $current, deploy it again."
 }
@@ -641,16 +699,17 @@ restore_snapshot() {
 	chmod -R u=rwX,go= -- "$dir"
 	aside=$BACKUPS/remplacees-$(date +%Y%m%dT%H%M%S)
 	say "Restoring $name in $ENV, under $current: what the databases have now is set aside in $aside."
+	say "From here, Ctrl-C is ignored."
+	critical recover_restore
 	lift_hold
 	stop
 	restore "$DATA" "$dir" "$aside"
 	start
 	if ! healthy; then
 		journal
-		put_hold_back
-		logger -t tribe-menus-deploy "$ENV: restore of $name does not answer"
 		die "$current does not answer /healthz with the restored databases: the snapshot may be newer than it"
 	fi
+	done_critical
 	logger -t tribe-menus-deploy "$ENV: $name restored, set aside in $aside"
 	say "$name restored in $ENV."
 }
@@ -709,6 +768,7 @@ main() {
 		die "a pull request is deployed in recette only: --env recette"
 	fi
 	setup "$env"
+	trap on_exit EXIT
 	if [[ $action == snapshot ]]; then
 		take_snapshot
 	elif [[ $action == restore ]]; then
