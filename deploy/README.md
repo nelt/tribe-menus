@@ -300,5 +300,6 @@ Quand le serveur est perdu ou compromis, ou qu'une correction manuelle a été n
    ```
 
 5. `sudo tribe-menus-check`, `make probe` sur les deux noms d'hôte.
+6. **Effacer la copie de la reprise**, une fois la production vérifiée : `sudo rm -rf /var/lib/tribe-menus/production/backups/manuel-<date>` et l'archive `reprise.tar.gz` sur le serveur, puis la copie gardée sur l'hôte. La page Confidentialité le promet : les instantanés `manuel-*` ne sont jamais effacés par le script.
 
 Sans données en production, les étapes 1 et 4 tombent : c'est la séance S2 rejouée.
