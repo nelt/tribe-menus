@@ -130,10 +130,13 @@ check_ssh() {
 
 # listening_ports prints the ports listening on an address other than the loopback, for
 # TCP (-t) or UDP (-u).
+# Filtered by awk, which succeeds when nothing is left: grep -v would fail, and pipefail with
+# it (séance S2).
 listening_ports() {
-	ss -Hln "$1" | awk '{ print $4 }' |
-		grep -Ev '^(127\.[0-9.]+|\[::1\]|\[::ffff:127\.[0-9.]+\])(%[a-z0-9]+)?:' |
-		sed 's/.*://' | sort -nu | tr '\n' ' ' | sed 's/ $//'
+	local sockets
+	sockets=$(ss -Hln "$1")
+	awk '$4 !~ /^(127\.[0-9.]+|\[::1\]|\[::ffff:127\.[0-9.]+\])(%[a-z0-9]+)?:/ { sub(/.*:/, "", $4); print $4 }' <<<"$sockets" |
+		sort -nu | tr '\n' ' ' | sed 's/ $//'
 }
 
 check_firewall() {

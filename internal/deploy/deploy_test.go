@@ -815,3 +815,36 @@ check_ssh
 		}
 	}
 }
+
+// The ports listening outside the loopback are listed, none included: a filter that failed
+// on an empty result stopped tribe-menus-check under pipefail (séance S2).
+func TestListeningPorts(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-check"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	prelude := `
+set -euo pipefail
+source "$SCRIPT"
+ss() {
+	case $2 in
+	-t) printf '%s\n' 'LISTEN 0 4096 0.0.0.0:22 0.0.0.0:*' 'LISTEN 0 4096 [::]:443 [::]:*' \
+		'LISTEN 0 4096 *:80 *:*' 'LISTEN 0 4096 127.0.0.1:2019 0.0.0.0:*' 'LISTEN 0 4096 127.0.0.53%lo:53 0.0.0.0:*' ;;
+	-u) printf '%s\n' 'UNCONN 0 0 127.0.0.1:323 0.0.0.0:*' 'UNCONN 0 0 [::1]:323 [::]:*' ;;
+	esac
+}
+# Assigned, as check_firewall does: set -e applies to an assignment.
+tcp=$(listening_ports -t)
+udp=$(listening_ports -u)
+printf 'tcp=%s\nudp=%s\n' "$tcp" "$udp"
+`
+	cmd := exec.Command("bash", "-c", prelude)
+	cmd.Env = append(os.Environ(), "SCRIPT="+script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("listening_ports: %v\n%s", err, out)
+	}
+	if want := "tcp=22 80 443\nudp=\n"; string(out) != want {
+		t.Errorf("listening_ports:\n%s\nwant:\n%s", out, want)
+	}
+}
