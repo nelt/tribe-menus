@@ -621,3 +621,77 @@ func TestRecovery(t *testing.T) {
 		})
 	}
 }
+
+// An alert that msmtp could not send is read again and sent at the next run of the relay:
+// the cursor moves only once every email is sent (review of PR #56, point 3).
+func TestRelayKeepsUnsentAlerts(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-alert"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	journal := `{"level":"INFO","msg":"server started"}
+{"level":"ERROR","msg":"repeated SMTP failures","alert":"smtp_failures","failures":3}
+`
+	if err := os.WriteFile(filepath.Join(root, "journal"), []byte(journal), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// journalctl prints the lines after the cursor, the number of lines read, and writes the
+	// new one; send fails while the file fail exists.
+	prelude := `
+set -euo pipefail
+source "$SCRIPT"
+ROOT=$PWD
+journalctl() {
+	local file="" from=0 arg
+	for arg in "$@"; do
+		case $arg in --cursor-file=*) file=${arg#--cursor-file=} ;; esac
+	done
+	if [[ -s $file ]]; then from=$(<"$file"); fi
+	tail -n +"$((from + 1))" "$ROOT/journal"
+	wc -l <"$ROOT/journal" | tr -d ' ' >"$file"
+}
+send() {
+	cat >/dev/null
+	if [[ -e $ROOT/fail ]]; then return 1; fi
+	printf '%s\n' "$1" >>"$ROOT/sent"
+}
+logger() { :; }
+mkdir -p "$ROOT/state"
+relay_env recette "$ROOT/state"
+`
+	relay := func() error {
+		cmd := exec.Command("bash", "-c", prelude)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "SCRIPT="+script)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Logf("relay: %v\n%s", err, out)
+		}
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(root, "fail"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := relay(); err == nil {
+		t.Fatal("relay succeeded although send failed")
+	}
+	if err := os.Remove(filepath.Join(root, "fail")); err != nil {
+		t.Fatal(err)
+	}
+	if err := relay(); err != nil {
+		t.Fatal(err)
+	}
+	sent, _ := os.ReadFile(filepath.Join(root, "sent"))
+	if string(sent) != "alerte smtp_failures (recette)\n" {
+		t.Errorf("sent after the failure: %q", sent)
+	}
+	// Nothing new: nothing sent again.
+	if err := relay(); err != nil {
+		t.Fatal(err)
+	}
+	sent, _ = os.ReadFile(filepath.Join(root, "sent"))
+	if string(sent) != "alerte smtp_failures (recette)\n" {
+		t.Errorf("sent after a run without news: %q", sent)
+	}
+}

@@ -59,18 +59,24 @@ alerts() {
 
 # relay_env relays the alerts written since its last run by the service of an environment.
 # The journal cursor is kept in the state directory; on the first run, the last hour is read.
+# The cursor moves only once every email is sent: an alert that could not be sent is read
+# again at the next run (review of PR #56, point 3).
 relay_env() {
-	local env=$1
-	local cursor=$STATE/$env.cursor records nature last now since=()
-	[[ -f $cursor ]] || since=(--since=-1h)
-	records=$(journalctl --unit "tribe-menus@$env.service" --cursor-file="$cursor" "${since[@]}" \
+	local env=$1 state=$2
+	local cursor=$state/$env.cursor records nature last now since=()
+	if [[ -f $cursor ]]; then
+		cp -- "$cursor" "$cursor.new"
+	else
+		rm -f -- "$cursor.new"
+		since=(--since=-1h)
+	fi
+	records=$(journalctl --unit "tribe-menus@$env.service" --cursor-file="$cursor.new" "${since[@]}" \
 		--output cat --no-pager --quiet | alerts)
-	[[ -n $records ]] || return 0
 	now=$(date +%s)
 	while IFS= read -r nature; do
 		last=0
-		if [[ -f $STATE/$env.$nature.last ]]; then
-			last=$(<"$STATE/$env.$nature.last")
+		if [[ -f $state/$env.$nature.last ]]; then
+			last=$(<"$state/$env.$nature.last")
 			[[ $last =~ ^[0-9]+$ ]] || last=0
 		fi
 		if ((now - last < RELAY_INTERVAL)); then
@@ -84,16 +90,19 @@ relay_env() {
 			printf '\nJournal complet : sudo journalctl -u tribe-menus@%s.service\n' "$env"
 			printf "Journaux d'accès (heure, adresse IP, URL) : sudo journalctl -u caddy.service\n"
 		} | send "alerte $nature ($env)"
-		printf '%s\n' "$now" >"$STATE/$env.$nature.last"
+		printf '%s\n' "$now" >"$state/$env.$nature.last"
 		logger -t tribe-menus-alert "$env: alert $nature relayed"
-	done < <(jq -r '.alert' <<<"$records" | sort -u)
+	done < <(if [[ -n $records ]]; then jq -r '.alert' <<<"$records" | sort -u; fi)
+	if [[ -f $cursor.new ]]; then
+		mv -f -- "$cursor.new" "$cursor"
+	fi
 }
 
 relay() {
 	local env
 	install -d -m 0700 -- "$STATE"
 	while IFS= read -r env; do
-		relay_env "$env"
+		relay_env "$env" "$STATE"
 	done < <(environments)
 }
 
