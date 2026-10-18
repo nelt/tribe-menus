@@ -636,20 +636,32 @@ func TestRelayKeepsUnsentAlerts(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "journal"), []byte(journal), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// journalctl prints the lines after the cursor, the number of lines read, and writes the
-	// new one; send fails while the file fail exists.
+	// journalctl prints the lines after the cursor, then "-- cursor: i=<lines read>", and
+	// refuses two starting points, as the real one does (séance S2); send fails while the
+	// file fail exists.
 	prelude := `
 set -euo pipefail
 source "$SCRIPT"
 ROOT=$PWD
 journalctl() {
-	local file="" from=0 arg
+	local from=0 starts=0 arg
 	for arg in "$@"; do
-		case $arg in --cursor-file=*) file=${arg#--cursor-file=} ;; esac
+		case $arg in
+		--after-cursor=i=*) from=${arg#--after-cursor=i=}; starts=$((starts + 1)) ;;
+		--after-cursor=*) return 1 ;;
+		--since=* | --cursor=* | --cursor-file=*) starts=$((starts + 1)) ;;
+		esac
 	done
-	if [[ -s $file ]]; then from=$(<"$file"); fi
-	tail -n +"$((from + 1))" "$ROOT/journal"
-	wc -l <"$ROOT/journal" | tr -d ' ' >"$file"
+	if ((starts != 1)); then
+		echo "Please specify only one of --since=, --cursor=, --cursor-file=, and --after-cursor=." >&2
+		return 1
+	fi
+	local total
+	total=$(wc -l <"$ROOT/journal" | tr -d ' ')
+	if ((total > from)); then
+		tail -n +"$((from + 1))" "$ROOT/journal"
+		echo "-- cursor: i=$total"
+	fi
 }
 send() {
 	cat >/dev/null
@@ -693,6 +705,39 @@ relay_env recette "$ROOT/state"
 	sent, _ = os.ReadFile(filepath.Join(root, "sent"))
 	if string(sent) != "alerte smtp_failures (recette)\n" {
 		t.Errorf("sent after a run without news: %q", sent)
+	}
+	// A cursor that journalctl refuses: the last hour is read again, the relay goes on.
+	if err := os.WriteFile(filepath.Join(root, "state", "recette.cursor"), []byte("x=zz\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := relay(); err != nil {
+		t.Errorf("relay stopped on a refused cursor: %v", err)
+	}
+}
+
+// The first run of the relay passes options that the real journalctl accepts: a single
+// starting point (séance S2).
+func TestRelayFirstRunWithJournalctl(t *testing.T) {
+	if _, err := exec.LookPath("journalctl"); err != nil {
+		t.Skip("journalctl not installed")
+	}
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-alert"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	cmd := exec.Command("bash", "-c", `
+set -euo pipefail
+source "$SCRIPT"
+journalctl() { command journalctl --directory="$PWD/journal" "$@"; }
+logger() { :; }
+mkdir -p journal state
+relay_env recette "$PWD/state"
+`)
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "SCRIPT="+script)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Errorf("relay with journalctl: %v\n%s", err, out)
 	}
 }
 

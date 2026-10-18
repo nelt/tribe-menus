@@ -30,10 +30,23 @@ EOF
 	exit 2
 }
 
+# admin_address prints the address of the administrator, which the aliases of msmtp give
+# to root: an unqualified To: root would be completed by the mail server with its own host
+# name (séance S2).
+admin_address() {
+	local address
+	address=$(sed -n 's/^root: //p' /etc/tribe-menus/aliases 2>/dev/null | head -n 1)
+	if [[ $address =~ ^[a-z0-9._+-]+@[a-z0-9.-]+$ ]]; then
+		printf '%s' "$address"
+	else
+		printf 'root'
+	fi
+}
+
 # send mails stdin to root, with this subject.
 send() {
 	{
-		printf 'To: root\n'
+		printf 'To: %s\n' "$(admin_address)"
 		printf 'Subject: Melting Tribe, %s : %s\n' "$(hostname --short)" "$1"
 		printf 'Content-Type: text/plain; charset=utf-8\n'
 		printf 'MIME-Version: 1.0\n\n'
@@ -58,20 +71,24 @@ alerts() {
 }
 
 # relay_env relays the alerts written since its last run by the service of an environment.
-# The journal cursor is kept in the state directory; on the first run, the last hour is read.
-# The cursor moves only once every email is sent: an alert that could not be sent is read
-# again at the next run (review of PR #56, point 3).
+# The journal cursor is kept in the state directory; on the first run, or when journalctl
+# refuses the cursor kept, the last hour is read. The cursor is written only once every
+# email is sent: an alert that could not be sent is read again at the next run (review of
+# PR #56, point 3).
 relay_env() {
 	local env=$1 state=$2
-	local cursor=$state/$env.cursor records nature last now since=()
-	if [[ -f $cursor ]]; then
-		cp -- "$cursor" "$cursor.new"
-	else
-		rm -f -- "$cursor.new"
-		since=(--since=-1h)
+	local cursor=$state/$env.cursor out="" next records nature last now
+	# journalctl takes a single starting point: --since or --after-cursor (séance S2).
+	if [[ -s $cursor ]] && ! out=$(read_journal "$env" --after-cursor="$(<"$cursor")"); then
+		logger -t tribe-menus-alert "$env: journal cursor refused, the last hour is read again"
+		out=""
+		rm -f -- "$cursor"
 	fi
-	records=$(journalctl --unit "tribe-menus@$env.service" --cursor-file="$cursor.new" "${since[@]}" \
-		--output cat --no-pager --quiet | alerts)
+	if [[ ! -s $cursor ]]; then
+		out=$(read_journal "$env" --since=-1h)
+	fi
+	next=$(sed -n 's/^-- cursor: //p' <<<"$out" | tail -n 1)
+	records=$(sed '/^-- cursor: /d' <<<"$out" | alerts)
 	now=$(date +%s)
 	while IFS= read -r nature; do
 		last=0
@@ -93,9 +110,15 @@ relay_env() {
 		printf '%s\n' "$now" >"$state/$env.$nature.last"
 		logger -t tribe-menus-alert "$env: alert $nature relayed"
 	done < <(if [[ -n $records ]]; then jq -r '.alert' <<<"$records" | sort -u; fi)
-	if [[ -f $cursor.new ]]; then
-		mv -f -- "$cursor.new" "$cursor"
+	if [[ $next =~ ^[a-z]=[0-9a-f]+(\;[a-z]=[0-9a-f]+)*$ ]]; then
+		printf '%s\n' "$next" >"$cursor"
 	fi
+}
+
+# read_journal prints the messages of the service of an environment from the starting point
+# given, then the cursor of the last one on a line "-- cursor: …" if there is one.
+read_journal() {
+	journalctl --unit "tribe-menus@$1.service" "$2" --show-cursor --output cat --no-pager --quiet
 }
 
 relay() {
