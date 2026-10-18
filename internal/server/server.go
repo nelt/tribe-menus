@@ -81,7 +81,7 @@ func New(cfg Config) (http.Handler, error) {
 	if cfg.Web == nil {
 		return nil, errors.New("server: no front end")
 	}
-	s := &server{web: cfg.Web, dev: cfg.Dev, logger: cfg.Logger, sourceURL: sourceURL(cfg.Version, cfg.Commit), behindProxy: cfg.BehindProxy}
+	s := &server{web: cfg.Web, dev: cfg.Dev, logger: cfg.Logger, sourceURL: SourceURL(cfg.Version, cfg.Commit), behindProxy: cfg.BehindProxy}
 	if s.logger == nil {
 		s.logger = slog.Default()
 	}
@@ -117,9 +117,9 @@ func New(cfg Config) (http.Handler, error) {
 	return withCommonHeaders(mux), nil
 }
 
-// sourceURL is the address of the source code of this version (ADR 0011, point 2): its tag
+// SourceURL is the address of the source code of this version (ADR 0011, point 2): its tag
 // for a release vX.Y.Z, otherwise its commit if known, otherwise the repository.
-func sourceURL(version, commit string) string {
+func SourceURL(version, commit string) string {
 	switch {
 	case releasePattern.MatchString(version):
 		return repositoryURL + "/tree/" + version

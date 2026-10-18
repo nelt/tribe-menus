@@ -2,14 +2,20 @@
 // make build, the public site, the deployment files and the licence, under a directory named
 // after the archive, with its SHA-256 in a file next to it.
 //
-// Usage: go run ./internal/tools/dist -version <version> [-out dist]
+// Usage: go run ./internal/tools/dist -version <version> [-commit <commit>] [-out dist]
 //
 // It runs from the root of the repository, after make build. Entries are sorted and their
 // dates, owners and permissions fixed: two runs on the same commit give the same archive.
+//
+// In the pages of the site (site/**/*.html), {{VERSION}} becomes the version and
+// {{SOURCE_URL}} the address of its source code: the tag of a release, otherwise the commit
+// (ADR 0011, point 2; plan recette, D17). A marker left over, or a name that
+// tribe-menus-deploy would refuse, stops the archive.
 package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
@@ -24,6 +30,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/nelt/tribe-menus/internal/server"
 )
 
 const (
@@ -40,6 +48,12 @@ var (
 
 	// versionPattern accepts a release (v1.2.3), a pull request build (pr-12) or dev.
 	versionPattern = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]*$`)
+	// commitPattern is an abbreviated or full commit, or nothing outside of Git.
+	commitPattern = regexp.MustCompile(`^([0-9a-f]{7,40})?$`)
+	// namePattern is what tribe-menus-deploy accepts in an archive (check_archive).
+	namePattern = regexp.MustCompile(`^[A-Za-z0-9._@+-]+(/[A-Za-z0-9._@+-]+)*$`)
+	// marker is the beginning of a marker of the site.
+	marker = []byte("{{")
 	// modTime is the date of every entry. A fixed date keeps the archive the same from one
 	// run to the next; the commit is given by tribe-menus version.
 	modTime = time.Unix(0, 0).UTC()
@@ -62,12 +76,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("dist", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	version := flags.String("version", "", "version of the archive (v1.2.3, pr-12, dev)")
+	commit := flags.String("commit", "", "commit of the archive, for the link to its source code")
 	out := flags.String("out", "dist", "directory of the archive")
-	if err := flags.Parse(args); err != nil || flags.NArg() != 0 || !versionPattern.MatchString(*version) {
-		fmt.Fprintln(stderr, "usage: dist -version <version> [-out dist]")
+	if err := flags.Parse(args); err != nil || flags.NArg() != 0 || !versionPattern.MatchString(*version) || !commitPattern.MatchString(*commit) {
+		fmt.Fprintln(stderr, "usage: dist -version <version> [-commit <commit>] [-out dist]")
 		return 2
 	}
-	name, err := write(os.DirFS("."), *out, *version)
+	name, err := write(os.DirFS("."), *out, *version, *commit)
 	if err != nil {
 		fmt.Fprintf(stderr, "dist: %v\n", err)
 		return 1
@@ -77,7 +92,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 }
 
 // write writes the archive and its SHA-256 into dir, and returns the path of the archive.
-func write(fsys fs.FS, dir, version string) (string, error) {
+func write(fsys fs.FS, dir, version, commit string) (string, error) {
 	base := "tribe-menus-" + version + "-" + platform
 	entries, err := collect(fsys)
 	if err != nil {
@@ -92,7 +107,8 @@ func write(fsys fs.FS, dir, version string) (string, error) {
 		return "", fmt.Errorf("create archive: %w", err)
 	}
 	hash := sha256.New()
-	if err := pack(io.MultiWriter(f, hash), fsys, base, entries); err != nil {
+	markers := strings.NewReplacer("{{VERSION}}", version, "{{SOURCE_URL}}", server.SourceURL(version, commit))
+	if err := pack(io.MultiWriter(f, hash), fsys, base, entries, markers); err != nil {
 		_ = f.Close()
 		return "", err
 	}
@@ -152,6 +168,11 @@ func collect(fsys fs.FS) ([]entry, error) {
 		}
 	}
 	slices.SortFunc(entries, func(a, b entry) int { return strings.Compare(a.name, b.name) })
+	for _, e := range entries {
+		if !namePattern.MatchString(e.name) {
+			return nil, fmt.Errorf("%s: name refused by tribe-menus-deploy", e.name)
+		}
+	}
 	return entries, nil
 }
 
@@ -163,18 +184,19 @@ func fileMode(info fs.FileInfo) int64 {
 	return 0o644
 }
 
-// pack writes the entries as a gzip-compressed tar, under the directory top.
-func pack(w io.Writer, fsys fs.FS, top string, entries []entry) error {
+// pack writes the entries as a gzip-compressed tar, under the directory top, the markers of
+// the pages of the site replaced.
+func pack(w io.Writer, fsys fs.FS, top string, entries []entry, markers *strings.Replacer) error {
 	gz, err := gzip.NewWriterLevel(w, gzip.BestCompression)
 	if err != nil {
 		return fmt.Errorf("gzip: %w", err)
 	}
 	tw := tar.NewWriter(gz)
-	if err := writeEntry(tw, fsys, top, entry{mode: 0o755}); err != nil {
+	if err := writeEntry(tw, fsys, top, entry{mode: 0o755}, markers); err != nil {
 		return err
 	}
 	for _, e := range entries {
-		if err := writeEntry(tw, fsys, top, e); err != nil {
+		if err := writeEntry(tw, fsys, top, e, markers); err != nil {
 			return err
 		}
 	}
@@ -187,8 +209,13 @@ func pack(w io.Writer, fsys fs.FS, top string, entries []entry) error {
 	return nil
 }
 
+// isPage tells the files whose markers are replaced.
+func isPage(name string) bool {
+	return strings.HasPrefix(name, "site/") && strings.HasSuffix(name, ".html")
+}
+
 // writeEntry writes one entry, owned by root, dated modTime.
-func writeEntry(tw *tar.Writer, fsys fs.FS, top string, e entry) error {
+func writeEntry(tw *tar.Writer, fsys fs.FS, top string, e entry, markers *strings.Replacer) error {
 	header := &tar.Header{
 		Name:    path.Join(top, e.name),
 		Mode:    e.mode,
@@ -206,6 +233,12 @@ func writeEntry(tw *tar.Writer, fsys fs.FS, top string, e entry) error {
 	data, err := fs.ReadFile(fsys, e.source)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", e.source, err)
+	}
+	if isPage(e.source) {
+		data = []byte(markers.Replace(string(data)))
+		if bytes.Contains(data, marker) {
+			return fmt.Errorf("%s: marker left", e.source)
+		}
 	}
 	header.Typeflag = tar.TypeReg
 	header.Size = int64(len(data))

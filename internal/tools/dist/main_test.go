@@ -66,7 +66,7 @@ func unpack(t *testing.T, archive []byte) []archived {
 
 func TestWrite(t *testing.T) {
 	dir := t.TempDir()
-	archive, err := write(repository(), dir, "v1.2.3")
+	archive, err := write(repository(), dir, "v1.2.3", "0123abc")
 	if err != nil {
 		t.Fatalf("write: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestWrite(t *testing.T) {
 }
 
 func TestWriteIsReproducible(t *testing.T) {
-	first, err := write(repository(), t.TempDir(), "pr-12")
+	first, err := write(repository(), t.TempDir(), "pr-12", "0123abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestWriteIsReproducible(t *testing.T) {
 		}
 		again[name] = file
 	}
-	second, err := write(again, t.TempDir(), "pr-12")
+	second, err := write(again, t.TempDir(), "pr-12", "0123abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,12 +153,18 @@ func TestWriteRefuses(t *testing.T) {
 		{name: "symbolic link", change: func(r fstest.MapFS) {
 			r["deploy/link"] = &fstest.MapFile{Data: []byte("/etc/passwd"), Mode: fs.ModeSymlink}
 		}, want: "deploy/link is not a file"},
+		{name: "name refused by tribe-menus-deploy", change: func(r fstest.MapFS) {
+			r["site/fonts/Figtree[wght].woff2"] = &fstest.MapFile{Data: []byte("font")}
+		}, want: "site/fonts/Figtree[wght].woff2: name refused"},
+		{name: "unknown marker", change: func(r fstest.MapFS) {
+			r["site/index.html"] = &fstest.MapFile{Data: []byte("<p>{{DATE}}</p>")}
+		}, want: "site/index.html: marker left"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			r := repository()
 			tc.change(r)
-			_, err := write(r, t.TempDir(), "dev")
+			_, err := write(r, t.TempDir(), "dev", "")
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("write error = %v, want %q", err, tc.want)
 			}
@@ -175,6 +181,7 @@ func TestRun(t *testing.T) {
 		{name: "no version", args: nil, wantCode: 2},
 		{name: "path in the version", args: []string{"-version", "../v1"}, wantCode: 2},
 		{name: "extra argument", args: []string{"-version", "v1.2.3", "extra"}, wantCode: 2},
+		{name: "not a commit", args: []string{"-version", "v1.2.3", "-commit", "main"}, wantCode: 2},
 		{name: "binary not built", args: []string{"-version", "v1.2.3"}, wantCode: 1},
 	}
 	t.Chdir(t.TempDir())
@@ -183,6 +190,48 @@ func TestRun(t *testing.T) {
 			var stdout, stderr bytes.Buffer
 			if code := run(tc.args, &stdout, &stderr); code != tc.wantCode {
 				t.Errorf("code = %d, want %d (stderr %q)", code, tc.wantCode, stderr.String())
+			}
+		})
+	}
+}
+
+// The pages of the site receive the version and the address of its source code: the tag
+// of a release, the commit otherwise (ADR 0011, point 2; plan recette, D17). Other files of
+// the site are copied as they are.
+func TestWriteSiteMarkers(t *testing.T) {
+	page := `<a href="{{SOURCE_URL}}">Code source de cette version ({{VERSION}})</a>`
+	tests := []struct {
+		version, commit, want string
+	}{
+		{"v1.2.3", "0123abc", `<a href="https://github.com/nelt/tribe-menus/tree/v1.2.3">Code source de cette version (v1.2.3)</a>`},
+		{"pr-12", "0123abc", `<a href="https://github.com/nelt/tribe-menus/tree/0123abc">Code source de cette version (pr-12)</a>`},
+		{"dev", "", `<a href="https://github.com/nelt/tribe-menus">Code source de cette version (dev)</a>`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.version, func(t *testing.T) {
+			r := repository()
+			r["site/legal/index.html"] = &fstest.MapFile{Data: []byte(page)}
+			r["site/site.css"] = &fstest.MapFile{Data: []byte("/* {{VERSION}} */")}
+			archive, err := write(r, t.TempDir(), tc.version, tc.commit)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(archive)
+			if err != nil {
+				t.Fatal(err)
+			}
+			top := "tribe-menus-" + tc.version + "-linux-amd64/"
+			for _, e := range unpack(t, data) {
+				switch e.name {
+				case top + "site/legal/index.html":
+					if e.content != tc.want {
+						t.Errorf("page = %q, want %q", e.content, tc.want)
+					}
+				case top + "site/site.css":
+					if e.content != "/* {{VERSION}} */" {
+						t.Errorf("style sheet changed: %q", e.content)
+					}
+				}
 			}
 		})
 	}

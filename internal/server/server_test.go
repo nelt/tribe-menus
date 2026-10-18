@@ -138,8 +138,8 @@ func TestSourceURL(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := sourceURL(tc.version, tc.commit); got != tc.want {
-				t.Errorf("sourceURL(%q, %q) = %q, want %q", tc.version, tc.commit, got, tc.want)
+			if got := SourceURL(tc.version, tc.commit); got != tc.want {
+				t.Errorf("SourceURL(%q, %q) = %q, want %q", tc.version, tc.commit, got, tc.want)
 			}
 		})
 	}
