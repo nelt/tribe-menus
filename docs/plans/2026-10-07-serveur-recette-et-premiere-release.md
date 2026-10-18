@@ -129,39 +129,39 @@ Prérequis : S1 faite, lot B fusionné, PR du lot C ouverte avec une CI verte.
 
 Amorçage :
 
-- [ ] Archive de la PR du lot C téléchargée sur l'hôte (`gh run download`), empreinte vérifiée (`sha256sum -c`), copiée sur le serveur (`scp`).
-- [ ] Première connexion SSH avec le compte de l'image (`root` chez PulseHeberg, ADR 0025) ; empreinte de la clé d'hôte affichée par `ssh` comparée à celle que donne la console web de l'hébergeur (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), puis notée dans le gestionnaire.
-- [ ] `/etc/tribe-menus/instance.conf` écrit à partir de `deploy/instance.example.conf` (D4).
-- [ ] `./tribe-menus-<version>-linux-amd64/deploy/provision.sh production recette`, en `root`, depuis l'archive déballée : il crée le compte d'administration et demande son mot de passe `sudo`.
+- [x] Archive de la PR du lot C téléchargée sur l'hôte (`gh run download`), empreinte vérifiée (`sha256sum -c`), copiée sur le serveur (`scp`).
+- [x] Première connexion SSH avec le compte de l'image (`root` chez PulseHeberg, ADR 0025) ; empreinte de la clé d'hôte affichée par `ssh` comparée à celle que donne la console web de l'hébergeur (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), puis notée dans le gestionnaire.
+- [x] `/etc/tribe-menus/instance.conf` écrit à partir de `deploy/instance.example.conf` (D4).
+- [x] `./tribe-menus-<version>-linux-amd64/deploy/provision.sh production recette`, en `root`, depuis l'archive déballée : il crée le compte d'administration et demande son mot de passe `sudo`.
 
 Accès (D14) :
 
-- [ ] Dans un second terminal, **avant de fermer le premier** : connexion par clé avec le compte d'administration personnel ; connexion refusée pour `root` et par mot de passe.
-- [ ] Mot de passe `sudo` de ce compte, choisi au premier lancement, rangé dans le gestionnaire.
-- [ ] `sudo /root/tribe-menus-<version>-linux-amd64/deploy/provision.sh production recette` depuis ce compte : il ne change rien d'autre que la fermeture de SSH à `root`.
+- [ ] Dans un second terminal, **avant de fermer le premier** : connexion par clé avec le compte d'administration personnel ; connexion refusée pour `root` et par mot de passe. *Le 2026-10-18 : connexion par clé faite ; refus constatés dans la configuration effective (`tribe-menus-check`, `sshd -T`), essais de connexion à confirmer par le développeur.*
+- [x] Mot de passe `sudo` de ce compte, choisi au premier lancement, rangé dans le gestionnaire.
+- [x] `sudo /root/tribe-menus-<version>-linux-amd64/deploy/provision.sh production recette` depuis ce compte : il ne change rien d'autre que la fermeture de SSH à `root`.
 
 Secrets (D5), saisis au clavier sur le serveur, jamais collés dans une commande :
 
-- [ ] mot de passe de `no-reply@`, pour chaque environnement (`sudo tribe-menus-credential recette smtp-password`, puis `production`) ;
-- [ ] mot de passe de `server@` (`sudo tribe-menus-credential server smtp-password`) ;
-- [ ] jeton GitHub de S1 (`sudo tribe-menus-credential server github-token`).
+- [x] mot de passe de `no-reply@`, pour chaque environnement (`sudo tribe-menus-credential recette smtp-password`, puis `production`) ;
+- [x] mot de passe de `server@` (`sudo tribe-menus-credential server smtp-password`) ;
+- [x] jeton GitHub de S1 (`sudo tribe-menus-credential server github-token`).
 
 Recette :
 
-- [ ] `sudo tribe-menus-deploy --env recette --pr <numéro>`.
-- [ ] Fichier des membres de la tribu de recette écrit sur le serveur (D3) : les adresses `recette-…@codingmatters.org`, une adresse directe à soi par messagerie à essayer en S3, et `recette-inconnu@codingmatters.org`.
-- [ ] `sudo tribe-menus-admin recette seed -members <fichier>` : membres relus à l'écran avant de confirmer (une tribu créée ne change plus ; `deploy/README.md` dit comment recréer celle de la recette).
-- [ ] Depuis l'ordinateur : `https://recette.meltingtribe.codingmatters.org/tribes/demo/` s'ouvre avec un certificat valide ; un code demandé arrive, la connexion réussit (`production`, étape 14).
+- [x] `sudo tribe-menus-deploy --env recette --pr <numéro>`.
+- [x] Fichier des membres de la tribu de recette écrit sur le serveur (D3) : les adresses `recette-…@codingmatters.org`, une adresse directe à soi par messagerie à essayer en S3, et `recette-inconnu@codingmatters.org`.
+- [x] `sudo tribe-menus-admin recette seed -members <fichier>` : membres relus à l'écran avant de confirmer (une tribu créée ne change plus ; `deploy/README.md` dit comment recréer celle de la recette).
+- [x] Depuis l'ordinateur : `https://recette.meltingtribe.codingmatters.org/tribes/demo/` s'ouvre avec un certificat valide ; un code demandé arrive, la connexion réussit (`production`, étape 14).
 
 Production, sans version encore (D1) :
 
-- [ ] `https://meltingtribe.codingmatters.org/` répond avec un certificat valide et la page d'attente : aucune version n'est installée avant S4.
+- [x] `https://meltingtribe.codingmatters.org/` répond avec un certificat valide et la page d'attente : aucune version n'est installée avant S4.
 
 Contrôle :
 
-- [ ] `sudo reboot` ; au retour, la recette est servie sans rien relancer à la main.
-- [ ] `sudo tribe-menus-check` : aucune ligne en échec ; l'e-mail d'essai du serveur est reçu.
-- [ ] Rapport remis à Claude Code.
+- [x] `sudo reboot` ; au retour, la recette est servie sans rien relancer à la main.
+- [x] `sudo tribe-menus-check` : aucune ligne en échec ; l'e-mail d'essai du serveur est reçu.
+- [x] Rapport remis à Claude Code.
 
 ### S3. Recette sur appareils
 
@@ -334,7 +334,7 @@ Points d'attention de la revue : arguments validés avant de servir à un chemin
   - `X-Forwarded-For` forgé sans effet : onze demandes de code portant chacune une adresse inventée, la onzième est refusée. L'essai consomme le budget de l'heure de la connexion d'où il part.
   - DNS, par un résolveur public : CAA, DNSSEC, SPF, DKIM, DMARC.
   - Temps de réponse (`revue-securite`, « Ce qui n'a pas pu être vérifié »), en recette : requêtes alternées pour un membre et une autre adresse, une tribu existante et une autre, sur `POST sessions` puis `POST login-codes`, au rythme que les limites laissent à un attaquant ; médianes, dispersion et verdict.
-- [ ] **22. Séance 2**, par le développeur, sur l'archive de cette PR : check-list S2.
+- [x] **22. Séance 2**, par le développeur, sur l'archive de cette PR : check-list S2.
 - [ ] **23. Contrôles après la séance 2**, par Claude Code : `make probe` sur la recette ; lecture du rapport de `tribe-menus-check`. Les défauts se corrigent dans la PR, qui est redéployée. Les deux rapports sont joints à la PR : c'est le contrôle du serveur en place, que la session cloud relit avec le code.
 - [x] **24. Documentation du lot** : ADR 0016 précisé (D1, D6, D7, D8) ; `docs/securite-depot.md` (jeton du serveur, section 1) ; `CLAUDE.md` (`make probe`, scripts de `deploy/`) ; `CHANGELOG.md` ; feuille de route (points reportés des constats 4 et 11 et du temps de réponse retirés) ; cases cochées.
 
@@ -361,6 +361,7 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
   - `EHLO localhost` : si un filtre s'en formalise, se présenter avec l'hôte de `baseURL` (point 3).
   - Échecs d'envoi : ne compter que les étapes de connexion et d'authentification, ou garder le sens large et l'écrire dans l'ADR 0023 (revue de la PR #47, point 3).
   - Tout défaut relevé sur les appareils, avec le scénario qui le prouve.
+  - Connexions simultanées limitées par adresse dans `nftables` (IPv4, et IPv6 par préfixe /64) sur les ports 80 et 443, contre les connexions tenues ouvertes que Caddy ne coupe pas sur `/tribes/*` (étape 23, constat de Caddy) ; le seuil se fixe d'après les journaux d'accès des premières semaines, plusieurs appareils pouvant partager une adresse (box, NAT d'un opérateur mobile). Décidé par le développeur le 2026-10-18.
 
 ### Première release, suite : ouverture de la production et retours arrière
 
@@ -479,3 +480,13 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
     - le confinement des unités du relais et de la panne (`ProtectSystem=full`, en `root`) avec `msmtp` et `systemd-creds` ;
     - un `drill` qui produit un seul e-mail de panne.
   - Pour information, sans suite dans ce lot : `tribe-menus-maintenance` ne prend pas le verrou de `tribe-menus-deploy` ; une alerte `smtp_failures` n'est que retardée jusqu'au retour du MX Plan, un canal indépendant relevant de la sonde externe (ADR 0015) ; la fenêtre de D7 (une nouvelle version qui répondrait juste après les soixante secondes) est négligeable à ce volume.
+- **Séance S2** (2026-10-18), par le développeur, sur l'archive de la PR #56, guidé par Claude Code dans le Dev Container ; de 8 h 30 à 12 h environ d'après les horodatages du serveur, corrections comprises, contre 1 h 30 visée. Aucune correction manuelle sur le serveur : le VPS n'a pas à être réinstallé. Ce que le serveur a révélé, corrigé dans la PR avec un test chaque fois, la CI repassant au vert :
+  - `provision.sh` s'arrêtait sur « sshd does not apply PasswordAuthentication no » alors que la configuration était appliquée : sous `pipefail`, `grep -q` qui s'arrête à la première ligne fait échouer `sshd -T` par `SIGPIPE`, selon une course. Toutes les sorties sont lues dans une variable avant d'être filtrées (`provision.sh`, `tribe-menus-check`).
+  - La règle `NOPASSWD` de cloud-init (`/etc/sudoers.d/90-cloud-init-users`) ne vise que `root` : sans danger, elle était signalée. Le script et `tribe-menus-check` demandent désormais à `sudo -l -U` ce qui s'applique au compte d'administration, qui n'a pas de règle sans mot de passe.
+  - `PRODUCTION_HOST` et `RECETTE_HOST` laissés aux valeurs de l'exemple : Caddy n'avait de site que pour `example.org` (`ERR_SSL_PROTOCOL_ERROR` sur les vrais noms), et `admin seed` affichait une URL d'exemple. `provision.sh` refuse désormais toute valeur en `example.org`, `.com` ou `.net` sur le serveur.
+  - Le relais des alertes échouait à chaque passage : `journalctl` refuse `--since=` avec `--cursor-file=`. Il lit avec `--after-cursor=` ou `--since=`, et `--show-cursor` ; un curseur refusé est oublié. Le test simulait `journalctl` sans cette règle ; il l'applique désormais, et un test passe par le vrai `journalctl`.
+  - `systemd-resolved` de l'image écoutait sur le port 5355 (LLMNR), que le pare-feu refusait déjà : LLMNR et mDNS coupés par `provision.sh`. `tribe-menus-check` s'arrêtait ensuite en silence, son filtre des ports échouant sur un résultat vide ; le filtre est fait par `awk`.
+  - `tribe-menus-check` signalait en échec le socket de la production, qui n'écoute pas sans version : en `info` désormais. L'en-tête `To:` des e-mails du serveur porte l'adresse de l'administrateur : `root` seul était complété par le serveur du MX Plan avec son propre nom de machine.
+  - Constaté sans défaut : premier `--pr` accepté par la vraie API (`.path` de l'exécution égal à `.github/workflows/ci.yml`, point 5 de la revue de la PR #56) ; deux déploiements suivants avec une version précédente ; provisionnement relancé depuis la version installée en recette (`deploy/README.md`) ; code reçu par la redirection `recette-alice@` dans la boîte de réception de Gmail, SPF, DKIM et DMARC « pass » (ARC conservé par la redirection), sélecteur DKIM `ovhmo1952894-selector1` ; connexion à la tribu de recette ; page d'attente de la production avec un certificat valide ; redémarrage sans geste ; `tribe-menus-check` sans échec, note de `systemd-analyze security` de 1,1 sur le serveur ; `drill` : un seul e-mail de panne, et l'essai du disque, reçus (point 5 de la revue). Premier rapport DMARC agrégé de Google reçu à `admin@`.
+  - Pour la check-list : l'empreinte de la clé d'hôte se compare à la console de l'hébergeur, pas à une lecture par la connexion SSH elle-même (formulation corrigée) ; le résumé de `provision.sh` cite l'adresse du compte `server@`, à ne pas copier telle quelle dans une PR ; un second terminal ouvert par erreur sur le poste a fait croire que `sudo` ne demandait pas de mot de passe sur le serveur.
+- **Étape 23** (2026-10-18) : `tribe-menus-check` sans échec ; `make probe` sur la recette, 39 points sur 40. **Constat de Caddy** : une requête vers `/tribes/*` dont le corps n'arrive jamais reste ouverte sans limite (plus de 200 s constatées en recette, statut 499 quand le client abandonne), alors que `read_body` coupe celles du site à 20 s. Reproduit dans le Dev Container avec Caddy 2.11.7 compilé à partir de ses sources : au dépassement du délai de lecture, l'enveloppe du corps de Caddy (`IdleTimeoutReader`) retire le délai de la connexion, et `net/http`, en refermant le corps, lit le reste annoncé (moins de 256 Ko) sans délai. L'application, elle, a répondu 400. Aucun réglage de Caddy n'y remédie (`read_body_idle`, `request_buffers`, délais du transport du proxy ; pas de délai dans `request_body`). Portée : des connexions tenues ouvertes à peu de frais, disponibilité seulement. Décision du développeur : signalé au projet Caddy, limite de connexions par adresse dans le pare-feu au lot E (étape 31). Reste à faire pour l'étape 23 : la mesure des temps de réponse (`make probe … -timing`), qui demande six heures pour un verdict sur `POST login-codes` et bloque pendant ce temps les demandes de code depuis la connexion du développeur.
