@@ -208,7 +208,7 @@ Rapport :
 
 ### S4. Première release, ouverture de la production et retours arrière
 
-Prérequis : S3 sans défaut ouvert (lot E fusionné s'il y en avait), PR de release à jour avec `main` et verte, deux PR d'essai prêtes (étape 32). À partir du déploiement de `v0.1.0` en production, le signal d'arrêt des vulnérabilités s'applique.
+Prérequis : S3 sans défaut ouvert (lot E fusionné s'il y en avait), PR de release à jour avec `main` et verte, deux PR d'essai prêtes (étape 32). **Le lot E, avec la limite de connexions par adresse dans le pare-feu (étape 31), est fusionné et le provisionnement relancé avant S4** : la production n'ouvre pas avec la faiblesse de Caddy connue (étape 23 ; revue de la PR #56 après S2, point 5 ; décision du développeur le 2026-10-18). À partir du déploiement de `v0.1.0` en production, le signal d'arrêt des vulnérabilités s'applique.
 
 Release (`RELEASING.md`, étapes 7 à 10) :
 
@@ -494,3 +494,4 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Étape 23, temps de réponse** : la mesure se fait sur cette PR, lancée le 2026-10-18 à 16 h (heure de Paris), sept heures de demandes de code ; son verdict est consigné ici avant la fusion. Un écart exploitable deviendrait un constat à traiter avant S4 (critères de validation, « Temps de réponse »).
   - **IPv6 non vérifié de l'extérieur** : le Dev Container n'a pas d'IPv6, `make probe` ne contrôle les ports qu'en IPv4 ; en IPv6, seules les règles relues sur le serveur par `tribe-menus-check` en répondent. À faire avant S4, depuis une connexion qui a IPv6 (partage de connexion d'un téléphone, par exemple).
   - Pour information : la politique de sécurité de Caddy demande un signalement privé, et que le rapport dise si une IA a servi à la découverte, à l'écriture ou aux essais ; `admin_address` est écrite à l'identique dans `tribe-menus-alert` et `tribe-menus-check`, à garder alignée.
+  - **Point 5, ouverture de la production avec la faiblesse de Caddy connue** : la limite de connexions reste au lot E, qui précède S4 ; il est désormais écrit dans les prérequis de S4 que le lot E est fusionné, et le provisionnement relancé, avant l'ouverture (décision du développeur le 2026-10-18).
