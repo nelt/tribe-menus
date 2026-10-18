@@ -154,6 +154,14 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 - **Confidentialité** : données traitées ; deux cookies, strictement nécessaires : celui de la session, et un cookie de 10 minutes posé à la demande d'un code de connexion (ENF-01), chacun propre à une tribu (ADR 0024) ; aucune mesure d'audience ni cookie sur le site public ; hébergement en France ; durées de conservation (empreintes d'adresse et d'IP pour la limitation des demandes de code 1 heure et 10 minutes au plus, journaux du serveur 1 mois, journal d'audit 12 mois) et suppression sur demande (EF-10, EF-11) ; droits et CNIL.
 - **Valeurs posées au déploiement** : `[DATE]` et `[VERSION]` dans les maquettes.
 
+**Réalisation** (plan `recette`, lot D, 2026-10-18) : `site/`, HTML et CSS statiques, sans JavaScript ni style en ligne, que la CSP du site interdit (`deploy/provision.sh`).
+
+- **Pages** : `/` (`site/index.html`), `/mentions-legales/` et `/confidentialite/`, chacune dans son dossier, pour des adresses sans extension ; une seule feuille de style, `site/site.css`, téléphone d'abord, mise en page d'ordinateur à partir de 900 px.
+- **Ressources du site**, servies par lui : polices dans `site/fonts/` et fichiers d'identité dans `site/images/`, copies de `web/src/fonts/` et de `identite/` sous des noms sans crochets ni virgules, que `tribe-menus-deploy` refuse dans une archive ; un test (`internal/tools/dist`) vérifie qu'elles restent identiques à leurs sources. Favicon : `symbole-reduit.svg` ; balises Open Graph et Twitter avec `partage.png`, en adresse absolue de la production.
+- **En-tête** : symbole et logotype (`logotype.svg`, coulée comprise) ; sur téléphone, le bouton « Code » seul ; sur ordinateur, « Comment ça marche », « Logiciel libre » et « Code source ». Un lien d'évitement « Aller au contenu » le précède.
+- **Version** : `[VERSION]` devient `{{VERSION}}`, et l'adresse du lien « Code source de cette version » `{{SOURCE_URL}}`, que `make dist` remplace en construisant l'archive : l'étiquette d'une release, le commit d'une archive de PR (règle de `server.SourceURL`, comme le lien de l'écran de connexion). Sous `make dev`, le site est servi sans ce remplacement. `[DATE]` est écrite à la main dans les deux pages légales.
+- **Textes accordés à l'application et au serveur** au terme du plan `recette` : hébergeur PulseHeberg et envoi des e-mails par OVHcloud ; cookies propres à une tribu ; membre conservé tant qu'il fait partie de la tribu, effacé sur demande (la révocation n'existe pas encore) ; copies des bases prises avant chaque mise à jour, gardées le temps des cinq suivantes (ajout). Le journal d'audit est annoncé à 12 mois (PT-07), mais son effacement automatique n'est pas encore écrit : point reporté de la feuille de route.
+
 ### Connexion et chargement
 
 | Écran | Maquette | Stories |
@@ -269,5 +277,3 @@ Dans `maquettes/identite/` : `Symbole`, `SymboleMini`, `SymboleMono` et `Wordmar
 ## Reste à faire
 
 - Générer les fichiers d'icônes (PNG 192, 512, maskable, Apple 180 ; favicon SVG).
-- Réaliser le site public dans `site/` à partir des maquettes ; aujourd'hui, `site/index.html` n'est qu'une page d'attente.
-- Créer la boîte `contact@codingmatters.org` avant la publication du site.
