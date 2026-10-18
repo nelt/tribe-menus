@@ -86,30 +86,45 @@ healthy() {
 
 # --- State of the server -----------------------------------------------------------------
 
+# Outputs are read whole before being searched: under pipefail, grep -q stopping at the
+# first match would make the writer fail on SIGPIPE (séance S2).
+SSHD=''
+
 sshd_has() {
-	sshd -T 2>/dev/null | grep -qx -- "$1"
+	grep -qx -- "$1" <<<"$SSHD"
+}
+
+# admitted prints the accounts SSH admits, one per line.
+admitted() {
+	sed -n 's/^allowusers //p' <<<"$SSHD"
 }
 
 # allow_users_is_one succeeds when SSH admits a single account, which is not root.
 allow_users_is_one() {
 	local users
-	users=$(sshd -T 2>/dev/null | sed -n 's/^allowusers //p')
-	[[ $(wc -l <<<"$users") == 1 && -n $users && $users != root ]]
+	users=$(admitted)
+	[[ -n $users && $(wc -l <<<"$users") == 1 && $users != root ]]
 }
 
-no_nopasswd() {
-	! grep -rEqs '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d
+# admin_sudo_asks_password succeeds when sudo has no NOPASSWD rule for the account SSH
+# admits: one for root alone, as cloud-init writes, is harmless.
+admin_sudo_asks_password() {
+	local rules
+	allow_users_is_one || return 1
+	rules=$(sudo -l -U "$(admitted)") || return 1
+	! grep -q NOPASSWD <<<"$rules"
 }
 
 check_ssh() {
 	section "SSH and sudo"
+	SSHD=$(sshd -T 2>/dev/null || true)
 	check "root may not connect" sshd_has "permitrootlogin no"
 	check "keys only" sshd_has "authenticationmethods publickey"
 	check "no password" sshd_has "passwordauthentication no"
 	check "no keyboard-interactive" sshd_has "kbdinteractiveauthentication no"
 	check "a single account admitted, not root" allow_users_is_one
 	check "no forwarding" sshd_has "allowtcpforwarding no"
-	check "sudo asks for a password (no NOPASSWD rule)" no_nopasswd
+	check "sudo asks the administration account for a password" admin_sudo_asks_password
 	check "SSH closed to root by provision.sh" test -e /var/lib/tribe-menus/provision/root-ssh-closed
 }
 
@@ -322,7 +337,7 @@ drill() {
 	systemctl daemon-reload
 	systemctl kill --signal=SIGKILL tribe-menus@recette.service
 	for ((i = 0; i < 30; i++)); do
-		if journalctl --unit tribe-menus-failure@recette.service --since "@$start" --quiet --no-pager | grep -q .; then
+		if [[ -n $(journalctl --unit tribe-menus-failure@recette.service --since "@$start" --quiet --no-pager) ]]; then
 			break
 		fi
 		sleep 1
@@ -334,7 +349,7 @@ drill() {
 	fi
 	sleep 5
 	if [[ $(systemctl show --property Result --value tribe-menus-failure@recette.service) == success ]] &&
-		journalctl --unit tribe-menus-failure@recette.service --since "@$start" --quiet --no-pager | grep -q .; then
+		[[ -n $(journalctl --unit tribe-menus-failure@recette.service --since "@$start" --quiet --no-pager) ]]; then
 		ok "failure alert sent: check that the administrator received it"
 	else
 		fail "failure alert not sent (journalctl -u tribe-menus-failure@recette.service)"

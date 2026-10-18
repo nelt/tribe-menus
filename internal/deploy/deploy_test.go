@@ -737,3 +737,36 @@ report
 		t.Errorf("report incomplete:\n%s", out)
 	}
 }
+
+// The checks of SSH read the whole output of sshd -T: under pipefail, grep -q stopping at
+// the first match made sshd fail on SIGPIPE, and the check with it (séance S2). A NOPASSWD
+// rule for root alone, as cloud-init writes, does not fail the check of sudo.
+func TestCheckSSH(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-check"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	prelude := `
+set -euo pipefail
+source "$SCRIPT"
+sshd() {
+	printf '%s\n' 'permitrootlogin no' 'authenticationmethods publickey' 'passwordauthentication no' \
+		'kbdinteractiveauthentication no' 'allowusers alice' 'allowtcpforwarding no'
+	seq 1 200000 | sed 's/^/padding /'
+}
+sudo() {
+	[[ $1 == -l && $2 == -U && $3 == alice ]] || return 1
+	printf 'User alice may run the following commands:\n    (ALL : ALL) ALL\n'
+}
+check_ssh
+`
+	cmd := exec.Command("bash", "-c", prelude)
+	cmd.Env = append(os.Environ(), "SCRIPT="+script)
+	out, _ := cmd.CombinedOutput()
+	for _, point := range []string{"root may not connect", "keys only", "no password", "no keyboard-interactive",
+		"a single account admitted, not root", "no forwarding", "sudo asks the administration account for a password"} {
+		if !strings.Contains(string(out), "ok    "+point+"\n") {
+			t.Errorf("%q not ok:\n%s", point, out)
+		}
+	}
+}

@@ -367,8 +367,12 @@ EOF
 	fi
 }
 
+# Outputs are read whole before being searched: under pipefail, grep -q stopping at the
+# first match would make the writer fail on SIGPIPE (séance S2).
 chrony_installed() {
-	dpkg-query -W -f='${Status}' chrony 2>/dev/null | grep -q 'ok installed'
+	local status
+	status=$(dpkg-query -W -f='${Status}' chrony 2>/dev/null) || return 1
+	[[ $status == *"ok installed"* ]]
 }
 
 configure_system() {
@@ -431,7 +435,7 @@ configure_mail() {
 # its key (ADR 0015, point 3; plan recette, D14). Root keeps its key until the script runs
 # from that account through sudo, which proves the account works (ADR 0025, point 3).
 configure_ssh() {
-	local admin=${conf[ADMIN_USER]} root_login allow home
+	local admin=${conf[ADMIN_USER]} root_login allow home rules effective
 	local drop_in=/etc/ssh/sshd_config.d/00-tribe-menus.conf
 	step "Administration account and SSH"
 	if ! id -u -- "$admin" >/dev/null 2>&1; then
@@ -450,8 +454,10 @@ configure_ssh() {
 		printf 'Password of %s, asked by sudo (keep it in the password manager):\n' "$admin"
 		passwd -- "$admin"
 	fi
-	if grep -rEqs '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d; then
-		printf 'provision: warning: a sudoers rule grants sudo without a password:\n' >&2
+	# Asked to sudo itself: a NOPASSWD rule for root alone, as cloud-init writes, is harmless.
+	rules=$(sudo -l -U "$admin") || die "sudo -l -U $admin failed"
+	if grep -q NOPASSWD <<<"$rules"; then
+		printf 'provision: warning: a sudoers rule grants sudo without a password to %s:\n' "$admin" >&2
 		grep -rEls '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d >&2 || true
 	fi
 
@@ -498,10 +504,11 @@ EOF
 		systemctl reload ssh
 	fi
 	rm -f -- "$drop_in.previous"
+	effective=$(sshd -T) || die "sshd -T failed"
 	# sshd -T writes prohibit-password under its older name.
-	sshd -T | grep -Eqx "permitrootlogin ${root_login/prohibit-password/(prohibit|without)-password}" ||
+	grep -Eqx "permitrootlogin ${root_login/prohibit-password/(prohibit|without)-password}" <<<"$effective" ||
 		die "sshd does not apply PermitRootLogin $root_login"
-	sshd -T | grep -qx 'passwordauthentication no' || die "sshd does not apply PasswordAuthentication no"
+	grep -qx 'passwordauthentication no' <<<"$effective" || die "sshd does not apply PasswordAuthentication no"
 	if [[ $root_login != no ]]; then
 		printf '\nRoot can still connect by SSH, with its key. In a second terminal, connect as %s,\n' "$admin"
 		printf 'then run this script again with sudo from that account: it closes SSH to root.\n'
