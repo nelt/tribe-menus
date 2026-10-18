@@ -408,6 +408,21 @@ EOF
 		systemctl restart systemd-journald
 	fi
 
+	# The image of PulseHeberg runs systemd-resolved with LLMNR, which listens on port 5355
+	# for name queries of the local network: nothing here needs it (séance S2).
+	if systemctl is-active --quiet systemd-resolved; then
+		install -d -m 0755 /etc/systemd/resolved.conf.d
+		put 0644 root:root /etc/systemd/resolved.conf.d/50-tribe-menus.conf <<'EOF'
+# Produced by provision.sh: do not edit (deploy/README.md).
+[Resolve]
+LLMNR=no
+MulticastDNS=no
+EOF
+		if ((changed)); then
+			systemctl restart systemd-resolved
+		fi
+	fi
+
 	step "Automatic security updates"
 	put 0644 root:root /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
 // Produced by provision.sh: do not edit (deploy/README.md).
