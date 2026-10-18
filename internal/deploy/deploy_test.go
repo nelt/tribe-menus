@@ -788,14 +788,28 @@ report
 }
 
 // The checks of SSH read the whole output of sshd -T: under pipefail, grep -q stopping at
-// the first match made sshd fail on SIGPIPE, and the check with it (séance S2). A NOPASSWD
-// rule for root alone, as cloud-init writes, does not fail the check of sudo.
+// the first match made sshd fail on SIGPIPE, and the check with it (séance S2). sudo asks
+// a password of the administration account unless a NOPASSWD rule or a Defaults
+// !authenticate applies to it (D14; review of PR #56 after S2, point 2); a NOPASSWD rule
+// for root alone, as cloud-init writes, does not count.
 func TestCheckSSH(t *testing.T) {
 	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-check"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	prelude := `
+	const sudoPoint = "sudo asks the administration account for a password"
+	tests := []struct {
+		name   string
+		rules  string
+		sudoOK bool
+	}{
+		{"password asked", `Matching Defaults entries for alice on host:\n    env_reset, use_pty\n\nUser alice may run the following commands on host:\n    (ALL : ALL) ALL`, true},
+		{"NOPASSWD", `User alice may run the following commands on host:\n    (ALL : ALL) NOPASSWD: ALL`, false},
+		{"Defaults !authenticate", `Matching Defaults entries for alice on host:\n    env_reset, !authenticate\n\nUser alice may run the following commands on host:\n    (ALL : ALL) ALL`, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			prelude := `
 set -euo pipefail
 source "$SCRIPT"
 sshd() {
@@ -805,18 +819,27 @@ sshd() {
 }
 sudo() {
 	[[ $1 == -l && $2 == -U && $3 == alice ]] || return 1
-	printf 'User alice may run the following commands:\n    (ALL : ALL) ALL\n'
+	printf "$RULES\n"
 }
 check_ssh
 `
-	cmd := exec.Command("bash", "-c", prelude)
-	cmd.Env = append(os.Environ(), "SCRIPT="+script)
-	out, _ := cmd.CombinedOutput()
-	for _, point := range []string{"root may not connect", "keys only", "no password", "no keyboard-interactive",
-		"a single account admitted, not root", "no forwarding", "sudo asks the administration account for a password"} {
-		if !strings.Contains(string(out), "ok    "+point+"\n") {
-			t.Errorf("%q not ok:\n%s", point, out)
-		}
+			cmd := exec.Command("bash", "-c", prelude)
+			cmd.Env = append(os.Environ(), "SCRIPT="+script, "RULES="+tc.rules)
+			out, _ := cmd.CombinedOutput()
+			for _, point := range []string{"root may not connect", "keys only", "no password", "no keyboard-interactive",
+				"a single account admitted, not root", "no forwarding"} {
+				if !strings.Contains(string(out), "ok    "+point+"\n") {
+					t.Errorf("%q not ok:\n%s", point, out)
+				}
+			}
+			want := "FAIL  " + sudoPoint + "\n"
+			if tc.sudoOK {
+				want = "ok    " + sudoPoint + "\n"
+			}
+			if !strings.Contains(string(out), want) {
+				t.Errorf("want %q:\n%s", want, out)
+			}
+		})
 	}
 }
 

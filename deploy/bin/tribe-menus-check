@@ -106,13 +106,14 @@ allow_users_is_one() {
 	[[ -n $users && $(wc -l <<<"$users") == 1 && $users != root ]]
 }
 
-# admin_sudo_asks_password succeeds when sudo has no NOPASSWD rule for the account SSH
-# admits: one for root alone, as cloud-init writes, is harmless.
+# admin_sudo_asks_password succeeds when sudo asks a password of the account SSH admits:
+# neither a NOPASSWD rule nor a Defaults !authenticate applies to it (D14). A rule for root
+# alone, as cloud-init writes, is harmless.
 admin_sudo_asks_password() {
 	local rules
 	allow_users_is_one || return 1
 	rules=$(sudo -l -U "$(admitted)") || return 1
-	! grep -q NOPASSWD <<<"$rules"
+	! grep -Eq 'NOPASSWD|!authenticate' <<<"$rules"
 }
 
 check_ssh() {

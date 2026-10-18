@@ -481,11 +481,12 @@ configure_ssh() {
 		printf 'Password of %s, asked by sudo (keep it in the password manager):\n' "$admin"
 		passwd -- "$admin"
 	fi
-	# Asked to sudo itself: a NOPASSWD rule for root alone, as cloud-init writes, is harmless.
+	# Asked to sudo itself: a NOPASSWD rule or a Defaults !authenticate removes the password;
+	# one for root alone, as cloud-init writes, is harmless.
 	rules=$(sudo -l -U "$admin") || die "sudo -l -U $admin failed"
-	if grep -q NOPASSWD <<<"$rules"; then
+	if grep -Eq 'NOPASSWD|!authenticate' <<<"$rules"; then
 		printf 'provision: warning: a sudoers rule grants sudo without a password to %s:\n' "$admin" >&2
-		grep -rEls '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d >&2 || true
+		grep -rEls '^[^#]*(NOPASSWD|!authenticate)' /etc/sudoers /etc/sudoers.d >&2 || true
 	fi
 
 	install -d -m 0700 -- "$STATE_DIR"
