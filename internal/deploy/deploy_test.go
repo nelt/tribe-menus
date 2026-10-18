@@ -592,6 +592,10 @@ func TestRecovery(t *testing.T) {
 		{name: "deployed, hold lifted", command: "deploy v0.2.0", env: []string{"HEALTHY=1"}, onHold: true, wantOK: true, wantLink: "releases/v0.2.0"},
 		{name: "rollback without answer, on hold", command: "rollback 0", onHold: true, wantLink: "releases/v0.0.9", wantMasked: true},
 		{name: "restore without answer", command: "restore_snapshot avant-v0.1.0", wantLink: "releases/v0.1.0", wantMasked: true},
+		// Every write fails, as on a terminal gone with its SSH session: the script goes on
+		// (review of PR #56, after the session S2).
+		{name: "terminal gone", command: "exec >/dev/full 2>/dev/full; deploy v0.2.0", env: []string{"HEALTHY=1"}, wantOK: true, wantLink: "releases/v0.2.0"},
+		{name: "terminal gone, no answer", command: "exec >/dev/full 2>/dev/full; deploy v0.2.0", onHold: true, wantLink: "releases/v0.1.0", wantMasked: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

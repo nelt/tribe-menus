@@ -43,8 +43,11 @@ die() {
 	exit 1
 }
 
+# say tells what the script does. A terminal gone with its SSH session makes the write
+# fail: it is ignored, the journal (logger -t tribe-menus-deploy) keeps the trace, and the
+# script goes on to the end (review of PR #56, after the session S2).
 say() {
-	printf '%s\n' "$*"
+	printf '%s\n' "$*" 2>/dev/null || true
 }
 
 usage() {
@@ -505,7 +508,7 @@ RECOVER=''
 # signal no longer stops the script (an interrupted SSH session included), and a failure
 # runs the recovery given.
 critical() {
-	trap '' INT HUP TERM
+	trap '' INT HUP TERM PIPE
 	RECOVER=$1
 }
 
@@ -517,7 +520,7 @@ done_critical() {
 on_exit() {
 	local status=$? recover=$RECOVER
 	set +e
-	trap '' INT HUP TERM
+	trap '' INT HUP TERM PIPE
 	RECOVER=''
 	if [[ $status != 0 && -n $recover ]]; then
 		"$recover"
