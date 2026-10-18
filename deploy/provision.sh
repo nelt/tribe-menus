@@ -101,6 +101,18 @@ read_instance() {
 		die "$file: PRODUCTION_HOST and RECETTE_HOST must differ"
 }
 
+# refuse_examples refuses the values of instance.example.conf left as they are, on a real
+# server: a host name of example.org gives Caddy no site for the real names (séance S2).
+# The tests and --render keep them.
+refuse_examples() {
+	local file=$1 key
+	for key in "${!PATTERNS[@]}"; do
+		if [[ ${conf[$key]} =~ (^|[.@])example\.(org|com|net)$ ]]; then
+			die "$file: $key still has a value of the example (deploy/instance.example.conf)"
+		fi
+	done
+}
+
 # host_of prints the host name of an environment.
 host_of() {
 	case $1 in
@@ -672,6 +684,7 @@ main() {
 
 	check_system "$@"
 	read_instance "$INSTANCE_CONF"
+	refuse_examples "$INSTANCE_CONF"
 	install_packages
 	configure_system
 	configure_mail
@@ -685,4 +698,7 @@ main() {
 	summary "$@"
 }
 
-main "$@"
+# Sourced by the tests, which call the functions on their own files.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+	main "$@"
+fi

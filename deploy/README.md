@@ -28,7 +28,7 @@ Le contrôle externe, lancé du Dev Container, est un outil du projet : `make pr
 
 `/etc/tribe-menus/instance.conf` se copie depuis `instance.example.conf` et se remplit avec les vraies valeurs : compte d'administration, adresse de l'administrateur, noms d'hôte, serveur et comptes SMTP de l'application et du serveur. Une ligne `CLÉ=valeur`, sans guillemets ni espaces ; toutes les clés sont obligatoires.
 
-`provision.sh` lit ce fichier comme une donnée, jamais comme du shell : chaque valeur doit correspondre au motif de sa clé (nom d'hôte, adresse e-mail en minuscules, nom de compte, port), ce qui exclut guillemets, espaces, `$` et barres obliques inverses ; une clé inconnue, manquante ou écrite deux fois est refusée, l'erreur nomme la ligne et la clé, jamais la valeur. Il en tire, à chaque lancement :
+`provision.sh` lit ce fichier comme une donnée, jamais comme du shell : chaque valeur doit correspondre au motif de sa clé (nom d'hôte, adresse e-mail en minuscules, nom de compte, port), ce qui exclut guillemets, espaces, `$` et barres obliques inverses ; une clé inconnue, manquante ou écrite deux fois est refusée, l'erreur nomme la ligne et la clé, jamais la valeur. Sur le serveur, une valeur laissée à celle de l'exemple (`example.org`) est refusée elle aussi : un nom d'hôte d'exemple ne donnait à Caddy aucun site pour les vrais noms (séance S2). Il en tire, à chaque lancement :
 
 | Fichier produit | Contenu |
 | --- | --- |

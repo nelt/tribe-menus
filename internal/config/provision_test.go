@@ -146,3 +146,47 @@ func TestProvisionRefusesInstance(t *testing.T) {
 		})
 	}
 }
+
+// On a real server, provision.sh refuses the values of the example left as they are: a host
+// name of example.org gave Caddy no site for the real names (séance S2). --render keeps
+// them, for the tests.
+func TestProvisionRefusesExampleValues(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "provision.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	real := strings.NewReplacer("example.org", "codingmatters.test").Replace(exampleInstance(t))
+	tests := []struct {
+		name     string
+		instance string
+		want     string
+	}{
+		{"example as is", exampleInstance(t), "still has a value of the example"},
+		{"one host left", strings.Replace(real, "RECETTE_HOST=recette.meltingtribe.codingmatters.test", "RECETTE_HOST=recette.meltingtribe.example.org", 1), "RECETTE_HOST still has a value of the example"},
+		{"one address left", strings.Replace(real, "ADMIN_EMAIL=admin@codingmatters.test", "ADMIN_EMAIL=admin@example.org", 1), "ADMIN_EMAIL still has a value of the example"},
+		{"real values", real, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			file := filepath.Join(dir, "instance.conf")
+			if err := os.WriteFile(file, []byte(tc.instance), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command("bash", "-c", `source "$1"; read_instance "$2"; refuse_examples "$2"`, "_", script, file)
+			out, err := cmd.CombinedOutput()
+			if tc.want == "" {
+				if err != nil {
+					t.Errorf("refused: %v\n%s", err, out)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(string(out), tc.want) {
+				t.Errorf("err = %v, output %q, want %q", err, out, tc.want)
+			}
+			if strings.Contains(string(out), "codingmatters") {
+				t.Errorf("error names a value: %s", out)
+			}
+		})
+	}
+}
