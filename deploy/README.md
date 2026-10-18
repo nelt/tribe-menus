@@ -48,7 +48,7 @@ sha256sum -c tribe-menus-<version>-linux-amd64.tar.gz.sha256
 scp tribe-menus-<version>-linux-amd64.tar.gz root@<serveur>:
 ```
 
-Sur le serveur, connecté en `root` (seul compte de l'image PulseHeberg, ADR 0025) :
+À la première connexion, l'empreinte de la clé d'hôte que montre `ssh` se compare à celle que donne la console web de l'hébergeur (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), jamais à une lecture faite par la connexion SSH elle-même. Sur le serveur, connecté en `root` (seul compte de l'image PulseHeberg, ADR 0025) :
 
 ```sh
 tar -xzf tribe-menus-<version>-linux-amd64.tar.gz

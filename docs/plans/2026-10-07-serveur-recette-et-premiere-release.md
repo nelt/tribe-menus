@@ -130,7 +130,7 @@ Prérequis : S1 faite, lot B fusionné, PR du lot C ouverte avec une CI verte.
 Amorçage :
 
 - [ ] Archive de la PR du lot C téléchargée sur l'hôte (`gh run download`), empreinte vérifiée (`sha256sum -c`), copiée sur le serveur (`scp`).
-- [ ] Première connexion SSH avec le compte de l'image (`root` chez PulseHeberg, ADR 0025) ; empreinte de la clé d'hôte du serveur notée dans le gestionnaire.
+- [ ] Première connexion SSH avec le compte de l'image (`root` chez PulseHeberg, ADR 0025) ; empreinte de la clé d'hôte affichée par `ssh` comparée à celle que donne la console web de l'hébergeur (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), puis notée dans le gestionnaire.
 - [ ] `/etc/tribe-menus/instance.conf` écrit à partir de `deploy/instance.example.conf` (D4).
 - [ ] `./tribe-menus-<version>-linux-amd64/deploy/provision.sh production recette`, en `root`, depuis l'archive déballée : il crée le compte d'administration et demande son mot de passe `sudo`.
 
