@@ -6,7 +6,7 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev seed generate lint test acceptance e2e vuln build dist ci
+.PHONY: help tools dev seed generate lint test acceptance e2e vuln build dist probe ci
 
 help: ## List the targets
 	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -56,5 +56,8 @@ build: ## Front end, then static binary for linux/amd64 in bin/ (VERSION, COMMIT
 
 dist: build ## Archive in dist/: binary, site/, deploy/ and LICENSE, with its SHA-256 (VERSION)
 	go run ./internal/tools/dist -version $(VERSION)
+
+probe: ## Checks of an instance from outside: make probe URL=https://<host> [ARGS="-dkim-selector <s>"] (uses up the code requests of the hour)
+	go run ./internal/tools/probe -url "$(URL)" $(ARGS)
 
 ci: lint test acceptance e2e vuln build dist ## All checks required by the CI, in order

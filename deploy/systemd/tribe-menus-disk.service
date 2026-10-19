@@ -1,0 +1,13 @@
+# Email to the administrator when a file system is filled beyond 80 % (ADR 0015, point 15).
+# Installed by provision.sh, started by its timer.
+
+[Unit]
+Description=Melting Tribe: disk usage
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tribe-menus-alert disk
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full

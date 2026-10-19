@@ -1,0 +1,14 @@
+# Relays the alerts the applications write in their journal, by msmtp (ADR 0023, point 1;
+# plan recette, D9). Installed by provision.sh, started by its timer.
+
+[Unit]
+Description=Melting Tribe: relay of the alerts of the application
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tribe-menus-alert relay
+# Root, which alone can decrypt the password of the server account for msmtp.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full

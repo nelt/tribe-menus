@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Puts an environment on hold, or back in service (plan canal-prive: waiting measures;
+# docs/traitement-des-vulnerabilites.md). Installed by provision.sh.
+#
+#   sudo tribe-menus-maintenance production|recette on|off|status
+#
+# On hold, the socket and the service are stopped and masked: stopping the service alone
+# would not do, the first request would start it again through the socket, and a masked
+# unit stays stopped across a restart of the server. Caddy finds no socket and serves the
+# waiting page, in 503; the public site stays online. tribe-menus-deploy lifts the hold
+# when a deployment succeeds, and puts it back when it fails.
+set -euo pipefail
+
+die() {
+	printf 'tribe-menus-maintenance: %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	printf 'Usage: tribe-menus-maintenance production|recette on|off|status\n' >&2
+	exit 2
+}
+
+(($# == 2)) || usage
+env=$1 action=$2
+[[ $env == production || $env == recette ]] || usage
+socket=tribe-menus@$env.socket service=tribe-menus@$env.service
+
+on_hold() {
+	[[ $(systemctl is-enabled "$socket" 2>/dev/null || true) == masked ]]
+}
+
+case $action in
+status)
+	if on_hold; then
+		printf '%s: on hold, the waiting page is served\n' "$env"
+	else
+		printf '%s: in service (socket %s, service %s)\n' "$env" \
+			"$(systemctl is-active "$socket" || true)" "$(systemctl is-active "$service" || true)"
+	fi
+	;;
+on)
+	[[ $(id -u) == 0 ]] || die "run as root: sudo tribe-menus-maintenance $env on"
+	# Socket first: no request may start the service again while it stops.
+	systemctl stop "$socket" "$service"
+	systemctl mask --quiet "$socket" "$service"
+	logger -t tribe-menus-maintenance "$env: on hold"
+	printf '%s: on hold, the waiting page is served. Back in service: sudo tribe-menus-maintenance %s off\n' "$env" "$env"
+	;;
+off)
+	[[ $(id -u) == 0 ]] || die "run as root: sudo tribe-menus-maintenance $env off"
+	systemctl unmask --quiet "$socket" "$service"
+	# A socket left failed by a version that did not start listens again (review of PR #55).
+	systemctl reset-failed --quiet "$socket" "$service" 2>/dev/null || true
+	systemctl enable --quiet "$socket"
+	systemctl start "$socket"
+	logger -t tribe-menus-maintenance "$env: in service"
+	if ! systemctl is-active --quiet "$socket"; then
+		die "$env: the socket does not listen (no version installed, or configuration or credential missing)"
+	fi
+	if [[ $(curl --silent --max-time 30 --unix-socket "/run/tribe-menus/$env.sock" http://localhost/healthz || true) != ok ]]; then
+		die "$env: the application does not answer /healthz: journalctl -u $service"
+	fi
+	printf '%s: in service\n' "$env"
+	;;
+*) usage ;;
+esac

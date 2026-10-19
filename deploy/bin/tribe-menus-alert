@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# Alerts of the server, by email to root, which msmtp sends to the administrator (ADR 0015,
+# point 15; ADR 0023, point 1). Installed by provision.sh, run by its units.
+#
+#   tribe-menus-alert relay              alerts written by the application in its journal
+#   tribe-menus-alert failure <env>      the service of an environment failed (OnFailure=)
+#   tribe-menus-alert disk [--test]      a file system filled beyond 80 %
+#
+# What comes from the journal is data: only the records of the application that carry the
+# alert attribute are relayed, as JSON in the body of the email, never in its headers.
+set -euo pipefail
+
+readonly STATE=/var/lib/tribe-menus/alert
+# At most one email per environment and nature of alert in this time (plan recette,
+# step 17); the application already writes each signal at most once in six hours.
+readonly RELAY_INTERVAL=3600
+readonly DISK_THRESHOLD=80
+
+die() {
+	printf 'tribe-menus-alert: %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	cat >&2 <<'EOF'
+Usage: tribe-menus-alert relay
+       tribe-menus-alert failure production|recette
+       tribe-menus-alert disk [--test]
+EOF
+	exit 2
+}
+
+# admin_address prints the address of the administrator, which the aliases of msmtp give
+# to root: an unqualified To: root would be completed by the mail server with its own host
+# name (séance S2).
+admin_address() {
+	local address
+	address=$(sed -n 's/^root: //p' /etc/tribe-menus/aliases 2>/dev/null | head -n 1)
+	if [[ $address =~ ^[a-z0-9._+-]+@[a-z0-9.-]+$ ]]; then
+		printf '%s' "$address"
+	else
+		printf 'root'
+	fi
+}
+
+# send mails stdin to root, with this subject.
+send() {
+	{
+		printf 'To: %s\n' "$(admin_address)"
+		printf 'Subject: Melting Tribe, %s : %s\n' "$(hostname --short)" "$1"
+		printf 'Content-Type: text/plain; charset=utf-8\n'
+		printf 'MIME-Version: 1.0\n\n'
+		cat
+	} | /usr/sbin/sendmail -i -- root
+}
+
+environments() {
+	local dir
+	for dir in /etc/tribe-menus/production /etc/tribe-menus/recette; do
+		[[ -f $dir/config.json ]] && printf '%s\n' "${dir##*/}"
+	done
+	return 0
+}
+
+# alerts prints, one per line, the records of a journal that carry an alert attribute, as
+# compact JSON, the nature of the alert replaced by "unknown" when it is not a name. Anything
+# else, JSON or not, is ignored.
+alerts() {
+	jq -c -R 'fromjson? | select(type == "object" and (.alert | type) == "string")
+		| if (.alert | test("^[a-z_]{1,40}$")) then . else .alert = "unknown" end'
+}
+
+# relay_env relays the alerts written since its last run by the service of an environment.
+# The journal cursor is kept in the state directory; on the first run, or when journalctl
+# refuses the cursor kept, the last hour is read. The cursor is written only once every
+# email is sent: an alert that could not be sent is read again at the next run (review of
+# PR #56, point 3).
+relay_env() {
+	local env=$1 state=$2
+	local cursor=$state/$env.cursor out="" next records nature last now
+	# journalctl takes a single starting point: --since or --after-cursor (séance S2).
+	if [[ -s $cursor ]] && ! out=$(read_journal "$env" --after-cursor="$(<"$cursor")"); then
+		logger -t tribe-menus-alert "$env: journal cursor refused, the last hour is read again"
+		out=""
+		rm -f -- "$cursor"
+	fi
+	if [[ ! -s $cursor ]]; then
+		out=$(read_journal "$env" --since=-1h)
+	fi
+	next=$(sed -n 's/^-- cursor: //p' <<<"$out" | tail -n 1)
+	records=$(sed '/^-- cursor: /d' <<<"$out" | alerts)
+	now=$(date +%s)
+	while IFS= read -r nature; do
+		last=0
+		if [[ -f $state/$env.$nature.last ]]; then
+			last=$(<"$state/$env.$nature.last")
+			[[ $last =~ ^[0-9]+$ ]] || last=0
+		fi
+		if ((now - last < RELAY_INTERVAL)); then
+			logger -t tribe-menus-alert "$env: alert $nature not relayed, one sent less than an hour ago"
+			continue
+		fi
+		{
+			printf "L'application (%s) a écrit une alerte %s dans son journal.\n" "$env" "$nature"
+			printf "Enregistrements relayés par le serveur, tels qu'écrits (ADR 0023) :\n\n"
+			jq -c --arg nature "$nature" 'select(.alert == $nature)' <<<"$records"
+			printf '\nJournal complet : sudo journalctl -u tribe-menus@%s.service\n' "$env"
+			printf "Journaux d'accès (heure, adresse IP, URL) : sudo journalctl -u caddy.service\n"
+		} | send "alerte $nature ($env)"
+		printf '%s\n' "$now" >"$state/$env.$nature.last"
+		logger -t tribe-menus-alert "$env: alert $nature relayed"
+	done < <(if [[ -n $records ]]; then jq -r '.alert' <<<"$records" | sort -u; fi)
+	if [[ $next =~ ^[a-z]=[0-9a-f]+(\;[a-z]=[0-9a-f]+)*$ ]]; then
+		printf '%s\n' "$next" >"$cursor"
+	fi
+}
+
+# read_journal prints the messages of the service of an environment from the starting point
+# given, then the cursor of the last one on a line "-- cursor: …" if there is one.
+read_journal() {
+	journalctl --unit "tribe-menus@$1.service" "$2" --show-cursor --output cat --no-pager --quiet
+}
+
+relay() {
+	local env
+	install -d -m 0700 -- "$STATE"
+	while IFS= read -r env; do
+		relay_env "$env" "$STATE"
+	done < <(environments)
+}
+
+failure() {
+	local env=$1 unit=tribe-menus@$1.service
+	{
+		printf 'Le service %s est en échec : systemd a cessé de le relancer.\n' "$unit"
+		printf "Tant qu'il l'est, Caddy sert la page d'attente.\n\n"
+		systemctl status "$unit" --no-pager --lines 0 || true
+		printf '\nDernières lignes du journal :\n\n'
+		journalctl --unit "$unit" --lines 30 --no-pager --output short-iso || true
+		printf '\nRemise en route, une fois la cause corrigée : sudo tribe-menus-maintenance %s off\n' "$env"
+		printf 'Version précédente : sudo tribe-menus-deploy --env %s --rollback\n' "$env"
+	} | send "panne de $unit"
+}
+
+disk() {
+	local test=$1 full
+	full=$(df --local --output=pcent,target -x tmpfs -x devtmpfs -x efivarfs -x squashfs |
+		awk -v max="$DISK_THRESHOLD" 'NR > 1 { p = $1; sub("%", "", p); if (p + 0 > max) print }')
+	if [[ -z $full && $test == 0 ]]; then
+		return 0
+	fi
+	{
+		if [[ $test == 1 ]]; then
+			printf "Essai de l'alerte du disque (tribe-menus-check drill) : rien n'est à faire.\n\n"
+		fi
+		if [[ -n $full ]]; then
+			printf 'Systèmes de fichiers remplis à plus de %s %% :\n\n%s\n\n' "$DISK_THRESHOLD" "$full"
+		fi
+		printf 'Occupation :\n\n'
+		df --local --human-readable -x tmpfs -x devtmpfs -x efivarfs -x squashfs
+		printf '\nPlus gros consommateurs habituels : sudo journalctl --disk-usage ; sudo du -sh /var/lib/tribe-menus/*/backups /opt/tribe-menus/*/releases\n'
+	} | send "$(if [[ $test == 1 ]]; then printf 'essai de l'"'"'alerte du disque'; else printf 'disque rempli à plus de %s %%' "$DISK_THRESHOLD"; fi)"
+}
+
+main() {
+	(($# >= 1)) || usage
+	[[ $(id -u) == 0 ]] || die "run as root"
+	case $1 in
+	relay)
+		(($# == 1)) || usage
+		relay
+		;;
+	failure)
+		[[ $# == 2 && ($2 == production || $2 == recette) ]] || usage
+		failure "$2"
+		;;
+	disk)
+		if (($# == 1)); then
+			disk 0
+		elif [[ $# == 2 && $2 == --test ]]; then
+			disk 1
+		else
+			usage
+		fi
+		;;
+	*) usage ;;
+	esac
+}
+
+# Sourced by the tests, which call the functions.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+	main "$@"
+fi

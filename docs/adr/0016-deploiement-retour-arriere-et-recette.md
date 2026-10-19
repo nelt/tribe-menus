@@ -19,7 +19,9 @@ Les releases sont construites par la CI et publiées sur GitHub (ADR 0012). Le s
    5. bascule le lien `current` de façon atomique et redémarre le service (les requêtes attendent dans le socket) ;
    6. vérifie la santé du service (`/healthz` appelé par le socket, qui ne répond qu'une fois toutes les bases migrées, ADR 0003) et, en cas d'échec, **revient automatiquement** à la version précédente ;
    7. conserve les cinq dernières versions et leurs instantanés.
-2. **Retour arrière manuel** : `tribe-menus-deploy --rollback`, ou déploiement de la version précédente. Après une migration non compatible, restauration depuis l'instantané pris avant le déploiement.
+
+   *Précisé le 2026-10-17 (plan `recette`, D6 à D8, lot C) : le script n'installe que l'application et son site ; unités, Caddy et scripts du serveur ne changent que par `provision.sh`, relancé depuis la version installée (D6). Le site public est installé dans les deux environnements, avec la version : `/var/www/tribe-menus/<environnement>` est un lien vers le site de la version en service, qui change avec le lien `current` (D8). L'instantané note la version de schéma de chaque base ; le retour automatique ne restaure l'instantané que si le schéma du registre ou d'une tribu a changé, ce qui ne perd rien, la nouvelle version n'ayant servi aucune requête (D7). Sans version précédente, le service reste arrêté et la page d'attente servie. Commandes et procédures : `deploy/README.md`.*
+2. **Retour arrière manuel** : `tribe-menus-deploy --rollback`, ou déploiement de la version précédente. Après une migration non compatible, restauration depuis l'instantané pris avant le déploiement. *Précisé le 2026-10-17 (D7) : le binaire refuse une base plus récente que lui, donc toute migration rend le retour incompatible ; `--rollback` refuse alors sans `--restore-data`, qui restaure l'instantané, dit ce qui est perdu et met de côté, sans les effacer, les bases remplacées. Un seul retour de suite. `--snapshot` et `--restore <instantané>` servent à la reconstruction du serveur.*
 3. **`/healthz`** n'est pas exposé publiquement : Caddy ne le transmet pas.
 
 ### Production
@@ -33,7 +35,7 @@ Les releases sont construites par la CI et publiées sur GitHub (ADR 0012). Le s
    - **données de démonstration uniquement**, jamais de copie de la production ;
    - envoi d'e-mails réels par le compte `no-reply@` (ADR 0014), pour recevoir les codes sur téléphone ;
    - marquée `noindex`, comme l'application en production.
-6. **Déploiement en recette** : `sudo tribe-menus-deploy --env recette --pr <numéro>` installe l'archive construite par la CI pour la PR. Le téléchargement des artefacts de workflow exige un jeton même sur un dépôt public : jeton à portée fine, limité à la lecture des Actions de ce dépôt, stocké en credential systemd sur le serveur. **Seules les PR du propriétaire du dépôt** sont déployées en recette, jamais celles venant d'un fork.
+6. **Déploiement en recette** : `sudo tribe-menus-deploy --env recette --pr <numéro>` installe l'archive construite par la CI pour la PR. Le téléchargement des artefacts de workflow exige un jeton même sur un dépôt public : jeton à portée fine, limité à la lecture des Actions de ce dépôt, stocké en credential systemd sur le serveur. **Seules les PR du propriétaire du dépôt** sont déployées en recette, jamais celles venant d'un fork. *Précisé le 2026-10-17 (plan `recette`, D1, lot C) : la production a aussi une instance sur le serveur, où une PR est refusée ; une PR n'est déployée que si elle est ouverte, que son auteur est le propriétaire du dépôt, que sa branche est une branche du dépôt, et que l'archive est l'artefact de l'exécution réussie de `ci.yml` sur son dernier commit. La recette accepte aussi une version publiée.*
 7. La CI produit l'archive (`make build`) pour chaque PR et la conserve comme artefact quelques jours (ADR 0013).
 8. **Caddy** sert les deux noms d'hôte, chacun vers son socket (ADR 0006).
 

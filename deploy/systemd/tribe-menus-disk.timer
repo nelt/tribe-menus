@@ -1,0 +1,14 @@
+# Once a day, and at the next start if the server was off (ADR 0015, point 15). Installed by
+# provision.sh.
+
+[Unit]
+Description=Melting Tribe: disk usage, daily
+Documentation=https://github.com/nelt/tribe-menus/blob/main/deploy/README.md
+
+[Timer]
+OnCalendar=*-*-* 08:00
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
