@@ -220,6 +220,7 @@ Release (`RELEASING.md`, étapes 7 à 10) :
 Production :
 
 - [ ] `sudo tribe-menus-deploy v0.1.0`, chronométré.
+- [ ] Provisionnement relancé depuis la production, comme le demandent les notes de version (`### Serveur` ; `deploy/README.md`, « Relancer le provisionnement »).
 - [ ] `sudo tribe-menus-deploy --pr <numéro>` (sans `--env`, donc en production) : refusé.
 - [ ] Site public servi à `https://meltingtribe.codingmatters.org/` ; « Code source de cette version » mène à l'étiquette `v0.1.0`.
 - [ ] `sudo tribe-menus-admin production init` : votre tribu, avec votre adresse.
@@ -349,7 +350,7 @@ Peut avancer en parallèle des lots B et C. Points d'attention de la revue : auc
 
 ### Première release : `v0.1.0`
 
-- [ ] **29. PR `release/v0.1.0`**, préparée par Claude Code selon `RELEASING.md` (étapes 1 à 5), une fois les lots A à D fusionnés : section du `CHANGELOG.md`, migrations depuis le début du projet, notes relues.
+- [x] **29. PR `release/v0.1.0`**, préparée par Claude Code selon `RELEASING.md` (étapes 1 à 5), une fois les lots A à D fusionnés : section du `CHANGELOG.md`, migrations depuis le début du projet, notes relues.
 - [ ] **30. Séance 3**, par le développeur, sur l'archive de cette PR : check-list S3.
 
 ### Lot E : suites de la recette (`feature/suites-de-la-recette`)
@@ -505,3 +506,4 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Étape 26** : **écart** : les marques sont `{{VERSION}}` et `{{SOURCE_URL}}`, et non `{{COMMIT}}`, l'adresse dépendant de la version (étiquette d'une release, commit sinon) : `internal/tools/dist` la calcule par `server.SourceURL`, la règle du lien de l'écran de connexion, désormais exportée ; `make dist` lui passe `-commit`. Il refuse une marque restée et un nom que `tribe-menus-deploy` refuserait. Tests : remplacement pour une release, une PR et `dev` ; reproductibilité inchangée ; site du dépôt (noms, marques, ni script ni style en ligne, copies identiques à leurs sources).
   - **Étape 27** : textes de la maquette accordés à l'application et au serveur : hébergeur PulseHeberg à Paris, envoi des e-mails par OVHcloud ; cookies propres à une tribu (ADR 0024) ; « membre révoqué » remplacé par « membre : tant qu'il fait partie de la tribu, effacé sur demande », la révocation n'existant pas encore ; ajout des copies des bases prises avant chaque mise à jour (lot C), qui sont des données conservées. **Le journal d'audit est annoncé à 12 mois (PT-07), mais son effacement automatique n'est pas écrit** : point reporté dans la feuille de route, à faire avant octobre 2027. Relus et validés par le développeur dans la PR #57, le 2026-10-18 ; aucune relecture juridique. La LCEN (article 6, III) demande aussi le numéro de téléphone de l'hébergeur, que la maquette ne porte pas : laissé de côté, décision du développeur le 2026-10-18.
   - **Revue de la PR #57** (2026-10-18) : deux points corrigés : la page Confidentialité nomme toutes les copies des bases que garde le serveur (avant une mise à jour, mises de côté par un retour arrière ou une restauration, faite pour déplacer le service), et la procédure de reconstruction efface la dernière (PR #56) ; le test du site voit toute ressource tierce, dans les pages comme dans les feuilles de style. Point noté : **le motif des noms d'une archive est écrit deux fois**, `namePattern` dans `internal/tools/dist` et `check_archive` dans `tribe-menus-deploy` ; un changement d'un seul côté ferait sortir de la CI une archive que le déploiement refuse. À traiter au lot E, une fois les deux PR fusionnées : un test qui lit le motif du script.
+- **Étape 29** (2026-10-19), Claude Code dans le Dev Container : branche `release/v0.1.0` partie de `main` après la fusion du lot D (#57). Section `## 0.1.0 — 2026-10-19` ; `### Migrations` : les onze migrations depuis le début du projet, sans version précédente où revenir ; `### Serveur` : tout `deploy/` est nouveau, provisionnement à relancer depuis la production après le déploiement (ligne ajoutée à la check-list S4, qui ne le disait pas). Notes vérifiées par `relnotes`. Rien n'a changé dans `deploy/` ni dans les migrations depuis l'archive de la PR #56 installée en S2. La date de la section est à mettre à jour quand la PR sera mise à jour avec `main` après le lot E, juste avant la fusion.

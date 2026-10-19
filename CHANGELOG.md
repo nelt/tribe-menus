@@ -4,6 +4,8 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+## 0.1.0 — 2026-10-19
+
 - `recette/D` : site public minimal dans `site/`, d'après les maquettes : présentation, mentions légales et Confidentialité, en HTML et CSS statiques, sans script ni ressource tierce, polices et fichiers d'identité servis par le site, balises Open Graph ; pied de page « Code source de cette version », dont la version et l'adresse sont écrites par `make dist` (`{{VERSION}}`, `{{SOURCE_URL}}`, D17), qui refuse aussi un nom de fichier que `tribe-menus-deploy` refuserait ; textes accordés à l'application et au serveur (hébergeur PulseHeberg, copies des bases avant chaque mise à jour), à relire par le développeur.
 - `recette/C` : déploiement, supervision et contrôles. `tribe-menus-deploy` : version publiée (production et recette) ou archive d'une PR ouverte du propriétaire, depuis une branche du dépôt et pour son dernier commit (recette seulement, ADR 0016) ; empreinte et contenu de l'archive vérifiés avant le déballage ; instantané `VACUUM INTO` avec la version de schéma de chaque base ; bascule atomique, site lié à la version en service (D8) ; retour automatique quand `/healthz` ne répond pas, avec restauration si le schéma a changé (D7) ; `--rollback` (refusé sans `--restore-data` après une migration), `--snapshot`, `--restore` ; cinq versions gardées. `tribe-menus-maintenance` : mise en attente qui tient après un redémarrage, levée par un déploiement réussi. Supervision : relais des alertes du journal toutes les cinq minutes (D9), panne par `OnFailure=`, disque à 80 %. `tribe-menus-check` (état du serveur, `report`, `drill`) et `make probe` (TLS, en-têtes, limites de Caddy, ports, `X-Forwarded-For`, DNS ; `-timing` pour les temps de réponse) (D10). Procédures dans `deploy/README.md` : déployer, revenir en arrière, restaurer, mettre en attente, relancer le provisionnement, reconstruire le serveur ; ADR 0016 précisé ; `RELEASING.md` et `docs/traitement-des-vulnerabilites.md` accordés.
 - `recette/B` : provisionnement du serveur, `deploy/provision.sh`, idempotent : valeurs de l'instance dans `/etc/tribe-menus/instance.conf`, lu comme une donnée (D4) ; paquets de Debian 13 et Caddy du dépôt du projet Caddy, clé livrée dans `deploy/` (D15) ; SSH par clé pour le seul compte d'administration, `sudo` avec mot de passe, SSH fermé à `root` au second lancement (D14, ADR 0025) ; nftables, TCP 22, 80 et 443 seuls (D16) ; mises à jour automatiques (sécurité et version stable de Debian, Caddy) et redémarrage à 3 h 30 ; journal conservé un mois ; relais `msmtp` du compte `server@` ; utilisateurs, dossiers et unités `tribe-menus@` par environnement, service confiné (note 1,1), données en 0700 et `UMask=0077` (constat 4) ; Caddy : Let's Encrypt seul, HTTP/3 coupé, HSTS, CSP du site, `X-Forwarded-For` remplacé, `/healthz` non transmis, recette en `noindex`, page d'attente, journaux d'accès sans cookies (constat 11) ; `tribe-menus-credential` (secrets saisis au clavier, D5) et `tribe-menus-admin` ; shellcheck dans `make lint` et le Dev Container (D10) ; ADR 0006, 0009, 0011 et 0015 précisés.
@@ -47,3 +49,23 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 - Suivi de la CI : Dependabot limité aux outils Go et aux dépendances directes, sans version majeure de `@types/node` ni de TypeScript ; suivi de la CI avec `gh` documenté pour un jeton à portée fine.
 - Intégration continue : workflows `ci` (`make tools` puis `make ci`, contrôle DCO, artefact de PR), `devcontainer` (construction hebdomadaire) et `dependency-review` ; Dependabot mensuel ; actionlint dans `make lint` ; `CONTRIBUTING.md` (ADR 0011, 0013).
 - Environnement de développement : Dev Container avec Claude Code, préparation du poste et initialisation du projet (module Go, front Lit construit par esbuild, serveur squelette, contrôle `webcheck`, scénario Playwright de fumée, Makefile) (ADR 0009, 0010, 0018).
+
+### Migrations
+
+Première version : il n'y en a pas de précédente où revenir. La production démarre sans base ; la recette a déjà ces schémas, installés par les archives des PR. Pour la suite : le binaire refuse de démarrer sur une base dont la version de schéma dépasse la sienne ; après une version qui migre, le retour à la précédente restaure l'instantané pris avant le déploiement et perd ce qui a été écrit depuis (`tribe-menus-deploy --rollback --restore-data`).
+
+- Registre, `0001_tribes` : tribus de l'instance (identifiant d'URL, nom, nom aléatoire du fichier de leur base).
+- Tribu, `0001_tribe` : la tribu, ses membres, le journal d'audit.
+- Tribu, `0002_login` : codes de connexion et sessions, conservés par leur empreinte.
+- Tribu, `0003_code_requests` : heures des demandes de code adressées aux membres, pour la limite par tribu.
+- Tribu, `0004_audit_device` : appareil détecté du journal d'audit en colonnes (type, système, navigateur, application installée).
+- Tribu, `0005_login_code_request` : code de connexion lié au navigateur qui l'a demandé ; les codes en attente sont effacés.
+- Tribu, `0006_alert_counters` : compteurs d'alerte des événements qui supposent un membre.
+- Limitation, `0001_code_requests` : demandes de code acceptées et codes fantômes, par empreinte.
+- Limitation, `0002_no_slug` : identifiant de tribu retiré des demandes de code.
+- Limitation, `0003_decoy_code_request` : code fantôme lié au navigateur qui l'a demandé ; les codes fantômes en attente sont effacés.
+- Limitation, `0004_alert_counters` : compteurs d'alerte et dernière alerte envoyée par signal.
+
+### Serveur
+
+Première version : tout `deploy/` est nouveau. Le serveur a été provisionné en séance S2 depuis l'archive d'une PR (plan `recette`). Après le déploiement de cette version en production, relancer le provisionnement depuis elle (`deploy/README.md`, « Relancer le provisionnement ») : la configuration du serveur est alors celle de la version publiée, et c'est depuis la production qu'il se relance désormais.
