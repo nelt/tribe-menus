@@ -28,7 +28,10 @@ readonly SHARE_DIR=/usr/share/tribe-menus
 readonly STATE_DIR=/var/lib/tribe-menus/provision
 # Marks that root may no longer connect by SSH (ADR 0025, point 3).
 readonly ROOT_SSH_CLOSED=$STATE_DIR/root-ssh-closed
-readonly SCRIPTS=(tribe-menus-credential tribe-menus-admin)
+readonly SCRIPTS=(tribe-menus-credential tribe-menus-admin tribe-menus-deploy tribe-menus-maintenance tribe-menus-alert tribe-menus-check)
+readonly UNITS=(tribe-menus@.socket tribe-menus@.service tribe-menus-failure@.service
+	tribe-menus-alert-relay.service tribe-menus-alert-relay.timer tribe-menus-disk.service tribe-menus-disk.timer)
+readonly TIMERS=(tribe-menus-alert-relay.timer tribe-menus-disk.timer)
 readonly DEBIAN_PACKAGES=(sudo tzdata nftables unattended-upgrades msmtp-mta sqlite3 jq curl unzip ca-certificates)
 
 die() {
@@ -96,6 +99,18 @@ read_instance() {
 		die "$file: ADMIN_USER must be a personal account"
 	[[ ${conf[PRODUCTION_HOST]} != "${conf[RECETTE_HOST]}" ]] ||
 		die "$file: PRODUCTION_HOST and RECETTE_HOST must differ"
+}
+
+# refuse_examples refuses the values of instance.example.conf left as they are, on a real
+# server: a host name of example.org gives Caddy no site for the real names (séance S2).
+# The tests and --render keep them.
+refuse_examples() {
+	local file=$1 key
+	for key in "${!PATTERNS[@]}"; do
+		if [[ ${conf[$key]} =~ (^|[.@])example\.(org|com|net)$ ]]; then
+			die "$file: $key still has a value of the example (deploy/instance.example.conf)"
+		fi
+	done
 }
 
 # host_of prints the host name of an environment.
@@ -364,8 +379,12 @@ EOF
 	fi
 }
 
+# Outputs are read whole before being searched: under pipefail, grep -q stopping at the
+# first match would make the writer fail on SIGPIPE (séance S2).
 chrony_installed() {
-	dpkg-query -W -f='${Status}' chrony 2>/dev/null | grep -q 'ok installed'
+	local status
+	status=$(dpkg-query -W -f='${Status}' chrony 2>/dev/null) || return 1
+	[[ $status == *"ok installed"* ]]
 }
 
 configure_system() {
@@ -387,6 +406,21 @@ MaxRetentionSec=1month
 EOF
 	if ((changed)); then
 		systemctl restart systemd-journald
+	fi
+
+	# The image of PulseHeberg runs systemd-resolved with LLMNR, which listens on port 5355
+	# for name queries of the local network: nothing here needs it (séance S2).
+	if systemctl is-active --quiet systemd-resolved; then
+		install -d -m 0755 /etc/systemd/resolved.conf.d
+		put 0644 root:root /etc/systemd/resolved.conf.d/50-tribe-menus.conf <<'EOF'
+# Produced by provision.sh: do not edit (deploy/README.md).
+[Resolve]
+LLMNR=no
+MulticastDNS=no
+EOF
+		if ((changed)); then
+			systemctl restart systemd-resolved
+		fi
 	fi
 
 	step "Automatic security updates"
@@ -428,7 +462,7 @@ configure_mail() {
 # its key (ADR 0015, point 3; plan recette, D14). Root keeps its key until the script runs
 # from that account through sudo, which proves the account works (ADR 0025, point 3).
 configure_ssh() {
-	local admin=${conf[ADMIN_USER]} root_login allow home
+	local admin=${conf[ADMIN_USER]} root_login allow home rules effective
 	local drop_in=/etc/ssh/sshd_config.d/00-tribe-menus.conf
 	step "Administration account and SSH"
 	if ! id -u -- "$admin" >/dev/null 2>&1; then
@@ -447,9 +481,12 @@ configure_ssh() {
 		printf 'Password of %s, asked by sudo (keep it in the password manager):\n' "$admin"
 		passwd -- "$admin"
 	fi
-	if grep -rEqs '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d; then
-		printf 'provision: warning: a sudoers rule grants sudo without a password:\n' >&2
-		grep -rEls '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d >&2 || true
+	# Asked to sudo itself: a NOPASSWD rule or a Defaults !authenticate removes the password;
+	# one for root alone, as cloud-init writes, is harmless.
+	rules=$(sudo -l -U "$admin") || die "sudo -l -U $admin failed"
+	if grep -Eq 'NOPASSWD|!authenticate' <<<"$rules"; then
+		printf 'provision: warning: a sudoers rule grants sudo without a password to %s:\n' "$admin" >&2
+		grep -rEls '^[^#]*(NOPASSWD|!authenticate)' /etc/sudoers /etc/sudoers.d >&2 || true
 	fi
 
 	install -d -m 0700 -- "$STATE_DIR"
@@ -495,10 +532,11 @@ EOF
 		systemctl reload ssh
 	fi
 	rm -f -- "$drop_in.previous"
+	effective=$(sshd -T) || die "sshd -T failed"
 	# sshd -T writes prohibit-password under its older name.
-	sshd -T | grep -Eqx "permitrootlogin ${root_login/prohibit-password/(prohibit|without)-password}" ||
+	grep -Eqx "permitrootlogin ${root_login/prohibit-password/(prohibit|without)-password}" <<<"$effective" ||
 		die "sshd does not apply PermitRootLogin $root_login"
-	sshd -T | grep -qx 'passwordauthentication no' || die "sshd does not apply PasswordAuthentication no"
+	grep -qx 'passwordauthentication no' <<<"$effective" || die "sshd does not apply PasswordAuthentication no"
 	if [[ $root_login != no ]]; then
 		printf '\nRoot can still connect by SSH, with its key. In a second terminal, connect as %s,\n' "$admin"
 		printf 'then run this script again with sudo from that account: it closes SSH to root.\n'
@@ -550,16 +588,20 @@ EOF
 }
 
 install_files() {
-	local script
+	local script unit
 	step "Scripts and units"
 	for script in "${SCRIPTS[@]}"; do
 		install -m 0755 -- "$DEPLOY_DIR/bin/$script" "$BIN_DIR/$script"
 	done
 	install -d -m 0755 -- "$SHARE_DIR"
 	install -m 0644 -- "$DEPLOY_DIR/caddy/attente.html" "$SHARE_DIR/attente.html"
-	install -m 0644 -- "$DEPLOY_DIR/systemd/tribe-menus@.socket" /etc/systemd/system/tribe-menus@.socket
-	install -m 0644 -- "$DEPLOY_DIR/systemd/tribe-menus@.service" /etc/systemd/system/tribe-menus@.service
+	for unit in "${UNITS[@]}"; do
+		install -m 0644 -- "$DEPLOY_DIR/systemd/$unit" "/etc/systemd/system/$unit"
+	done
 	systemctl daemon-reload
+	# Supervision (ADR 0015, point 15): relay of the alerts of the application, disk.
+	install -d -m 0700 /var/lib/tribe-menus/alert
+	systemctl enable --now --quiet "${TIMERS[@]}"
 }
 
 # configure_environment creates the user, the directories and the configuration of an
@@ -575,8 +617,20 @@ configure_environment() {
 	install -d -m 0750 -o root -g "$user" "/etc/tribe-menus/$env"
 	install -d -m 0755 /var/lib/tribe-menus
 	install -d -m 0700 -o "$user" -g "$user" "/var/lib/tribe-menus/$env"
-	install -d -m 0755 /var/www/tribe-menus "/var/www/tribe-menus/$env"
+	# The site of the environment is the one of its current version (D8): it changes with
+	# the link current, in the same move, rollback included.
+	install -d -m 0755 /var/www/tribe-menus
+	if [[ -d /var/www/tribe-menus/$env && ! -L /var/www/tribe-menus/$env ]]; then
+		rmdir -- "/var/www/tribe-menus/$env" || die "/var/www/tribe-menus/$env: directory not empty, the site is now a link"
+	fi
+	ln -sfn -- "/opt/tribe-menus/$env/current/site" "/var/www/tribe-menus/$env"
 	render_config "$env" | put 0640 "root:$user" "/etc/tribe-menus/$env/config.json"
+	# On hold (tribe-menus-maintenance), the units stay masked: the service restarts at the
+	# end of the hold, and reads the new configuration then.
+	if [[ $(systemctl is-enabled "tribe-menus@$env.socket" 2>/dev/null || true) == masked ]]; then
+		printf '%s is on hold: left so (sudo tribe-menus-maintenance %s off)\n' "$env" "$env"
+		return
+	fi
 	systemctl enable --quiet "tribe-menus@$env.socket"
 	if ((changed)); then
 		systemctl try-restart "tribe-menus@$env.service"
@@ -646,6 +700,7 @@ main() {
 
 	check_system "$@"
 	read_instance "$INSTANCE_CONF"
+	refuse_examples "$INSTANCE_CONF"
 	install_packages
 	configure_system
 	configure_mail
@@ -659,4 +714,7 @@ main() {
 	summary "$@"
 }
 
-main "$@"
+# Sourced by the tests, which call the functions on their own files.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+	main "$@"
+fi

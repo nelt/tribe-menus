@@ -1,0 +1,398 @@
+#!/usr/bin/env bash
+# Checks of the server, made on the server (plan recette, D10). One line per point, ok or
+# FAIL, never a value of the instance (address, account, host name): the report is written
+# to be copied into a pull request. Installed by provision.sh.
+#
+#   sudo tribe-menus-check           state of the server, and a test email to the administrator
+#   sudo tribe-menus-check report    the last hour, by environment: SMTP, alerts, errors, warnings
+#   sudo tribe-menus-check drill     failure alert of the recette and test of the disk alert
+#
+# It exits in error when a point fails.
+set -euo pipefail
+
+failures=0
+
+die() {
+	printf 'tribe-menus-check: %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	printf 'Usage: tribe-menus-check [report|drill]\n' >&2
+	exit 2
+}
+
+ok() {
+	printf 'ok    %s\n' "$*"
+}
+
+fail() {
+	printf 'FAIL  %s\n' "$*"
+	failures=$((failures + 1))
+}
+
+info() {
+	printf 'info  %s\n' "$*"
+}
+
+# check prints ok or FAIL for a point, after the command given.
+check() {
+	local point=$1
+	shift
+	if "$@" >/dev/null 2>&1; then
+		ok "$point"
+	else
+		fail "$point"
+	fi
+}
+
+section() {
+	printf '\n%s\n' "$*"
+}
+
+environments() {
+	local dir
+	for dir in /etc/tribe-menus/production /etc/tribe-menus/recette; do
+		[[ -f $dir/config.json ]] && printf '%s\n' "${dir##*/}"
+	done
+	return 0
+}
+
+on_hold() {
+	[[ $(systemctl is-enabled "tribe-menus@$1.socket" 2>/dev/null || true) == masked ]]
+}
+
+# mode_is succeeds when a path has these permissions and owner (user:group).
+mode_is() {
+	[[ -e $1 && $(stat -c '%a %U:%G' -- "$1") == "$2 $3" ]]
+}
+
+# files_are succeeds when every file of a directory found by find has this mode and owner.
+files_are() {
+	local dir=$1 mode=$2 owner=$3 file
+	while IFS= read -r -d '' file; do
+		mode_is "$file" "$mode" "$owner" || return 1
+	done < <(find "$dir" -type f -print0)
+}
+
+# credential_ok succeeds when a credential is 0600 to root and decrypts with its name.
+credential_ok() {
+	mode_is "$1" 600 root:root && systemd-creds decrypt --name="$2" "$1" - >/dev/null
+}
+
+healthy() {
+	[[ $(curl --silent --max-time 30 --unix-socket "/run/tribe-menus/$1.sock" http://localhost/healthz) == ok ]]
+}
+
+# --- State of the server -----------------------------------------------------------------
+
+# Outputs are read whole before being searched: under pipefail, grep -q stopping at the
+# first match would make the writer fail on SIGPIPE (séance S2).
+SSHD=''
+
+sshd_has() {
+	grep -qx -- "$1" <<<"$SSHD"
+}
+
+# admitted prints the accounts SSH admits, one per line.
+admitted() {
+	sed -n 's/^allowusers //p' <<<"$SSHD"
+}
+
+# allow_users_is_one succeeds when SSH admits a single account, which is not root.
+allow_users_is_one() {
+	local users
+	users=$(admitted)
+	[[ -n $users && $(wc -l <<<"$users") == 1 && $users != root ]]
+}
+
+# admin_sudo_asks_password succeeds when sudo asks a password of the account SSH admits:
+# neither a NOPASSWD rule nor a Defaults !authenticate applies to it (D14). A rule for root
+# alone, as cloud-init writes, is harmless.
+admin_sudo_asks_password() {
+	local rules
+	allow_users_is_one || return 1
+	rules=$(sudo -l -U "$(admitted)") || return 1
+	! grep -Eq 'NOPASSWD|!authenticate' <<<"$rules"
+}
+
+check_ssh() {
+	section "SSH and sudo"
+	SSHD=$(sshd -T 2>/dev/null || true)
+	check "root may not connect" sshd_has "permitrootlogin no"
+	check "keys only" sshd_has "authenticationmethods publickey"
+	check "no password" sshd_has "passwordauthentication no"
+	check "no keyboard-interactive" sshd_has "kbdinteractiveauthentication no"
+	check "a single account admitted, not root" allow_users_is_one
+	check "no forwarding" sshd_has "allowtcpforwarding no"
+	check "sudo asks the administration account for a password" admin_sudo_asks_password
+	check "SSH closed to root by provision.sh" test -e /var/lib/tribe-menus/provision/root-ssh-closed
+}
+
+# listening_ports prints the ports listening on an address other than the loopback, for
+# TCP (-t) or UDP (-u).
+# Filtered by awk, which succeeds when nothing is left: grep -v would fail, and pipefail with
+# it (séance S2).
+listening_ports() {
+	local sockets
+	sockets=$(ss -Hln "$1")
+	awk '$4 !~ /^(127\.[0-9.]+|\[::1\]|\[::ffff:127\.[0-9.]+\])(%[a-z0-9]+)?:/ { sub(/.*:/, "", $4); print $4 }' <<<"$sockets" |
+		sort -nu | tr '\n' ' ' | sed 's/ $//'
+}
+
+check_firewall() {
+	local rules tcp udp
+	section "Firewall and ports"
+	rules=$(nft list chain inet filter input 2>/dev/null || true)
+	check "nftables active and enabled" systemctl is-enabled --quiet nftables
+	if grep -q 'policy drop' <<<"$rules"; then ok "input dropped by default"; else fail "input dropped by default"; fi
+	if grep -Eq 'tcp dport \{ 22, 80, 443 \} accept' <<<"$rules" &&
+		[[ $(grep -c 'dport' <<<"$rules") == 1 ]] && ! grep -q 'udp' <<<"$rules"; then
+		ok "only TCP 22, 80 and 443 accepted, no UDP port"
+	else
+		fail "only TCP 22, 80 and 443 accepted, no UDP port"
+	fi
+	tcp=$(listening_ports -t)
+	if [[ $tcp == "22 80 443" ]]; then
+		ok "TCP listening outside the loopback: 22 80 443"
+	else
+		fail "TCP listening outside the loopback: ${tcp:-none} (22 80 443 expected)"
+	fi
+	udp=$(listening_ports -u)
+	if [[ -n $udp ]]; then
+		info "UDP listening outside the loopback, dropped by the firewall: $udp"
+	fi
+}
+
+check_units() {
+	local env unit timer failed
+	section "Units"
+	for unit in ssh caddy nftables; do
+		check "$unit active" systemctl is-active --quiet "$unit"
+	done
+	if systemctl is-enabled --quiet chrony 2>/dev/null; then
+		check "chrony active" systemctl is-active --quiet chrony
+	else
+		check "systemd-timesyncd active" systemctl is-active --quiet systemd-timesyncd
+	fi
+	for timer in apt-daily apt-daily-upgrade tribe-menus-alert-relay tribe-menus-disk; do
+		check "timer $timer active" systemctl is-active --quiet "$timer.timer"
+	done
+	while IFS= read -r env; do
+		if on_hold "$env"; then
+			info "$env on hold (tribe-menus-maintenance $env off)"
+			continue
+		fi
+		# Without a version, the socket does not listen, on purpose: the waiting page is served.
+		if [[ ! -x /opt/tribe-menus/$env/current/tribe-menus ]]; then
+			info "$env: no version installed, waiting page served"
+			continue
+		fi
+		check "$env: socket listening" systemctl is-active --quiet "tribe-menus@$env.socket"
+		check "$env: application answers /healthz" healthy "$env"
+	done < <(environments)
+	failed=$(systemctl --failed --no-legend --plain | awk '{ print $1 }' | tr '\n' ' ')
+	if [[ -z $failed ]]; then ok "no failed unit"; else fail "failed units: $failed"; fi
+}
+
+check_files() {
+	local env user cred name
+	section "Files and credentials"
+	check "/etc/msmtprc 0600 root" mode_is /etc/msmtprc 600 root:root
+	check "/etc/tribe-menus/server 0700 root" mode_is /etc/tribe-menus/server 700 root:root
+	for cred in smtp-password:server-smtp-password github-token:github-token; do
+		name=${cred#*:} cred=${cred%%:*}
+		if [[ -e /etc/tribe-menus/server/$cred.cred ]]; then
+			check "server $cred: 0600 root, decrypted" credential_ok "/etc/tribe-menus/server/$cred.cred" "$name"
+		else
+			fail "server $cred missing (tribe-menus-credential server $cred)"
+		fi
+	done
+	while IFS= read -r env; do
+		user=tribe-menus-$env
+		check "$env: data 0700 $user" mode_is "/var/lib/tribe-menus/$env" 700 "$user:$user"
+		check "$env: databases and snapshots 0600 $user" files_are "/var/lib/tribe-menus/$env" 600 "$user:$user"
+		check "$env: /etc/tribe-menus/$env 0750 root:$user" mode_is "/etc/tribe-menus/$env" 750 "root:$user"
+		check "$env: config.json 0640 root:$user" mode_is "/etc/tribe-menus/$env/config.json" 640 "root:$user"
+		if [[ -e /etc/tribe-menus/$env/smtp-password.cred ]]; then
+			check "$env: smtp-password 0600 root, decrypted" credential_ok "/etc/tribe-menus/$env/smtp-password.cred" smtp-password
+		else
+			fail "$env: smtp-password missing (tribe-menus-credential $env smtp-password)"
+		fi
+		check "$env: site linked to the current version" test "$(readlink "/var/www/tribe-menus/$env")" == "/opt/tribe-menus/$env/current/site"
+	done < <(environments)
+}
+
+check_service() {
+	local env score
+	section "Confinement and configuration"
+	while IFS= read -r env; do
+		score=$(systemd-analyze security --no-pager "tribe-menus@$env.service" 2>/dev/null |
+			sed -n 's/.*Overall exposure level for [^:]*: \([0-9.]*\).*/\1/p')
+		if [[ -n $score ]] && awk -v s="$score" 'BEGIN { exit !(s <= 2.0) }'; then
+			ok "$env: systemd-analyze security $score"
+		else
+			fail "$env: systemd-analyze security ${score:-unreadable} (2.0 at most)"
+		fi
+	done < <(environments)
+	check "Caddy configuration valid" runuser -u caddy -- caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+	check "unattended-upgrades dry run" unattended-upgrade --dry-run
+	check "clock synchronised" test "$(timedatectl show --property NTPSynchronized --value)" == yes
+	check "persistent journal" test -d "/var/log/journal/$(cat /etc/machine-id)"
+	if [[ -e /run/reboot-required ]]; then
+		info "restart required by an update (done at 3:30)"
+	fi
+}
+
+# admin_address prints the address of the administrator, which the aliases of msmtp give
+# to root: an unqualified To: root would be completed by the mail server with its own host
+# name (séance S2).
+admin_address() {
+	local address
+	address=$(sed -n 's/^root: //p' /etc/tribe-menus/aliases 2>/dev/null | head -n 1)
+	if [[ $address =~ ^[a-z0-9._+-]+@[a-z0-9.-]+$ ]]; then
+		printf '%s' "$address"
+	else
+		printf 'root'
+	fi
+}
+
+send_test_email() {
+	section "Email"
+	if printf 'To: %s\nSubject: Melting Tribe : essai de tribe-menus-check\n\nEssai du relais du serveur, rien n'"'"'est à faire.\n' "$(admin_address)" |
+		/usr/sbin/sendmail -i -- root; then
+		ok "test email handed to msmtp: check that the administrator received it"
+	else
+		fail "test email refused by msmtp (journalctl -t msmtp)"
+	fi
+}
+
+state() {
+	printf 'tribe-menus-check, %s\n' "$(date --iso-8601=minutes)"
+	check_ssh
+	check_firewall
+	check_units
+	check_files
+	check_service
+	send_test_email
+	printf '\n%s point(s) failed\n' "$failures"
+	((failures == 0))
+}
+
+# --- Report of the last hour ---------------------------------------------------------------
+
+# count_by prints the JSON records of stdin grouped by the jq expression given, with their
+# number, one group per line.
+count_by() {
+	jq -r "$1" | sort | uniq -c | sed 's/^ */  /'
+}
+
+report_env() {
+	local env=$1 records
+	section "$env"
+	records=$(journalctl --unit "tribe-menus@$env.service" --since=-1h --output cat --no-pager --quiet |
+		jq -c -R 'fromjson? | select(type == "object")')
+	if [[ -z $records ]]; then
+		info "no record of the application in the hour"
+		return
+	fi
+	printf 'SMTP, sendings in failure by step and code (a successful sending writes nothing):\n'
+	jq -c 'select(.step != null)' <<<"$records" | count_by '"\(.msg): step \(.step), code \(.code)"' || true
+	printf 'SMTP, check at start:\n'
+	jq -c 'select(.msg | startswith("SMTP check"))' <<<"$records" | count_by '.msg' || true
+	printf 'Alerts:\n'
+	jq -c 'select((.alert | type) == "string")' <<<"$records" | count_by '"\(.alert): \(.signals // "")"' || true
+	printf 'Errors:\n'
+	jq -c 'select(.level == "ERROR")' <<<"$records" | count_by '.msg' || true
+	printf 'Warnings, "client IP unknown" among them:\n'
+	jq -c 'select(.level == "WARN")' <<<"$records" | count_by '.msg' || true
+	printf 'Starts:\n'
+	jq -c 'select(.msg == "server started")' <<<"$records" | count_by '"version \(.version)"' || true
+}
+
+report() {
+	local env
+	printf 'tribe-menus-check report, the hour before %s\n' "$(date --iso-8601=minutes)"
+	while IFS= read -r env; do
+		report_env "$env"
+	done < <(environments)
+	section "Server"
+	# msmtp writes the addresses too: only its status codes are kept.
+	printf 'Emails relayed by msmtp, by status:\n'
+	journalctl --identifier msmtp --since=-1h --output cat --no-pager --quiet |
+		sed -n 's/.*\(smtpstatus=[0-9]*\).*\(exitcode=[A-Z_]*\).*/\1 \2/p; t; s/.*\(exitcode=[A-Z_]*\).*/\1/p' |
+		sort | uniq -c | sed 's/^ */  /' || true
+	printf 'Alert relay, deployments, holds:\n'
+	journalctl --identifier tribe-menus-alert --identifier tribe-menus-deploy --identifier tribe-menus-maintenance \
+		--since=-1h --output short-iso --no-hostname --no-pager --quiet | sed 's/^/  /' || true
+}
+
+# --- Drill -------------------------------------------------------------------------------
+
+readonly DRILL_DROP_IN=/run/systemd/system/tribe-menus@recette.service.d/50-drill.conf
+
+drill_cleanup() {
+	rm -f -- "$DRILL_DROP_IN"
+	systemctl daemon-reload
+	systemctl reset-failed --quiet tribe-menus@recette.service 2>/dev/null || true
+	systemctl start tribe-menus@recette.socket
+}
+
+# drill makes the service of the recette fail once, without its restarts, so that
+# OnFailure= sends the failure alert; then sends the test of the disk alert, and puts the
+# recette back in service.
+drill() {
+	local start i
+	[[ -x /opt/tribe-menus/recette/current/tribe-menus ]] || die "no version installed in recette"
+	! on_hold recette || die "recette on hold: sudo tribe-menus-maintenance recette off"
+	healthy recette || die "recette does not answer /healthz"
+	printf 'tribe-menus-check drill, %s\n' "$(date --iso-8601=minutes)"
+	section "Failure alert (recette)"
+	start=$(date +%s)
+	trap drill_cleanup EXIT
+	install -d -m 0755 -- "${DRILL_DROP_IN%/*}"
+	printf '[Service]\nRestart=no\n' >"$DRILL_DROP_IN"
+	systemctl daemon-reload
+	systemctl kill --signal=SIGKILL tribe-menus@recette.service
+	for ((i = 0; i < 30; i++)); do
+		if [[ -n $(journalctl --unit tribe-menus-failure@recette.service --since "@$start" --quiet --no-pager) ]]; then
+			break
+		fi
+		sleep 1
+	done
+	if systemctl is-failed --quiet tribe-menus@recette.service; then
+		ok "service of the recette failed"
+	else
+		fail "service of the recette did not fail"
+	fi
+	sleep 5
+	if [[ $(systemctl show --property Result --value tribe-menus-failure@recette.service) == success ]] &&
+		[[ -n $(journalctl --unit tribe-menus-failure@recette.service --since "@$start" --quiet --no-pager) ]]; then
+		ok "failure alert sent: check that the administrator received it"
+	else
+		fail "failure alert not sent (journalctl -u tribe-menus-failure@recette.service)"
+	fi
+	drill_cleanup
+	trap - EXIT
+	check "recette back in service" healthy recette
+
+	section "Disk alert"
+	check "test of the disk alert sent: check that the administrator received it" tribe-menus-alert disk --test
+	printf '\n%s point(s) failed\n' "$failures"
+	((failures == 0))
+}
+
+main() {
+	[[ $(id -u) == 0 ]] || die "run as root: sudo tribe-menus-check $*"
+	case ${1:-} in
+	"") state ;;
+	report) report ;;
+	drill) drill ;;
+	*) usage ;;
+	esac
+}
+
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+	(($# <= 1)) || usage
+	main "$@"
+fi
