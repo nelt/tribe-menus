@@ -3,10 +3,82 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Melting Tribe</title>
+    <title>Melting Tribe : les menus de la semaine, en tribu</title>
+    <meta name="description" content="Chacun ajoute ses plats au planning. La liste de courses se fait toute seule. Un logiciel libre, sur invitation d’un membre d’une tribu.">
+    <link rel="icon" href="/images/symbole-reduit.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/site.css">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Melting Tribe">
+    <meta property="og:title" content="Melting Tribe : les menus de la semaine, en tribu">
+    <meta property="og:description" content="Chacun ajoute ses plats au planning. La liste de courses se fait toute seule.">
+    <meta property="og:url" content="https://meltingtribe.codingmatters.org/">
+    <meta property="og:image" content="https://meltingtribe.codingmatters.org/images/partage.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Melting Tribe, les menus de la semaine, en tribu.">
+    <meta property="og:locale" content="fr_FR">
+    <meta name="twitter:card" content="summary_large_image">
   </head>
   <body>
-    <h1>Melting Tribe</h1>
-    <p>Les menus de la semaine, en tribu. Page provisoire.</p>
+    <a class="skip" href="#contenu">Aller au contenu</a>
+    <header class="header">
+      <a class="brand" href="/" aria-label="Melting Tribe, accueil">
+        <img class="brand-symbol" src="/images/symbole.svg" alt="" width="44" height="44">
+        <img class="brand-logotype" src="/images/logotype.svg" alt="" width="140" height="34">
+      </a>
+      <nav class="nav" aria-label="Site">
+        <a class="nav-link" href="/#comment">Comment ça marche</a>
+        <a class="nav-link" href="/#libre">Logiciel libre</a>
+        <a class="pill" href="https://github.com/nelt/tribe-menus"><span class="pill-short">Code</span><span class="pill-long">Code source</span></a>
+      </nav>
+    </header>
+    <main id="contenu">
+      <section class="hero">
+        <img class="hero-symbol" src="/images/symbole.svg" alt="" width="260" height="260">
+        <div class="hero-text">
+          <h1>Les menus de la semaine, <span class="accent">en tribu.</span></h1>
+          <p class="lead">Chacun ajoute ses plats au planning. La liste de courses se fait toute seule.</p>
+          <div class="buttons">
+            <a class="button button-primary" href="#comment">Comment ça marche</a>
+            <a class="button button-secondary" href="https://github.com/nelt/tribe-menus">Voir le code source</a>
+          </div>
+          <p class="access">Pour l’instant, Melting Tribe s’utilise sur invitation d’un membre d’une tribu.</p>
+        </div>
+      </section>
+      <section class="how" id="comment">
+        <h2>Comment ça marche</h2>
+        <div class="cards">
+          <article class="card">
+            <span class="card-label">1 · LES COURSES</span>
+            <h3>La liste de courses se fait toute seule</h3>
+            <p>Choisissez les jours : Melting Tribe additionne les ingrédients de tous les repas prévus, selon le nombre de parts. Au magasin, il ne reste qu’à cocher, à plusieurs si vous vous partagez les rayons.</p>
+          </article>
+          <article class="card card-evening">
+            <span class="card-label">2 · À PLUSIEURS</span>
+            <h3>La semaine se construit à plusieurs</h3>
+            <p>Chaque membre de la tribu pose ses plats, midi et soir. Vos recettes restent dans la bibliothèque de la tribu et resservent d’une semaine à l’autre.</p>
+          </article>
+        </div>
+        <p class="features">Fonctionne hors ligne · Vos données restent à votre tribu</p>
+      </section>
+      <section class="free" id="libre">
+        <div class="free-text">
+          <h2>Un logiciel libre</h2>
+          <p>Le code de Melting Tribe est public, sous licence AGPL-3.0 : vous pouvez le lire, l’étudier, le modifier et proposer des améliorations.</p>
+        </div>
+        <a class="button button-light" href="https://github.com/nelt/tribe-menus">nelt/tribe-menus sur GitHub</a>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="footer-brand">
+        <img class="footer-symbol" src="/images/symbole.svg" alt="" width="36" height="36">
+        <span><span class="footer-name">Melting Tribe</span> · logiciel libre sous licence AGPL-3.0</span>
+      </div>
+      <nav class="footer-nav" aria-label="Informations">
+        <a href="/mentions-legales/">Mentions légales</a>
+        <a href="/confidentialite/">Confidentialité</a>
+        <a href="{{SOURCE_URL}}">Code source de cette version ({{VERSION}})</a>
+      </nav>
+    </footer>
   </body>
 </html>

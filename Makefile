@@ -55,7 +55,7 @@ build: ## Front end, then static binary for linux/amd64 in bin/ (VERSION, COMMIT
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)" -o bin/tribe-menus ./cmd/tribe-menus
 
 dist: build ## Archive in dist/: binary, site/, deploy/ and LICENSE, with its SHA-256 (VERSION)
-	go run ./internal/tools/dist -version $(VERSION)
+	go run ./internal/tools/dist -version $(VERSION) -commit $(COMMIT)
 
 probe: ## Checks of an instance from outside: make probe URL=https://<host> [ARGS="-dkim-selector <s>"] (uses up the code requests of the hour)
 	go run ./internal/tools/probe -url "$(URL)" $(ARGS)
