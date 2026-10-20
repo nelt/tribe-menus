@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +30,51 @@ func (m *fakeMailer) last(t *testing.T, to string) string {
 	return ""
 }
 
+// newTestLogin returns a login on the databases of st, whose code requests are processed
+// until the end of the test.
+func newTestLogin(t *testing.T, st *storage.Store, mailer CodeMailer, now func() time.Time) *Login {
+	t.Helper()
+	login := &Login{
+		RateLimit: NewRateLimitDB(st.RateLimit()),
+		Mailer:    mailer,
+		Requests:  NewCodeRequests(CodeRequestQueueSize),
+		Tribes:    storeOpener(st),
+		Logger:    slog.New(slog.DiscardHandler),
+		Now:       now,
+	}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		login.ProcessCodeRequests(context.Background())
+	}()
+	t.Cleanup(func() {
+		login.Requests.Close()
+		<-done
+	})
+	return login
+}
+
+// storeOpener opens the stores of the tribes of st.
+func storeOpener(st *storage.Store) TribeOpener {
+	return func(ctx context.Context, slug string) (*Store, error) {
+		db, err := st.Tribe(ctx, slug)
+		if errors.Is(err, storage.ErrUnknownTribe) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		return NewStore(db), nil
+	}
+}
+
+// requestAndWait asks for a code and waits for the processing of the request.
+func requestAndWait(ctx context.Context, login *Login, slug, email, ip string) (string, error) {
+	token, err := login.RequestCode(ctx, slug, email, ip)
+	login.Requests.Wait()
+	return token, err
+}
+
 type loginFixture struct {
 	store *storage.Store
 	login *Login
@@ -44,8 +90,8 @@ func (f *loginFixture) advance(d time.Duration) { f.now = f.now.Add(d) }
 
 // requestCode asks for a code as the browser of the fixture, which keeps the token of the
 // request.
-func (f *loginFixture) requestCode(ctx context.Context, slug string, t *Store, email, ip string) error {
-	token, err := f.login.RequestCode(ctx, slug, t, email, ip)
+func (f *loginFixture) requestCode(ctx context.Context, slug, email, ip string) error {
+	token, err := requestAndWait(ctx, f.login, slug, email, ip)
 	if err == nil {
 		f.token = token
 	}
@@ -66,7 +112,7 @@ func newLoginFixture(t *testing.T) *loginFixture {
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	f := &loginFixture{store: st, mailer: &fakeMailer{}, now: time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC)}
-	f.login = &Login{RateLimit: NewRateLimitDB(st.RateLimit()), Mailer: f.mailer, Now: func() time.Time { return f.now }}
+	f.login = newTestLogin(t, st, f.mailer, func() time.Time { return f.now })
 
 	err = st.CreateTribe(ctx, "martin", "Les Martin", func(ctx context.Context, db *sql.DB) error {
 		return NewStore(db).Initialize(ctx, "Les Martin", "alice@exemple.fr", "Alice", f.now)
@@ -113,7 +159,7 @@ func (f *loginFixture) addMembers(t *testing.T, n int) {
 func (f *loginFixture) signIn(t *testing.T, email string) (Session, string) {
 	t.Helper()
 	ctx := context.Background()
-	if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", email, "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	session, token, err := f.login.OpenSession(ctx, "martin", f.martin, email, f.mailer.last(t, email), f.token, Device{Type: Phone})
@@ -127,7 +173,6 @@ func TestRequestCode(t *testing.T) {
 	cases := []struct {
 		name     string
 		slug     string
-		unknown  bool // the tribe does not exist
 		email    string
 		wantErr  error
 		wantSent bool
@@ -135,17 +180,13 @@ func TestRequestCode(t *testing.T) {
 		{name: "active member", slug: "martin", email: " Alice@Exemple.fr", wantSent: true},
 		{name: "unknown address", slug: "martin", email: "inconnu@exemple.fr"},
 		{name: "revoked member", slug: "martin", email: "bruno@exemple.fr"},
-		{name: "unknown tribe", slug: "dupont", unknown: true, email: "alice@exemple.fr"},
+		{name: "unknown tribe", slug: "dupont", email: "alice@exemple.fr"},
 		{name: "malformed address", slug: "martin", email: "alice", wantErr: ErrInvalidEmail},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newLoginFixture(t)
-			tribe := f.martin
-			if tc.unknown {
-				tribe = nil
-			}
-			err := f.requestCode(context.Background(), tc.slug, tribe, tc.email, "192.0.2.1")
+			err := f.requestCode(context.Background(), tc.slug, tc.email, "192.0.2.1")
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("error = %v, want %v", err, tc.wantErr)
 			}
@@ -165,8 +206,6 @@ func TestRateLimits(t *testing.T) {
 		slug  string
 		email string
 		ip    string
-		// members are added to the tribe "martin" first: membre-0@exemple.fr…
-		members int
 	}{
 		{
 			name:  "by address in a tribe",
@@ -185,29 +224,19 @@ func TestRateLimits(t *testing.T) {
 			},
 			n: IPRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.1",
 		},
-		{
-			name: "by tribe, for its members",
-			prior: func(i int) (string, string, string) {
-				return "martin", fmt.Sprintf("membre-%d@exemple.fr", i), fmt.Sprintf("198.51.100.%d", i%10)
-			},
-			members: TribeRequestLimit,
-			n:       TribeRequestLimit, slug: "martin", email: "alice@exemple.fr", ip: "192.0.2.9",
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newLoginFixture(t)
-			f.addMembers(t, tc.members)
-			tribeOf := f.tribeOf
 			for i := range tc.n {
 				slug, email, ip := tc.prior(i)
-				if err := f.requestCode(ctx, slug, tribeOf(slug), email, ip); err != nil {
+				if err := f.requestCode(ctx, slug, email, ip); err != nil {
 					t.Fatalf("request %d: %v", i+1, err)
 				}
 				f.advance(time.Second)
 			}
 			sent := len(f.mailer.sent)
-			err := f.requestCode(ctx, tc.slug, tribeOf(tc.slug), tc.email, tc.ip)
+			err := f.requestCode(ctx, tc.slug, tc.email, tc.ip)
 			if !errors.Is(err, ErrTooManyRequests) {
 				t.Fatalf("error = %v, want ErrTooManyRequests", err)
 			}
@@ -217,10 +246,50 @@ func TestRateLimits(t *testing.T) {
 
 			// The windows end: a new request is accepted.
 			f.advance(time.Hour)
-			if err := f.requestCode(ctx, tc.slug, tribeOf(tc.slug), tc.email, tc.ip); err != nil {
+			if err := f.requestCode(ctx, tc.slug, tc.email, tc.ip); err != nil {
 				t.Errorf("after the window: %v", err)
 			}
 		})
+	}
+}
+
+// TestTribeLimitIsSilent: beyond the limit by tribe, a request for a member gets the answer
+// of any other address, and no code is sent; the refusal is counted for the alerts
+// (ADR 0026).
+func TestTribeLimitIsSilent(t *testing.T) {
+	ctx := context.Background()
+	f := newLoginFixture(t)
+	f.addMembers(t, TribeRequestLimit)
+	for i := range TribeRequestLimit {
+		if err := f.requestCode(ctx, "martin", fmt.Sprintf("membre-%d@exemple.fr", i), fmt.Sprintf("198.51.100.%d", i%10)); err != nil {
+			t.Fatalf("request %d: %v", i+1, err)
+		}
+		f.advance(time.Second)
+	}
+	sent := len(f.mailer.sent)
+	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+		if err := f.requestCode(ctx, "martin", email, "192.0.2.9"); err != nil {
+			t.Errorf("request for %s beyond the limit by tribe: %v, want the answer of any address", email, err)
+		}
+	}
+	if len(f.mailer.sent) != sent {
+		t.Error("a code was sent beyond the limit by tribe")
+	}
+	counts, err := f.martin.AlertCounts(ctx, f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if counts[TribeLimitRefusal] != 1 {
+		t.Errorf("refusals by the limit by tribe counted = %d, want 1", counts[TribeLimitRefusal])
+	}
+
+	// The window ends: a code is sent again.
+	f.advance(time.Hour)
+	if err := f.requestCode(ctx, "martin", "alice@exemple.fr", "192.0.2.9"); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.mailer.sent) != sent+1 {
+		t.Error("no code sent after the window")
 	}
 }
 
@@ -249,12 +318,12 @@ func TestTribeLimitCountsMembersOnly(t *testing.T) {
 					f.advance(5 * time.Minute) // 3 requests a quarter of an hour
 				}
 				ip := fmt.Sprintf("198.51.100.%d", i%(IPRequestLimit-1))
-				if err := f.requestCode(ctx, tc.prior, f.tribeOf(tc.prior), email, ip); err != nil {
+				if err := f.requestCode(ctx, tc.prior, email, ip); err != nil {
 					t.Fatalf("request %d: %v", i+1, err)
 				}
 				f.advance(time.Second)
 			}
-			if err := f.requestCode(ctx, tc.slug, f.tribeOf(tc.slug), tc.email, "192.0.2.9"); err != nil {
+			if err := f.requestCode(ctx, tc.slug, tc.email, "192.0.2.9"); err != nil {
 				t.Errorf("request for %s: %v", tc.email, err)
 			}
 		})
@@ -268,7 +337,7 @@ func TestMalformedSlugIsNotStored(t *testing.T) {
 	f := newLoginFixture(t)
 	slug := "alice@exemple.fr " + strings.Repeat("x", 10_000)
 
-	if err := f.requestCode(ctx, slug, nil, "alice@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, slug, "alice@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatalf("request: %v", err)
 	}
 	if len(f.mailer.sent) != 0 {
@@ -323,7 +392,7 @@ func TestOpenSession(t *testing.T) {
 	f := newLoginFixture(t)
 	device := Device{Type: Phone, OS: "iOS", Browser: "Safari", InstalledApp: true}
 
-	if err := f.requestCode(ctx, "martin", f.martin, "alice@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", "alice@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	code := f.mailer.last(t, "alice@exemple.fr")
@@ -428,7 +497,7 @@ func TestSameAnswers(t *testing.T) {
 		var got []string
 		_, _, err := f.login.OpenSession(ctx, target.slug, target.tribe, target.email, "000001", f.token, Device{})
 		got = append(got, errorString(err))
-		if err := f.requestCode(ctx, target.slug, target.tribe, target.email, "192.0.2.1"); err != nil {
+		if err := f.requestCode(ctx, target.slug, target.email, "192.0.2.1"); err != nil {
 			t.Fatal(err)
 		}
 		for range LoginCodeAttempts + 1 {
@@ -453,29 +522,25 @@ func TestSameAnswers(t *testing.T) {
 func TestAttemptsFromAnotherBrowser(t *testing.T) {
 	ctx := context.Background()
 	targets := []struct {
-		name    string
-		slug    string
-		unknown bool
-		email   string
+		name  string
+		slug  string
+		email string
 	}{
 		{name: "active member", slug: "martin", email: "alice@exemple.fr"},
 		{name: "unknown address", slug: "martin", email: "inconnu@exemple.fr"},
 		{name: "revoked member", slug: "martin", email: "bruno@exemple.fr"},
-		{name: "unknown tribe", slug: "dupont", unknown: true, email: "alice@exemple.fr"},
+		{name: "unknown tribe", slug: "dupont", email: "alice@exemple.fr"},
 	}
 	for _, target := range targets {
 		t.Run(target.name, func(t *testing.T) {
 			f := newLoginFixture(t)
-			store := f.martin
-			if target.unknown {
-				store = nil
-			}
+			store := f.tribeOf(target.slug)
 			// Another browser requests a code for chloe: its token is valid, for another code.
-			if err := f.requestCode(ctx, target.slug, store, "chloe@exemple.fr", "192.0.2.2"); err != nil {
+			if err := f.requestCode(ctx, target.slug, "chloe@exemple.fr", "192.0.2.2"); err != nil {
 				t.Fatal(err)
 			}
 			other := f.token
-			if err := f.requestCode(ctx, target.slug, store, target.email, "192.0.2.1"); err != nil {
+			if err := f.requestCode(ctx, target.slug, target.email, "192.0.2.1"); err != nil {
 				t.Fatal(err)
 			}
 			for _, token := range []string{"", other, f.token + "x", other, ""} {
@@ -532,7 +597,7 @@ func TestAlertCounters(t *testing.T) {
 	// Limit by address, for a member and for another address.
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
 		for i := range EmailRequestLimit + 1 {
-			err := f.requestCode(ctx, "martin", f.martin, email, ip(100+i))
+			err := f.requestCode(ctx, "martin", email, ip(100+i))
 			if i == EmailRequestLimit && !errors.Is(err, ErrTooManyRequests) {
 				t.Fatalf("%s: request %d: %v, want ErrTooManyRequests", email, i+1, err)
 			}
@@ -540,14 +605,14 @@ func TestAlertCounters(t *testing.T) {
 	}
 	// Limit by IP.
 	for i := range IPRequestLimit + 1 {
-		err := f.requestCode(ctx, "martin", f.martin, fmt.Sprintf("personne-%d@exemple.fr", i), "203.0.113.7")
+		err := f.requestCode(ctx, "martin", fmt.Sprintf("personne-%d@exemple.fr", i), "203.0.113.7")
 		if i == IPRequestLimit && !errors.Is(err, ErrTooManyRequests) {
 			t.Fatalf("IP request %d: %v, want ErrTooManyRequests", i+1, err)
 		}
 	}
 	// Limit by tribe: Alice's 3 requests already count, the last 3 members are refused.
 	for i := range TribeRequestLimit {
-		err := f.requestCode(ctx, "martin", f.martin, fmt.Sprintf("membre-%d@exemple.fr", i), ip(i%(IPRequestLimit-1)+1))
+		err := f.requestCode(ctx, "martin", fmt.Sprintf("membre-%d@exemple.fr", i), ip(i%(IPRequestLimit-1)+1))
 		if err != nil && !errors.Is(err, ErrTooManyRequests) {
 			t.Fatal(err)
 		}
@@ -557,7 +622,7 @@ func TestAlertCounters(t *testing.T) {
 	// Codes out of attempts, real and decoy; attempts from another browser and on an
 	// expired code exhaust nothing.
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
-		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+		if err := f.requestCode(ctx, "martin", email, "192.0.2.1"); err != nil {
 			t.Fatal(err)
 		}
 		for range LoginCodeAttempts + 1 {
@@ -568,7 +633,7 @@ func TestAlertCounters(t *testing.T) {
 				t.Fatal("a wrong code was accepted")
 			}
 		}
-		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+		if err := f.requestCode(ctx, "martin", email, "192.0.2.1"); err != nil {
 			t.Fatal(err)
 		}
 		f.advance(LoginCodeValidity)
@@ -606,7 +671,7 @@ func TestDecoyCodeForEveryRequest(t *testing.T) {
 	f := newLoginFixture(t)
 	tokens := map[string]string{}
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
-		if err := f.requestCode(ctx, "martin", f.martin, email, "192.0.2.1"); err != nil {
+		if err := f.requestCode(ctx, "martin", email, "192.0.2.1"); err != nil {
 			t.Fatal(err)
 		}
 		tokens[email] = f.token
@@ -650,7 +715,7 @@ func TestRevokedAfterRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.requestCode(ctx, "martin", f.martin, "chloe@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", "chloe@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.martin.RevokeMember(ctx, chloe.ID, f.alice.ID, f.now); err != nil {
@@ -671,7 +736,7 @@ func TestRevokeMemberClosesSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, token := f.signIn(t, "chloe@exemple.fr")
-	if err := f.requestCode(ctx, "martin", f.martin, "chloe@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", "chloe@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	code := f.mailer.last(t, "chloe@exemple.fr")
@@ -702,10 +767,10 @@ func TestPurge(t *testing.T) {
 	ctx := context.Background()
 	f := newLoginFixture(t)
 	f.signIn(t, "alice@exemple.fr")
-	if err := f.requestCode(ctx, "martin", f.martin, "alice@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", "alice@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", "192.0.2.1"); err != nil {
+	if err := f.requestCode(ctx, "martin", "inconnu@exemple.fr", "192.0.2.1"); err != nil {
 		t.Fatal(err)
 	}
 	counts := func() (requests, decoys, codes, sessions int) {
@@ -771,7 +836,7 @@ func TestLimitsSurviveRestart(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { _ = st.Close() })
-		login := &Login{RateLimit: NewRateLimitDB(st.RateLimit()), Mailer: mailer, Now: func() time.Time { return now }}
+		login := newTestLogin(t, st, mailer, func() time.Time { return now })
 		db, err := st.Tribe(ctx, "martin")
 		if errors.Is(err, storage.ErrUnknownTribe) {
 			return st, login, nil
@@ -797,7 +862,7 @@ func TestLimitsSurviveRestart(t *testing.T) {
 	tokens := map[string]string{}
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
 		for range EmailRequestLimit {
-			if tokens[email], err = login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); err != nil {
+			if tokens[email], err = requestAndWait(ctx, login, "martin", email, "192.0.2.1"); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -806,11 +871,11 @@ func TestLimitsSurviveRestart(t *testing.T) {
 		}
 	}
 	// A refused request, codes exhausted, an alert sent.
-	if _, err := login.RequestCode(ctx, "martin", martin, "inconnu@exemple.fr", "192.0.2.2"); !errors.Is(err, ErrTooManyRequests) {
+	if _, err := requestAndWait(ctx, login, "martin", "inconnu@exemple.fr", "192.0.2.2"); !errors.Is(err, ErrTooManyRequests) {
 		t.Fatalf("request beyond the limit: %v", err)
 	}
 	for _, email := range []string{"chloe@exemple.fr", "david@exemple.fr"} {
-		token, err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.3")
+		token, err := requestAndWait(ctx, login, "martin", email, "192.0.2.3")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -824,7 +889,7 @@ func TestLimitsSurviveRestart(t *testing.T) {
 	if _, err := martin.AddMember(ctx, "bruno@exemple.fr", "Bruno", 1, now); err != nil {
 		t.Fatal(err)
 	}
-	token, err := login.RequestCode(ctx, "martin", martin, "bruno@exemple.fr", "192.0.2.3")
+	token, err := requestAndWait(ctx, login, "martin", "bruno@exemple.fr", "192.0.2.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -837,7 +902,7 @@ func TestLimitsSurviveRestart(t *testing.T) {
 
 	_, login, martin = open()
 	for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
-		if _, err := login.RequestCode(ctx, "martin", martin, email, "192.0.2.1"); !errors.Is(err, ErrTooManyRequests) {
+		if _, err := requestAndWait(ctx, login, "martin", email, "192.0.2.1"); !errors.Is(err, ErrTooManyRequests) {
 			t.Errorf("%s: request after restart: error = %v, want ErrTooManyRequests", email, err)
 		}
 		_, _, err := login.OpenSession(ctx, "martin", martin, email, "wrong", tokens[email], Device{})
@@ -891,7 +956,7 @@ func TestCheckAlertsUnrecorded(t *testing.T) {
 	f.login.Alerts = notifier
 	f.login.RateLimit = unrecordedAlerts{f.login.RateLimit.(*RateLimitDB)}
 	for i := range RepeatedRequestsThreshold {
-		if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", fmt.Sprintf("198.51.100.%d", i)); err != nil {
+		if err := f.requestCode(ctx, "martin", "inconnu@exemple.fr", fmt.Sprintf("198.51.100.%d", i)); err != nil {
 			t.Fatal(err)
 		}
 		f.advance(EmailRequestWindow / EmailRequestLimit)
@@ -950,9 +1015,9 @@ func TestCheckAlerts(t *testing.T) {
 				email = fmt.Sprintf("membre-%d@exemple.fr", addresses/2%TribeRequestLimit)
 			}
 			for range EmailRequestLimit {
-				_ = f.requestCode(ctx, "martin", f.martin, email, ip())
+				_ = f.requestCode(ctx, "martin", email, ip())
 			}
-			if err := f.requestCode(ctx, "martin", f.martin, email, ip()); !errors.Is(err, ErrTooManyRequests) {
+			if err := f.requestCode(ctx, "martin", email, ip()); !errors.Is(err, ErrTooManyRequests) {
 				t.Fatalf("refusal for %s: %v", email, err)
 			}
 			f.advance(time.Minute)
@@ -990,7 +1055,7 @@ func TestCheckAlerts(t *testing.T) {
 		if i%2 == 1 {
 			email = fmt.Sprintf("inconnu-%d@exemple.fr", i)
 		}
-		if err := f.requestCode(ctx, "martin", f.martin, email, ip()); err != nil {
+		if err := f.requestCode(ctx, "martin", email, ip()); err != nil {
 			t.Fatal(err)
 		}
 		for range LoginCodeAttempts {
@@ -1005,7 +1070,7 @@ func TestCheckAlerts(t *testing.T) {
 	// Repeated requests for one address, at the pace of the limit.
 	f.advance(AlertInterval)
 	for i := range RepeatedRequestsThreshold {
-		if err := f.requestCode(ctx, "martin", f.martin, "inconnu@exemple.fr", ip()); err != nil {
+		if err := f.requestCode(ctx, "martin", "inconnu@exemple.fr", ip()); err != nil {
 			t.Fatalf("request %d: %v", i+1, err)
 		}
 		if i < RepeatedRequestsThreshold-2 {

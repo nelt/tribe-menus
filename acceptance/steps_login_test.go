@@ -145,6 +145,7 @@ func (w *world) registerLoginSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^je suis connecté à la tribu "([^"]*)"$`, w.connectedTo)
 	sc.Step(`^une session est ouverte pour cet appareil$`, w.sessionOpenForDevice)
 	sc.Step(`^l'application affiche le même message que pour une adresse membre$`, w.sameAnswerAsMember)
+	sc.Step(`^l'application affiche le même message que pour une adresse inconnue$`, w.sameAnswerAsUnknown)
 	sc.Step(`^aucun e-mail n'est envoyé$`, w.noMailSinceAction)
 	sc.Step(`^un message m'indique que l'adresse n'est pas valide$`, func() error { return w.lastError(http.StatusBadRequest, "invalid_email") })
 	sc.Step(`^je ne suis pas connecté(?: sur cet autre appareil)?$`, w.notConnected)
@@ -271,13 +272,7 @@ func (w *world) givenRequests(ctx context.Context, n int, request func(i int) (s
 	for i := range n {
 		w.now = start.Add(time.Duration(i-n) * time.Minute)
 		slug, email, ip := request(i)
-		var t *tribe.Store
-		if found, err := w.tribeStore(ctx, slug); err == nil {
-			t = found
-		} else if !errors.Is(err, storage.ErrUnknownTribe) {
-			return err
-		}
-		if _, err := w.login.RequestCode(ctx, slug, t, email, ip); err != nil {
+		if _, err := w.requestCodeDirectly(ctx, slug, email, ip); err != nil {
 			return fmt.Errorf("request %d: %w", i+1, err)
 		}
 	}
@@ -620,22 +615,34 @@ func (w *world) sessionOpenForDevice(ctx context.Context) error {
 // request for an active member of the tribe, made from another device. The code sent to
 // the member is not counted by the next steps.
 func (w *world) sameAnswerAsMember(ctx context.Context) error {
-	got := w.auth.last
-	mark := len(w.sentMails(0))
 	member := string(w.auth.me)
 	if _, err := w.ensureMember(ctx, member, string(w.tribe)); err != nil {
 		return err
 	}
-	reference, err := w.do(ctx, w.newDevice(), http.MethodPost, tribePath(string(w.tribe), "api/login-codes"), map[string]string{"email": member})
+	return w.sameAnswerAs(ctx, member, "a member")
+}
+
+// sameAnswerAsUnknown compares the answer to the last request with the answer to the same
+// request for an address that is not a member of the tribe, made from another device.
+func (w *world) sameAnswerAsUnknown(ctx context.Context) error {
+	return w.sameAnswerAs(ctx, "inconnu-reference@exemple.fr", "an unknown address")
+}
+
+// sameAnswerAs compares the answer to the last request with the answer to the same request
+// for email, made from another device. What it sends is not counted by the next steps.
+func (w *world) sameAnswerAs(ctx context.Context, email, who string) error {
+	got := w.auth.last
+	mark := len(w.sentMails(0))
+	reference, err := w.do(ctx, w.newDevice(), http.MethodPost, tribePath(string(w.tribe), "api/login-codes"), map[string]string{"email": email})
 	if err != nil {
 		return err
 	}
-	w.outbox.Wait()
+	w.waitSendings()
 	for i := mark; i < len(w.recorder.Messages()); i++ {
 		w.auth.ignored[i] = true
 	}
 	if a, b := answer(got), answer(reference); a != b {
-		return fmt.Errorf("answer %q, want the answer for a member %q", a, b)
+		return fmt.Errorf("answer %q, want the answer for %s %q", a, who, b)
 	}
 	return nil
 }

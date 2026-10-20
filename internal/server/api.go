@@ -42,6 +42,21 @@ type Tribes interface {
 	Tribe(ctx context.Context, slug string) (*sql.DB, error)
 }
 
+// TribeStores opens the store of a tribe by its slug, nil for an unknown tribe: for the
+// handlers, and for the code requests processed in the background (ADR 0026).
+func TribeStores(tribes Tribes) tribe.TribeOpener {
+	return func(ctx context.Context, slug string) (*tribe.Store, error) {
+		db, err := tribes.Tribe(ctx, slug)
+		if errors.Is(err, storage.ErrUnknownTribe) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		return tribe.NewStore(db), nil
+	}
+}
+
 // Error codes of the API, in the "error" field of an error response.
 const (
 	errBadRequest      = "bad_request"
@@ -94,7 +109,9 @@ func (a *api) routes(mux *http.ServeMux) {
 	handle := func(pattern string, h http.Handler) {
 		mux.Handle(pattern, withNoStore(cop.Handler(a.withTribe(h))))
 	}
-	handle("POST /tribes/{tribe}/api/login-codes", http.HandlerFunc(a.requestCode))
+	// A code request does not resolve the tribe: its response is written before the
+	// member is looked for (ADR 0026).
+	mux.Handle("POST /tribes/{tribe}/api/login-codes", withNoStore(cop.Handler(http.HandlerFunc(a.requestCode))))
 	handle("POST /tribes/{tribe}/api/sessions", http.HandlerFunc(a.openSession))
 	handle("GET /tribes/{tribe}/api/session", a.withSession(a.getSession))
 	handle("DELETE /tribes/{tribe}/api/session", a.withSession(a.deleteSession))
@@ -115,12 +132,8 @@ func withNoStore(next http.Handler) http.Handler {
 // the handlers treat exactly as an existing tribe without session (ENF-02).
 func (a *api) withTribe(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var store *tribe.Store
-		db, err := a.tribes.Tribe(r.Context(), r.PathValue("tribe"))
-		switch {
-		case err == nil:
-			store = tribe.NewStore(db)
-		case !errors.Is(err, storage.ErrUnknownTribe):
+		store, err := TribeStores(a.tribes)(r.Context(), r.PathValue("tribe"))
+		if err != nil {
 			a.server.fail(w, err)
 			return
 		}
@@ -163,7 +176,8 @@ func sessionOf(r *http.Request) (tribe.Session, bool) {
 }
 
 // requestCode: POST login-codes {email}. Always the same answer, whether a code is sent or
-// not, except for a malformed address or too many requests.
+// not, except for a malformed address or too many requests; written before the member is
+// looked for (ADR 0026).
 func (a *api) requestCode(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Email string `json:"email"`
@@ -171,7 +185,7 @@ func (a *api) requestCode(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &body) {
 		return
 	}
-	token, err := a.login.RequestCode(r.Context(), r.PathValue("tribe"), tribeOf(r), body.Email, a.server.clientIP(r))
+	token, err := a.login.RequestCode(r.Context(), r.PathValue("tribe"), body.Email, a.server.clientIP(r))
 	switch {
 	case err == nil:
 		setCodeRequestCookie(w, r, token, tribe.LoginCodeValidity)
