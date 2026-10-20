@@ -138,7 +138,7 @@ test("resend accepted: the code field has the focus", async ({ page }) => {
 test("code expired", async ({ page }) => {
   await openCodeScreen(page, { openSession: [replies.newCodeNeeded] });
   await submitCode(page);
-  await expect(page.getByRole("alert")).toHaveText("Ce code a expiré. Demandez-en un nouveau.");
+  await expect(page.getByRole("alert")).toHaveText("Ce code n’est plus valable. Demandez-en un nouveau.");
   await expect(page.getByRole("button", { name: "Recevoir un nouveau code" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Se connecter" })).toHaveCount(0);
 });

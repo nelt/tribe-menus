@@ -20,8 +20,28 @@ import (
 
 type apiFixture struct {
 	handler  http.Handler
+	login    *tribe.Login
 	outbox   *mail.Outbox
 	recorder *mail.Recorder
+	// opened counts the tribe databases opened by the handlers.
+	opened int
+}
+
+// countingTribes counts the tribe databases opened.
+type countingTribes struct {
+	Tribes
+	opened *int
+}
+
+func (c countingTribes) Tribe(ctx context.Context, slug string) (*sql.DB, error) {
+	*c.opened++
+	return c.Tribes.Tribe(ctx, slug)
+}
+
+// wait waits for the code requests being processed, then for the emails being sent.
+func (f *apiFixture) wait() {
+	f.login.Requests.Wait()
+	f.outbox.Wait()
 }
 
 // newAPIFixture serves the tribes "martin" (Alice) and "durand" (David).
@@ -52,8 +72,24 @@ func newAPIFixture(t *testing.T) *apiFixture {
 	f := &apiFixture{recorder: &mail.Recorder{}}
 	logger := slog.New(slog.DiscardHandler)
 	f.outbox = mail.NewOutbox(f.recorder, tribe.LoginCodeValidity, logger)
-	login := &tribe.Login{RateLimit: tribe.NewRateLimitDB(st.RateLimit()), Mailer: f.outbox, Now: func() time.Time { return now }}
-	f.handler = newHandler(t, Config{Web: webFS(), Tribes: st, Login: login})
+	f.login = &tribe.Login{
+		RateLimit: tribe.NewRateLimitDB(st.RateLimit()),
+		Mailer:    f.outbox,
+		Requests:  tribe.NewCodeRequests(tribe.CodeRequestQueueSize),
+		Tribes:    TribeStores(st),
+		Logger:    logger,
+		Now:       func() time.Time { return now },
+	}
+	processed := make(chan struct{})
+	go func() {
+		defer close(processed)
+		f.login.ProcessCodeRequests(ctx)
+	}()
+	t.Cleanup(func() {
+		f.login.Requests.Close()
+		<-processed
+	})
+	f.handler = newHandler(t, Config{Web: webFS(), Tribes: countingTribes{Tribes: st, opened: &f.opened}, Login: f.login})
 	return f
 }
 
@@ -82,7 +118,7 @@ func (f *apiFixture) signIn(t *testing.T, slug, email string) *http.Cookie {
 		t.Fatalf("login-codes: status %d", rec.Code)
 	}
 	request := cookieOf(t, rec, cookieName(codeRequestCookie, slug))
-	f.outbox.Wait()
+	f.wait()
 	msgs := f.recorder.Messages()
 	code := eightDigits.FindString(msgs[len(msgs)-1].Body)
 	rec = f.do("POST", "/tribes/"+slug+"/api/sessions", `{"email":"`+email+`","code":"`+code+`"}`, request)
@@ -142,6 +178,7 @@ func TestCodeRequestCookie(t *testing.T) {
 	f := newAPIFixture(t)
 	rec := f.do("POST", "/tribes/martin/api/login-codes", `{"email":"alice@exemple.fr"}`)
 	request := cookieOf(t, rec, cookieName(codeRequestCookie, "martin"))
+	f.wait()
 	if !request.HttpOnly || !request.Secure || request.SameSite != http.SameSiteLaxMode ||
 		request.Path != "/" || request.Domain != "" || request.MaxAge != 600 || len(request.Value) != 43 {
 		t.Errorf("cookie = %+v", request)
@@ -164,6 +201,26 @@ func TestCodeRequestCookie(t *testing.T) {
 	rec = f.do("POST", "/tribes/martin/api/sessions", `{"email":"alice@exemple.fr","code":"00000000"}`, request)
 	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), `"attemptsLeft":2`) {
 		t.Errorf("attempt with the cookie of the request: status %d, body %s; want 2 attempts left", rec.Code, rec.Body)
+	}
+}
+
+// TestCodeRequestOpensNoTribe: the response to a code request is written without opening
+// the database of the tribe, whatever the address and the tribe (ADR 0026).
+func TestCodeRequestOpensNoTribe(t *testing.T) {
+	f := newAPIFixture(t)
+	for _, target := range []string{"/tribes/martin/api/login-codes", "/tribes/dupont/api/login-codes"} {
+		for _, email := range []string{"alice@exemple.fr", "inconnu@exemple.fr"} {
+			if rec := f.do("POST", target, `{"email":"`+email+`"}`); rec.Code != http.StatusAccepted {
+				t.Fatalf("%s for %s: status %d", target, email, rec.Code)
+			}
+		}
+	}
+	if f.opened != 0 {
+		t.Errorf("tribe databases opened by the handler = %d, want 0", f.opened)
+	}
+	f.wait()
+	if n := len(f.recorder.Messages()); n != 1 {
+		t.Errorf("codes sent = %d, want 1", n)
 	}
 }
 
@@ -263,7 +320,7 @@ func TestCrossOriginRefused(t *testing.T) {
 			t.Errorf("Origin %s: status %d, want 403", origin, rec.Code)
 		}
 	}
-	f.outbox.Wait()
+	f.wait()
 	if n := len(f.recorder.Messages()); n != 0 {
 		t.Errorf("%d messages sent", n)
 	}
