@@ -147,10 +147,17 @@ check_firewall() {
 	check "nftables active and enabled" systemctl is-enabled --quiet nftables
 	if grep -q 'policy drop' <<<"$rules"; then ok "input dropped by default"; else fail "input dropped by default"; fi
 	if grep -Eq 'tcp dport \{ 22, 80, 443 \} accept' <<<"$rules" &&
-		[[ $(grep -c 'dport' <<<"$rules") == 1 ]] && ! grep -q 'udp' <<<"$rules"; then
+		[[ $(grep -c 'dport.*accept' <<<"$rules") == 1 ]] && ! grep -q 'udp' <<<"$rules"; then
 		ok "only TCP 22, 80 and 443 accepted, no UDP port"
 	else
 		fail "only TCP 22, 80 and 443 accepted, no UDP port"
+	fi
+	# plan recette, step 31.
+	if grep -Eq 'dport \{ 80, 443 \} ct state new add @web4 \{ ip saddr ct count over [0-9]+ \} reject' <<<"$rules" &&
+		grep -Eq 'dport \{ 80, 443 \} ct state new add @web6 \{ ip6 saddr (&|and) ffff:ffff:ffff:ffff:: ct count over [0-9]+ \} reject' <<<"$rules"; then
+		ok "simultaneous web connections limited by address, IPv6 by /64"
+	else
+		fail "simultaneous web connections limited by address, IPv6 by /64"
 	fi
 	tcp=$(listening_ports -t)
 	if [[ $tcp == "22 80 443" ]]; then

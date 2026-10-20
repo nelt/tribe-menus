@@ -870,6 +870,53 @@ check_ssh
 	}
 }
 
+// The firewall accepts TCP 22, 80 and 443 only, and limits the simultaneous connections to
+// the web ports by address (plan recette, step 31), as provision.sh writes it.
+func TestCheckFirewall(t *testing.T) {
+	check, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-check"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	provision, err := filepath.Abs(filepath.Join("..", "..", "deploy", "provision.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// nft lists the rules of provision.sh, without the limit by address when asked.
+	prelude := `
+set -euo pipefail
+listed=$(source "$PROVISION"; render_nftables)
+if [[ -n ${WITHOUT_LIMIT:-} ]]; then listed=$(grep -v 'ct count' <<<"$listed"); fi
+source "$CHECK"
+nft() { printf '%s\n' "$listed"; }
+systemctl() { return 0; }
+listening_ports() { [[ $1 == -t ]] && printf '22 80 443'; return 0; }
+check_firewall
+`
+	for _, tc := range []struct {
+		name  string
+		env   string
+		limit string
+	}{
+		{"as provisioned", "", "ok    "},
+		{"without the limit", "WITHOUT_LIMIT=1", "FAIL  "},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command("bash", "-c", prelude)
+			cmd.Env = append(os.Environ(), "CHECK="+check, "PROVISION="+provision, tc.env)
+			out, _ := cmd.CombinedOutput()
+			for _, want := range []string{
+				"ok    input dropped by default\n",
+				"ok    only TCP 22, 80 and 443 accepted, no UDP port\n",
+				tc.limit + "simultaneous web connections limited by address, IPv6 by /64\n",
+			} {
+				if !strings.Contains(string(out), want) {
+					t.Errorf("want %q:\n%s", want, out)
+				}
+			}
+		})
+	}
+}
+
 // The ports listening outside the loopback are listed, none included: a filter that failed
 // on an empty result stopped tribe-menus-check under pipefail (séance S2).
 func TestListeningPorts(t *testing.T) {
