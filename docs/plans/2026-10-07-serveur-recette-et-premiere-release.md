@@ -169,42 +169,42 @@ Prérequis : PR `release/v0.1.0` ouverte, CI verte. C'est la recette de la premi
 
 **Budget** : dix demandes de code par heure depuis une même connexion. Téléphones en données mobiles, ordinateur sur la connexion du domicile ; l'essai des limites vient en dernier.
 
-- [ ] `sudo tribe-menus-deploy --env recette --pr <numéro de la PR de release>`.
+- [x] `sudo tribe-menus-deploy --env recette --pr <numéro de la PR de release>`.
 
 Réception du code (ADR 0014, point 6), sur les adresses directes, une ligne par messagerie réellement utilisée par la famille :
 
-- [ ] Gmail : reçu en moins d'une minute, dans la boîte de réception ; SPF, DKIM et DMARC « pass » dans les en-têtes du message.
-- [ ] Outlook : de même.
-- [ ] iCloud : de même.
-- [ ] Autre messagerie de la famille, s'il y en a une : de même.
-- [ ] Une adresse `recette-…@codingmatters.org` : reçue par la redirection.
-- [ ] Message lisible sur téléphone : objet, code à 8 chiffres, durée de validité, ni lien ni nom de tribu.
-- [ ] Code demandé pour `recette-inconnu@codingmatters.org` : l'écran ne dit rien de plus que pour une autre adresse (ENF-02).
+- [x] Gmail : reçu en moins d'une minute, dans la boîte de réception ; SPF, DKIM et DMARC « pass » dans les en-têtes du message.
+- [ ] Outlook : de même. *Le 2026-10-20 : le développeur n'en a pas, l'usage de la famille n'est pas connu ; reporté à l'invitation de la famille (feuille de route).*
+- [ ] iCloud : de même. *Idem.*
+- [x] Autre messagerie de la famille, s'il y en a une : de même. *Sans objet connu.*
+- [x] Une adresse `recette-…@codingmatters.org` : reçue par la redirection.
+- [x] Message lisible sur téléphone : objet, code à 8 chiffres, durée de validité, ni lien ni nom de tribu.
+- [x] Code demandé pour `recette-inconnu@codingmatters.org` : l'écran ne dit rien de plus que pour une autre adresse (ENF-02).
 
 Connexion :
 
-- [ ] iPhone, Safari : connexion complète ; les huit cases restent alignées (`socle`, D14).
-- [ ] Android, Chrome : de même.
-- [ ] Ordinateur, deux navigateurs dont Safari ou Firefox.
-- [ ] Dans l'inspecteur de l'ordinateur : cookies préfixés `__Host-`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` (D2).
-- [ ] `@manuel` « La session survit au redémarrage du navigateur » : navigateur fermé complètement puis rouvert sur l'URL de la tribu, sous Safari et sous Chrome.
-- [ ] Code demandé sur un appareil et saisi sur un autre : il est refusé sans essai consommé, et le message suffit à comprendre qu'il faut le redemander (`revue-securite`, D5).
-- [ ] Deux demandes de code depuis deux onglets du même navigateur, pour deux adresses : comportement noté (revue de la PR #40).
-- [ ] Déconnexion, puis retour à l'écran de connexion.
-- [ ] Lien « code source » de l'écran de connexion : il mène à la version déployée.
+- [ ] iPhone, Safari : connexion complète ; les huit cases restent alignées (`socle`, D14). *Le 2026-10-20 : ni iPhone ni Safari à disposition ; reporté à la prochaine recette, sous WebKit par Claude Code et sur un iPhone emprunté (décision du développeur).*
+- [x] Android, Chrome : de même.
+- [x] Ordinateur, deux navigateurs dont Safari ou Firefox.
+- [x] Dans l'inspecteur de l'ordinateur : cookies préfixés `__Host-`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` (D2).
+- [x] `@manuel` « La session survit au redémarrage du navigateur » : navigateur fermé complètement puis rouvert sur l'URL de la tribu, sous Safari et sous Chrome. *Sous Chrome ; Safari avec l'iPhone.*
+- [x] Code demandé sur un appareil et saisi sur un autre : il est refusé sans essai consommé, et le message suffit à comprendre qu'il faut le redemander (`revue-securite`, D5). *Infaisable par l'interface, qui n'ouvre la saisie qu'après une demande faite dans ce navigateur : la demande du second appareil remplace le code du premier, « code incorrect, 2 essais » est alors la bonne réponse. Couvert à l'API par les scénarios « Des essais venus d'un autre navigateur… » d'`authentification.feature`.*
+- [x] Deux demandes de code depuis deux onglets du même navigateur, pour deux adresses : comportement noté (revue de la PR #40). *Le code du premier onglet est refusé sans essai consommé, avec « Ce code a expiré. Demandez-en un nouveau. » ; le second onglet se connecte, et le premier, rechargé, l'est avec la seconde adresse. Message trompeur, corrigé au lot E.*
+- [x] Déconnexion, puis retour à l'écran de connexion.
+- [x] Lien « code source » de l'écran de connexion : il mène à la version déployée.
 
 Site public, sur le téléphone et l'ordinateur :
 
-- [ ] Présentation, mentions légales et Confidentialité lisibles ; liens du pied de page justes, dont « Code source de cette version » (D17).
+- [x] Présentation, mentions légales et Confidentialité lisibles ; liens du pied de page justes, dont « Code source de cette version » (D17).
 
 Limites et alertes, en dernier :
 
-- [ ] « Renvoyer un code » jusqu'au refus : « Réessayez dans quelques minutes » à la quatrième demande.
-- [ ] Dix refus de suite (commande fournie par Claude Code, lancée du poste) : e-mail d'alerte de l'application reçu dans les dix minutes, sans adresse, IP ni tribu ; puis le même signal relayé par le serveur.
+- [x] « Renvoyer un code » jusqu'au refus : « Réessayez dans quelques minutes » à la quatrième demande.
+- [ ] Dix refus de suite (commande fournie par Claude Code, lancée du poste) : e-mail d'alerte de l'application reçu dans les dix minutes, sans adresse, IP ni tribu ; puis le même signal relayé par le serveur. *E-mail de l'application reçu ; relais fait, mais son e-mail jamais arrivé (notes d'exécution, lot E).*
 
 Rapport :
 
-- [ ] `sudo tribe-menus-check report` sur le serveur, remis à Claude Code : réponses SMTP, alertes, erreurs et avertissements de l'heure.
+- [x] `sudo tribe-menus-check report` sur le serveur, remis à Claude Code : réponses SMTP, alertes, erreurs et avertissements de l'heure.
 
 ### S4. Première release, ouverture de la production et retours arrière
 
@@ -223,7 +223,7 @@ Production :
 - [ ] `sudo tribe-menus-deploy --pr <numéro>` (sans `--env`, donc en production) : refusé.
 - [ ] Site public servi à `https://meltingtribe.codingmatters.org/` ; « Code source de cette version » mène à l'étiquette `v0.1.0`.
 - [ ] `sudo tribe-menus-admin production init` : votre tribu, avec votre adresse.
-- [ ] Connexion à votre tribu depuis l'iPhone, en données mobiles.
+- [ ] Connexion à votre tribu depuis votre téléphone, en données mobiles. *Écrit « depuis l'iPhone » à l'origine ; le développeur n'en a pas (S3).*
 - [ ] `make probe` lancé par Claude Code sur la production : rapport sans échec.
 
 Retours arrière, en recette (ADR 0016 ; D7) :
@@ -350,7 +350,7 @@ Peut avancer en parallèle des lots B et C. Points d'attention de la revue : auc
 ### Première release : `v0.1.0`
 
 - [ ] **29. PR `release/v0.1.0`**, préparée par Claude Code selon `RELEASING.md` (étapes 1 à 5), une fois les lots A à D fusionnés : section du `CHANGELOG.md`, migrations depuis le début du projet, notes relues.
-- [ ] **30. Séance 3**, par le développeur, sur l'archive de cette PR : check-list S3.
+- [x] **30. Séance 3**, par le développeur, sur l'archive de cette PR : check-list S3.
 
 ### Lot E : suites de la recette (`feature/suites-de-la-recette`)
 
@@ -361,6 +361,8 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
   - `EHLO localhost` : si un filtre s'en formalise, se présenter avec l'hôte de `baseURL` (point 3).
   - Échecs d'envoi : ne compter que les étapes de connexion et d'authentification, ou garder le sens large et l'écrire dans l'ADR 0023 (revue de la PR #47, point 3).
   - Tout défaut relevé sur les appareils, avec le scénario qui le prouve.
+  - **E-mail du relais des alertes jamais arrivé** (S3) : accepté par le MX Plan, ni dans Gmail ni, semble-t-il, ailleurs, alors que l'e-mail d'essai de `tribe-menus-check` passe par le même chemin. Corps en texte clair (les compteurs, comme l'e-mail de l'application) au lieu de l'enregistrement JSON ; un essai par `msmtp` sur le serveur départage l'objet et le corps ; prouvé par une vraie alerte relayée reçue.
+  - **Message d'un code remplacé** (S3) : « Ce code a expiré » s'affiche aussi pour un code remplacé par une autre demande ; il devient « Ce code n'est plus valable. Demandez-en un nouveau. », juste dans tous les cas (décision du développeur le 2026-10-20) ; `docs/design/README.md` et la maquette accordés.
   - **Temps de réponse de `POST login-codes`** (étape 23, constat) : répondre dès la limitation et le code fantôme, et faire la recherche du membre, l'écriture du code et l'envoi en arrière-plan, dans une file bornée, pour que le chemin synchrone ne dépende plus de l'appartenance (option A, choisie par le développeur le 2026-10-18 ; écartée : une durée plancher des réponses, qu'un temps plus long trahirait encore). ADR à écrire : ce que devient la limite par tribu, qui ne compte que les demandes pour ses membres, et ce que la réponse peut encore dire. Tests : le chemin synchrone ne touche jamais la base de la tribu ; puis nouvelle mesure `make probe … -timing` en recette, sans écart.
   - Connexions simultanées limitées par adresse dans `nftables` (IPv4, et IPv6 par préfixe /64) sur les ports 80 et 443, contre les connexions tenues ouvertes que Caddy ne coupe pas sur `/tribes/*` (étape 23, constat de Caddy) ; le seuil se fixe d'après les journaux d'accès des premières semaines, plusieurs appareils pouvant partager une adresse (box, NAT d'un opérateur mobile). Décidé par le développeur le 2026-10-18.
 
@@ -505,3 +507,9 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Étape 26** : **écart** : les marques sont `{{VERSION}}` et `{{SOURCE_URL}}`, et non `{{COMMIT}}`, l'adresse dépendant de la version (étiquette d'une release, commit sinon) : `internal/tools/dist` la calcule par `server.SourceURL`, la règle du lien de l'écran de connexion, désormais exportée ; `make dist` lui passe `-commit`. Il refuse une marque restée et un nom que `tribe-menus-deploy` refuserait. Tests : remplacement pour une release, une PR et `dev` ; reproductibilité inchangée ; site du dépôt (noms, marques, ni script ni style en ligne, copies identiques à leurs sources).
   - **Étape 27** : textes de la maquette accordés à l'application et au serveur : hébergeur PulseHeberg à Paris, envoi des e-mails par OVHcloud ; cookies propres à une tribu (ADR 0024) ; « membre révoqué » remplacé par « membre : tant qu'il fait partie de la tribu, effacé sur demande », la révocation n'existant pas encore ; ajout des copies des bases prises avant chaque mise à jour (lot C), qui sont des données conservées. **Le journal d'audit est annoncé à 12 mois (PT-07), mais son effacement automatique n'est pas écrit** : point reporté dans la feuille de route, à faire avant octobre 2027. Relus et validés par le développeur dans la PR #57, le 2026-10-18 ; aucune relecture juridique. La LCEN (article 6, III) demande aussi le numéro de téléphone de l'hébergeur, que la maquette ne porte pas : laissé de côté, décision du développeur le 2026-10-18.
   - **Revue de la PR #57** (2026-10-18) : deux points corrigés : la page Confidentialité nomme toutes les copies des bases que garde le serveur (avant une mise à jour, mises de côté par un retour arrière ou une restauration, faite pour déplacer le service), et la procédure de reconstruction efface la dernière (PR #56) ; le test du site voit toute ressource tierce, dans les pages comme dans les feuilles de style. Point noté : **le motif des noms d'une archive est écrit deux fois**, `namePattern` dans `internal/tools/dist` et `check_archive` dans `tribe-menus-deploy` ; un changement d'un seul côté ferait sortir de la CI une archive que le déploiement refuse. À traiter au lot E, une fois les deux PR fusionnées : un test qui lit le motif du script.
+- **Séance S3** (2026-10-20), par le développeur, sur l'archive de la PR #58 (`pr-58-b3dd90490442`, commit de fusion `7b9fb24`), avec une check-list partagée tenue par Claude Code. Provisionnement relancé d'abord depuis la recette : la version précédente était `pr-56-4f70faa`, d'avant les dernières corrections de la PR #56 ; `tribe-menus-check` sans échec.
+  - **Constaté sans défaut** : code reçu sur Gmail en moins d'une minute, en boîte de réception, SPF, DKIM et DMARC « pass » ; par la redirection `recette-…@` ; message lisible ; aucune différence à l'écran pour `recette-inconnu@` ; connexion sous Chrome sur Android et sur deux navigateurs de l'ordinateur ; cookies `__Host-` conformes ; session gardée après un redémarrage du navigateur (Chrome) ; déconnexion ; lien « code source » ; site public ; refus à la quatrième demande ; alerte de l'application reçue (`refused_requests`, quatorze refus par la limite par adresse, ni adresse ni IP ni tribu).
+  - **Relais de l'alerte** : `tribe-menus-alert` l'a lue au passage suivant (cinq minutes), `msmtp` l'a remise au MX Plan (`250`), une seule fois ; confinement de l'unité confirmé avec `msmtp` et `systemd-creds` (revue de la PR #56). L'e-mail n'est jamais arrivé, ni dans Gmail ni dans ses indésirables ; l'e-mail d'essai de `tribe-menus-check`, envoyé juste après par le même chemin, arrive. Filtrage probable sur le contenu (objet « alerte… », corps en JSON ; l'alerte de l'application portait déjà `X-VR-SPAMSTATE: ALERTING` au passage par la boîte de l'administrateur). Lot E.
+  - **Deux onglets** (revue de la PR #40) : comportement attendu, message trompeur (« expiré »). Lot E.
+  - **Non fait** : Safari, faute d'iPhone et de Mac ; un parcours sous WebKit (profil iPhone 15) lancé par Claude Code sur la recette est allé jusqu'à la demande de code, la saisie n'a pas eu lieu. Reporté à la prochaine recette, sous WebKit et sur un iPhone emprunté. Outlook et iCloud : reportés à l'invitation de la famille.
+  - **Pour la check-list** : un code saisi depuis un autre navigateur que celui de la demande ne se joue pas par l'interface (point coché, couvert par les scénarios godog) ; la connexion de S4 se fait depuis le téléphone du développeur, qui n'a pas d'iPhone.
