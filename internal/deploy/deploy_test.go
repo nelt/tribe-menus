@@ -393,6 +393,33 @@ func TestAlerts(t *testing.T) {
 	}
 }
 
+// The body of an alert email gives each record as plain text, one field a line, without
+// JSON nor control characters (séance S3).
+func TestAlertText(t *testing.T) {
+	records := `{"time":"2026-10-20T05:08:29Z","level":"ERROR","msg":"code request limits reached repeatedly","alert":"code_request_limits","signals":"refused_requests","email_limit":14}
+{"msg":"a\nSubject: b\u0007","alert":"x","n":{"a":1}}
+`
+	out, err := runWithInput(t, t.TempDir(), records, "tribe-menus-alert", "record_text")
+	if err != nil {
+		t.Fatalf("record_text: %v\n%s", err, out)
+	}
+	want := `  time : 2026-10-20T05:08:29Z
+  level : ERROR
+  msg : code request limits reached repeatedly
+  alert : code_request_limits
+  signals : refused_requests
+  email_limit : 14
+
+  msg : a Subject: b 
+  alert : x
+  n : {"a":1}
+
+`
+	if out != want {
+		t.Errorf("record_text:\n%q\nwant:\n%q", out, want)
+	}
+}
+
 // prune keeps five releases, the current and previous ones whatever their age, their
 // snapshots, and the five last sets of databases put aside (ADR 0016, point 1.7).
 func TestPrune(t *testing.T) {

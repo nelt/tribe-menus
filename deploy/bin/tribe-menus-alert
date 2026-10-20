@@ -70,6 +70,15 @@ alerts() {
 		| if (.alert | test("^[a-z_]{1,40}$")) then . else .alert = "unknown" end'
 }
 
+# record_text prints each record, compact JSON one per line, as lines "  key : value", the
+# control characters replaced by spaces, a blank line after each record: the body of an
+# alert email is plain text (séance S3: the first one relayed, with the records as JSON,
+# never arrived).
+record_text() {
+	jq -r 'to_entries | map("  \(.key | gsub("[[:cntrl:]]"; " ")) : \(.value | tostring | gsub("[[:cntrl:]]"; " "))")
+		| join("\n") + "\n"'
+}
+
 # relay_env relays the alerts written since its last run by the service of an environment.
 # The journal cursor is kept in the state directory; on the first run, or when journalctl
 # refuses the cursor kept, the last hour is read. The cursor is written only once every
@@ -102,9 +111,9 @@ relay_env() {
 		fi
 		{
 			printf "L'application (%s) a écrit une alerte %s dans son journal.\n" "$env" "$nature"
-			printf "Enregistrements relayés par le serveur, tels qu'écrits (ADR 0023) :\n\n"
-			jq -c --arg nature "$nature" 'select(.alert == $nature)' <<<"$records"
-			printf '\nJournal complet : sudo journalctl -u tribe-menus@%s.service\n' "$env"
+			printf "Enregistrements relayés par le serveur (ADR 0023) :\n\n"
+			jq -c --arg nature "$nature" 'select(.alert == $nature)' <<<"$records" | record_text
+			printf 'Journal complet : sudo journalctl -u tribe-menus@%s.service\n' "$env"
 			printf "Journaux d'accès (heure, adresse IP, URL) : sudo journalctl -u caddy.service\n"
 		} | send "alerte $nature ($env)"
 		printf '%s\n' "$now" >"$state/$env.$nature.last"
