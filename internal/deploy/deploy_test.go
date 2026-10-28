@@ -393,6 +393,33 @@ func TestAlerts(t *testing.T) {
 	}
 }
 
+// The body of an alert email gives each record as plain text, one field a line, without
+// JSON nor control characters (séance S3).
+func TestAlertText(t *testing.T) {
+	records := `{"time":"2026-10-20T05:08:29Z","level":"ERROR","msg":"code request limits reached repeatedly","alert":"code_request_limits","signals":"refused_requests","email_limit":14}
+{"msg":"a\nSubject: b\u0007","alert":"x","n":{"a":1}}
+`
+	out, err := runWithInput(t, t.TempDir(), records, "tribe-menus-alert", "record_text")
+	if err != nil {
+		t.Fatalf("record_text: %v\n%s", err, out)
+	}
+	want := `  time : 2026-10-20T05:08:29Z
+  level : ERROR
+  msg : code request limits reached repeatedly
+  alert : code_request_limits
+  signals : refused_requests
+  email_limit : 14
+
+  msg : a Subject: b 
+  alert : x
+  n : {"a":1}
+
+`
+	if out != want {
+		t.Errorf("record_text:\n%q\nwant:\n%q", out, want)
+	}
+}
+
 // prune keeps five releases, the current and previous ones whatever their age, their
 // snapshots, and the five last sets of databases put aside (ADR 0016, point 1.7).
 func TestPrune(t *testing.T) {
@@ -626,6 +653,40 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
+// The alert emails of the server carry a complete MIME declaration, MIME-Version first:
+// without Content-Transfer-Encoding, the MX Plan accepted them and they were lost behind
+// the redirection of the address of the administrator (séance S3, lot E).
+func TestSendHeaders(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-alert"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("bash", "-c", `
+set -euo pipefail
+source "$SCRIPT"
+admin_address() { printf 'admin@example.org'; }
+hostname() { printf 'server'; }
+/usr/sbin/sendmail() { printf 'args: %s\n' "$*"; cat; }
+printf 'Corps accentué.\n' | send "alerte smtp_failures (recette)"
+`)
+	cmd.Env = append(os.Environ(), "SCRIPT="+script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("send: %v\n%s", err, out)
+	}
+	want := "args: -i -- root\n" +
+		"To: admin@example.org\n" +
+		"Subject: Melting Tribe, server : alerte smtp_failures (recette)\n" +
+		"MIME-Version: 1.0\n" +
+		"Content-Type: text/plain; charset=utf-8\n" +
+		"Content-Transfer-Encoding: 8bit\n" +
+		"\n" +
+		"Corps accentué.\n"
+	if string(out) != want {
+		t.Errorf("email written:\n%s\nwant:\n%s", out, want)
+	}
+}
+
 // An alert that msmtp could not send is read again and sent at the next run of the relay:
 // the cursor moves only once every email is sent (review of PR #56, point 3).
 func TestRelayKeepsUnsentAlerts(t *testing.T) {
@@ -838,6 +899,53 @@ check_ssh
 			}
 			if !strings.Contains(string(out), want) {
 				t.Errorf("want %q:\n%s", want, out)
+			}
+		})
+	}
+}
+
+// The firewall accepts TCP 22, 80 and 443 only, and limits the simultaneous connections to
+// the web ports by address (plan recette, step 31), as provision.sh writes it.
+func TestCheckFirewall(t *testing.T) {
+	check, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-check"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	provision, err := filepath.Abs(filepath.Join("..", "..", "deploy", "provision.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// nft lists the rules of provision.sh, without the limit by address when asked.
+	prelude := `
+set -euo pipefail
+listed=$(source "$PROVISION"; render_nftables)
+if [[ -n ${WITHOUT_LIMIT:-} ]]; then listed=$(grep -v 'ct count' <<<"$listed"); fi
+source "$CHECK"
+nft() { printf '%s\n' "$listed"; }
+systemctl() { return 0; }
+listening_ports() { [[ $1 == -t ]] && printf '22 80 443'; return 0; }
+check_firewall
+`
+	for _, tc := range []struct {
+		name  string
+		env   string
+		limit string
+	}{
+		{"as provisioned", "", "ok    "},
+		{"without the limit", "WITHOUT_LIMIT=1", "FAIL  "},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command("bash", "-c", prelude)
+			cmd.Env = append(os.Environ(), "CHECK="+check, "PROVISION="+provision, tc.env)
+			out, _ := cmd.CombinedOutput()
+			for _, want := range []string{
+				"ok    input dropped by default\n",
+				"ok    only TCP 22, 80 and 443 accepted, no UDP port\n",
+				tc.limit + "simultaneous web connections limited by address, IPv6 by /64\n",
+			} {
+				if !strings.Contains(string(out), want) {
+					t.Errorf("want %q:\n%s", want, out)
+				}
 			}
 		})
 	}

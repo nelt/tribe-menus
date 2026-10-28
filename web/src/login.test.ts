@@ -77,7 +77,7 @@ const messageCases: { name: string; got: string; want: string }[] = [
   { name: "two attempts left", got: errorMessage("incorrect-code", 2), want: "Code incorrect. Il vous reste 2 essais." },
   { name: "one attempt left", got: errorMessage("incorrect-code", 1), want: "Code incorrect. Il vous reste 1 essai." },
   { name: "attempts exhausted", got: errorMessage("attempts-exhausted"), want: "Trop d’essais : ce code n’est plus valable. Demandez-en un nouveau." },
-  { name: "code expired", got: errorMessage("code-expired"), want: "Ce code a expiré. Demandez-en un nouveau." },
+  { name: "code expired", got: errorMessage("code-expired"), want: "Ce code n’est plus valable. Demandez-en un nouveau." },
   { name: "network error", got: errorMessage("network-error"), want: "Le réseau est lent ou absent. Réessayez." },
 ];
 

@@ -50,7 +50,8 @@ var (
 	versionPattern = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]*$`)
 	// commitPattern is an abbreviated or full commit, or nothing outside of Git.
 	commitPattern = regexp.MustCompile(`^([0-9a-f]{7,40})?$`)
-	// namePattern is what tribe-menus-deploy accepts in an archive (check_archive).
+	// namePattern is the form of a name that tribe-menus-deploy accepts in an archive
+	// (check_archive), which also refuses the segments . and .. (nameAccepted).
 	namePattern = regexp.MustCompile(`^[A-Za-z0-9._@+-]+(/[A-Za-z0-9._@+-]+)*$`)
 	// marker is the beginning of a marker of the site.
 	marker = []byte("{{")
@@ -169,11 +170,26 @@ func collect(fsys fs.FS) ([]entry, error) {
 	}
 	slices.SortFunc(entries, func(a, b entry) int { return strings.Compare(a.name, b.name) })
 	for _, e := range entries {
-		if !namePattern.MatchString(e.name) {
+		if !nameAccepted(e.name) {
 			return nil, fmt.Errorf("%s: name refused by tribe-menus-deploy", e.name)
 		}
 	}
 	return entries, nil
+}
+
+// nameAccepted succeeds for a name below the top directory that check_archive of
+// tribe-menus-deploy accepts. TestNameAcceptedAgreesWithTribeMenusDeploy holds the two
+// together.
+func nameAccepted(name string) bool {
+	if !namePattern.MatchString(name) {
+		return false
+	}
+	for segment := range strings.SplitSeq(name, "/") {
+		if segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return true
 }
 
 // fileMode is 0755 for a file the repository marks executable, 0644 otherwise.

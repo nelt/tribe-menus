@@ -43,13 +43,18 @@ admin_address() {
 	fi
 }
 
-# send mails stdin to root, with this subject.
+# send mails stdin to root, with this subject. The MIME declaration is complete, in the order
+# of the email of the application: with Content-Type before MIME-Version and no
+# Content-Transfer-Encoding, the MX Plan accepted the email, which never reached the
+# administrator behind the redirection of his address (séance S3, then lot E, essays of
+# 2026-10-28).
 send() {
 	{
 		printf 'To: %s\n' "$(admin_address)"
 		printf 'Subject: Melting Tribe, %s : %s\n' "$(hostname --short)" "$1"
+		printf 'MIME-Version: 1.0\n'
 		printf 'Content-Type: text/plain; charset=utf-8\n'
-		printf 'MIME-Version: 1.0\n\n'
+		printf 'Content-Transfer-Encoding: 8bit\n\n'
 		cat
 	} | /usr/sbin/sendmail -i -- root
 }
@@ -68,6 +73,15 @@ environments() {
 alerts() {
 	jq -c -R 'fromjson? | select(type == "object" and (.alert | type) == "string")
 		| if (.alert | test("^[a-z_]{1,40}$")) then . else .alert = "unknown" end'
+}
+
+# record_text prints each record, compact JSON one per line, as lines "  key : value", the
+# control characters replaced by spaces, a blank line after each record: the body of an
+# alert email is plain text (séance S3: the first one relayed, with the records as JSON,
+# never arrived).
+record_text() {
+	jq -r 'to_entries | map("  \(.key | gsub("[[:cntrl:]]"; " ")) : \(.value | tostring | gsub("[[:cntrl:]]"; " "))")
+		| join("\n") + "\n"'
 }
 
 # relay_env relays the alerts written since its last run by the service of an environment.
@@ -102,9 +116,9 @@ relay_env() {
 		fi
 		{
 			printf "L'application (%s) a écrit une alerte %s dans son journal.\n" "$env" "$nature"
-			printf "Enregistrements relayés par le serveur, tels qu'écrits (ADR 0023) :\n\n"
-			jq -c --arg nature "$nature" 'select(.alert == $nature)' <<<"$records"
-			printf '\nJournal complet : sudo journalctl -u tribe-menus@%s.service\n' "$env"
+			printf "Enregistrements relayés par le serveur (ADR 0023) :\n\n"
+			jq -c --arg nature "$nature" 'select(.alert == $nature)' <<<"$records" | record_text
+			printf 'Journal complet : sudo journalctl -u tribe-menus@%s.service\n' "$env"
 			printf "Journaux d'accès (heure, adresse IP, URL) : sudo journalctl -u caddy.service\n"
 		} | send "alerte $nature ($env)"
 		printf '%s\n' "$now" >"$state/$env.$nature.last"
