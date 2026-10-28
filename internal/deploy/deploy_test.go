@@ -653,6 +653,40 @@ func TestRecovery(t *testing.T) {
 	}
 }
 
+// The alert emails of the server carry a complete MIME declaration, MIME-Version first:
+// without Content-Transfer-Encoding, the MX Plan accepted them and they were lost behind
+// the redirection of the address of the administrator (séance S3, lot E).
+func TestSendHeaders(t *testing.T) {
+	script, err := filepath.Abs(filepath.Join("..", "..", "deploy", "bin", "tribe-menus-alert"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("bash", "-c", `
+set -euo pipefail
+source "$SCRIPT"
+admin_address() { printf 'admin@example.org'; }
+hostname() { printf 'server'; }
+/usr/sbin/sendmail() { printf 'args: %s\n' "$*"; cat; }
+printf 'Corps accentué.\n' | send "alerte smtp_failures (recette)"
+`)
+	cmd.Env = append(os.Environ(), "SCRIPT="+script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("send: %v\n%s", err, out)
+	}
+	want := "args: -i -- root\n" +
+		"To: admin@example.org\n" +
+		"Subject: Melting Tribe, server : alerte smtp_failures (recette)\n" +
+		"MIME-Version: 1.0\n" +
+		"Content-Type: text/plain; charset=utf-8\n" +
+		"Content-Transfer-Encoding: 8bit\n" +
+		"\n" +
+		"Corps accentué.\n"
+	if string(out) != want {
+		t.Errorf("email written:\n%s\nwant:\n%s", out, want)
+	}
+}
+
 // An alert that msmtp could not send is read again and sent at the next run of the relay:
 // the cursor moves only once every email is sent (review of PR #56, point 3).
 func TestRelayKeepsUnsentAlerts(t *testing.T) {

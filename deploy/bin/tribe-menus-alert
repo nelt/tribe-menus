@@ -43,13 +43,18 @@ admin_address() {
 	fi
 }
 
-# send mails stdin to root, with this subject.
+# send mails stdin to root, with this subject. The MIME declaration is complete, in the order
+# of the email of the application: with Content-Type before MIME-Version and no
+# Content-Transfer-Encoding, the MX Plan accepted the email, which never reached the
+# administrator behind the redirection of his address (séance S3, then lot E, essays of
+# 2026-10-28).
 send() {
 	{
 		printf 'To: %s\n' "$(admin_address)"
 		printf 'Subject: Melting Tribe, %s : %s\n' "$(hostname --short)" "$1"
+		printf 'MIME-Version: 1.0\n'
 		printf 'Content-Type: text/plain; charset=utf-8\n'
-		printf 'MIME-Version: 1.0\n\n'
+		printf 'Content-Transfer-Encoding: 8bit\n\n'
 		cat
 	} | /usr/sbin/sendmail -i -- root
 }
