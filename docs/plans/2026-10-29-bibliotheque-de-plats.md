@@ -2,7 +2,7 @@
 
 - **Nom** : `bibliotheque`
 - **Date** : 2026-10-29
-- **Statut** : brouillon, première version. Décisions D1, D3 à D7, D11 et D13 prises par le développeur le 2026-10-29 ; les autres sont des propositions, à confirmer à la revue du plan.
+- **Statut** : brouillon, revu (PR #61). Décisions D1, D3 à D7, D11 et D13 prises par le développeur le 2026-10-29, D9, D16 et D20 tranchées par lui à la revue le même jour ; les autres sont des propositions, à confirmer avant le lot A.
 
 ## Objectif
 
@@ -151,4 +151,6 @@ Propositions, à confirmer à la revue.
 
 ## Notes d'exécution
 
-*Aucune pour l'instant.*
+- **Revue du plan** (PR #61, 2026-10-29) : cinq points corrigés dans le plan et la conception (D8, D9, D16, D20, règle de normalisation) ; deux points à reprendre pendant les lots :
+  - **« Accès croisé refusé » sans route de lecture ni de suppression** (point 6) : il n'y a ni `GET dishes/{id}` ni `DELETE dishes/{id}`. Pour « lire », la route générique `GET /tribes/{tribe}/api/{rest...}` répond 404 ; pour « supprimer », le routeur répond 405 ; la réponse est la même pour un identifiant inconnu et pour celui d'une autre tribu, mais aucun code de la tribu n'est exercé (conforme à l'ADR 0005, point 4). Au lot B (étapes 12 et 13), écrire dans les étapes godog la route que vise chaque exemple, pour qu'une future route `GET dishes/{id}` soit testée contre une autre tribu et non plus contre la route générique. L'exemple « modifier » passe, lui, par `PUT dishes/{id}`.
+  - **L'outil d'export des scénarios `@ui` importe directement le parseur Gherkin de godog** (point 7) : `github.com/cucumber/gherkin/go/v42` devient une dépendance directe de `go.mod`, à la version que godog impose ; une montée de godog qui change la version majeure du parseur cassera l'outil. À écrire dans l'ADR 0028 (lot A, étape 5), avec la règle : l'outil suit la version du parseur que godog impose.
