@@ -1,7 +1,7 @@
 # Conception : bibliothèque de plats
 
 - **Mise à jour** : 2026-10-29
-- **Statut** : brouillon, avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md) ; à confirmer à sa revue
+- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29 ; à tenir à jour pendant ses lots
 - **Stories** : P1 à P4, T1 à T3 ; ENF-02 pour les plats et le référentiel
 
 Ce document décrit la conception retenue pour la bibliothèque de plats, le référentiel d'ingrédients et la taille de la tribu : modèle, découpage du code, échanges. Il est tenu à jour par les plans qui touchent ce domaine (planning, listes de courses, hors-ligne) ; un plan, lui, se fige une fois terminé. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md`, les décisions dans les ADR et dans les plans ; ce document les cite sans les répéter.
@@ -75,7 +75,7 @@ classDiagram
     Dish ..> Color
 ```
 
-- **Tribe** : la ligne unique de la base de la tribu (ADR 0003) gagne sa **taille** (T3), 4 par défaut, de 1 à 20 (plan, D12). Elle propose les parts d'un nouveau plat, puis, avec le planning, celles d'un plat servi.
+- **Tribe** : la ligne unique de la base de la tribu (ADR 0003) gagne sa **taille** (T3), 4 par défaut, de 1 à 50 (plan, D12). Elle propose les parts d'un nouveau plat, puis, avec le planning, celles d'un plat servi.
 - **Dish** : identifiant aléatoire (D10), nom unique dans la tribu au sens du nom normalisé (D7), couleur attribuée à la création et jamais changée (Q19), parts de référence, **révision** (nouveau terme : *revision*), augmentée à chaque modification, qui fait refuser un enregistrement fait sur une version dépassée (D5).
 - **DishIngredient** : une ligne par ingrédient dans un plat (D6), dans l'ordre de saisie ; quantité **facultative** (D4) : sans quantité, pas d'unité.
 - **Ingredient** : nom affiché de la première saisie, nom normalisé unique dans la tribu, unité par défaut = première unité saisie avec lui, absente tant qu'aucune ligne n'en a eu (Q20, D4). Créé seulement en saisissant un plat, ici, ou un article ajouté, au plan des listes.
@@ -108,10 +108,10 @@ classDiagram
 
     namespace internal_dish {
         class Library {
-            +List(ctx) []Dish
+            +List(ctx, after) Page~Dish~
             +Create(ctx, DishInput) Dish
             +Update(ctx, DishID, revision, DishInput) Dish
-            +Catalog(ctx) []Ingredient
+            +Catalog(ctx, after) Page~Ingredient~
         }
         class DishInput {
             name : string
@@ -124,8 +124,8 @@ classDiagram
         }
         class Store {
             <<interface>>
-            +Dishes(ctx) []Dish
-            +Ingredients(ctx) []Ingredient
+            +Dishes(ctx, after, limit) []Dish
+            +Ingredients(ctx, after, limit) []Ingredient
             +InTx(ctx, func(TxStore) error) error
         }
         class rules {
@@ -157,6 +157,14 @@ classDiagram
             +suggestIngredients(catalog, text, exclude) Ingredient[]
             +formatQuantity(Quantity) string
             +parseQuantity(string, Unit) Quantity
+            +mergeSaved(dishes, catalog, Dish) dishes, catalog
+        }
+        class library_ts {
+            <<copie en mémoire>>
+            dishes : Map~DishID, Dish~
+            catalog : Map~string, Ingredient~
+            +load() pages de GET dishes et GET ingredients
+            +applySaved(Dish) plat et ingrédients
         }
         class DishLibraryScreen
         class DishScreen
@@ -172,7 +180,10 @@ classDiagram
     DishStore ..|> Store
     DishLibraryScreen ..> dishes_ts
     DishScreen ..> dishes_ts
-    DishLibraryScreen ..> dishAPI : HTTP JSON
+    DishLibraryScreen --> library_ts
+    DishScreen --> library_ts
+    library_ts ..> dishes_ts
+    library_ts ..> dishAPI : HTTP JSON, pages
     DishScreen ..> dishAPI : HTTP JSON
     TribeScreen ..> dishAPI : HTTP JSON
 ```
@@ -189,13 +200,17 @@ Les noms des méthodes sont indicatifs : le lot B les fixe.
 
 | Route | Corps | Réponses |
 | --- | --- | --- |
-| `GET dishes` | | 200 : tous les plats de la tribu, avec leurs lignes (D2) |
-| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat ; 400 : `name_required`, `name_taken`, `invalid_line`… |
-| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat ; 409 `dish_changed` avec le plat à jour (D5) ; 404 comme un identifiant inconnu (ENF-02) |
+| `GET dishes?after=…` | | 200 : une page de 50 plats au plus, avec leurs lignes, dans l'ordre des identifiants, et le curseur de la page suivante, absent à la dernière (D2) |
+| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat, chaque ligne portant le nom affiché et l'unité par défaut de son ingrédient (D27) ; 400 : `name_required`, `name_taken`, `invalid_line`… |
+| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat, comme pour `POST` ; 409 `dish_changed` avec le plat à jour (D5) ; 404 comme un identifiant inconnu (ENF-02) |
 | `DELETE dishes/{id}` | | 405 : la route n'existe pas (P2, ADR 0005, point 4) |
-| `GET ingredients` | | 200 : le référentiel, nom et unité par défaut |
+| `GET ingredients?after=…` | | 200 : une page de 500 ingrédients au plus, nom et unité par défaut, et le curseur de la page suivante (D2) |
 | `GET tribe` | | 200 : nom, taille, nombre de membres actifs |
-| `PUT tribe/size` | taille | 200 ; 400 hors de 1 à 20 |
+| `PUT tribe/size` | taille | 200 ; 400 hors de 1 à 50 |
+
+## Données dans le navigateur
+
+Plats et référentiel vivent dans une **copie en mémoire** (`web/src/library.ts`), partagée par la bibliothèque et l'écran d'un plat (plan, D25). Elle est chargée par pages à chaque visite de l'onglet Plats (D2), mise à jour par la réponse d'un enregistrement ou d'un refus `409` (D26), qui porte aussi les ingrédients de ses lignes, fusionnés dans le référentiel (D27). Rien n'est écrit sur l'appareil : la copie disparaît au rechargement, à la déconnexion et sur un 401. Le stockage hors ligne (cache du service worker ou IndexedDB) reste à choisir au plan hors-ligne.
 
 Une ligne désigne son ingrédient **par son nom** : le serveur le rapproche d'un ingrédient existant de même nom normalisé, ou le crée (Q20). C'est déjà le mode prévu pour un article ajouté hors ligne (ADR 0004, point 7).
 
@@ -214,13 +229,17 @@ sequenceDiagram
 
     M->>S: touche l'onglet Plats
     par
-        S->>A: GET dishes
-        A->>L: List
-        L->>D: plats et lignes
-        A-->>S: 200, tous les plats
+        loop jusqu'à la dernière page
+            S->>A: GET dishes?after=curseur
+            A->>L: List
+            L->>D: 50 plats au plus et leurs lignes
+            A-->>S: 200, une page et le curseur suivant
+        end
     and
-        S->>A: GET ingredients
-        A-->>S: 200, le référentiel
+        loop jusqu'à la dernière page
+            S->>A: GET ingredients?after=curseur
+            A-->>S: 200, 500 ingrédients au plus et le curseur suivant
+        end
     end
     S-->>M: « 8 plats », par ordre alphabétique
     M->>S: saisit « courg »
@@ -228,7 +247,7 @@ sequenceDiagram
     S-->>M: « 2 résultats pour « courg » »
 ```
 
-La recherche ne coûte aucune requête : elle fonctionnera hors ligne quand le plan hors-ligne mettra ces deux réponses en cache (ADR 0004, point 7 ; PT-04).
+Chaque réponse est bornée (D2), mais l'écran garde tout : la recherche ne coûte ensuite aucune requête, et fonctionnera hors ligne quand le plan hors-ligne mettra ces pages en cache (ADR 0004, point 7 ; PT-04).
 
 ### Créer un plat
 
@@ -265,7 +284,8 @@ sequenceDiagram
     L->>D: couleurs en usage, puis PickColor (Q19)
     L->>D: insère le plat et ses lignes, révision 1
     L->>D: COMMIT
-    A-->>S: 201, le plat
+    A-->>S: 201, le plat et les ingrédients de ses lignes (D27)
+    Note over S: library.applySaved : le plat entre dans la copie en mémoire,<br/>« tomate » et toute création à la volée dans le référentiel (D26)
     S-->>M: retour à la bibliothèque, le plat y figure
 ```
 
@@ -319,4 +339,4 @@ sequenceDiagram
 
 - Le plat servi et le planning (R1 à R5), qui ajouteront au modèle le repas et le plat servi.
 - Les listes de courses : article sans quantité issu d'une ligne sans quantité (plan, questions ouvertes).
-- Le hors-ligne : cache des réponses `GET dishes` et `GET ingredients` par le service worker, effacement à la déconnexion.
+- Le hors-ligne : stockage des plats et du référentiel sur l'appareil, cache du service worker ou IndexedDB, à choisir avec la pagination (plan, questions ouvertes) ; effacement à la déconnexion.
