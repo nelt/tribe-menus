@@ -135,9 +135,28 @@ classDiagram
             +ParseQuantity(string, Unit) Quantity
         }
     }
+    namespace internal_collection {
+        class Page~T~ {
+            items : []T
+            next : cursor [0..1]
+        }
+        class Versions {
+            +Current(ctx, collection) int
+        }
+        class serve {
+            <<functions>>
+            +Serve(w, r, collection, list) ETag, 304, 412
+            +WithVersions(w, collections) versions après écriture
+        }
+    }
     namespace internal_storage {
         class DishStore {
             sqlc tribedb
+        }
+        class collection_versions {
+            <<table et déclencheurs>>
+            name : text
+            version : int
         }
     }
     namespace internal_server {
@@ -159,6 +178,13 @@ classDiagram
             +parseQuantity(string, Unit) Quantity
             +mergeSaved(dishes, catalog, Dish) dishes, catalog
         }
+        class CachedCollection~T~ {
+            <<collections.ts, générique>>
+            items : Map~id, T~
+            etag : string
+            +refresh() 304, pages, reprise sur 412
+            +applyWrite(item, version)
+        }
         class library_ts {
             <<copie en mémoire>>
             dishes : Map~DishID, Dish~
@@ -173,6 +199,10 @@ classDiagram
     }
 
     dishAPI --> Library
+    dishAPI --> serve
+    serve --> Versions
+    serve ..> Page~T~
+    Versions ..> collection_versions
     Library --> Store
     Library ..> rules
     Library ..> DishInput
@@ -183,16 +213,18 @@ classDiagram
     DishLibraryScreen --> library_ts
     DishScreen --> library_ts
     library_ts ..> dishes_ts
-    library_ts ..> dishAPI : HTTP JSON, pages
+    library_ts *-- CachedCollection~T~ : plats, référentiel
+    CachedCollection~T~ ..> dishAPI : HTTP JSON, pages, ETag
     DishScreen ..> dishAPI : HTTP JSON
     TribeScreen ..> dishAPI : HTTP JSON
 ```
 
 - **`internal/dish`** (nouveau paquet, ADR 0008 : un paquet par domaine) : la logique pure (règles, validation, choix de la couleur, résolution des ingrédients) derrière une interface `Store` ; aucune trace de HTTP ni de SQL (ADR 0002). Le paquet des listes de courses s'en servira pour le référentiel.
-- **`internal/storage`** : migration `0007` de la base de la tribu, requêtes sqlc, adaptateur `DishStore`.
+- **`internal/collection`** (nouveau, générique, ADR 0029) : versions des collections, pages, ETag et réponses conditionnelles, versions jointes aux écritures ; toute route de collection de l'API passe par lui (plan, D28).
+- **`internal/storage`** : migration `0007` de la base de la tribu (avec `collection_versions` et ses déclencheurs), requêtes sqlc, adaptateur `DishStore`.
 - **`internal/tribe`** : la taille de la tribu, avec le nom.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session (ADR 0001, 0003).
-- **`web/src`** : `dishes.ts`, module pur testé par `node:test` (ADR 0005, point 3) ; écrans en DOM classique, stepper de parts en shadow DOM avec `ElementInternals` (ADR 0004, point 3).
+- **`web/src`** : `collections.ts`, copie générique d'une collection, dont la décision (garder, recharger, reprendre) est une fonction pure (plan, D29) ; `dishes.ts`, module pur testé par `node:test` (ADR 0005, point 3) ; écrans en DOM classique, stepper de parts en shadow DOM avec `ElementInternals` (ADR 0004, point 3).
 
 Les noms des méthodes sont indicatifs : le lot B les fixe.
 
@@ -208,11 +240,24 @@ Les noms des méthodes sont indicatifs : le lot B les fixe.
 | `GET tribe` | | 200 : nom, taille, nombre de membres actifs |
 | `PUT tribe/size` | taille | 200 ; 400 hors de 1 à 50 |
 
+Une ligne désigne son ingrédient **par son nom** : le serveur le rapproche d'un ingrédient existant de même nom normalisé, ou le crée (Q20). C'est déjà le mode prévu pour un article ajouté hors ligne (ADR 0004, point 7).
+
+### Versions des collections
+
+Mécanisme générique, pour toutes les collections de l'API (plan, D28 ; ADR 0029) :
+
+| Échange | Requête | Réponse |
+| --- | --- | --- |
+| Premier chargement | `GET dishes` | 200, première page, `ETag: "dishes-42"` |
+| Pages suivantes | `GET dishes?after=…`, `If-Match: "dishes-42"` | 200, page suivante ; `412 collection_changed` si la version a changé entre-temps |
+| Vérification | `GET dishes`, `If-None-Match: "dishes-42"` | `304` sans corps si rien n'a changé ; sinon 200, première page, nouvel ETag |
+| Écriture | `POST dishes`, `PUT dishes/{id}` | le plat, et `versions` : `{ "dishes": 43, "ingredients": 18 }` |
+
+La version d'une collection est un entier de la table `collection_versions`, augmenté par des déclencheurs SQLite sur chacune de ses tables : `dishes` pour les tables `dishes` et `dish_ingredients`, `ingredients` pour la table `ingredients`. Aucune écriture ne peut oublier de l'augmenter.
+
 ## Données dans le navigateur
 
-Plats et référentiel vivent dans une **copie en mémoire** (`web/src/library.ts`), partagée par la bibliothèque et l'écran d'un plat (plan, D25). Elle est chargée par pages à chaque visite de l'onglet Plats (D2), mise à jour par la réponse d'un enregistrement ou d'un refus `409` (D26), qui porte aussi les ingrédients de ses lignes, fusionnés dans le référentiel (D27). Rien n'est écrit sur l'appareil : la copie disparaît au rechargement, à la déconnexion et sur un 401. Le stockage hors ligne (cache du service worker ou IndexedDB) reste à choisir au plan hors-ligne.
-
-Une ligne désigne son ingrédient **par son nom** : le serveur le rapproche d'un ingrédient existant de même nom normalisé, ou le crée (Q20). C'est déjà le mode prévu pour un article ajouté hors ligne (ADR 0004, point 7).
+Plats et référentiel vivent dans une **copie en mémoire** (`web/src/library.ts`), partagée par la bibliothèque et l'écran d'un plat (plan, D25), et faite de deux copies génériques de collection (`collections.ts`, D29). Elle est vérifiée à chaque visite de l'onglet Plats et à chaque retour de l'application au premier plan, et rechargée par pages seulement si la collection a changé (D2, D29), mise à jour par la réponse d'un enregistrement ou d'un refus `409` (D26), qui porte aussi les ingrédients de ses lignes, fusionnés dans le référentiel (D27). Rien n'est écrit sur l'appareil : la copie disparaît au rechargement, à la déconnexion et sur un 401. Le stockage hors ligne (cache du service worker ou IndexedDB) reste à choisir au plan hors-ligne.
 
 ## Échanges
 
@@ -291,6 +336,42 @@ sequenceDiagram
 
 Tout se fait dans une transaction d'écriture (`BEGIN IMMEDIATE`, ADR 0003) : deux membres qui créent en même temps « tomate » ou un plat du même nom ne font ni doublon ni couleur choisie sur un état périmé ; le second reçoit `name_taken` pour le nom.
 
+### Revenir sur l'application après une modification d'un autre membre
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A1 as Alice
+    participant S as library.ts (Alice)
+    participant A as API
+    participant D as Base de la tribu
+    actor B1 as Bruno
+
+    Note over S: copie des plats en version 42
+    B1->>A: PUT dishes/chili (Bruno modifie le chili)
+    A->>D: écrit le plat
+    Note over D: déclencheur : dishes passe à 43
+    A1->>S: rouvre l'application (visibilitychange)
+    S->>A: GET dishes, If-None-Match "dishes-42"
+    A->>D: version de dishes ?
+    A-->>S: 200, page 1, ETag "dishes-43"
+    loop pages suivantes
+        S->>A: GET dishes?after=curseur, If-Match "dishes-43"
+        alt version inchangée
+            A-->>S: 200, page suivante
+        else un plat change encore pendant le chargement
+            A-->>S: 412 collection_changed
+            Note over S: reprend depuis la première page, trois fois au plus
+        end
+    end
+    S-->>A1: la bibliothèque montre le chili de Bruno
+    A1->>S: rouvre l'application une heure plus tard
+    S->>A: GET dishes, If-None-Match "dishes-43"
+    A-->>S: 304, sans corps
+```
+
+Sans changement, une vérification coûte une requête et un `304` : elle se fait à chaque retour, sans seuil de temps.
+
 ### Modifier un plat que quelqu'un vient de modifier
 
 ```mermaid
@@ -339,4 +420,5 @@ sequenceDiagram
 
 - Le plat servi et le planning (R1 à R5), qui ajouteront au modèle le repas et le plat servi.
 - Les listes de courses : article sans quantité issu d'une ligne sans quantité (plan, questions ouvertes).
+- Le delta d'une collection (`?since=<version>`), qui éviterait de tout recharger pour une seule modification : au plan hors-ligne.
 - Le hors-ligne : stockage des plats et du référentiel sur l'appareil, cache du service worker ou IndexedDB, à choisir avec la pagination (plan, questions ouvertes) ; effacement à la déconnexion.
