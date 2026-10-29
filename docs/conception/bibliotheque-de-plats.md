@@ -157,6 +157,14 @@ classDiagram
             +suggestIngredients(catalog, text, exclude) Ingredient[]
             +formatQuantity(Quantity) string
             +parseQuantity(string, Unit) Quantity
+            +mergeSaved(dishes, catalog, Dish) dishes, catalog
+        }
+        class library_ts {
+            <<copie en mémoire>>
+            dishes : Map~DishID, Dish~
+            catalog : Map~string, Ingredient~
+            +load() pages de GET dishes et GET ingredients
+            +applySaved(Dish) plat et ingrédients
         }
         class DishLibraryScreen
         class DishScreen
@@ -172,7 +180,10 @@ classDiagram
     DishStore ..|> Store
     DishLibraryScreen ..> dishes_ts
     DishScreen ..> dishes_ts
-    DishLibraryScreen ..> dishAPI : HTTP JSON
+    DishLibraryScreen --> library_ts
+    DishScreen --> library_ts
+    library_ts ..> dishes_ts
+    library_ts ..> dishAPI : HTTP JSON, pages
     DishScreen ..> dishAPI : HTTP JSON
     TribeScreen ..> dishAPI : HTTP JSON
 ```
@@ -190,12 +201,16 @@ Les noms des méthodes sont indicatifs : le lot B les fixe.
 | Route | Corps | Réponses |
 | --- | --- | --- |
 | `GET dishes?after=…` | | 200 : une page de 50 plats au plus, avec leurs lignes, dans l'ordre des identifiants, et le curseur de la page suivante, absent à la dernière (D2) |
-| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat ; 400 : `name_required`, `name_taken`, `invalid_line`… |
-| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat ; 409 `dish_changed` avec le plat à jour (D5) ; 404 comme un identifiant inconnu (ENF-02) |
+| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat, chaque ligne portant le nom affiché et l'unité par défaut de son ingrédient (D27) ; 400 : `name_required`, `name_taken`, `invalid_line`… |
+| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat, comme pour `POST` ; 409 `dish_changed` avec le plat à jour (D5) ; 404 comme un identifiant inconnu (ENF-02) |
 | `DELETE dishes/{id}` | | 405 : la route n'existe pas (P2, ADR 0005, point 4) |
 | `GET ingredients?after=…` | | 200 : une page de 500 ingrédients au plus, nom et unité par défaut, et le curseur de la page suivante (D2) |
 | `GET tribe` | | 200 : nom, taille, nombre de membres actifs |
 | `PUT tribe/size` | taille | 200 ; 400 hors de 1 à 50 |
+
+## Données dans le navigateur
+
+Plats et référentiel vivent dans une **copie en mémoire** (`web/src/library.ts`), partagée par la bibliothèque et l'écran d'un plat (plan, D25). Elle est chargée par pages à chaque visite de l'onglet Plats (D2), mise à jour par la réponse d'un enregistrement ou d'un refus `409` (D26), qui porte aussi les ingrédients de ses lignes, fusionnés dans le référentiel (D27). Rien n'est écrit sur l'appareil : la copie disparaît au rechargement, à la déconnexion et sur un 401. Le stockage hors ligne (cache du service worker ou IndexedDB) reste à choisir au plan hors-ligne.
 
 Une ligne désigne son ingrédient **par son nom** : le serveur le rapproche d'un ingrédient existant de même nom normalisé, ou le crée (Q20). C'est déjà le mode prévu pour un article ajouté hors ligne (ADR 0004, point 7).
 
@@ -269,7 +284,8 @@ sequenceDiagram
     L->>D: couleurs en usage, puis PickColor (Q19)
     L->>D: insère le plat et ses lignes, révision 1
     L->>D: COMMIT
-    A-->>S: 201, le plat
+    A-->>S: 201, le plat et les ingrédients de ses lignes (D27)
+    Note over S: library.applySaved : le plat entre dans la copie en mémoire,<br/>« tomate » et toute création à la volée dans le référentiel (D26)
     S-->>M: retour à la bibliothèque, le plat y figure
 ```
 
@@ -323,4 +339,4 @@ sequenceDiagram
 
 - Le plat servi et le planning (R1 à R5), qui ajouteront au modèle le repas et le plat servi.
 - Les listes de courses : article sans quantité issu d'une ligne sans quantité (plan, questions ouvertes).
-- Le hors-ligne : cache des réponses `GET dishes` et `GET ingredients` par le service worker, effacement à la déconnexion.
+- Le hors-ligne : stockage des plats et du référentiel sur l'appareil, cache du service worker ou IndexedDB, à choisir avec la pagination (plan, questions ouvertes) ; effacement à la déconnexion.
