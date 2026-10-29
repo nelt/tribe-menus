@@ -86,10 +86,12 @@ classDiagram
 
 Une seule règle, pour les noms d'ingrédients (Q20), les noms de plats (D7), la recherche (P3) et l'autocomplétion (P4) :
 
-1. décomposition Unicode (NFD) et retrait des diacritiques ;
+1. minuscules, d'abord, pour que les étapes suivantes n'aient à connaître que des minuscules (« Œufs » devient « œufs ») ;
 2. ligatures dépliées : œ → oe, æ → ae (D8, au-delà de Q20 : sans cela, « boeuf » ne trouve pas « bœuf ») ;
-3. minuscules ;
+3. décomposition Unicode (NFD), puis retrait des seuls signes diacritiques combinants U+0300 à U+036F, comme la maquette `Doux-Bibliotheque` : le même ensemble en Go et en TypeScript, et non la catégorie Unicode `Mn` entière ;
 4. espaces en tête et en fin retirés, suites d'espaces réduites à une.
+
+La table de cas commune (D9) contient au moins « Œufs brouillés », « oeufs brouillés » et « œufs brouillés », qui donnent le même nom normalisé, et des lettres accentuées en majuscule (« Éclair », « ÉPINARDS »).
 
 Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. La décomposition Unicode se fait par `golang.org/x/text/unicode/norm` en Go, seule dépendance d'exécution nouvelle, et par `String.prototype.normalize` dans le navigateur. Une table de cas commune, lue par `go test` et `node:test`, les garde d'accord (D9).
 
