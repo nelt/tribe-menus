@@ -91,7 +91,7 @@ Une seule règle, pour les noms d'ingrédients (Q20), les noms de plats (D7), la
 3. minuscules ;
 4. espaces en tête et en fin retirés, suites d'espaces réduites à une.
 
-Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. Une table de cas commune, lue par `go test` et `node:test`, les garde d'accord (D9).
+Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. La décomposition Unicode se fait par `golang.org/x/text/unicode/norm` en Go, seule dépendance d'exécution nouvelle, et par `String.prototype.normalize` dans le navigateur. Une table de cas commune, lue par `go test` et `node:test`, les garde d'accord (D9).
 
 Pour la recherche et l'autocomplétion, le nom normalisé est découpé en **mots** sur tout caractère hors `a-z` et `0-9` ; un terme recherché trouve un mot qui **commence** par lui, et tous les termes doivent être trouvés (P3, comme la maquette `Doux-Bibliotheque`).
 
