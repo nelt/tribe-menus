@@ -66,7 +66,7 @@ Le 2026-10-29, avec le développeur.
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **Métier, suite** : planning des repas, listes de courses (la bibliothèque de plats a son plan, `bibliotheque`) ; avec eux, les derniers scénarios de compartimentage des données métier (ENF-02).
+- **Métier, suite** : planning des repas, listes de courses (la bibliothèque de plats a son plan, `bibliotheque`), leurs collections servies par le mécanisme générique de versions et d'ETag (`bibliotheque`, D28 ; ADR 0029) ; avec eux, les derniers scénarios de compartimentage des données métier (ENF-02).
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
