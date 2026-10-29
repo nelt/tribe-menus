@@ -242,7 +242,9 @@ sequenceDiagram
     participant D as Base de la tribu
 
     M->>S: « Nouveau »
-    S-->>M: parts proposées = taille de la tribu
+    S->>A: GET tribe
+    A-->>S: 200, taille 5
+    S-->>M: parts proposées = 5, la taille de la tribu (T3)
     M->>S: saisit « tom » comme ingrédient
     Note over S: suggestIngredients sur le référentiel chargé,<br/>sans ceux déjà dans le plat (D6)
     S-->>M: « tomate » (pièce), « tomate concassée » (g), Créer « tom »
