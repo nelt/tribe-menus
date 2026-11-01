@@ -59,10 +59,12 @@ type world struct {
 	tribe tribe.Slug
 
 	// The application, called directly without network (D13), and its emails.
-	handler  http.Handler
-	login    *tribe.Login
-	outbox   *mail.Outbox
-	recorder *mail.Recorder
+	handler http.Handler
+	login   *tribe.Login
+	outbox  *mail.Outbox
+	// processed is closed when the processing of the code requests ends.
+	processed chan struct{}
+	recorder  *mail.Recorder
 
 	auth   loginState
 	alerts alertState
@@ -160,9 +162,17 @@ func (w *world) app(ctx context.Context) (http.Handler, error) {
 	w.login = &tribe.Login{
 		RateLimit: tribe.NewRateLimitDB(store.RateLimit()),
 		Mailer:    w.outbox,
+		Requests:  tribe.NewCodeRequests(tribe.CodeRequestQueueSize),
+		Tribes:    server.TribeStores(store),
 		Alerts:    &alert.Notifier{Logger: slog.New(slog.NewJSONHandler(&w.alerts.logs, nil)), Sender: w.outbox, To: adminEmail, Instance: origin},
+		Logger:    slog.New(slog.DiscardHandler),
 		Now:       w.clock,
 	}
+	w.processed = make(chan struct{})
+	go func() {
+		defer close(w.processed)
+		w.login.ProcessCodeRequests(ctx)
+	}()
 	index, err := os.ReadFile(indexSource)
 	if err != nil {
 		return nil, fmt.Errorf("read the index page: %w", err)
@@ -297,10 +307,26 @@ func tribePath(slug, rest string) string {
 	return "/tribes/" + url.PathEscape(slug) + "/" + rest
 }
 
+// waitSendings waits for the code requests being processed (ADR 0026), then for the emails
+// being sent.
+func (w *world) waitSendings() {
+	if w.login != nil {
+		w.login.Requests.Wait()
+	}
+	w.outbox.Wait()
+}
+
+// requestCodeDirectly asks for a code through the domain and waits for its processing.
+func (w *world) requestCodeDirectly(ctx context.Context, slug, email, ip string) (string, error) {
+	token, err := w.login.RequestCode(ctx, slug, email, ip)
+	w.login.Requests.Wait()
+	return token, err
+}
+
 // sentMails waits for the emails being sent and returns those sent since the mark, but
 // the reference ones.
 func (w *world) sentMails(since int) []mail.Message {
-	w.outbox.Wait()
+	w.waitSendings()
 	var sent []mail.Message
 	for i, m := range w.recorder.Messages() {
 		if i >= since && !w.auth.ignored[i] {
@@ -312,7 +338,7 @@ func (w *world) sentMails(since int) []mail.Message {
 
 // markMails marks the start of an action: the emails sent from now on are its own.
 func (w *world) markMails() {
-	w.outbox.Wait()
+	w.waitSendings()
 	w.auth.mailMark = len(w.recorder.Messages())
 }
 
@@ -320,6 +346,10 @@ func (w *world) close() error {
 	var errs []error
 	if w.admin != nil {
 		errs = append(errs, w.admin.close())
+	}
+	if w.login != nil {
+		w.login.Requests.Close()
+		<-w.processed
 	}
 	if w.outbox != nil {
 		w.outbox.Wait()

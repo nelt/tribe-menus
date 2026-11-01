@@ -39,7 +39,7 @@ func siteProblems(site fs.FS) ([]string, error) {
 		if err != nil || name == "." {
 			return err
 		}
-		if !namePattern.MatchString("site/" + name) {
+		if !nameAccepted("site/" + name) {
 			problems = append(problems, name+": name refused by tribe-menus-deploy")
 		}
 		if d.IsDir() {

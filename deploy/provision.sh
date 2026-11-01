@@ -33,6 +33,10 @@ readonly UNITS=(tribe-menus@.socket tribe-menus@.service tribe-menus-failure@.se
 	tribe-menus-alert-relay.service tribe-menus-alert-relay.timer tribe-menus-disk.service tribe-menus-disk.timer)
 readonly TIMERS=(tribe-menus-alert-relay.timer tribe-menus-disk.timer)
 readonly DEBIAN_PACKAGES=(sudo tzdata nftables unattended-upgrades msmtp-mta sqlite3 jq curl unzip ca-certificates)
+# Simultaneous connections to the web ports allowed by address, IPv6 by /64 prefix (plan
+# recette, step 31): a starting value, generous for the browsers of a household behind one
+# address, to adjust from the access logs of the first weeks.
+readonly WEB_CONNECTIONS=50
 
 die() {
 	printf 'provision: %s\n' "$*" >&2
@@ -300,6 +304,55 @@ default: ${conf[ADMIN_EMAIL]}
 EOF
 }
 
+# render_nftables prints the rules of the firewall: TCP 22, 80 and 443 in, the ICMP and
+# ICMPv6 that IPv4 and IPv6 need, no UDP port (ADR 0015, point 4; plan recette, D16), and
+# at most WEB_CONNECTIONS simultaneous connections to the web ports by address. Replies go
+# through the connection tracking.
+render_nftables() {
+	cat <<EOF
+#!/usr/sbin/nft -f
+# Produced by provision.sh: do not edit (deploy/README.md).
+flush ruleset
+
+table inet filter {
+	# Connections to the web ports by address, IPv6 by /64 prefix (plan recette, step 31).
+	set web4 {
+		type ipv4_addr
+		flags dynamic
+		size 65536
+	}
+	set web6 {
+		type ipv6_addr
+		flags dynamic
+		size 65536
+	}
+	chain input {
+		type filter hook input priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		iif lo accept
+		icmp type { destination-unreachable, time-exceeded, parameter-problem, echo-request } accept
+		icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request } accept
+		icmpv6 type { nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } ip6 hoplimit 255 accept
+		# Queries of the router, without which switches that snoop MLD stop forwarding the
+		# neighbour solicitations (RFC 4890, 4.4.1; review of PR #55, point 2).
+		icmpv6 type mld-listener-query ip6 saddr fe80::/10 accept
+		# Simultaneous connections limited by address: Caddy does not close a request to the
+		# application whose body never comes (plan recette, step 23).
+		tcp dport { 80, 443 } ct state new add @web4 { ip saddr ct count over $WEB_CONNECTIONS } reject with tcp reset
+		tcp dport { 80, 443 } ct state new add @web6 { ip6 saddr & ffff:ffff:ffff:ffff:: ct count over $WEB_CONNECTIONS } reject with tcp reset
+		tcp dport { 22, 80, 443 } accept
+	}
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}
+EOF
+}
+
 render() {
 	local dir=$1 env
 	shift
@@ -311,6 +364,7 @@ render() {
 	render_caddyfile "$@" >"$dir/Caddyfile"
 	render_msmtprc >"$dir/msmtprc"
 	render_aliases >"$dir/aliases"
+	render_nftables >"$dir/nftables.conf"
 }
 
 # --- System -----------------------------------------------------------------------------
@@ -544,37 +598,14 @@ EOF
 }
 
 configure_firewall() {
+	local tmp
 	step "Firewall (nftables)"
-	# TCP 22, 80 and 443 in, the ICMP and ICMPv6 that IPv4 and IPv6 need, no UDP port
-	# (ADR 0015, point 4; plan recette, D16). Replies go through the connection tracking.
-	put 0755 root:root /etc/nftables.conf <<'EOF'
-#!/usr/sbin/nft -f
-# Produced by provision.sh: do not edit (deploy/README.md).
-flush ruleset
-
-table inet filter {
-	chain input {
-		type filter hook input priority filter; policy drop;
-		ct state established,related accept
-		ct state invalid drop
-		iif lo accept
-		icmp type { destination-unreachable, time-exceeded, parameter-problem, echo-request } accept
-		icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request } accept
-		icmpv6 type { nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } ip6 hoplimit 255 accept
-		# Queries of the router, without which switches that snoop MLD stop forwarding the
-		# neighbour solicitations (RFC 4890, 4.4.1; review of PR #55, point 2).
-		icmpv6 type mld-listener-query ip6 saddr fe80::/10 accept
-		tcp dport { 22, 80, 443 } accept
-	}
-	chain forward {
-		type filter hook forward priority filter; policy drop;
-	}
-	chain output {
-		type filter hook output priority filter; policy accept;
-	}
-}
-EOF
-	nft --check --file /etc/nftables.conf || die "nft refuses /etc/nftables.conf"
+	# Checked before it replaces the file loaded at boot.
+	tmp=$(mktemp)
+	render_nftables >"$tmp"
+	nft --check --file "$tmp" || { rm -f -- "$tmp"; die "nft refuses the rules of the firewall"; }
+	put 0755 root:root /etc/nftables.conf <"$tmp"
+	rm -f -- "$tmp"
 	systemctl enable --quiet nftables
 	# Never restart: the unit of Debian flushes the rules on stop, leaving the input open
 	# until they are loaded again. Its reload runs nft -f on the file, whose flush ruleset

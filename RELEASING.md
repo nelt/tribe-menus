@@ -70,7 +70,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
     ```
 
     La dernière commande affiche `tribe-menus vX.Y.Z (<commit>)`, avec le commit de l'étiquette.
-11. **Déploiement** par le développeur, en production : `sudo tribe-menus-deploy vX.Y.Z`, puis le provisionnement si les notes le demandent (`deploy/README.md`).
+11. **Déploiement** par le développeur, en production : instantané du VPS depuis l'espace client PulseHeberg (ADR 0025, point 4), puis `sudo tribe-menus-deploy vX.Y.Z`, puis le provisionnement si les notes le demandent (`deploy/README.md`).
 
 Si le workflow échoue, la release n'est pas publiée. Selon la cause :
 
