@@ -73,6 +73,7 @@ var keys = map[string]map[string]bool{
 	"baseURL": nil,
 	"smtp":    {"host": true, "port": true, "username": true, "from": true},
 	"alerts":  {"to": true},
+	"trial":   nil,
 }
 
 // Systemd reports whether the server listens on the socket passed by systemd, hence behind

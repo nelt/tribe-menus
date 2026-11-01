@@ -311,6 +311,7 @@ func writeConfig(t *testing.T, dir, listen string) string {
 		"baseURL": "https://tribes.example.org",
 		"smtp":    map[string]any{"host": "localhost", "port": smtpTestPort, "username": "no-reply@example.org", "from": "no-reply@example.org"},
 		"alerts":  map[string]any{"to": "admin@example.org"},
+		"trial":   "essai",
 	})
 	if err != nil {
 		t.Fatal(err)
