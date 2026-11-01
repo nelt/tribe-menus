@@ -41,6 +41,10 @@ type Config struct {
 	SMTP SMTP `json:"smtp"`
 	// Alerts are the alerts sent by email by the application (ADR 0023).
 	Alerts Alerts `json:"alerts"`
+	// Trial is required and absent from the server (plan recette, step 32): this version
+	// does not start, and the deployment goes back to the previous one by itself. Never
+	// merged.
+	Trial string `json:"trial"`
 }
 
 // Alerts is the alerts key of the config file.
@@ -245,7 +249,13 @@ func (c Config) validate() error {
 	if err := c.SMTP.validate(); err != nil {
 		return err
 	}
-	return c.Alerts.validate()
+	if err := c.Alerts.validate(); err != nil {
+		return err
+	}
+	if c.Trial == "" {
+		return missing("trial")
+	}
+	return nil
 }
 
 func (a Alerts) validate() error {

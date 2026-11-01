@@ -63,6 +63,7 @@ func TestProvisionConfig(t *testing.T) {
 			BaseURL: baseURL,
 			SMTP:    exampleSMTP,
 			Alerts:  exampleAlerts,
+			Trial:   "essai",
 		}
 		if c != want {
 			t.Errorf("%s: config = %+v, want %+v", env, c, want)

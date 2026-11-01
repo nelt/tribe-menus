@@ -10,5 +10,6 @@
   },
   "alerts": {
     "to": "admin@example.org"
-  }
+  },
+  "trial": "essai"
 }

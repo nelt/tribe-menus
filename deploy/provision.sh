@@ -139,7 +139,8 @@ render_config() {
   },
   "alerts": {
     "to": "${conf[ADMIN_EMAIL]}"
-  }
+  },
+  "trial": "essai"
 }
 EOF
 }

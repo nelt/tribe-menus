@@ -37,13 +37,13 @@ func TestRead(t *testing.T) {
 	}{
 		{
 			name:    "systemd",
-			content: `{"data": "/var/lib/tribe-menus/recette", "listen": "systemd", "baseURL": "https://recette.example.org", ` + smtp + `, ` + alerts + `}`,
-			want:    Config{Data: "/var/lib/tribe-menus/recette", Listen: "systemd", BaseURL: "https://recette.example.org", SMTP: exampleSMTP, Alerts: exampleAlerts},
+			content: `{"data": "/var/lib/tribe-menus/recette", "listen": "systemd", "baseURL": "https://recette.example.org", ` + smtp + `, ` + alerts + `, "trial": "essai"}`,
+			want:    Config{Data: "/var/lib/tribe-menus/recette", Listen: "systemd", BaseURL: "https://recette.example.org", SMTP: exampleSMTP, Alerts: exampleAlerts, Trial: "essai"},
 		},
 		{
 			name:    "TCP",
-			content: `{"data": "/srv/data", "listen": "127.0.0.1:8080", "baseURL": "https://tribes.example.org:8443", ` + smtp + `, ` + alerts + `}`,
-			want:    Config{Data: "/srv/data", Listen: "127.0.0.1:8080", BaseURL: "https://tribes.example.org:8443", SMTP: exampleSMTP, Alerts: exampleAlerts},
+			content: `{"data": "/srv/data", "listen": "127.0.0.1:8080", "baseURL": "https://tribes.example.org:8443", ` + smtp + `, ` + alerts + `, "trial": "essai"}`,
+			want:    Config{Data: "/srv/data", Listen: "127.0.0.1:8080", BaseURL: "https://tribes.example.org:8443", SMTP: exampleSMTP, Alerts: exampleAlerts, Trial: "essai"},
 		},
 		{name: "empty file", content: "", wantErr: "config: empty file"},
 		{name: "blank file", content: " \n", wantErr: "config: empty file"},
