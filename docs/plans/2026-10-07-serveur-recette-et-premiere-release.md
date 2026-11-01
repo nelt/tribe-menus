@@ -96,7 +96,7 @@ Poste :
 Serveur (ADR 0007) :
 
 - [x] VPS-1 commandé : datacenter français, Debian 13, clé publique déposée à la commande. Conditions d'engagement relues avant de valider. *Le 2026-10-17 : VPS CLASSIC-2 chez PulseHeberg, à Paris (ADR 0025).*
-- [ ] Sauvegarde automatique quotidienne active sur le VPS. *Le 2026-10-17 : non contractuelle chez PulseHeberg ; décision avant S4 (ADR 0025, point 4 ; questions ouvertes).*
+- [x] Sauvegarde automatique quotidienne active sur le VPS. *Le 2026-10-17 : non contractuelle chez PulseHeberg ; décision avant S4 (ADR 0025, point 4 ; questions ouvertes). Le 2026-11-01 : niveau accepté jusqu'à `v0.2.0`, instantané de l'espace client avant chaque déploiement en production (décision du développeur, ADR 0025, point 4).*
 - [x] Adresses IPv4 et IPv6 notées dans le gestionnaire de mots de passe, nulle part ailleurs.
 
 E-mail (ADR 0014, 0015) :
@@ -183,7 +183,7 @@ Réception du code (ADR 0014, point 6), sur les adresses directes, une ligne par
 
 Connexion :
 
-- [ ] iPhone, Safari : connexion complète ; les huit cases restent alignées (`socle`, D14). *Le 2026-10-20 : ni iPhone ni Safari à disposition ; reporté à la prochaine recette, sous WebKit par Claude Code et sur un iPhone emprunté (décision du développeur).*
+- [ ] iPhone, Safari : connexion complète ; les huit cases restent alignées (`socle`, D14). *Le 2026-10-20 : ni iPhone ni Safari à disposition ; reporté à la prochaine recette, sous WebKit par Claude Code et sur un iPhone emprunté (décision du développeur). Le 2026-11-01 : WebKit seul avant la fusion de la PR #59 ; Safari sur iPhone reporté à l'invitation de la famille (décision du développeur, feuille de route).*
 - [x] Android, Chrome : de même.
 - [x] Ordinateur, deux navigateurs dont Safari ou Firefox.
 - [x] Dans l'inspecteur de l'ordinateur : cookies préfixés `__Host-`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` (D2).
@@ -219,6 +219,7 @@ Release (`RELEASING.md`, étapes 7 à 10) :
 
 Production :
 
+- [ ] Instantané du VPS pris depuis l'espace client PulseHeberg (ADR 0025, point 4).
 - [ ] `sudo tribe-menus-deploy v0.1.0`, chronométré.
 - [ ] `sudo tribe-menus-deploy --pr <numéro>` (sans `--env`, donc en production) : refusé.
 - [ ] Site public servi à `https://meltingtribe.codingmatters.org/` ; « Code source de cette version » mène à l'étiquette `v0.1.0`.
@@ -390,8 +391,8 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
 - **Alertes** : dix refus déclenchent l'e-mail de l'application et son relais par le serveur ; une panne du service et l'essai du disque arrivent par e-mail.
 - **Cookies** : `__Host-`, un nom par tribu ; scénarios ENF-01 et ENF-02 inchangés par ailleurs.
 - **Déploiement** : une PR du propriétaire se déploie en recette, celle d'un fork est refusée, toute PR est refusée en production ; une version qui ne démarre pas laisse la précédente en service, sans geste ; un retour sur une version migrée restaure l'instantané et le dit ; un retour sans migration garde les données.
-- **Production** : `v0.1.0` publiée par `release.yml`, empreinte vérifiée, déployée ; site public servi, « Code source de cette version » mène à l'étiquette ; la tribu du développeur s'ouvre depuis un iPhone.
-- **Appareils** : connexion sous Safari sur iPhone et sous Chrome sur Android ; scénario `@manuel` vérifié.
+- **Production** : `v0.1.0` publiée par `release.yml`, empreinte vérifiée, déployée ; site public servi, « Code source de cette version » mène à l'étiquette ; la tribu du développeur s'ouvre depuis son téléphone. *Écrit « depuis un iPhone » à l'origine ; le développeur n'en a pas (S3).*
+- **Appareils** : connexion sous WebKit (profil iPhone 15) et sous Chrome sur Android ; scénario `@manuel` vérifié. *Safari sur iPhone reporté à l'invitation de la famille (décision du développeur le 2026-11-01).*
 - **Traitement accéléré** : répété de la PR à la version déployée en production en une séance, durée notée ; rien de ce qui a été poussé avant le déploiement ne décrivait le faux constat.
 - **Temps de réponse** : mesuré, verdict écrit ; un écart exploitable devient un constat, traité selon `docs/traitement-des-vulnerabilites.md` (flux public avant S4, signal d'arrêt ensuite).
 - **Feuille de route** : les points reportés à `recette` en sont retirés ; ceux que ce plan reporte y sont inscrits.
@@ -405,13 +406,15 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
 - la délivrabilité dans la durée : rapports DMARC à lire après quelques semaines, avant de durcir la politique (ADR 0014, point 3) ;
 - les seuils des alertes (`production`, D8), à revoir après les premières semaines ;
 - la durée de HSTS, à allonger après quelques semaines sans incident ;
+- la connexion sous Safari sur un vrai iPhone : WebKit seul (décision du développeur le 2026-11-01), à faire avant d'inviter la famille ;
+- une sauvegarde des données hors du VPS : le niveau de PulseHeberg est accepté jusqu'à `v0.2.0` (ADR 0025, point 4) ;
 - tout ce qui suppose un autre membre que le développeur : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), à faire avant d'inviter quelqu'un.
 
 ## Questions ouvertes
 
 - **Filtrage des sorties** du serveur : aucun en V1 ; les services confinés n'ont besoin que du SMTP. À rouvrir si la surface change.
 - **Avis de sécurité publié** après une version corrective (`canal-prive`, question ouverte) : la répétition de S5 ne le tranche pas.
-- **Sauvegarde des données en V1**, à trancher avant S4 : la sauvegarde de PulseHeberg n'est pas contractuelle (ADR 0025, point 4). Accepter ce niveau, ou avancer la sauvegarde hors site (ADR 0007, point 3).
+- ~~**Sauvegarde des données en V1**, à trancher avant S4~~ : *tranché le 2026-11-01, niveau de PulseHeberg accepté jusqu'à `v0.2.0` (ADR 0025, point 4).*
 - **Textes légaux** : écrits d'après `docs/design/README.md` et relus par le développeur (étape 27) ; aucune relecture juridique n'est prévue.
 
 ## Décisions
@@ -524,4 +527,9 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
     Connexion faite sur cette archive depuis l'ordinateur et depuis Android.
     `tribe-menus-check` après le provisionnement relancé : 0 point en échec ; le pare-feu de l'étape 31 est chargé (`nft --check` passé sur Debian 13) et la limite de connexions simultanées par adresse, IPv6 par /64, est contrôlée.
     Mesure `make probe … -timing -rounds 3` (2026-10-28, 14 h à 16 h 30, heure de Paris, depuis la connexion du développeur) : `POST sessions`, 60 requêtes par cas, aucun écart (P 0,44 et 0,42), réponses identiques (400) ; `POST login-codes`, **9 demandes par cas seulement, pas de verdict** (vingt au moins) : P(membre plus lent) 0,43, contre 0,79 en S3, et des temps longs pour une autre adresse aussi (jusqu'à 167 ms), alors qu'ils étaient au membre seul ; réponses identiques (202). Trois demandes par cas et par heure : un verdict demande `-rounds 7` ; l'exemple de `deploy/README.md`, en `-rounds 3`, est corrigé. Mesure de sept heures à refaire.
-  - **À prouver en recette, avant la fusion** : archive de la PR déployée et provisionnement relancé depuis elle (pare-feu chargé, `tribe-menus-check` sans échec) ; connexion ; nouvelle mesure `make probe … -timing`, sans écart ; une alerte relayée reçue ; Safari (WebKit et iPhone emprunté).
+  - **À prouver en recette, avant la fusion** : archive de la PR déployée et provisionnement relancé depuis elle (pare-feu chargé, `tribe-menus-check` sans échec) ; connexion ; nouvelle mesure `make probe … -timing`, sans écart ; une alerte relayée reçue ; connexion sous WebKit (profil iPhone 15) jusqu'à la saisie du code, l'iPhone étant reporté (2026-11-01).
+- **2026-11-01**, avec le développeur, Claude Code en session cloud :
+  - PR #59 mise à jour avec `main` (plan `bibliotheque`, documentation seule) : archive `pr-59-4f7db99da5d7`, CI verte ; mesure `make probe … -timing -rounds 7` lancée en recette.
+  - **Sauvegarde** : niveau de PulseHeberg accepté jusqu'à `v0.2.0`, première version avec des données métier ; instantané de l'espace client avant chaque déploiement en production (ADR 0025, point 4 ; S4). La sauvegarde hors site se décide avant `v0.2.0` (feuille de route).
+  - **Safari** : WebKit seul avant la fusion de la PR #59 ; Safari sur un vrai iPhone reporté à l'invitation de la famille (critères « Production » et « Appareils », feuille de route). La CI passe déjà les écrans de connexion sous WebKit sur une API simulée ; reste le parcours réel en HTTPS, que cette session ne peut pas lancer (la recette lui est inaccessible) : il se lance depuis le Dev Container.
+  - **Mises à jour de Dependabot** (PR #64 à #66, ouvertes le 2026-11-01) : fusionnées après l'étiquette `v0.1.0`, pour que la release soit ce que la recette a prouvé. `dependency-review` refuse la PR #66 : `golang.org/x/net`, `x/sys` et `x/tools` sont désormais lus comme « BSD-3-Clause AND LicenseRef-scancode-google-patent-license-golang », la concession de brevets du fichier `PATENTS` de Go, compatible avec l'AGPL ; exception par paquet à ajouter au workflow, poussée depuis l'hôte.

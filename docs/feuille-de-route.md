@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-10-29
+- **Mise à jour** : 2026-11-01
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -70,13 +70,15 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
-- **Sauvegarde hors site** par Litestream (ADR 0007, point 3).
+- **Sauvegarde hors site** par Litestream (ADR 0007, point 3), à décider avant `v0.2.0` : jusque-là, le niveau de PulseHeberg est accepté (ADR 0025, point 4).
 
 ## Points reportés, à reprendre dans un plan
 
 | Point | Origine | À reprendre |
 | --- | --- | --- |
 | Réception du code sur Outlook et iCloud non vérifiée | `recette`, S3 | avant d'inviter un membre qui utilise l'une de ces messageries |
+| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) | `recette`, S3 (décision du 2026-11-01) | avant d'inviter la famille |
+| Sauvegarde hors du VPS | ADR 0025, point 4 | avant `v0.2.0` |
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
