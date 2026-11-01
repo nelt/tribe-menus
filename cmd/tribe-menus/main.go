@@ -345,9 +345,24 @@ func migrateAndServe(ctx context.Context, opts serveOptions, logger *slog.Logger
 	login := &tribe.Login{
 		RateLimit: tribe.NewRateLimitDB(store.RateLimit()),
 		Mailer:    outbox,
+		Requests:  tribe.NewCodeRequests(tribe.CodeRequestQueueSize),
+		Tribes:    server.TribeStores(store),
 		Alerts:    &alert.Notifier{Logger: logger, Sender: outbox, To: opts.alertsTo, Instance: opts.baseURL},
+		Logger:    logger,
 		Now:       time.Now,
 	}
+	// The code requests are processed in the background (ADR 0026); deferred after the
+	// outbox, hence run before it: the queued requests end once the server has stopped,
+	// then their sendings.
+	processed := make(chan struct{})
+	go func() {
+		defer close(processed)
+		login.ProcessCodeRequests(ctx)
+	}()
+	defer func() {
+		login.Requests.Close()
+		<-processed
+	}()
 
 	purgeCtx, stopPurge := context.WithCancel(ctx)
 	purged := make(chan struct{})

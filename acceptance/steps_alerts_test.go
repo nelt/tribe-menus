@@ -96,10 +96,6 @@ func (w *world) refuseRequests(ctx context.Context, n int) error {
 	if _, err := w.ensureMember(ctx, string(w.auth.me), w.auth.home); err != nil {
 		return err
 	}
-	t, err := w.tribeOrNil(ctx, w.auth.home)
-	if err != nil {
-		return err
-	}
 	w.alerts.next++
 	email := fmt.Sprintf("refus-%d@exemple.fr", w.alerts.next)
 	start := w.now
@@ -107,7 +103,7 @@ func (w *world) refuseRequests(ctx context.Context, n int) error {
 	total := tribe.EmailRequestLimit + n
 	for i := range total {
 		w.now = start.Add(time.Duration(i-total) * time.Minute)
-		_, err := w.login.RequestCode(ctx, w.auth.home, t, email, w.madeUpIP())
+		_, err := w.requestCodeDirectly(ctx, w.auth.home, email, w.madeUpIP())
 		if refused := errors.Is(err, tribe.ErrTooManyRequests); refused != (i >= tribe.EmailRequestLimit) || err != nil && !refused {
 			return fmt.Errorf("request %d for %s: %v", i+1, email, err)
 		}
@@ -137,7 +133,7 @@ func (w *world) exhaustCodes(ctx context.Context, n int) error {
 		if err != nil {
 			return err
 		}
-		token, err := w.login.RequestCode(ctx, w.auth.home, t, email, w.madeUpIP())
+		token, err := w.requestCodeDirectly(ctx, w.auth.home, email, w.madeUpIP())
 		if err != nil {
 			return fmt.Errorf("request for %s: %w", email, err)
 		}
@@ -161,16 +157,12 @@ func (w *world) repeatRequests(ctx context.Context, email string, n int, slug st
 	if _, err := w.ensureMember(ctx, string(w.auth.me), w.auth.home); err != nil {
 		return err
 	}
-	t, err := w.tribeOrNil(ctx, slug)
-	if err != nil {
-		return err
-	}
 	pace := tribe.EmailRequestWindow / tribe.EmailRequestLimit
 	start := w.now
 	defer func() { w.now = start }()
 	for i := range n {
 		w.now = start.Add(time.Duration(i-n) * pace)
-		if _, err := w.login.RequestCode(ctx, slug, t, email, w.madeUpIP()); err != nil {
+		if _, err := w.requestCodeDirectly(ctx, slug, email, w.madeUpIP()); err != nil {
 			return fmt.Errorf("request %d for %s: %w", i+1, email, err)
 		}
 	}
@@ -186,7 +178,7 @@ func (w *world) checkAlerts(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	w.outbox.Wait()
+	w.waitSendings()
 	w.alerts.logMark = w.alerts.logs.Len()
 	w.alerts.mailMark = len(w.recorder.Messages())
 	return w.login.CheckAlerts(ctx, store)

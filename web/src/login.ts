@@ -123,7 +123,7 @@ export function errorMessage(error: EmailError | CodeError, attemptsLeft = 0): s
     case "attempts-exhausted":
       return "Trop d’essais : ce code n’est plus valable. Demandez-en un nouveau.";
     case "code-expired":
-      return "Ce code a expiré. Demandez-en un nouveau.";
+      return "Ce code n’est plus valable. Demandez-en un nouveau.";
     case "network-error":
       return networkErrorMessage;
   }
