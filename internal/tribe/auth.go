@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
-// CodeMailer sends a login code by email. Sending happens outside of the request, so
-// that the response time does not tell a member's address from another (ENF-02).
+// CodeMailer sends a login code by email, outside of the processing of the request.
 type CodeMailer interface {
 	SendLoginCode(to, code string)
 }
@@ -17,20 +17,27 @@ type CodeMailer interface {
 // Login is the login by code and the sessions of every tribe (ENF-01). Nothing it answers
 // before a session is open tells an active member from another address, nor an existing
 // tribe from an unknown one (ENF-02): the same errors, attempts and limits apply to both,
-// with decoy codes for the latter.
+// with decoy codes for the latter, and a code request is answered before its member is
+// looked for (ADR 0026).
 type Login struct {
 	RateLimit RateLimitStore
 	Mailer    CodeMailer
+	// Requests queues the code requests accepted by the limits, processed by
+	// ProcessCodeRequests in the stores that Tribes opens.
+	Requests *CodeRequests
+	Tribes   TribeOpener
 	// Alerts receives the alerts on the code request limits reached repeatedly.
 	Alerts AlertNotifier
+	Logger *slog.Logger
 	Now    func() time.Time
 }
 
-// RequestCode asks for a code for the address in the tribe of this slug, from ip. The
-// tribe store t is nil for an unknown tribe. It returns the token of the request, for a
-// cookie of the browser, whether a code was sent or not; or ErrInvalidEmail or
-// ErrTooManyRequests.
-func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail, ip string) (string, error) {
+// RequestCode asks for a code for the address in the tribe of this slug, from ip. It
+// returns the token of the request, for a cookie of the browser, whether a code will be
+// sent or not; or ErrInvalidEmail or ErrTooManyRequests. It reads and writes only the rate
+// limit database: the member is looked for after the response, by ProcessCodeRequests
+// (ADR 0026).
+func (l *Login) RequestCode(ctx context.Context, slug, rawEmail, ip string) (string, error) {
 	email, err := ParseEmail(rawEmail)
 	if err != nil {
 		return "", err
@@ -48,30 +55,15 @@ func (l *Login) RequestCode(ctx context.Context, slug string, t *Store, rawEmail
 	if err != nil {
 		return "", fmt.Errorf("request code: %w", err)
 	}
-	// A decoy code for every request, before looking for the member: the rate limit
-	// database keeps the same rows for a member and for any other address (ADR 0021,
-	// point 4; plan production, D11). The decoy code of a member is never checked.
+	// A decoy code for every request: the rate limit database keeps the same rows for a
+	// member and for any other address (ADR 0021, point 4; plan production, D11). The decoy
+	// code of a member is never checked.
 	if err := l.RateLimit.ReplaceDecoyCode(ctx, req.EmailHash, NewDecoyCode(token, now)); err != nil {
 		return "", err
 	}
-
-	member, ok, err := activeMember(ctx, t, email)
-	if err != nil {
-		return "", err
+	if !l.Requests.push(codeRequest{slug: slug, email: email, token: token, at: now}) {
+		l.Logger.Warn("code request dropped, queue full")
 	}
-	if !ok {
-		return token, nil
-	}
-	code, err := newLoginCode()
-	if err != nil {
-		return "", err
-	}
-	// Counted by the rate limit database first, like any other request: what it records
-	// does not depend on membership (ADR 0021).
-	if err := t.IssueLoginCode(ctx, member.ID, newRealCode(code, token, now), now); err != nil {
-		return "", err
-	}
-	l.Mailer.SendLoginCode(string(email), code)
 	return token, nil
 }
 

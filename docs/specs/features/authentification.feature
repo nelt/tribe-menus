@@ -127,16 +127,22 @@ Fonctionnalité: Connexion et session persistante
     Alors l'application affiche « Réessayez dans quelques minutes »
 
   @ENF-01
-  Plan du scénario: Le nombre de demandes est aussi limité par IP et par tribu
+  Plan du scénario: Le nombre de demandes est aussi limité par IP
     Étant donné <demandes> ont été faites dans la dernière heure
     Quand une nouvelle demande de code est faite <origine>
     Alors l'application affiche « Réessayez dans quelques minutes »
     Et aucun e-mail n'est envoyé
 
     Exemples:
-      | demandes                                             | origine                                   |
-      | 10 demandes de code depuis la même adresse IP        | depuis cette adresse IP, pour une autre adresse e-mail |
-      | 30 demandes de code pour des membres de la tribu "martin" | pour la tribu "martin", depuis une autre adresse IP |
+      | demandes                                      | origine                                                |
+      | 10 demandes de code depuis la même adresse IP | depuis cette adresse IP, pour une autre adresse e-mail |
+
+  @ENF-01 @ENF-02
+  Scénario: Au-delà de la limite de la tribu, un membre reçoit la réponse de toute adresse
+    Étant donné 30 demandes de code pour des membres de la tribu "martin" ont été faites dans la dernière heure
+    Quand "alice@exemple.fr" demande un code pour la tribu "martin"
+    Alors l'application affiche le même message que pour une adresse inconnue
+    Et aucun e-mail n'est envoyé
 
   @ENF-01
   Plan du scénario: Une adresse IPv6 compte pour son préfixe /64
