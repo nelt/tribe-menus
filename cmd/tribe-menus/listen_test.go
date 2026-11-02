@@ -307,6 +307,9 @@ func TestServeOnTCPFromConfig(t *testing.T) {
 	if alerted["alert"] != "smtp_failures" || alerted["level"] != "ERROR" {
 		t.Errorf("alert record %v", alerted)
 	}
+	// A connection the client dialled but never used would hold the shutdown for 5 s, the
+	// wait of net/http for a connection without a request.
+	http.DefaultClient.CloseIdleConnections()
 	cancel()
 	select {
 	case <-done:

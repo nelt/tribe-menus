@@ -138,8 +138,10 @@ func TestProvisionRefusesInstance(t *testing.T) {
 			if _, err := os.Stat(out); err == nil {
 				t.Error("files made from a refused instance file")
 			}
+			// The name of the temporary directory is random, and may contain a value.
+			named := strings.ReplaceAll(stderr, filepath.Dir(out), "<dir>")
 			for _, secret := range []string{"touch", "65536", "587"} {
-				if strings.Contains(stderr, secret) {
+				if strings.Contains(named, secret) {
 					t.Errorf("stderr quotes the value: %q", stderr)
 				}
 			}
