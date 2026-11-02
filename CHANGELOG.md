@@ -4,6 +4,8 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+## 0.1.0 — 2026-11-02
+
 - `recette/E` : suites de la recette. Demande de code traitée en arrière-plan : la réponse ne dépend plus que des limites par adresse et par IP, ni son temps ni son contenu ne disent si l'adresse est membre ; au-delà de la limite par tribu, rien n'est envoyé et la réponse est celle de toute adresse (ENF-01, ENF-02, ADR 0026). « Ce code n'est plus valable » pour un code expiré ou remplacé. E-mail du relais des alertes en texte clair, avec une déclaration MIME complète : sans elle, les alertes du serveur étaient acceptées par le MX Plan puis perdues. Connexions simultanées aux ports web limitées par adresse dans le pare-feu (ADR 0015). Échecs d'envoi comptés au sens large (ADR 0023). `make dist` refuse aussi les segments `.` et `..`, comme `tribe-menus-deploy`, et un test fait juger les mêmes noms par les deux. Compte rendu de la séance S3 ; Outlook, iCloud et Safari sur iPhone reportés à l'invitation de la famille, WebKit seul d'ici là. Sauvegarde de l'hébergeur acceptée jusqu'à `v0.2.0`, instantané de l'espace client avant chaque déploiement en production (ADR 0025).
 - Plan `bibliotheque` : versions et ETag des collections par un mécanisme générique du serveur, obligatoire pour toute collection de l'API (table `collection_versions` augmentée par des déclencheurs SQLite, paquet `internal/collection`, `304` et `412`, D28), copie générique côté navigateur vérifiée à chaque visite et à chaque retour au premier plan (`collections.ts`, D29) ; delta laissé au plan hors-ligne ; conception (classes, API, séquence « Revenir sur l'application ») et feuille de route accordées.
 - Plan `bibliotheque` prêt : toutes les décisions confirmées par le développeur ; bibliothèque et référentiel transférés par pages puis gardés en entier dans le navigateur (D2), taille de la tribu de 1 à 50 (D12), maquettes de la modification d'un plat et du bandeau de modification croisée à dessiner avant le lot D (D19) ; copie en mémoire des plats et du référentiel dans le navigateur, mise à jour par les réponses de l'API, qui portent les ingrédients des lignes (D25 à D27) ; conception accordée (API, données dans le navigateur, diagrammes).
@@ -52,3 +54,23 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 - Suivi de la CI : Dependabot limité aux outils Go et aux dépendances directes, sans version majeure de `@types/node` ni de TypeScript ; suivi de la CI avec `gh` documenté pour un jeton à portée fine.
 - Intégration continue : workflows `ci` (`make tools` puis `make ci`, contrôle DCO, artefact de PR), `devcontainer` (construction hebdomadaire) et `dependency-review` ; Dependabot mensuel ; actionlint dans `make lint` ; `CONTRIBUTING.md` (ADR 0011, 0013).
 - Environnement de développement : Dev Container avec Claude Code, préparation du poste et initialisation du projet (module Go, front Lit construit par esbuild, serveur squelette, contrôle `webcheck`, scénario Playwright de fumée, Makefile) (ADR 0009, 0010, 0018).
+
+### Migrations
+
+Première version : il n'y en a pas de précédente où revenir. La production démarre sans base ; la recette a déjà ces schémas, installés par les archives des PR. Pour la suite : le binaire refuse de démarrer sur une base dont la version de schéma dépasse la sienne ; après une version qui migre, le retour à la précédente restaure l'instantané pris avant le déploiement et perd ce qui a été écrit depuis (`tribe-menus-deploy --rollback --restore-data`).
+
+- Registre, `0001_tribes` : tribus de l'instance (identifiant d'URL, nom, nom aléatoire du fichier de leur base).
+- Tribu, `0001_tribe` : la tribu, ses membres, le journal d'audit.
+- Tribu, `0002_login` : codes de connexion et sessions, conservés par leur empreinte.
+- Tribu, `0003_code_requests` : heures des demandes de code adressées aux membres, pour la limite par tribu.
+- Tribu, `0004_audit_device` : appareil détecté du journal d'audit en colonnes (type, système, navigateur, application installée).
+- Tribu, `0005_login_code_request` : code de connexion lié au navigateur qui l'a demandé ; les codes en attente sont effacés.
+- Tribu, `0006_alert_counters` : compteurs d'alerte des événements qui supposent un membre.
+- Limitation, `0001_code_requests` : demandes de code acceptées et codes fantômes, par empreinte.
+- Limitation, `0002_no_slug` : identifiant de tribu retiré des demandes de code.
+- Limitation, `0003_decoy_code_request` : code fantôme lié au navigateur qui l'a demandé ; les codes fantômes en attente sont effacés.
+- Limitation, `0004_alert_counters` : compteurs d'alerte et dernière alerte envoyée par signal.
+
+### Serveur
+
+Première version : tout `deploy/` est nouveau. Le serveur a été provisionné en séance S2 depuis l'archive d'une PR (plan `recette`), en dernier depuis celle de la PR #59 le 2026-10-28 (limite de connexions par adresse dans le pare-feu). Après le déploiement de cette version en production, relancer le provisionnement depuis elle (`deploy/README.md`, « Relancer le provisionnement ») : la configuration du serveur est alors celle de la version publiée, et c'est depuis la production qu'il se relance désormais.
