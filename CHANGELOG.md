@@ -4,7 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
-## 0.1.0 — 2026-11-01
+## 0.1.0 — 2026-11-02
 
 - `recette/E` : suites de la recette. Demande de code traitée en arrière-plan : la réponse ne dépend plus que des limites par adresse et par IP, ni son temps ni son contenu ne disent si l'adresse est membre ; au-delà de la limite par tribu, rien n'est envoyé et la réponse est celle de toute adresse (ENF-01, ENF-02, ADR 0026). « Ce code n'est plus valable » pour un code expiré ou remplacé. E-mail du relais des alertes en texte clair, avec une déclaration MIME complète : sans elle, les alertes du serveur étaient acceptées par le MX Plan puis perdues. Connexions simultanées aux ports web limitées par adresse dans le pare-feu (ADR 0015). Échecs d'envoi comptés au sens large (ADR 0023). `make dist` refuse aussi les segments `.` et `..`, comme `tribe-menus-deploy`, et un test fait juger les mêmes noms par les deux. Compte rendu de la séance S3 ; Outlook, iCloud et Safari sur iPhone reportés à l'invitation de la famille, WebKit seul d'ici là. Sauvegarde de l'hébergeur acceptée jusqu'à `v0.2.0`, instantané de l'espace client avant chaque déploiement en production (ADR 0025).
 - Plan `bibliotheque` : versions et ETag des collections par un mécanisme générique du serveur, obligatoire pour toute collection de l'API (table `collection_versions` augmentée par des déclencheurs SQLite, paquet `internal/collection`, `304` et `412`, D28), copie générique côté navigateur vérifiée à chaque visite et à chaque retour au premier plan (`collections.ts`, D29) ; delta laissé au plan hors-ligne ; conception (classes, API, séquence « Revenir sur l'application ») et feuille de route accordées.
