@@ -58,7 +58,7 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 - [x] Aucun secret ni clé de déploiement chez GitHub : le déploiement est manuel, par SSH depuis le poste de l'administrateur (ADR 0016).
 - [x] Workflows analysés en CI par **actionlint** (écrit en Go, épinglé par `go tool`).
 - [x] `release.yml` (plan `production`, lot E), job `build` : il exécute le code du dépôt et de ses dépendances avec la seule lecture, sans restaurer de cache, et seulement sur un commit de `main`. Vérifié par l'essai à blanc du 2026-10-07 (exécution n° 1).
-- [ ] `release.yml`, job `publish` : seul à avoir `contents: write`, il ne lance que `sha256sum` et `gh` sur les fichiers construits ; contrôles de l'étiquette `vX.Y.Z` et de la section de `CHANGELOG.md` avant le build. Réservé à une étiquette : à cocher après la première release réelle (plan `recette`).
+- [x] `release.yml`, job `publish` : seul à avoir `contents: write`, il ne lance que `sha256sum` et `gh` sur les fichiers construits ; contrôles de l'étiquette `vX.Y.Z` et de la section de `CHANGELOG.md` avant le build. Réservé à une étiquette : vérifié à la première release réelle, `v0.1.0`, le 2026-11-02 (plan `recette`, S4).
 
 ## 5. Sécurité du code et des dépendances
 

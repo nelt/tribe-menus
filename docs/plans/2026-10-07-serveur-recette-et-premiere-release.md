@@ -212,33 +212,33 @@ Prérequis : S3 sans défaut ouvert (lot E fusionné s'il y en avait), PR de rel
 
 Release (`RELEASING.md`, étapes 7 à 10) :
 
-- [ ] PR `release/v0.1.0` fusionnée.
-- [ ] `origin/main` est bien le commit de fusion ; étiquette annotée `v0.1.0` posée et poussée depuis l'hôte.
-- [ ] `release.yml` au vert : c'est le premier passage du contrôle de l'étiquette, de l'extraction des notes et du job `publish`.
-- [ ] Release vérifiée par Claude Code (empreinte, `tribe-menus version`).
+- [x] PR `release/v0.1.0` fusionnée.
+- [x] `origin/main` est bien le commit de fusion ; étiquette annotée `v0.1.0` posée et poussée depuis l'hôte.
+- [x] `release.yml` au vert : c'est le premier passage du contrôle de l'étiquette, de l'extraction des notes et du job `publish`.
+- [x] Release vérifiée par Claude Code (empreinte, `tribe-menus version`).
 
 Production :
 
-- [ ] Instantané du VPS pris depuis l'espace client PulseHeberg (ADR 0025, point 4).
-- [ ] `sudo tribe-menus-deploy v0.1.0`, chronométré.
-- [ ] Provisionnement relancé depuis la production, comme le demandent les notes de version (`### Serveur` ; `deploy/README.md`, « Relancer le provisionnement »).
-- [ ] `sudo tribe-menus-deploy --pr <numéro>` (sans `--env`, donc en production) : refusé.
-- [ ] Site public servi à `https://meltingtribe.codingmatters.org/` ; « Code source de cette version » mène à l'étiquette `v0.1.0`.
-- [ ] `sudo tribe-menus-admin production init` : votre tribu, avec votre adresse.
-- [ ] Connexion à votre tribu depuis votre téléphone, en données mobiles. *Écrit « depuis l'iPhone » à l'origine ; le développeur n'en a pas (S3).*
-- [ ] `make probe` lancé par Claude Code sur la production : rapport sans échec.
+- [x] Instantané du VPS pris depuis l'espace client PulseHeberg (ADR 0025, point 4).
+- [x] `sudo tribe-menus-deploy v0.1.0`, chronométré.
+- [x] Provisionnement relancé depuis la production, comme le demandent les notes de version (`### Serveur` ; `deploy/README.md`, « Relancer le provisionnement »).
+- [x] `sudo tribe-menus-deploy --pr <numéro>` (sans `--env`, donc en production) : refusé.
+- [x] Site public servi à `https://meltingtribe.codingmatters.org/` ; « Code source de cette version » mène à l'étiquette `v0.1.0`.
+- [x] `sudo tribe-menus-admin production init` : votre tribu, avec votre adresse.
+- [x] Connexion à votre tribu depuis votre téléphone, en données mobiles. *Écrit « depuis l'iPhone » à l'origine ; le développeur n'en a pas (S3).*
+- [x] `make probe` lancé par Claude Code sur la production : rapport sans échec. *Le 2026-11-02 : un seul échec, le constat de Caddy connu (étape 23), contenu par la limite de connexions par adresse ; ports en IPv6 contrôlés de l'extérieur (notes d'exécution).*
 
 Retours arrière, en recette (ADR 0016 ; D7) :
 
-- [ ] PR d'essai « migration » déployée, puis `sudo tribe-menus-deploy --env recette --rollback` : refusé tant que la restauration des données n'est pas demandée ; avec elle, la version précédente revient et la connexion fonctionne.
-- [ ] PR d'essai « ne démarre pas » déployée : le script revient seul à la version précédente, le dit, et la connexion fonctionne.
-- [ ] Les deux PR d'essai fermées sans fusion, branches supprimées.
+- [x] PR d'essai « migration » déployée, puis `sudo tribe-menus-deploy --env recette --rollback` : refusé tant que la restauration des données n'est pas demandée ; avec elle, la version précédente revient et la connexion fonctionne.
+- [x] PR d'essai « ne démarre pas » déployée : le script revient seul à la version précédente, le dit, et la connexion fonctionne.
+- [ ] Les deux PR d'essai fermées sans fusion, branches supprimées. *Le 2026-11-02 : PR fermées par Claude Code ; la session cloud ne peut pas supprimer une branche, le développeur le fait.*
 
 Mesures d'attente et pannes (`canal-prive`) :
 
-- [ ] `sudo tribe-menus-maintenance production on` : la page d'attente est servie, et une requête ne relance pas le service ; `off` : l'application répond de nouveau.
-- [ ] `sudo tribe-menus-check drill` : e-mails de panne du service et d'essai du disque reçus.
-- [ ] Durées notées : `release.yml`, déploiement, retour arrière.
+- [x] `sudo tribe-menus-maintenance production on` : la page d'attente est servie, et une requête ne relance pas le service ; `off` : l'application répond de nouveau.
+- [x] `sudo tribe-menus-check drill` : e-mails de panne du service et d'essai du disque reçus.
+- [x] Durées notées : `release.yml`, déploiement, retour arrière.
 
 ### S5. Répétition d'un traitement accéléré
 
@@ -373,7 +373,7 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
 - [x] **32. PR d'essai des retours arrière**, jamais fusionnées, préparées par Claude Code avec une CI verte : PR #67 et #68, à remettre à jour avec `main` après la fusion de la release.
   - « migration » : une migration sans effet de plus sur la base d'une tribu ;
   - « ne démarre pas » : une clé de configuration obligatoire de plus, absente du serveur.
-- [ ] **33. Séance 4**, par le développeur : check-list S4. Claude Code vérifie la release publiée (`RELEASING.md`, étape 10), lance `make probe` sur la production et coche le job `publish` dans `docs/securite-depot.md`.
+- [x] **33. Séance 4**, par le développeur : check-list S4. Claude Code vérifie la release publiée (`RELEASING.md`, étape 10), lance `make probe` sur la production et coche le job `publish` dans `docs/securite-depot.md`.
 
 ### Répétition d'un traitement accéléré : `v0.1.1`
 
@@ -499,7 +499,7 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
 - **Étape 23** (2026-10-18) : `tribe-menus-check` sans échec ; `make probe` sur la recette, 39 points sur 40. **Constat de Caddy** : une requête vers `/tribes/*` dont le corps n'arrive jamais reste ouverte sans limite (plus de 200 s constatées en recette, statut 499 quand le client abandonne), alors que `read_body` coupe celles du site à 20 s. Reproduit dans le Dev Container avec Caddy 2.11.7 compilé à partir de ses sources : au dépassement du délai de lecture, l'enveloppe du corps de Caddy (`IdleTimeoutReader`) retire le délai de la connexion, et `net/http`, en refermant le corps, lit le reste annoncé (moins de 256 Ko) sans délai. L'application, elle, a répondu 400. Aucun réglage de Caddy n'y remédie (`read_body_idle`, `request_buffers`, délais du transport du proxy ; pas de délai dans `request_body`). Portée : des connexions tenues ouvertes à peu de frais, disponibilité seulement. Décision du développeur : signalé au projet Caddy, limite de connexions par adresse dans le pare-feu au lot E (étape 31). Reste à faire pour l'étape 23 : la mesure des temps de réponse (`make probe … -timing`), qui demande six heures pour un verdict sur `POST login-codes` et bloque pendant ce temps les demandes de code depuis la connexion du développeur.
 - **Revue de la PR #56 après S2** (2026-10-18) : deux points corrigés : un terminal perdu n'arrête plus `tribe-menus-deploy` (écritures en échec ignorées, `SIGPIPE` ignoré dans la partie critique ; le journal garde la trace) ; une règle `Defaults !authenticate` est vue comme un `sudo` sans mot de passe. Points notés :
   - **Étape 23, temps de réponse** : la mesure se fait sur cette PR, lancée le 2026-10-18 à 16 h (heure de Paris), sept heures de demandes de code ; son verdict est consigné ici avant la fusion. Un écart exploitable deviendrait un constat à traiter avant S4 (critères de validation, « Temps de réponse »).
-  - **IPv6 non vérifié de l'extérieur** : le Dev Container n'a pas d'IPv6, `make probe` ne contrôle les ports qu'en IPv4 ; en IPv6, seules les règles relues sur le serveur par `tribe-menus-check` en répondent. À faire avant S4, depuis une connexion qui a IPv6 (partage de connexion d'un téléphone, par exemple).
+  - **IPv6 non vérifié de l'extérieur** : le Dev Container n'a pas d'IPv6, `make probe` ne contrôle les ports qu'en IPv4 ; en IPv6, seules les règles relues sur le serveur par `tribe-menus-check` en répondent. À faire avant S4, depuis une connexion qui a IPv6 (partage de connexion d'un téléphone, par exemple). *Fait en S4, le 2026-11-02.*
   - Pour information : la politique de sécurité de Caddy demande un signalement privé, et que le rapport dise si une IA a servi à la découverte, à l'écriture ou aux essais ; `admin_address` est écrite à l'identique dans `tribe-menus-alert` et `tribe-menus-check`, à garder alignée.
   - **Point 5, ouverture de la production avec la faiblesse de Caddy connue** : la limite de connexions reste au lot E, qui précède S4 ; il est désormais écrit dans les prérequis de S4 que le lot E est fusionné, et le provisionnement relancé, avant l'ouverture (décision du développeur le 2026-10-18).
 - **Étape 23, temps de réponse** (mesure du 2026-10-18, 16 h à 22 h, heure de Paris, en recette, depuis la connexion du développeur) :
@@ -541,4 +541,12 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Alerte relayée** (2026-11-01, 20 h 21, depuis le poste du développeur, archive `pr-59-4f7db99da5d7`) : vingt demandes de code pour des adresses inventées, dix `202` puis dix `429`. E-mail de l'application envoyé à 20 h 23 min 40 s, à la vérification suivante des seuils ; **e-mail du relais du serveur envoyé à 20 h 24 min 42 s et reçu**, au passage suivant du relais : la déclaration MIME complète était bien la cause. Les deux en boîte de réception, SPF, DKIM et DMARC « pass » ; ni adresse, ni IP, ni tribu (l'objet du relais nomme l'environnement et la machine) ; compteurs : 10 refus par la limite par IP, 0 ailleurs. Toutes les preuves de la PR #59 sont faites.
 - **PR #58 mise à jour avec `main`** (2026-11-01, Claude Code en session cloud), après la fusion du lot E (#59) : section renommée `## 0.1.0 — 2026-11-01`, puis `2026-11-02`, jour de la fusion, avec les lignes du lot E, de Go 1.27.3 et du plan `bibliotheque` (documentation seule, D17) ; toujours onze migrations ; `### Serveur` précisé (dernier provisionnement depuis l'archive de la PR #59). Date à reprendre si la fusion se fait un autre jour.
 - **PR d'essai #67 et #68 mises à jour avec `main`** (2026-11-01) : CI verte, après une relance pour la #68. Deux tests instables vus à cette occasion, sans lien avec l'essai, à corriger après `v0.1.0` par une PR ordinaire : `TestProvisionRefusesInstance/key_twice` cherche la valeur refusée (« 587 ») dans tout le message d'erreur, qui contient le chemin d'un dossier temporaire au nom aléatoire (ici `…1942496587`) ; `TestServeOnTCPFromConfig` attend l'arrêt du serveur cinq secondes, alors que l'arrêt vide désormais la file des demandes de code avant les envois (lot E, ADR 0026) et que le serveur SMTP du test refuse : durée de cet arrêt à vérifier, et ce qu'elle devient sous systemd.
+- **Séance S4** (2026-11-02, 7 h à 8 h, le développeur, guidé par Claude Code en session cloud) : **la production est ouverte**.
+  - **Release** : PR #58 datée du jour, fusionnée ; étiquette annotée `v0.1.0` sur le commit de fusion `aa4d409`, poussée de l'hôte à 7 h 08 min 16 s (la règle du dépôt sur la création des étiquettes est contournée par le propriétaire, comme prévu) ; `release.yml` au vert, premier passage du contrôle de l'étiquette, de l'extraction des notes et du job `publish` : build 4 min 30 s, publish 7 s, release publiée à 7 h 12 min 42 s. Vérifiée par Claude Code : empreinte SHA-256 correcte, `tribe-menus v0.1.0 (aa4d409)`, lien du site vers `tree/v0.1.0`, notes avec les sous-sections `Migrations` et `Serveur`.
+  - **Production** : instantané du VPS pris depuis l'espace client avant tout ; `tribe-menus-deploy v0.1.0` en 4,8 s (aucune version précédente) ; provisionnement relancé depuis la production, `tzdata` seul mis à jour, « Still missing : nothing » ; `tribe-menus-check` sans échec, e-mail d'essai reçu ; `--pr` sans `--env` refusé ; site public servi, liens vérifiés. Tribu du développeur créée par `admin production init`, connexion depuis son téléphone en données mobiles.
+  - **`make probe` sur la production** (depuis le Dev Container) : un seul point en échec, la requête dont le corps n'arrive jamais, ouverte jusqu'au délai de la sonde (55 s) : c'est le constat de Caddy de l'étape 23, contenu par la limite de connexions par adresse (étape 31), contrôlée par `tribe-menus-check`. Site indexable en production, DKIM publié pour le sélecteur, DNSSEC validé. **IPv6** contrôlé de l'extérieur, depuis le partage de connexion d'un téléphone : le site répond en IPv6, et `nmap -6` ne trouve que les ports 22, 80 et 443 ouverts sur les mille plus courants.
+  - **Retours arrière en recette** : `v0.1.0` d'abord installée en recette. PR #67 « migration » déployée ; `--rollback` refusé (schéma 7, 6 dans l'instantané ; le message dit ce qui serait perdu et où il serait mis de côté), puis `--rollback --restore-data` en 0,57 s ; connexion. PR #68 « ne démarre pas » : `/healthz` sans réponse, journal affiché (`key "trial": missing`), retour seul à `v0.1.0`, qui répond ; connexion. PR fermées sans fusion.
+  - **Mise en attente et pannes** : `tribe-menus-maintenance production on` sert la page d'attente, le service reste inactif ; `off` le remet en service. `tribe-menus-check drill` : e-mail de panne (de la recette, pour ne pas arrêter la production) et e-mail d'essai du disque reçus.
+  - **Durées** : `release.yml` 4 min 27 s de l'étiquette à la release ; déploiement 4,8 s ; retour arrière avec restauration 0,57 s ; retour automatique après un démarrage en échec : le temps des cinq relances de systemd, environ 25 s.
+  - **À reprendre après `v0.1.0`** (feuille de route) : un démarrage en échec envoie un e-mail de panne à chaque relance de systemd (six pour la PR #68), et leur texte dit « systemd a cessé de le relancer » dès le premier ; deux tests instables (notes de la PR #58) ; la sonde `-timing` envoie le membre en premier à chaque heure, sur une connexion à rétablir (mesure du 2026-11-01).
 
