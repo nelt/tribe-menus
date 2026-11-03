@@ -92,8 +92,9 @@ export class CachedCollection<T> {
   #etag: string | undefined;
   #checking: Promise<Outcome<undefined>> | undefined;
   /**
-   * Increases when the copy is cleared: a check begun before does not write its result into
-   * the copy, which must not survive the sign-out or a 401 (D25).
+   * Increases when the copy is cleared or written: a check begun before does not write its
+   * result into the copy, which must neither survive the sign-out or a 401 (D25), nor lose
+   * an item written by the member (D26).
    */
   #generation = 0;
 
@@ -157,6 +158,9 @@ export class CachedCollection<T> {
    * (D26, D29); checks the collection again if another member wrote in between.
    */
   async applyWrite(item: T, version: number): Promise<Outcome<undefined>> {
+    this.#generation++;
+    const running = this.#checking;
+    this.#checking = undefined;
     if (this.#items !== undefined) {
       this.#items.set(this.#key(item), item);
     }
@@ -167,6 +171,8 @@ export class CachedCollection<T> {
       case "keep":
         return { kind: "ok", value: undefined };
       case "check":
+        // A check begun before the write does not hold it: another one begins after it.
+        await running;
         return this.check();
     }
   }

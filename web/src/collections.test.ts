@@ -175,3 +175,39 @@ test("CachedCollection: a check asked after clear() does not share the one begun
   assert.deepEqual(copy.items, [{ id: "b", n: 1 }]);
   assert.equal(copy.version, 6);
 });
+test("CachedCollection: a check begun before a write does not undo it (review of PR #77, point 2)", async () => {
+  const { read, release, pending } = heldReader();
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  const first = copy.check();
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  await first;
+
+  // A check reads version 5 while the member writes version 6.
+  const checking = copy.check();
+  await copy.applyWrite({ id: "b", n: 1 }, 6);
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  await checking;
+  assert.deepEqual(copy.items, [{ id: "a", n: 1 }, { id: "b", n: 1 }]);
+  assert.equal(copy.version, 6);
+  assert.equal(pending(), 0);
+});
+
+test("CachedCollection: after a write with a gap, a new check begins after the running one", async () => {
+  const { read, release, pending } = heldReader();
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  const first = copy.check();
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  await first;
+
+  const running = copy.check();
+  const written = copy.applyWrite({ id: "b", n: 1 }, 8);
+  // The running check, begun before the write, ends; its result is not taken.
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  await running;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(pending(), 1, "a new check after the running one");
+  release(page([{ id: "a", n: 1 }, { id: "b", n: 1 }, { id: "c", n: 1 }], '"d-8"'));
+  await written;
+  assert.deepEqual(copy.items?.map((i) => i.id), ["a", "b", "c"]);
+  assert.equal(copy.version, 8);
+});
