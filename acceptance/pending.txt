@@ -1,6 +1,8 @@
 # Scénarios pas encore implémentés (plan du 2026-10-03, D2), un par ligne :
 # « <fichier>: <titre du scénario> ». make acceptance échoue si un scénario hors
 # de cette liste échoue, et si un scénario de la liste passe : elle ne peut que se vider.
+# Les scénarios @ui sont jugés par make e2e (Playwright), les autres par make acceptance
+# (godog), selon la même règle (ADR 0028, point 4).
 
 administration.feature: Anonymiser un membre révoqué
 administration.feature: Débloquer une tribu sans membre actif
@@ -18,7 +20,12 @@ authentification.feature: Consultation hors ligne de la bibliothèque de plats
 authentification.feature: La déconnexion efface les données de la tribu sur l'appareil
 authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
+bibliotheque-plats.feature: L'autocomplétion ignore la casse et les accents
+bibliotheque-plats.feature: L'autocomplétion propose les ingrédients existants
+bibliotheque-plats.feature: L'unité par défaut est proposée à la saisie
 bibliotheque-plats.feature: La modification d'un plat s'applique aux repas où il est servi
+bibliotheque-plats.feature: Rechercher un plat par les mots de son nom ou par ses ingrédients
+bibliotheque-plats.feature: Un ingrédient créé pendant la saisie est proposé à la saisie suivante
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
 liste-courses.feature: Ajouter un article sans réseau
@@ -125,5 +132,8 @@ planning-repas.feature: Retirer un plat d'un repas
 planning-repas.feature: Servir plusieurs plats dans un même repas
 planning-repas.feature: Un même plat ne peut pas être ajouté deux fois à un repas
 planning-repas.feature: Un plat retiré puis ajouté de nouveau repart de 4 parts
+tribu.feature: La taille de la tribu est proposée pour un nouveau plat
 tribu.feature: La taille de la tribu fixe les parts des plats servis ajoutés ensuite
 tribu.feature: Le planning est partagé entre membres
+tribu.feature: Le référentiel d'ingrédients est partagé entre membres
+tribu.feature: Un plat modifié par un autre membre apparaît quand je reviens sur l'application

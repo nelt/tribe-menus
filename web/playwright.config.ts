@@ -8,6 +8,8 @@ const mailFile = `${dataDir}/mails.jsonl`;
 
 export default defineConfig({
   testDir: "e2e",
+  // The *.test.ts of e2e/ are unit tests, run by node:test.
+  testMatch: "*.spec.ts",
   forbidOnly: !!process.env["CI"],
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
