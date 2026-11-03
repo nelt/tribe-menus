@@ -34,6 +34,11 @@ export interface Ingredient {
 const spaces = /[ \t\n\v\f\r  ]+/g;
 const combiningMarks = /[̀-ͯ]/g;
 const apostrophes = /[’‘ʼ]/g;
+/**
+ * The control characters (category Cc) a displayed name refuses, as hasControl in
+ * internal/dish: those of the spaces above are reduced to a space before (D30).
+ */
+const controls = /[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/;
 
 /**
  * Returns the normalized name (Q29), with the same steps as NormalizeName in Go, kept in
@@ -300,15 +305,23 @@ export interface DishForm {
 
 /**
  * Checks before sending what does not need the library, in the order of the server
- * (internal/dish, validate): the name, then each line, its quantity and its unit (Q26,
- * Q31), then whether its ingredient is already in the dish (Q27).
+ * (internal/dish, validate): the name, then each line, its name, its quantity and its unit
+ * (Q26, Q31, D30), then whether its ingredient is already in the dish (Q27). A control
+ * character pasted in a field is refused as by the server (D30): a text field only
+ * removes the line breaks.
  */
 export function checkDish(form: DishForm): DishError | undefined {
+  if (controls.test(form.name)) {
+    return { error: "name_invalid" };
+  }
   if (normalizeName(form.name) === "") {
     return { error: "name_required" };
   }
   const seen = new Map<string, string>();
   for (const [i, line] of form.lines.entries()) {
+    if (controls.test(line.name)) {
+      return { error: "ingredient_name_invalid", line: i };
+    }
     if (trimSpaces(line.quantity) !== "") {
       if (line.unit === "") {
         return { error: "unit_required", line: i };
@@ -336,6 +349,9 @@ export function dishErrorMessage(e: DishError): string | undefined {
   switch (e.error) {
     case "name_required":
       return "Donnez un nom au plat.";
+    case "name_invalid":
+    case "ingredient_name_invalid":
+      return "Ce nom contient un caractère invalide.";
     case "name_taken":
       return "Un plat porte déjà ce nom.";
     case "duplicate_ingredient":

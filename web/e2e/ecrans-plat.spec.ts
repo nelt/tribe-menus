@@ -145,6 +145,26 @@ test("a dish refused on a line: the message under the line", async ({ page }) =>
   await expect(line.getByRole("alert")).toHaveText("« bœuf haché » figure déjà dans le plat.");
 });
 
+test("a control character pasted in a name: refused before sending, and from the API (D30)", async ({ page }) => {
+  const received = await mockApi(page, {
+    getSession: [replies.session],
+    getDishes: [pageReply("dishes", 1, [chili])],
+    updateDish: [{ status: 400, body: { error: "ingredient_name_invalid", line: 0 } }],
+  });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByLabel("Nom du plat").fill("Soupe\u0007");
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Ce nom contient un caractère invalide.");
+  await expect(page.getByLabel("Nom du plat")).toHaveAttribute("aria-invalid", "true");
+  expect(received.filter((r) => r.method === "POST")).toHaveLength(0);
+
+  // A refusal the screen did not foresee is shown with its message, not as a network error.
+  await page.goto(`/tribes/demo/plats/${chili.id}`);
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  const line = page.locator(".line").nth(0);
+  await expect(line.getByRole("alert")).toHaveText("Ce nom contient un caractère invalide.");
+});
+
 test("changing a dish: its form, then the change sent on its revision", async ({ page }) => {
   const saved = { ...chili, revision: 3, servings: 5 };
   const received = await mockApi(page, {
