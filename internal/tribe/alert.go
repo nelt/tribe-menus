@@ -9,8 +9,9 @@ import "time"
 const (
 	// AlertSlot is the length of a slot of the alert counters.
 	AlertSlot = 10 * time.Minute
-	// AlertWindow is the window over which the counters are summed: the slots that start
-	// strictly after its start count. Older slots are purged.
+	// AlertWindow is the window over which the counters are summed: every slot that overlaps
+	// it counts, so that an event counts as long as it is less than AlertWindow old. Slots
+	// entirely before it are purged.
 	AlertWindow = time.Hour
 )
 
@@ -42,6 +43,13 @@ func alertSlot(now time.Time) string {
 // alertWindowStart returns the start of the window of the alerts at now.
 func alertWindowStart(now time.Time) time.Time {
 	return now.Add(-AlertWindow)
+}
+
+// alertSlotsAfter returns the stored start of the last slot entirely before the window at
+// now: the slots that start strictly after it overlap the window and are summed, the
+// others are purged.
+func alertSlotsAfter(now time.Time) string {
+	return alertSlot(alertWindowStart(now).Add(-AlertSlot))
 }
 
 // AlertSignal is a sign of the limits reached repeatedly: each has its threshold over the

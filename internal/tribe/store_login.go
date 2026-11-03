@@ -284,7 +284,7 @@ func (s *Store) Purge(ctx context.Context, now time.Time) error {
 	if _, err := q.PurgeSessions(ctx, at); err != nil {
 		return fmt.Errorf("purge sessions: %w", err)
 	}
-	if _, err := q.PurgeAlertCounters(ctx, formatTime(alertWindowStart(now))); err != nil {
+	if _, err := q.PurgeAlertCounters(ctx, alertSlotsAfter(now)); err != nil {
 		return fmt.Errorf("purge alert counters: %w", err)
 	}
 	return nil
@@ -292,7 +292,7 @@ func (s *Store) Purge(ctx context.Context, now time.Time) error {
 
 // AlertCounts returns the alert counters of the tribe in the window at now.
 func (s *Store) AlertCounts(ctx context.Context, now time.Time) (map[AlertEvent]int, error) {
-	rows, err := tribedb.New(s.db).AlertCounts(ctx, formatTime(alertWindowStart(now)))
+	rows, err := tribedb.New(s.db).AlertCounts(ctx, alertSlotsAfter(now))
 	if err != nil {
 		return nil, fmt.Errorf("alert counts: %w", err)
 	}

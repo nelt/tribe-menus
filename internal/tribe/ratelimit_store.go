@@ -149,7 +149,7 @@ func (r *RateLimitDB) Purge(ctx context.Context, now time.Time) error {
 	if _, err := q.PurgeDecoyCodes(ctx, formatTime(now)); err != nil {
 		return fmt.Errorf("purge decoy codes: %w", err)
 	}
-	if _, err := q.PurgeAlertCounters(ctx, formatTime(alertWindowStart(now))); err != nil {
+	if _, err := q.PurgeAlertCounters(ctx, alertSlotsAfter(now)); err != nil {
 		return fmt.Errorf("purge alert counters: %w", err)
 	}
 	return nil
@@ -158,8 +158,7 @@ func (r *RateLimitDB) Purge(ctx context.Context, now time.Time) error {
 // AlertCounts implements RateLimitStore.
 func (r *RateLimitDB) AlertCounts(ctx context.Context, now time.Time) (AlertCounts, error) {
 	q := ratelimitdb.New(r.db)
-	since := formatTime(alertWindowStart(now))
-	rows, err := q.AlertCounts(ctx, since)
+	rows, err := q.AlertCounts(ctx, alertSlotsAfter(now))
 	if err != nil {
 		return AlertCounts{}, fmt.Errorf("alert counts: %w", err)
 	}
@@ -169,6 +168,7 @@ func (r *RateLimitDB) AlertCounts(ctx context.Context, now time.Time) (AlertCoun
 		events[AlertEvent(row.Event)] = int(row.N)
 	}
 	counts.add(events)
+	since := formatTime(alertWindowStart(now))
 	repeated, err := q.CountRepeatedRequests(ctx, ratelimitdb.CountRepeatedRequestsParams{Since: since, MinRequests: RepeatedRequestsThreshold})
 	if err != nil {
 		return AlertCounts{}, fmt.Errorf("alert counts: repeated requests: %w", err)
