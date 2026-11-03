@@ -228,6 +228,15 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 - **Propositions d'ingrédients** (P4, Q27) : un ingrédient déjà dans le plat n'est pas proposé ; « Créer « … » » n'apparaît pas quand le texte saisi désigne déjà un ingrédient du référentiel, au sens du nom normalisé.
 - **Écran Tribu** (`Doux-Tribu`, D3) : réduit au nom de la tribu, au nombre de membres actifs et au réglage **Taille de la tribu** (stepper, de 1 à 50) ; la liste des membres, « Ajouter un membre », « Mes appareils » et « Quitter la tribu » viendront avec les membres et les sessions. « Se déconnecter » reste sur le Planning provisoire.
 
+**Réalisation** (plan `bibliotheque`, lot D, 2026-11-03), à valider à la revue :
+
+- **Sans barre d'onglets** : la création et la modification d'un plat et l'écran Tribu, comme leurs maquettes ; on en revient par leur lien « Plats » ou « Planning ».
+- **Ligne d'ingrédient** : l'ingrédient est fixé une fois choisi ; pour en changer, on retire la ligne. La ligne en cours de saisie n'a pas de croix de retrait, comme `Doux-Plat` ; un texte tapé sans choisir de proposition est enregistré tel quel. Au plus six propositions, par ordre alphabétique, avec le début du mot trouvé en rouge tomate et l'unité par défaut à droite.
+- **Unité** : la liste native, transparente, sous le libellé de la case, qui suit la quantité (« 3 pièces ») ; la liste ouverte présente les unités au singulier.
+- **Parts d'un nouveau plat** : le stepper paraît une fois la taille de la tribu lue.
+- **Plat introuvable** (identifiant absent de la bibliothèque) : « Ce plat est introuvable. », sous le lien « Plats ».
+- **Taille de la tribu** : enregistrée à chaque pas du stepper ; sans réseau, la valeur enregistrée revient, avec « Réseau nécessaire ».
+
 **Affichage des quantités** (décision du développeur, 2026-11-03)
 
 - Nombre avec une virgule décimale, sans zéro inutile (« 1,5 », « 0,125 ») ; unité au pluriel à partir de 2, comme en français : « 1,5 pièce », « 3 pièces », « 2 pincées » ; g, kg, ml, cl et l sont invariables.

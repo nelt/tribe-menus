@@ -63,51 +63,39 @@ func TestFamilies(t *testing.T) {
 	}
 }
 
+// TestParseQuantity runs the table of cases shared with web/src/dishes.ts (D20).
 func TestParseQuantity(t *testing.T) {
-	cases := []struct {
-		text    string
-		unit    Unit
-		amount  int64 // in the base unit
-		wantErr error
-	}{
-		{"500", Gram, 500_000, nil},
-		{"2,5", Centilitre, 25, nil},
-		{"2.5", Centilitre, 25, nil},
-		{"0,125", Kilogram, 125_000, nil},
-		{"1,5", Piece, 1500, nil},
-		{"1,5", Litre, 1500, nil},
-		{"0,001", Gram, 1, nil},
-		{"0,001", Pinch, 1, nil},
-		{"2", Tablespoon, 2000, nil},
-		{"2,50", Centilitre, 25, nil},
-		{" 600 ", Gram, 600_000, nil},
-		{"007", Millilitre, 7, nil},
-		{"999999", Kilogram, 999_999_000_000, nil},
-		{"2,5", Millilitre, 0, ErrQuantityTooPrecise},
-		{"2,55", Centilitre, 0, ErrQuantityTooPrecise},
-		{"0,1255", Kilogram, 0, ErrQuantityTooPrecise},
-		{"1,0001", Piece, 0, ErrQuantityTooPrecise},
-		{"0", Gram, 0, ErrInvalidQuantity},
-		{"0,000", Gram, 0, ErrInvalidQuantity},
-		{"-1", Gram, 0, ErrInvalidQuantity},
-		{"", Gram, 0, ErrInvalidQuantity},
-		{"abc", Gram, 0, ErrInvalidQuantity},
-		{"1,", Gram, 0, ErrInvalidQuantity},
-		{",5", Gram, 0, ErrInvalidQuantity},
-		{"1,2,3", Gram, 0, ErrInvalidQuantity},
-		{"1 000", Gram, 0, ErrInvalidQuantity},
-		{"1e3", Gram, 0, ErrInvalidQuantity},
-		{"1000000", Gram, 0, ErrInvalidQuantity},
-		{"١٢", Gram, 0, ErrInvalidQuantity},
+	data, err := os.ReadFile("testdata/quantities.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, c := range cases {
-		got, err := ParseQuantity(c.text, c.unit)
-		if !errors.Is(err, c.wantErr) {
-			t.Errorf("ParseQuantity(%q, %s): error %v, want %v", c.text, c.unit, err, c.wantErr)
+	var table struct {
+		Cases []struct {
+			Text   string `json:"text"`
+			Unit   Unit   `json:"unit"`
+			Amount int64  `json:"amount"` // in the base unit
+			Error  string `json:"error"`
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(data, &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Cases) == 0 {
+		t.Fatal("no case")
+	}
+	wantErrs := map[string]error{"": nil, string(InvalidQuantity): ErrInvalidQuantity, string(QuantityTooPrecise): ErrQuantityTooPrecise}
+	for _, c := range table.Cases {
+		wantErr, ok := wantErrs[c.Error]
+		if !ok {
+			t.Fatalf("unknown error %q", c.Error)
+		}
+		got, err := ParseQuantity(c.Text, c.Unit)
+		if !errors.Is(err, wantErr) {
+			t.Errorf("ParseQuantity(%q, %s): error %v, want %v", c.Text, c.Unit, err, wantErr)
 			continue
 		}
-		if err == nil && (got.Amount != c.amount || got.Unit != c.unit) {
-			t.Errorf("ParseQuantity(%q, %s) = %+v, want %d %s", c.text, c.unit, got, c.amount, c.unit)
+		if err == nil && (got.Amount != c.Amount || got.Unit != c.Unit) {
+			t.Errorf("ParseQuantity(%q, %s) = %+v, want %d %s", c.Text, c.Unit, got, c.Amount, c.Unit)
 		}
 	}
 }
@@ -186,6 +174,14 @@ func TestValidate(t *testing.T) {
 		{name: "valid", input: Input{Name: "Chili", Lines: []LineInput{line("bœuf haché", "500", "g"), line("sel", "", "")}}},
 		{name: "no ingredient", input: Input{Name: "Restes"}},
 		{name: "name required", input: Input{Name: "   "}, wantCode: NameRequired, wantLine: -1},
+		{name: "name of a zero width space", input: Input{Name: "\u200b"}, wantCode: NameRequired, wantLine: -1},
+		{name: "name of a combining mark", input: Input{Name: "\u0301"}, wantCode: NameRequired, wantLine: -1},
+		{name: "name with a control character", input: Input{Name: "Soupe\a"}, wantCode: NameInvalid, wantLine: -1},
+		{name: "name of a control character", input: Input{Name: "\x00"}, wantCode: NameInvalid, wantLine: -1},
+		{name: "name with a tab", input: Input{Name: "Soupe\tà l'oignon"}},
+		{name: "name of an emoji", input: Input{Name: "🍲"}},
+		{name: "name of a composed emoji", input: Input{Name: "👩\u200d🍳"}},
+		{name: "name of 60 characters once spaces reduced", input: Input{Name: " " + strings.Repeat("é", 30) + "    " + strings.Repeat("é", 29) + " "}},
 		{name: "name of 60 characters", input: Input{Name: strings.Repeat("é", 60)}},
 		{name: "name too long", input: Input{Name: strings.Repeat("é", 61)}, wantCode: NameTooLong, wantLine: -1},
 		{name: "servings 50", input: Input{Name: "Chili", Servings: 50}},
@@ -194,6 +190,8 @@ func TestValidate(t *testing.T) {
 		{name: "40 lines", input: Input{Name: "Chili", Lines: lines(40)}},
 		{name: "41 lines", input: Input{Name: "Chili", Lines: lines(41)}, wantCode: TooManyLines, wantLine: -1},
 		{name: "ingredient name required", input: Input{Name: "Chili", Lines: []LineInput{line("sel", "", ""), line(" ", "", "")}}, wantCode: IngredientNameRequired, wantLine: 1},
+		{name: "ingredient name of invisible characters", input: Input{Name: "Chili", Lines: []LineInput{line("\u200b\u00a0", "", "")}}, wantCode: IngredientNameRequired, wantLine: 0},
+		{name: "ingredient name with a control character", input: Input{Name: "Chili", Lines: []LineInput{line("sel", "", ""), line("poivre\u0085", "", "")}}, wantCode: IngredientNameInvalid, wantLine: 1},
 		{name: "ingredient name of 40 characters", input: Input{Name: "Chili", Lines: []LineInput{line(strings.Repeat("é", 40), "", "")}}},
 		{name: "ingredient name too long", input: Input{Name: "Chili", Lines: []LineInput{line(strings.Repeat("é", 41), "", "")}}, wantCode: IngredientNameTooLong, wantLine: 0},
 		{name: "unknown unit", input: Input{Name: "Chili", Lines: []LineInput{line("riz", "1", "cup")}}, wantCode: InvalidUnit, wantLine: 0},
@@ -226,8 +224,25 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestDisplayName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"Ratatouille", "Ratatouille"},
+		{"  Gratin   de  courgettes ", "Gratin de courgettes"},
+		{"Soupe\tà\nl’oignon", "Soupe à l’oignon"},
+		{"crème\u00a0\u202ffraîche", "crème fraîche"},
+		{"Œufs  Brouillés", "Œufs Brouillés"},
+		{"thé\u2003vert", "thé\u2003vert"}, // not a space of the normalized name
+		{"👩\u200d🍳", "👩\u200d🍳"},
+	}
+	for _, c := range cases {
+		if got := displayName(c.in); got != c.want {
+			t.Errorf("displayName(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
 func TestValidateResult(t *testing.T) {
-	in := Input{Name: "  Pâtes au beurre ", Servings: 3, Lines: []LineInput{
+	in := Input{Name: "  Pâtes  au\tbeurre ", Servings: 3, Lines: []LineInput{
 		{Name: " pâtes ", Quantity: "500", Unit: "g"},
 		{Name: "sel", Unit: "g"}, // a unit without quantity is dropped (Q26)
 	}}

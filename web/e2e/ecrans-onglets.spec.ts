@@ -32,7 +32,11 @@ test("the chip of the tribe opens the screen Tribu", async ({ page }) => {
   await expect(chip).toBeVisible();
   await chip.click();
   await expect(page).toHaveURL(/\/tribes\/demo\/tribu$/);
-  await expect(page.getByRole("link", { name: "Planning" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  // A screen opened from a tab has its link back, and no tab bar, as its mock-up.
+  await expect(page.getByRole("navigation", { name: "Onglets" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Planning" }).click();
+  await expect(page).toHaveURL(/\/tribes\/demo\/$/);
 });
 
 test("without the tribe, no chip", async ({ page }) => {

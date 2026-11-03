@@ -49,6 +49,27 @@ Fonctionnalité: Bibliothèque de plats
     Alors le plat n'est pas enregistré
     Et un message m'indique qu'un plat porte déjà ce nom
 
+  @P1 @P4
+  Scénario: Les espaces en trop sont retirées des noms
+    Quand je crée le plat "  Gratin   de  courgettes " avec les ingrédients :
+      | ingrédient       | quantité | unité |
+      | crème    fraîche | 20       | cl    |
+    Alors le plat "Gratin de courgettes" figure dans la bibliothèque
+    Et le référentiel contient un seul ingrédient "crème fraîche"
+
+  @P1 @P4
+  Plan du scénario: Un nom sans caractère visible ou avec un caractère de contrôle est refusé
+    Quand je crée un plat dont le nom <de quoi> est <nom>
+    Alors le plat n'est pas enregistré
+    Et le nom <de quoi> est refusé comme <refus>
+
+    Exemples:
+      | de quoi         | nom                                           | refus    |
+      | du plat         | l'espace sans chasse U+200B                   | vide     |
+      | du plat         | "Soupe" suivi du caractère de contrôle U+0007 | invalide |
+      | d'un ingrédient | l'espace sans chasse U+200B                   | vide     |
+      | d'un ingrédient | "sel" suivi du caractère de contrôle U+0007   | invalide |
+
   @P1
   Scénario: Un ingrédient peut n'avoir aucune quantité
     Quand je crée le plat "Pâtes au beurre" avec les ingrédients :

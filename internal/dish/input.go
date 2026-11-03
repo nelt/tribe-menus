@@ -38,11 +38,13 @@ type ErrorCode string
 const (
 	NameRequired           ErrorCode = "name_required"
 	NameTooLong            ErrorCode = "name_too_long"
+	NameInvalid            ErrorCode = "name_invalid"
 	NameTaken              ErrorCode = "name_taken"
 	InvalidServings        ErrorCode = "invalid_servings"
 	TooManyLines           ErrorCode = "too_many_lines"
 	IngredientNameRequired ErrorCode = "ingredient_name_required"
 	IngredientNameTooLong  ErrorCode = "ingredient_name_too_long"
+	IngredientNameInvalid  ErrorCode = "ingredient_name_invalid"
 	InvalidUnit            ErrorCode = "invalid_unit"
 	UnitRequired           ErrorCode = "unit_required"
 	InvalidQuantity        ErrorCode = "invalid_quantity"
@@ -82,13 +84,16 @@ type validLine struct {
 }
 
 // validate checks the rules that depend on the input alone (P1, Q26, Q27, Q31); the name
-// taken (Q28) is checked against the library. A unit without quantity is dropped: without
+// taken (Q28) is checked against the library. Names are kept with their spaces reduced
+// (D30). A unit without quantity is dropped: without
 // quantity, no unit (Q26).
 func (in Input) validate() (validInput, error) {
-	v := validInput{name: trimName(in.Name), servings: in.Servings}
+	v := validInput{name: displayName(in.Name), servings: in.Servings}
 	v.normalized = NormalizeName(v.name)
 	switch {
-	case v.normalized == "":
+	case hasControl(v.name):
+		return v, dishError(NameInvalid)
+	case !hasVisible(v.name):
 		return v, dishError(NameRequired)
 	case utf8.RuneCountInString(v.name) > MaxNameLength:
 		return v, dishError(NameTooLong)
@@ -113,10 +118,12 @@ func (in Input) validate() (validInput, error) {
 }
 
 func validateLine(l LineInput) (validLine, ErrorCode) {
-	line := validLine{name: trimName(l.Name)}
+	line := validLine{name: displayName(l.Name)}
 	line.normalized = NormalizeName(line.name)
 	switch {
-	case line.normalized == "":
+	case hasControl(line.name):
+		return line, IngredientNameInvalid
+	case !hasVisible(line.name):
 		return line, IngredientNameRequired
 	case utf8.RuneCountInString(line.name) > MaxIngredientNameLength:
 		return line, IngredientNameTooLong

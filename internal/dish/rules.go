@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"golang.org/x/text/unicode/norm"
 )
@@ -55,10 +56,43 @@ func isSpace(r rune) bool {
 	return false
 }
 
-// trimName removes the spaces of the normalized name around a name entered: what is kept
-// as the displayed name.
+// trimName removes the spaces of the normalized name around a text entered.
 func trimName(name string) string {
 	return strings.TrimFunc(name, isSpace)
+}
+
+// displayName is the name kept as entered, its spaces reduced as in the normalized name
+// (step 5), case, accents and apostrophes kept (Q31, plan bibliotheque, D30).
+func displayName(name string) string {
+	var b strings.Builder
+	space := false
+	for _, r := range name {
+		if isSpace(r) {
+			space = b.Len() > 0
+			continue
+		}
+		if space {
+			b.WriteByte(' ')
+			space = false
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// hasControl tells whether a displayed name holds a control character (category Cc), its
+// spaces being already reduced; format characters (Cf), such as the joiner of composed
+// emojis, are allowed (D30).
+func hasControl(name string) bool {
+	return strings.IndexFunc(name, func(r rune) bool { return unicode.Is(unicode.Cc, r) }) >= 0
+}
+
+// hasVisible tells whether a name holds a visible character: a letter, a digit, a
+// punctuation mark or a symbol (D30). A name without any is refused as an empty one.
+func hasVisible(name string) bool {
+	return strings.IndexFunc(name, func(r rune) bool {
+		return unicode.In(r, unicode.L, unicode.N, unicode.P, unicode.S)
+	}) >= 0
 }
 
 // Unit is a unit of the closed list (glossary), by its code in the API and the database.

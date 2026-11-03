@@ -3,6 +3,10 @@ import { html, type TemplateResult } from "lit";
 
 const repositoryURL = "https://github.com/nelt/tribe-menus";
 
+/** The message of a change without network, or of an unforeseen response (plan
+ * bibliotheque, D18; docs/design/README.md, « Messages »): nothing changed. */
+export const networkNeededMessage = "Réseau nécessaire. Le réseau est lent ou absent : réessayez.";
+
 /** The address of the source code of this version, given by the server (ADR 0011, point 2). */
 export function sourceURL(doc: Document = document): string {
   return doc.querySelector<HTMLMetaElement>('meta[name="source-url"]')?.content || repositoryURL;

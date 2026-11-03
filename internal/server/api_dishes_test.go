@@ -131,6 +131,8 @@ func TestDishErrors(t *testing.T) {
 	}{
 		{"name required", "POST", "dishes", `{"name":"  "}`, 400, `{"error":"name_required"}`},
 		{"name taken", "POST", "dishes", `{"name":" chili CON carne"}`, 400, `{"error":"name_taken"}`},
+		{"name with a control character", "POST", "dishes", `{"name":"Soupe\u0007"}`, 400, `{"error":"name_invalid"}`},
+		{"ingredient name invisible", "POST", "dishes", `{"name":"Soupe","ingredients":[{"name":"\u200b"}]}`, 400, `{"error":"ingredient_name_required","line":0}`},
 		{"same ingredient twice", "POST", "dishes", `{"name":"Ratatouille","ingredients":[{"name":"courgette","quantity":"3","unit":"piece"},{"name":"Courgette","quantity":"200","unit":"g"}]}`, 400, `{"error":"duplicate_ingredient","line":1,"ingredient":"courgette"}`},
 		{"quantity too precise", "POST", "dishes", `{"name":"Soupe","ingredients":[{"name":"lait","quantity":"2,5","unit":"ml"}]}`, 400, `{"error":"quantity_too_precise","line":0}`},
 		{"quantity as a number", "POST", "dishes", `{"name":"Soupe","ingredients":[{"name":"lait","quantity":2,"unit":"ml"}]}`, 400, `{"error":"bad_request"}`},
