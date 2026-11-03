@@ -136,3 +136,42 @@ test("CachedCollection.applyWrite: the next version is taken, a gap checks again
   assert.deepEqual(copy.items, [{ id: "a", n: 3 }, { id: "c", n: 1 }]);
   assert.equal(copy.version, 4);
 });
+
+/** A reader whose replies are released by the test, one by one. */
+function heldReader() {
+  const held: ((reply: Reply) => void)[] = [];
+  const read: PageReader = () => new Promise((resolve) => held.push(resolve));
+  const release = (reply: Reply) => {
+    const next = held.shift();
+    if (next === undefined) {
+      throw new Error("no request held");
+    }
+    next(reply);
+  };
+  return { read, release, pending: () => held.length };
+}
+
+test("CachedCollection: a check begun before clear() writes nothing (review of PR #77, point 1)", async () => {
+  const { read, release } = heldReader();
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  const checking = copy.check();
+  copy.clear();
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  await checking;
+  assert.equal(copy.items, undefined);
+  assert.equal(copy.version, undefined);
+});
+
+test("CachedCollection: a check asked after clear() does not share the one begun before", async () => {
+  const { read, release, pending } = heldReader();
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  const before = copy.check();
+  copy.clear();
+  const after = copy.check();
+  assert.equal(pending(), 2);
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  release(page([{ id: "b", n: 1 }], '"d-6"'));
+  await Promise.all([before, after]);
+  assert.deepEqual(copy.items, [{ id: "b", n: 1 }]);
+  assert.equal(copy.version, 6);
+});

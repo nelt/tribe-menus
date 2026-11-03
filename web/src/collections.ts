@@ -91,6 +91,11 @@ export class CachedCollection<T> {
   #items: Map<string, T> | undefined;
   #etag: string | undefined;
   #checking: Promise<Outcome<undefined>> | undefined;
+  /**
+   * Increases when the copy is cleared: a check begun before does not write its result into
+   * the copy, which must not survive the sign-out or a 401 (D25).
+   */
+  #generation = 0;
 
   constructor(name: string, read: PageReader, parse: (raw: unknown) => T | undefined, key: (item: T) => string) {
     this.name = name;
@@ -111,12 +116,23 @@ export class CachedCollection<T> {
 
   /** Checks the copy against the API; a check already running is shared. */
   check(): Promise<Outcome<undefined>> {
-    this.#checking ??= this.#check().finally(() => (this.#checking = undefined));
+    if (this.#checking === undefined) {
+      const checking = this.#check().finally(() => {
+        if (this.#checking === checking) {
+          this.#checking = undefined;
+        }
+      });
+      this.#checking = checking;
+    }
     return this.#checking;
   }
 
   async #check(): Promise<Outcome<undefined>> {
+    const generation = this.#generation;
     const result = await check(this.#read, this.#etag);
+    if (generation !== this.#generation) {
+      return { kind: "ok", value: undefined };
+    }
     if (result.kind === "unchanged") {
       return { kind: "ok", value: undefined };
     }
@@ -157,6 +173,8 @@ export class CachedCollection<T> {
 
   /** Forgets the copy: at the sign-out, or on a 401 (D25). */
   clear(): void {
+    this.#generation++;
+    this.#checking = undefined;
     this.#items = undefined;
     this.#etag = undefined;
   }
