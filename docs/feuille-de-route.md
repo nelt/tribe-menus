@@ -93,4 +93,3 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | décidé par l'ADR 0028 (`bibliotheque/A`) ; réalisé à `bibliotheque/C`, étape 16 |
 | Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |
 | Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant d'inviter un autre membre que le développeur (`recette`, D1) |
-| `webcheck` ne connaît pas toutes les échappatoires au rendu échappé | `revue-securite`, constat 10 | `bibliotheque/C`, étape 15 |

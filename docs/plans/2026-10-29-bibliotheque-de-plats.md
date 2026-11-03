@@ -76,7 +76,7 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot C : navigation, bibliothèque et scénarios `@ui` (`feature/bibliotheque-ecran`)
 
-- [ ] **15. `webcheck`** : `unsafeStatic`, `unsafeMathML`, `setHTMLUnsafe`, `srcdoc`, `createContextualFragment` ajoutés aux échappatoires refusées (`revue-securite`, constat 10), avant le premier écran qui affiche un texte saisi.
+- [x] **15. `webcheck`** : `unsafeStatic`, `unsafeMathML`, `setHTMLUnsafe`, `srcdoc`, `createContextualFragment` ajoutés aux échappatoires refusées (`revue-securite`, constat 10), avant le premier écran qui affiche un texte saisi.
 - [ ] **16. Scénarios `@ui`** (D14, ADR 0028) : outil Go qui exporte les scénarios `@ui` des `.feature` (plans du scénario déroulés) en JSON pour Playwright ; registre d'étapes en TypeScript ; un scénario `@ui` sans étape connue échoue, et `pending.txt` vaut dans les deux sens comme pour godog ; godog ignore les scénarios `@ui`. Les scénarios `@ui` du plan reviennent dans `pending.txt`, d'où le lot A les a sortis (notes d'exécution).
 - [ ] **17. `web/src/dishes.ts`**, module pur testé par `node:test` : `normalizeName` sur la même table de cas que Go (D9), `searchDishes` (mots, préfixes, tous les termes), tri alphabétique (D22).
 - [ ] **18. Barre d'onglets et routeur** : pages Planning (l'accueil provisoire actuel, avec la pastille de la tribu), Plats, Courses inactif « À venir » (D11) ; chemins en français sous la tribu (`plats`, `plats/nouveau`, `plats/<id>`, `tribu`).
