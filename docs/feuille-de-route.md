@@ -31,7 +31,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | terminé |
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
-| `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | prêt |
+| `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | en cours |
 
 ### `production` : application prête pour la production
 
@@ -45,7 +45,7 @@ Terminé le 2026-11-03 : cinq lots (cookies `__Host-` et tribu de recette, provi
 
 ### `bibliotheque` : bibliothèque de plats
 
-Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17) : *posée le 2026-11-02, le plan peut avancer.*
+Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17) : *posée le 2026-11-02, le plan peut avancer.* En cours depuis le 2026-11-03 : lot A (specs, ADR 0027 à 0029, design, conception).
 
 ## Décisions d'ordonnancement
 
@@ -90,7 +90,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
-| Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | `bibliotheque`, D14 (recherche P3 et autocomplétion P4, prouvées dans le navigateur) : lots A et C |
+| Lien entre Playwright et les `.feature` (tag `@ui`) | `socle`, D5 | décidé par l'ADR 0028 (`bibliotheque/A`) ; réalisé à `bibliotheque/C`, étape 16 |
 | Écriture de la dernière activité à chaque requête | `socle`, questions ouvertes | si la mesure le justifie |
 | Aucun moyen de fermer une session à distance ni de révoquer un membre (téléphone perdu) | `revue-securite`, constat 5 | EF-03 et EF-05, ou à défaut une commande d'administration, avant d'inviter un autre membre que le développeur (`recette`, D1) |
 | `webcheck` ne connaît pas toutes les échappatoires au rendu échappé | `revue-securite`, constat 10 | `bibliotheque/C`, étape 15 |

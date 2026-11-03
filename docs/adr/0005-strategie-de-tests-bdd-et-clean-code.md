@@ -12,7 +12,7 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
 1. **Les fichiers `.feature` sont la source unique des critères d'acceptation** et sont exécutés tels quels ; ils ne sont pas recopiés dans le code de test. Un scénario modifié dans la spec change le test.
 2. **Chaque scénario est exécuté au niveau le plus bas qui le prouve** :
    - **par défaut, contre l'API** avec **godog** (Gherkin officiel pour Go, compatible `# language: fr`). Le serveur tourne dans le processus de test (`httptest`), sur des bases SQLite temporaires. Les règles métier (calculs, recalcul, compartimentage, sessions) sont prouvées à ce niveau ;
-   - **dans le navigateur** avec **Playwright**, pour les seuls scénarios dont le sens tient à l'interface : hors-ligne (C7), dépliage d'un article (C5), mode sélection (C9, C10), bandeaux, parcours de connexion dans la PWA. Ces scénarios portent le tag `@ui`. Playwright pilote aussi WebKit, moteur proche de Safari sur iOS.
+   - **dans le navigateur** avec **Playwright**, pour les seuls scénarios dont le sens tient à l'interface : hors-ligne (C7), dépliage d'un article (C5), mode sélection (C9, C10), bandeaux, parcours de connexion dans la PWA. Ces scénarios portent le tag `@ui`. Playwright pilote aussi WebKit, moteur proche de Safari sur iOS. *Précisé par l'ADR 0027 : une règle métier calculée dans le navigateur, comme la recherche (P3) et l'autocomplétion (P4), y est prouvée.*
 3. **Tests unitaires** :
    - Go : `go test`, tests en tableaux de cas, sur la logique métier pure de chaque domaine (conversion et agrégation des quantités, règles de recalcul…) ;
    - TypeScript : `node:test`, sur les modules purs sans DOM (file d'opérations hors-ligne, fusion des coches, formatage des quantités).
@@ -40,5 +40,5 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
 - **Positif** : les specs restent la référence vivante et exécutable ; les règles métier sont prouvées rapidement et sans navigateur ; peu de dépendances de test côté Go.
 - **Négatif** : deux exécuteurs de scénarios (godog et Playwright), dont les définitions d'étapes ne sont pas partagées ; Playwright est une dépendance de développement lourde, limitée à la CI et au poste de développement.
 - **À préciser à l'implémentation** :
-  - le moyen de faire lire les `.feature` par Playwright (par exemple `playwright-bdd`, ou des tests Playwright qui référencent les scénarios par leur tag) ;
-  - l'ajout du tag `@ui` aux scénarios concernés dans `docs/specs/features/`, au fil des stories implémentées ;
+  - le moyen de faire lire les `.feature` par Playwright (par exemple `playwright-bdd`, ou des tests Playwright qui référencent les scénarios par leur tag) ; *précisé par l'ADR 0028 : un outil Go exporte les scénarios `@ui`, un registre d'étapes en TypeScript les exécute* ;
+  - l'ajout du tag `@ui` aux scénarios concernés dans `docs/specs/features/`, au fil des stories implémentées ; *précisé par l'ADR 0028 : posé quand le plan d'une story fixe le niveau de preuve* ;

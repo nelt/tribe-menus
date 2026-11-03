@@ -20,18 +20,18 @@ authentification.feature: Les modifications autres que les listes de courses né
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 bibliotheque-plats.feature: Créer un nouvel ingrédient pendant la saisie d'un plat
 bibliotheque-plats.feature: Créer un plat avec ses ingrédients
+bibliotheque-plats.feature: Deux plats ne peuvent pas porter le même nom
 bibliotheque-plats.feature: Définir un plat pour un autre nombre de parts
-bibliotheque-plats.feature: L'autocomplétion ignore la casse et les accents
-bibliotheque-plats.feature: L'autocomplétion propose les ingrédients existants
-bibliotheque-plats.feature: L'unité par défaut est proposée à la saisie
 bibliotheque-plats.feature: La couleur d'un plat ne change pas quand on le modifie
 bibliotheque-plats.feature: La modification d'un plat s'applique aux repas où il est servi
 bibliotheque-plats.feature: Le nom d'un plat est obligatoire
-bibliotheque-plats.feature: Rechercher un plat par les mots de son nom ou par ses ingrédients
+bibliotheque-plats.feature: Un ingrédient peut n'avoir aucune quantité
+bibliotheque-plats.feature: Un même ingrédient ne figure qu'une fois dans un plat
 bibliotheque-plats.feature: Un nom qui ne diffère que par la casse, les accents ou les espaces désigne le même ingrédient
 bibliotheque-plats.feature: Un nouveau plat reçoit la teinte la moins utilisée
 bibliotheque-plats.feature: Un plat ne peut pas être supprimé de la bibliothèque
 bibliotheque-plats.feature: Un plat peut n'avoir aucun ingrédient
+bibliotheque-plats.feature: Une modification faite entre-temps par un autre membre n'est pas écrasée
 compartimentage-tribus.feature: Accès croisé refusé
 compartimentage-tribus.feature: La bibliothèque de plats est propre à la tribu
 compartimentage-tribus.feature: La tribu d'une requête est celle de la session
@@ -143,10 +143,8 @@ planning-repas.feature: Retirer un plat d'un repas
 planning-repas.feature: Servir plusieurs plats dans un même repas
 planning-repas.feature: Un même plat ne peut pas être ajouté deux fois à un repas
 planning-repas.feature: Un plat retiré puis ajouté de nouveau repart de 4 parts
-tribu.feature: La taille de la tribu est proposée pour un nouveau plat
 tribu.feature: La taille de la tribu fixe les parts des plats servis ajoutés ensuite
 tribu.feature: La taille de la tribu vaut 4 par défaut
 tribu.feature: Le planning est partagé entre membres
-tribu.feature: Le référentiel d'ingrédients est partagé entre membres
 tribu.feature: Les plats sont partagés entre membres
 tribu.feature: Tous les membres ont les mêmes droits
