@@ -184,7 +184,8 @@ test("a draft without visible character: nothing to create, and dropped as an em
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
   await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
   const created = received.filter((r) => r.method === "POST" && r.path === "dishes");
-  expect(created.map((r) => r.body)).toEqual([{ name: "Soupe", ingredients: [] }]);
+  // The tribe size of the mock (4) is read: the servings are sent (D16).
+  expect(created.map((r) => r.body)).toEqual([{ name: "Soupe", servings: 4, ingredients: [] }]);
 });
 
 test("changing a dish: its form, then the change sent on its revision", async ({ page }) => {
