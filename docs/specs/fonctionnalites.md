@@ -184,4 +184,5 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
 - **Q31** : **limites** (plan `bibliotheque`, D12 et D20, 2026-10-29) :
   - taille de la tribu de 1 à 50 ;
   - nom d'un plat de 60 caractères au plus, nom d'un ingrédient de 40, 40 ingrédients par plat ;
+  - dans le nom d'un plat ou d'un ingrédient, les espaces sont réduites à une seule entre deux mots ; un caractère de contrôle est refusé ; un nom sans aucun caractère visible est refusé comme un nom vide (plan `bibliotheque`, D30, 2026-11-03) ;
   - quantité strictement positive, saisie avec une virgule ou un point ; au plus les décimales que l'unité permet : aucune en ml, une en cl, trois en l, g, kg, pièce, cuillère à soupe, cuillère à café et pincée (« 2,5 cl » et « 0,125 kg » acceptés, « 2,5 ml » refusé). Au-delà, la quantité est refusée (« Quantité trop précise pour cette unité ») plutôt qu'arrondie en silence.
