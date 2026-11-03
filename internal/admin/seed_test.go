@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nelt/tribe-menus/internal/dish"
+	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
@@ -44,10 +46,26 @@ func TestSeed(t *testing.T) {
 	if entries, err := s.AuditLog(ctx); err != nil || len(entries) != len(demoMembers) {
 		t.Errorf("AuditLog = %d entries, %v; want %d", len(entries), err, len(demoMembers))
 	}
+
+	// The eight dishes of the mock-up Doux-Bibliotheque (plan bibliotheque, D21), once.
+	_, page, err := dish.NewLibrary(storage.NewDishStore(db)).Dishes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Items) != len(demoDishes) || len(demoDishes) != 8 {
+		t.Fatalf("%d dishes, want the %d of the mock-up", len(page.Items), len(demoDishes))
+	}
+	colors := map[dish.Color]string{}
+	for _, d := range page.Items {
+		colors[d.Color] = d.Name
+	}
+	for i, d := range demoDishes {
+		if colors[dish.Palette[i]] != d.Name {
+			t.Errorf("%s: want the hue %s of the mock-up, held by %q", d.Name, dish.Palette[i], colors[dish.Palette[i]])
+		}
+	}
 }
 
-// TestSeedWithMembers: the members of the file, the first one first member, who adds the
-// others (recette, D3).
 func TestSeedWithMembers(t *testing.T) {
 	ctx := context.Background()
 	store := openStore(t, t.TempDir())
@@ -72,6 +90,9 @@ func TestSeedWithMembers(t *testing.T) {
 	}
 	if _, err := s.Member(ctx, demoMembers[0].Email); err == nil {
 		t.Errorf("%s is a member, want only the members of the file", demoMembers[0].Email)
+	}
+	if _, page, err := dish.NewLibrary(storage.NewDishStore(db)).Dishes(ctx, ""); err != nil || len(page.Items) != 0 {
+		t.Errorf("dishes %+v, %v; want none in the tribe of a members file", page.Items, err)
 	}
 	entries, err := s.AuditLog(ctx)
 	if err != nil || len(entries) != 2 || entries[0].Operation != tribe.TribeInitialized || entries[1].Operation != tribe.MemberAdded {

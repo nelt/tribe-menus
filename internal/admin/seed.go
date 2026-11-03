@@ -9,6 +9,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/nelt/tribe-menus/internal/dish"
+	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
 
@@ -22,6 +24,44 @@ const (
 type SeedMember struct {
 	Email       tribe.Email
 	DisplayName string
+}
+
+// demoDishes are the eight dishes of the mock-up Doux-Bibliotheque (plan bibliotheque, D21),
+// in its order, which gives them its hues (Q19); quantities to show the units.
+var demoDishes = []dish.Input{
+	{Name: "Chili con carne", Lines: []dish.LineInput{
+		{Name: "bœuf haché", Quantity: "500", Unit: "g"}, {Name: "haricots rouges", Quantity: "400", Unit: "g"},
+		{Name: "oignon", Quantity: "2", Unit: "piece"}, {Name: "tomate concassée", Quantity: "400", Unit: "g"},
+	}},
+	{Name: "Chili végétarien", Lines: []dish.LineInput{
+		{Name: "haricots rouges", Quantity: "500", Unit: "g"}, {Name: "maïs", Quantity: "300", Unit: "g"},
+		{Name: "oignon", Quantity: "2", Unit: "piece"}, {Name: "poivron", Quantity: "1", Unit: "piece"},
+	}},
+	{Name: "Gratin de courgettes", Lines: []dish.LineInput{
+		{Name: "courgette", Quantity: "4", Unit: "piece"}, {Name: "crème", Quantity: "20", Unit: "cl"},
+		{Name: "gruyère", Quantity: "100", Unit: "g"},
+	}},
+	{Name: "Gratin dauphinois", Servings: 6, Lines: []dish.LineInput{
+		{Name: "pomme de terre", Quantity: "1,5", Unit: "kg"}, {Name: "crème", Quantity: "50", Unit: "cl"},
+		{Name: "ail", Quantity: "1", Unit: "piece"},
+	}},
+	{Name: "Ratatouille", Lines: []dish.LineInput{
+		{Name: "courgette", Quantity: "3", Unit: "piece"}, {Name: "aubergine", Quantity: "2", Unit: "piece"},
+		{Name: "tomate", Quantity: "4", Unit: "piece"}, {Name: "poivron", Quantity: "1", Unit: "piece"},
+		{Name: "oignon", Quantity: "1", Unit: "piece"},
+	}},
+	{Name: "Soupe à l'oignon", Lines: []dish.LineInput{
+		{Name: "oignon", Quantity: "6", Unit: "piece"}, {Name: "bouillon", Quantity: "1", Unit: "l"},
+		{Name: "pain", Quantity: "4", Unit: "piece"}, {Name: "gruyère", Quantity: "150", Unit: "g"},
+	}},
+	{Name: "Pâtes pesto", Lines: []dish.LineInput{
+		{Name: "pâtes", Quantity: "500", Unit: "g"}, {Name: "basilic", Quantity: "1", Unit: "piece"},
+		{Name: "parmesan", Quantity: "50", Unit: "g"}, {Name: "pignons", Quantity: "2", Unit: "tablespoon"},
+	}},
+	{Name: "Pizza maison", Lines: []dish.LineInput{
+		{Name: "farine", Quantity: "300", Unit: "g"}, {Name: "mozzarella", Quantity: "1", Unit: "piece"},
+		{Name: "tomate concassée", Quantity: "200", Unit: "g"}, {Name: "jambon", Quantity: "4", Unit: "piece"},
+	}},
 }
 
 var demoMembers = []SeedMember{
@@ -66,11 +106,12 @@ func ParseMembers(r io.Reader) ([]SeedMember, error) {
 }
 
 // Seed creates the demonstration tribe with the members given, or without them with the
-// people of the Gherkin conventions; the first member adds the others. It does nothing if
-// the tribe exists.
+// people of the Gherkin conventions and the dishes of the mock-up (plan bibliotheque, D21);
+// the first member adds the others. It does nothing if the tribe exists.
 func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
+	var dishes []dish.Input
 	if len(members) == 0 {
-		members = demoMembers
+		members, dishes = demoMembers, demoDishes
 	}
 	taken, err := c.Store.SlugTaken(ctx, string(demoSlug))
 	if err != nil {
@@ -94,6 +135,12 @@ func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 		}
 		for _, m := range members[1:] {
 			if _, err := s.AddMember(ctx, m.Email, m.DisplayName, firstMember.ID, now); err != nil {
+				return err
+			}
+		}
+		library := dish.NewLibrary(storage.NewDishStore(db))
+		for _, d := range dishes {
+			if _, _, err := library.Create(ctx, d); err != nil {
 				return err
 			}
 		}
