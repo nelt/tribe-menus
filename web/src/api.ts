@@ -72,6 +72,63 @@ export function sessionOf(body: unknown): Session | undefined {
   return { tribe: { name }, member: { email, displayName } };
 }
 
+/** The tribe as the screen Tribu and the chip of the planning show it (T3). */
+export interface TribeInfo {
+  name: string;
+  size: number;
+  activeMembers: number;
+}
+
+/** Returns the tribe described by a body, or undefined if the body is not one. */
+export function tribeInfoOf(body: unknown): TribeInfo | undefined {
+  if (!isRecord(body)) {
+    return undefined;
+  }
+  const { name, size, activeMembers } = body;
+  if (typeof name !== "string" || typeof size !== "number" || typeof activeMembers !== "number") {
+    return undefined;
+  }
+  return { name, size, activeMembers };
+}
+
+/**
+ * A page of a collection (ADR 0029): its items and the cursor of the next one, with the
+ * ETag of its version; or, on a conditional request, the version unchanged (304) or changed
+ * during the loading (412).
+ */
+export type CollectionPage =
+  | { kind: "page"; items: unknown[]; next: string | undefined; etag: string }
+  | { kind: "not-modified" }
+  | { kind: "changed" };
+
+/** Reads the response to a request of a page; undefined if it is not one. */
+export function collectionPageOf(response: RawResponse, etag: string | null): CollectionPage | undefined {
+  if (response === "network-error") {
+    return undefined;
+  }
+  if (response.status === 304) {
+    return { kind: "not-modified" };
+  }
+  const { status, body } = response;
+  if (status === 412 && isRecord(body) && body["error"] === "collection_changed") {
+    return { kind: "changed" };
+  }
+  if (status !== 200 || etag === null || !isRecord(body) || !Array.isArray(body["items"])) {
+    return undefined;
+  }
+  const next = body["next"];
+  if (next !== undefined && typeof next !== "string") {
+    return undefined;
+  }
+  return { kind: "page", items: body["items"] as unknown[], next, etag };
+}
+
+/** Conditions of a request of a page: If-None-Match on the first, If-Match on the next. */
+export interface PageCondition {
+  ifNoneMatch?: string;
+  ifMatch?: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -125,29 +182,65 @@ export class Api {
     return toVoid(await this.#call("DELETE", "api/session"));
   }
 
+  /** The tribe: its name, its size and its number of active members. */
+  async getTribe(): Promise<Outcome<TribeInfo>> {
+    const outcome = await this.#call("GET", "api/tribe");
+    if (outcome.kind !== "ok") {
+      return outcome;
+    }
+    const tribe = tribeInfoOf(outcome.value);
+    return tribe === undefined ? { kind: "network-error" } : { kind: "ok", value: tribe };
+  }
+
+  /** A page of a collection of the API (ADR 0029), after the cursor given. */
+  async getPage(collection: string, after: string | undefined, condition: PageCondition = {}): Promise<Outcome<CollectionPage>> {
+    const headers: Record<string, string> = {};
+    if (condition.ifNoneMatch !== undefined) {
+      headers["If-None-Match"] = condition.ifNoneMatch;
+    }
+    if (condition.ifMatch !== undefined) {
+      headers["If-Match"] = condition.ifMatch;
+    }
+    const url = after === undefined ? `api/${collection}` : `api/${collection}?after=${encodeURIComponent(after)}`;
+    const { raw, etag } = await this.#send("GET", url, undefined, headers);
+    const page = collectionPageOf(raw, etag);
+    if (page !== undefined) {
+      return { kind: "ok", value: page };
+    }
+    const outcome = this.#outcome(raw);
+    return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
+  }
+
   async #call(method: string, url: string, body?: unknown): Promise<Outcome<unknown>> {
-    const init: RequestInit = {
-      method,
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(this.#options.timeoutMs),
-    };
-    if (body !== undefined) {
-      init.headers = { Accept: "application/json", "Content-Type": "application/json" };
-      init.body = JSON.stringify(body);
-    }
-    let raw: RawResponse;
-    try {
-      const response = await this.#options.fetch(url, init);
-      raw = { status: response.status, body: await jsonBody(response) };
-    } catch {
-      raw = "network-error";
-    }
+    return this.#outcome((await this.#send(method, url, body)).raw);
+  }
+
+  #outcome(raw: RawResponse): Outcome<unknown> {
     const outcome = outcomeOf(raw);
     if (outcome.kind === "unauthorized") {
       this.#options.onUnauthorized();
     }
     return outcome;
+  }
+
+  async #send(method: string, url: string, body?: unknown, extra: Record<string, string> = {}): Promise<{ raw: RawResponse; etag: string | null }> {
+    const headers: Record<string, string> = { Accept: "application/json", ...extra };
+    const init: RequestInit = {
+      method,
+      credentials: "same-origin",
+      headers,
+      signal: AbortSignal.timeout(this.#options.timeoutMs),
+    };
+    if (body !== undefined) {
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(body);
+    }
+    try {
+      const response = await this.#options.fetch(url, init);
+      return { raw: { status: response.status, body: await jsonBody(response) }, etag: response.headers.get("ETag") };
+    } catch {
+      return { raw: "network-error", etag: null };
+    }
   }
 }
 

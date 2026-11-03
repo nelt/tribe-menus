@@ -577,8 +577,9 @@ input {
   max-width: 480px;
   min-height: 100vh;
   min-height: 100dvh;
+  box-sizing: border-box;
   margin: 0 auto;
-  padding: 44px 20px 20px;
+  padding: 24px 20px calc(var(--tab-bar-height) + 20px);
 }
 
 .home-main {
@@ -602,4 +603,98 @@ input {
   font-family: var(--font-heading);
   font-size: 32px;
   font-weight: 800;
+}
+
+/* Chip of the tribe, at the top of the planning: opens the screen Tribu. */
+.tribe-chip {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-target);
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.tribe-chip-members {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Tab bar (plan bibliotheque, D11). */
+:root {
+  --tab-bar-height: 84px;
+}
+
+.tab-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  height: var(--tab-bar-height);
+  box-sizing: border-box;
+  padding: 10px 16px 18px;
+  border-top: var(--border-thin) solid var(--color-border);
+  background: var(--color-background);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-field);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tab[aria-current="page"] {
+  background: var(--color-action);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.tab--inactive {
+  color: var(--color-text-muted);
+}
+
+.tab-soon {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* A screen above the tab bar. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 480px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 24px 20px calc(var(--tab-bar-height) + 16px);
+}
+
+.screen-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.screen-text {
+  margin: 0;
+  color: var(--color-text-secondary);
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Api, type Outcome, type RawResponse, outcomeOf, sessionOf } from "./api.ts";
+import { Api, type Outcome, type RawResponse, collectionPageOf, outcomeOf, sessionOf, tribeInfoOf } from "./api.ts";
 
 const sessionBody = { tribe: { name: "Les Démo" }, member: { email: "alice@exemple.fr", displayName: "Alice" } };
 
@@ -105,4 +105,51 @@ test("Api: beyond the timeout, a call is a network error", async () => {
     timeoutMs: 10,
   });
   assert.deepEqual(await api.getSession(), { kind: "network-error" });
+});
+
+test("tribeInfoOf", () => {
+  assert.deepEqual(tribeInfoOf({ name: "Les Démo", size: 4, activeMembers: 2 }), { name: "Les Démo", size: 4, activeMembers: 2 });
+  assert.equal(tribeInfoOf({ name: "Les Démo", size: "4", activeMembers: 2 }), undefined);
+  assert.equal(tribeInfoOf(undefined), undefined);
+});
+
+const pageCases: { name: string; response: RawResponse; etag: string | null; want: unknown }[] = [
+  { name: "a page", response: { status: 200, body: { items: [1], next: "a" } }, etag: '"dishes-1"', want: { kind: "page", items: [1], next: "a", etag: '"dishes-1"' } },
+  { name: "the last page", response: { status: 200, body: { items: [] } }, etag: '"dishes-1"', want: { kind: "page", items: [], next: undefined, etag: '"dishes-1"' } },
+  { name: "not modified", response: { status: 304, body: undefined }, etag: '"dishes-1"', want: { kind: "not-modified" } },
+  { name: "changed during the loading", response: { status: 412, body: { error: "collection_changed" } }, etag: '"dishes-2"', want: { kind: "changed" } },
+  { name: "without ETag", response: { status: 200, body: { items: [] } }, etag: null, want: undefined },
+  { name: "items not a list", response: { status: 200, body: { items: {} } }, etag: '"dishes-1"', want: undefined },
+  { name: "no session", response: { status: 401, body: { error: "no_session" } }, etag: null, want: undefined },
+  { name: "no response", response: "network-error", etag: null, want: undefined },
+];
+
+for (const { name, response, etag, want } of pageCases) {
+  test(`collectionPageOf: ${name}`, () => {
+    assert.deepEqual(collectionPageOf(response, etag), want);
+  });
+}
+
+test("Api.getPage sends the cursor and the conditions", async () => {
+  const seen: { url: string; headers: unknown }[] = [];
+  const api = new Api({
+    fetch: async (input, init = {}) => {
+      seen.push({ url: String(input), headers: init.headers });
+      return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { "Content-Type": "application/json", ETag: '"dishes-3"' } });
+    },
+    onUnauthorized: () => {},
+    timeoutMs: 1000,
+  });
+  assert.deepEqual(await api.getPage("dishes", "a b", { ifMatch: '"dishes-3"' }), { kind: "ok", value: { kind: "page", items: [], next: undefined, etag: '"dishes-3"' } });
+  await api.getPage("dishes", undefined, { ifNoneMatch: '"dishes-2"' });
+  assert.deepEqual(seen, [
+    { url: "api/dishes?after=a%20b", headers: { Accept: "application/json", "If-Match": '"dishes-3"' } },
+    { url: "api/dishes", headers: { Accept: "application/json", "If-None-Match": '"dishes-2"' } },
+  ]);
+});
+
+test("Api.getPage: a 401 brings back to the login", async () => {
+  const { api, unauthorized } = apiWith(async () => jsonResponse(401, { error: "no_session" }));
+  assert.deepEqual(await api.getPage("dishes", undefined), { kind: "unauthorized" });
+  assert.equal(unauthorized(), 1);
 });

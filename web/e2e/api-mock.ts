@@ -23,6 +23,7 @@ export const replies = {
   tooManyRequests: { status: 429, body: { error: "too_many_requests" } },
   incorrectCode: (attemptsLeft: number): Reply => ({ status: 400, body: { error: "incorrect_code", attemptsLeft } }),
   newCodeNeeded: { status: 400, body: { error: "new_code_needed" } },
+  tribe: { status: 200, body: { name: "Les Démo", size: 4, activeMembers: 4 } },
   networkError: { fail: true },
 } satisfies Record<string, Reply | ((n: number) => Reply)>;
 
@@ -32,6 +33,7 @@ export interface Script {
   requestCode?: Reply[];
   openSession?: Reply[];
   deleteSession?: Reply[];
+  getTribe?: Reply[];
 }
 
 export interface Received {
@@ -48,6 +50,7 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "POST login-codes": [...(script.requestCode ?? [replies.codeSent])],
     "POST sessions": [...(script.openSession ?? [replies.sessionOpened])],
     "DELETE session": [...(script.deleteSession ?? [replies.signedOut])],
+    "GET tribe": [...(script.getTribe ?? [replies.tribe])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
