@@ -162,6 +162,10 @@ func (w *world) registerDishSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^un message m'indique que l'ingrédient "([^"]*)" figure déjà dans le plat$`, func(name string) error {
 		return w.dishError(400, "duplicate_ingredient", name)
 	})
+	sc.Step(`^je crée un plat dont le nom (du plat|d'un ingrédient) est (.+)$`, w.createWithOddName)
+	sc.Step(`^le nom (du plat|d'un ingrédient) est refusé comme (vide|invalide)$`, func(of, refusal string) error {
+		return w.dishError(400, oddNameErrors[of+" "+refusal], "")
+	})
 	sc.Step(`^l'ingrédient "([^"]*)" du plat "([^"]*)" n'a pas de quantité$`, w.lineWithoutQuantity)
 	sc.Step(`^l'ingrédient "([^"]*)" n'a pas d'unité par défaut$`, func(ctx context.Context, name string) error {
 		return w.defaultUnitIs(ctx, "je", name, "")
@@ -525,6 +529,33 @@ func (w *world) notSaved(ctx context.Context) error {
 		return fmt.Errorf("%d dishes, %d before", len(dishes), w.kitchen.countBefore)
 	}
 	return nil
+}
+
+// oddNames are the names that cannot be written as such in a scenario (D30).
+var oddNames = map[string]string{
+	"l'espace sans chasse U+200B":                   "\u200b",
+	`"Soupe" suivi du caractère de contrôle U+0007`: "Soupe\a",
+	`"sel" suivi du caractère de contrôle U+0007`:   "sel\a",
+}
+
+// oddNameErrors are the error codes of a name refused, by what it names and why.
+var oddNameErrors = map[string]string{
+	"du plat vide":             "name_required",
+	"du plat invalide":         "name_invalid",
+	"d'un ingrédient vide":     "ingredient_name_required",
+	"d'un ingrédient invalide": "ingredient_name_invalid",
+}
+
+func (w *world) createWithOddName(ctx context.Context, of, label string) error {
+	name, ok := oddNames[label]
+	if !ok {
+		return fmt.Errorf("unknown name %s", label)
+	}
+	if of == "du plat" {
+		return w.create(ctx, "je", dishBody{Name: name})
+	}
+	w.kitchen.n++
+	return w.create(ctx, "je", dishBody{Name: fmt.Sprintf("Plat %d", w.kitchen.n), Ingredients: []apiLine{{Name: name}}})
 }
 
 // dishError checks the error of the last response, and the ingredient it names.

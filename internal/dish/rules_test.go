@@ -186,6 +186,14 @@ func TestValidate(t *testing.T) {
 		{name: "valid", input: Input{Name: "Chili", Lines: []LineInput{line("bœuf haché", "500", "g"), line("sel", "", "")}}},
 		{name: "no ingredient", input: Input{Name: "Restes"}},
 		{name: "name required", input: Input{Name: "   "}, wantCode: NameRequired, wantLine: -1},
+		{name: "name of a zero width space", input: Input{Name: "​"}, wantCode: NameRequired, wantLine: -1},
+		{name: "name of a combining mark", input: Input{Name: "́"}, wantCode: NameRequired, wantLine: -1},
+		{name: "name with a control character", input: Input{Name: "Soupe\a"}, wantCode: NameInvalid, wantLine: -1},
+		{name: "name of a control character", input: Input{Name: "\x00"}, wantCode: NameInvalid, wantLine: -1},
+		{name: "name with a tab", input: Input{Name: "Soupe\tà l'oignon"}},
+		{name: "name of an emoji", input: Input{Name: "🍲"}},
+		{name: "name of a composed emoji", input: Input{Name: "👩‍🍳"}},
+		{name: "name of 60 characters once spaces reduced", input: Input{Name: " " + strings.Repeat("é", 30) + "    " + strings.Repeat("é", 29) + " "}},
 		{name: "name of 60 characters", input: Input{Name: strings.Repeat("é", 60)}},
 		{name: "name too long", input: Input{Name: strings.Repeat("é", 61)}, wantCode: NameTooLong, wantLine: -1},
 		{name: "servings 50", input: Input{Name: "Chili", Servings: 50}},
@@ -194,6 +202,8 @@ func TestValidate(t *testing.T) {
 		{name: "40 lines", input: Input{Name: "Chili", Lines: lines(40)}},
 		{name: "41 lines", input: Input{Name: "Chili", Lines: lines(41)}, wantCode: TooManyLines, wantLine: -1},
 		{name: "ingredient name required", input: Input{Name: "Chili", Lines: []LineInput{line("sel", "", ""), line(" ", "", "")}}, wantCode: IngredientNameRequired, wantLine: 1},
+		{name: "ingredient name of invisible characters", input: Input{Name: "Chili", Lines: []LineInput{line("​ ", "", "")}}, wantCode: IngredientNameRequired, wantLine: 0},
+		{name: "ingredient name with a control character", input: Input{Name: "Chili", Lines: []LineInput{line("sel", "", ""), line("poivre\u0085", "", "")}}, wantCode: IngredientNameInvalid, wantLine: 1},
 		{name: "ingredient name of 40 characters", input: Input{Name: "Chili", Lines: []LineInput{line(strings.Repeat("é", 40), "", "")}}},
 		{name: "ingredient name too long", input: Input{Name: "Chili", Lines: []LineInput{line(strings.Repeat("é", 41), "", "")}}, wantCode: IngredientNameTooLong, wantLine: 0},
 		{name: "unknown unit", input: Input{Name: "Chili", Lines: []LineInput{line("riz", "1", "cup")}}, wantCode: InvalidUnit, wantLine: 0},
@@ -226,8 +236,25 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestDisplayName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"Ratatouille", "Ratatouille"},
+		{"  Gratin   de  courgettes ", "Gratin de courgettes"},
+		{"Soupe\tà\nl’oignon", "Soupe à l’oignon"},
+		{"crème  fraîche", "crème fraîche"},
+		{"Œufs  Brouillés", "Œufs Brouillés"},
+		{"thé vert", "thé vert"}, // not a space of the normalized name
+		{"👩‍🍳", "👩‍🍳"},
+	}
+	for _, c := range cases {
+		if got := displayName(c.in); got != c.want {
+			t.Errorf("displayName(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
 func TestValidateResult(t *testing.T) {
-	in := Input{Name: "  Pâtes au beurre ", Servings: 3, Lines: []LineInput{
+	in := Input{Name: "  Pâtes  au\tbeurre ", Servings: 3, Lines: []LineInput{
 		{Name: " pâtes ", Quantity: "500", Unit: "g"},
 		{Name: "sel", Unit: "g"}, // a unit without quantity is dropped (Q26)
 	}}
