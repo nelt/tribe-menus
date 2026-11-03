@@ -1,0 +1,25 @@
+{
+  "comment": "Table of cases of the rules on a displayed name (plan bibliotheque, D30), read by go test (internal/dish: hasControl on the displayed name, hasVisible, trimName) and by node:test (web/src/dishes.ts: hasControl, hasVisible, trimSpaces): a case added for one language holds for the other. control: holds a control character (Cc) once its spaces are reduced; visible: holds a letter, a digit, a punctuation mark or a symbol; trimmed: without the spaces of the rule around it.",
+  "cases": [
+    { "text": "Soupe à l'oignon", "control": false, "visible": true, "trimmed": "Soupe à l'oignon" },
+    { "text": " \t Soupe\nà l'oignon\r ", "control": false, "visible": true, "trimmed": "Soupe\nà l'oignon" },
+    { "text": " riz ", "control": false, "visible": true, "trimmed": "riz" },
+    { "text": "7", "control": false, "visible": true, "trimmed": "7" },
+    { "text": "?", "control": false, "visible": true, "trimmed": "?" },
+    { "text": "🍲", "control": false, "visible": true, "trimmed": "🍲" },
+    { "text": "Pain 👨‍🍳", "control": false, "visible": true, "trimmed": "Pain 👨‍🍳" },
+    { "text": "", "control": false, "visible": false, "trimmed": "" },
+    { "text": " \t\n", "control": false, "visible": false, "trimmed": "" },
+    { "text": "​", "control": false, "visible": false, "trimmed": "​" },
+    { "text": "‍", "control": false, "visible": false, "trimmed": "‍" },
+    { "text": "﻿1", "control": false, "visible": true, "trimmed": "﻿1" },
+    { "text": " ", "control": false, "visible": false, "trimmed": " " },
+    { "text": "́", "control": false, "visible": false, "trimmed": "́" },
+    { "text": "Soupe\u0007", "control": true, "visible": true, "trimmed": "Soupe\u0007" },
+    { "text": "\u0085", "control": true, "visible": false, "trimmed": "\u0085" },
+    { "text": "riz\u007f", "control": true, "visible": true, "trimmed": "riz\u007f" },
+    { "text": "\u0000a", "control": true, "visible": true, "trimmed": "\u0000a" },
+    { "text": "a\u009f", "control": true, "visible": true, "trimmed": "a\u009f" },
+    { "text": "a\u001f", "control": true, "visible": true, "trimmed": "a\u001f" }
+  ]
+}

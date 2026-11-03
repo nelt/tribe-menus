@@ -39,6 +39,24 @@ const apostrophes = /[’‘ʼ]/g;
  * internal/dish: those of the spaces above are reduced to a space before (D30).
  */
 const controls = /[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/;
+/**
+ * Tells whether a name holds a control character (D30), as hasControl in Go on the name
+ * with its spaces reduced; format characters (Cf), such as the joiner of emojis, are not.
+ */
+export function hasControl(name: string): boolean {
+  return controls.test(name);
+}
+
+/** A visible character, as hasVisible in internal/dish: a letter, a digit, a punctuation mark or a symbol (D30). */
+const visible = /[\p{L}\p{N}\p{P}\p{S}]/u;
+
+/**
+ * Tells whether a name holds a visible character (D30): a name without any, made of spaces,
+ * of invisible characters (U+200B…) or of marks alone, is refused as an empty one.
+ */
+export function hasVisible(name: string): boolean {
+  return visible.test(name);
+}
 
 /**
  * Returns the normalized name (Q29), with the same steps as NormalizeName in Go, kept in
@@ -151,7 +169,8 @@ export function suggestIngredients(catalog: Iterable<Ingredient>, text: string, 
     }
   }
   ingredients.sort((a, b) => collator.compare(a.name, b.name));
-  return { ingredients: ingredients.slice(0, maxSuggestions), create: normalized !== "" && !known };
+  // A text without visible character would be refused by the server (D30): nothing to create.
+  return { ingredients: ingredients.slice(0, maxSuggestions), create: hasVisible(text) && !known };
 }
 
 /** A part of a name shown in a suggestion: found, the beginning of a word the text found. */
@@ -237,8 +256,19 @@ export type QuantityReading = { amount: number } | { error: "invalid_quantity" |
 const quantityPattern = /^([0-9]+)(?:[.,]([0-9]+))?$/;
 const maxIntegerDigits = 6;
 
-/** The text without the spaces of the normalized name around it. */
-function trimSpaces(text: string): string {
+/**
+ * The length of the quantity field: 6 digits, the separator and 3 decimals (maxIntegerDigits,
+ * the decimals of g and ml). Without it, zeros pasted by thousands, which the rule ignores,
+ * would make the body of the dish go beyond what the server reads (maxDishBodyBytes).
+ */
+export const maxQuantityLength = 10;
+
+/**
+ * The text without the spaces of the normalized name around it, as trimName in Go. Not
+ * trim(), which takes other characters (U+2003, U+FEFF…): a quantity made of them would be
+ * empty for the screen and not for the server.
+ */
+export function trimSpaces(text: string): string {
   return text.replace(/^[ \t\n\v\f\r\u00a0\u202f]+|[ \t\n\v\f\r\u00a0\u202f]+$/g, "");
 }
 
@@ -311,15 +341,15 @@ export interface DishForm {
  * removes the line breaks.
  */
 export function checkDish(form: DishForm): DishError | undefined {
-  if (controls.test(form.name)) {
+  if (hasControl(form.name)) {
     return { error: "name_invalid" };
   }
-  if (normalizeName(form.name) === "") {
+  if (!hasVisible(form.name)) {
     return { error: "name_required" };
   }
   const seen = new Map<string, string>();
   for (const [i, line] of form.lines.entries()) {
-    if (controls.test(line.name)) {
+    if (hasControl(line.name)) {
       return { error: "ingredient_name_invalid", line: i };
     }
     if (trimSpaces(line.quantity) !== "") {

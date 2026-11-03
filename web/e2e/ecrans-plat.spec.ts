@@ -165,6 +165,28 @@ test("a control character pasted in a name: refused before sending, and from the
   await expect(line.getByRole("alert")).toHaveText("Ce nom contient un caractère invalide.");
 });
 
+test("a draft without visible character: nothing to create, and dropped as an empty one (D30)", async ({ page }) => {
+  const soup = { id: "s", name: "Soupe", color: "#C2502E", servings: 4, revision: 1, ingredients: [] };
+  const received = await mockApi(page, {
+    getSession: [replies.session],
+    getDishes: [pageReply("dishes", 1, [chili]), pageReply("dishes", 2, [chili, soup])],
+    getIngredients: [pageReply("ingredients", 1, catalog)],
+    createDish: [{ status: 201, body: { dish: soup, versions: { dishes: 2, ingredients: 1 } } }],
+  });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByLabel("Nom du plat").fill("Soupe");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  // The quantity field is bounded: zeros pasted by thousands would not fit in the body read by the server.
+  await expect(page.getByLabel("Quantité", { exact: true })).toHaveAttribute("maxlength", "10");
+  const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
+  await combobox.fill("\u200b");
+  await expect(page.getByRole("option")).toHaveCount(0);
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
+  const created = received.filter((r) => r.method === "POST" && r.path === "dishes");
+  expect(created.map((r) => r.body)).toEqual([{ name: "Soupe", ingredients: [] }]);
+});
+
 test("changing a dish: its form, then the change sent on its revision", async ({ page }) => {
   const saved = { ...chili, revision: 3, servings: 5 };
   const received = await mockApi(page, {

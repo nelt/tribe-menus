@@ -6,6 +6,8 @@ import {
   type Ingredient,
   checkDish,
   dishErrorMessage,
+  hasControl,
+  hasVisible,
   highlight,
   initialOf,
   normalizeName,
@@ -15,6 +17,7 @@ import {
   sortDishes,
   splitSaved,
   suggestIngredients,
+  trimSpaces,
   unitLabel,
   units,
   words,
@@ -174,6 +177,9 @@ const suggestions: { text: string; exclude?: string[]; names: string[]; create: 
   { text: "ging", names: [], create: true },
   { text: "ate", names: [], create: true },
   { text: "  ", names: [], create: false },
+  { text: "\u200b", names: [], create: false },
+  { text: "\u0301", names: [], create: false },
+  { text: "\u2003\ufeff", names: [], create: false },
 ];
 
 for (const { text, exclude, names, create } of suggestions) {
@@ -223,6 +229,14 @@ const line = (name: string, quantity = "", unit = "") => ({ name, quantity, unit
 const checks: { name: string; form: Parameters<typeof checkDish>[0]; want: ReturnType<typeof checkDish> }[] = [
   { name: "valid", form: { name: "Chili", lines: [line("bœuf", "500", "g"), line("sel")] }, want: undefined },
   { name: "name required", form: { name: "  ", lines: [] }, want: { error: "name_required" } },
+  { name: "invisible name", form: { name: "\u200b", lines: [] }, want: { error: "name_required" } },
+  { name: "mark alone as name", form: { name: "\u0301", lines: [] }, want: { error: "name_required" } },
+  { name: "emoji as name", form: { name: "🍲", lines: [] }, want: undefined },
+  {
+    name: "quantity of spaces trim() would remove",
+    form: { name: "Chili", lines: [line("riz", "\u2003", "")] },
+    want: { error: "unit_required", line: 0 },
+  },
   { name: "control character in the name", form: { name: "Soupe\u0007", lines: [] }, want: { error: "name_invalid" } },
   { name: "control character alone in the name", form: { name: "\u0085", lines: [] }, want: { error: "name_invalid" } },
   { name: "spaces are not control characters", form: { name: "Soupe\tà\nl'oignon\r", lines: [line("sel\t")] }, want: undefined },
@@ -249,6 +263,21 @@ for (const { name, form, want } of checks) {
     assert.deepEqual(checkDish(form), want);
   });
 }
+
+// The table of cases of a displayed name shared with Go (D30).
+const names = JSON.parse(readFileSync(new URL("../../internal/dish/testdata/names.json", import.meta.url), "utf8")) as {
+  cases: { text: string; control: boolean; visible: boolean; trimmed: string }[];
+};
+
+test("hasControl, hasVisible and trimSpaces: the table shared with Go", () => {
+  assert.ok(names.cases.length > 0);
+  for (const c of names.cases) {
+    const text = JSON.stringify(c.text);
+    assert.equal(hasControl(c.text), c.control, `hasControl(${text})`);
+    assert.equal(hasVisible(c.text), c.visible, `hasVisible(${text})`);
+    assert.equal(trimSpaces(c.text), c.trimmed, `trimSpaces(${text})`);
+  }
+});
 
 test("dishErrorMessage: the messages of docs/design/README.md", () => {
   assert.equal(dishErrorMessage({ error: "name_required" }), "Donnez un nom au plat.");
