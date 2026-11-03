@@ -4,7 +4,7 @@
 // Nothing is written on the device: the copy goes with a reload, the sign-out or a 401.
 import type { Api, Outcome } from "./api.ts";
 import { CachedCollection } from "./collections.ts";
-import type { Dish, DishLine, Ingredient } from "./dishes.ts";
+import { type Dish, type DishLine, type Ingredient, splitSaved } from "./dishes.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -62,7 +62,13 @@ export function ingredientOf(raw: unknown): Ingredient | undefined {
   return defaultUnit === undefined ? { name } : { name, defaultUnit };
 }
 
-/** Library holds the copies; it dispatches "change" after each check. */
+/** The versions of the collections after a write (ADR 0029): those it changed. */
+export interface Versions {
+  dishes: number;
+  ingredients?: number;
+}
+
+/** Library holds the copies; it dispatches "change" after each check and each write. */
 export class Library extends EventTarget {
   readonly dishes: CachedCollection<Dish>;
   readonly catalog: CachedCollection<Ingredient>;
@@ -83,6 +89,31 @@ export class Library extends EventTarget {
     const [dishes, catalog] = await Promise.all([this.dishes.check(), this.catalog.check()]);
     this.dispatchEvent(new Event("change"));
     return dishes.kind !== "ok" ? dishes : catalog;
+  }
+
+  /**
+   * Takes a dish saved by the member and the ingredients of its lines, with the versions of
+   * the collections after the write (D26, D27, D29): nothing is reloaded, unless another
+   * member wrote in between.
+   */
+  async applySaved(saved: Dish, versions: Versions): Promise<void> {
+    const { dish, ingredients } = splitSaved(saved);
+    const writes: Promise<unknown>[] = [this.dishes.applyWrite([dish], versions.dishes)];
+    if (versions.ingredients !== undefined) {
+      writes.push(this.catalog.applyWrite(ingredients, versions.ingredients));
+    } else {
+      this.catalog.put(ingredients);
+    }
+    await Promise.all(writes);
+    this.dispatchEvent(new Event("change"));
+  }
+
+  /** Takes the current dish sent back with a refusal of a crossed change (D5, D26). */
+  applyCurrent(current: Dish): void {
+    const { dish, ingredients } = splitSaved(current);
+    this.dishes.put([dish]);
+    this.catalog.put(ingredients);
+    this.dispatchEvent(new Event("change"));
   }
 
   /** Forgets the copies (D25). */

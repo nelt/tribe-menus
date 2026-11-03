@@ -154,16 +154,12 @@ export class CachedCollection<T> {
   }
 
   /**
-   * Takes an item written by the member, and the version of the collection after the write
+   * Takes the items written by the member, and the version of the collection after the write
    * (D26, D29); checks the collection again if another member wrote in between.
    */
-  async applyWrite(item: T, version: number): Promise<Outcome<undefined>> {
-    this.#generation++;
+  async applyWrite(items: T[], version: number): Promise<Outcome<undefined>> {
     const running = this.#checking;
-    this.#checking = undefined;
-    if (this.#items !== undefined) {
-      this.#items.set(this.#key(item), item);
-    }
+    this.put(items);
     switch (afterWrite(this.version, version)) {
       case "take":
         this.#etag = `"${this.name}-${version}"`;
@@ -174,6 +170,19 @@ export class CachedCollection<T> {
         // A check begun before the write does not hold it: another one begins after it.
         await running;
         return this.check();
+    }
+  }
+
+  /**
+   * Takes items without the version they belong to, as the current dish sent back with a
+   * refusal (D5, D26): the version stays, and the next check reloads the collection. A check
+   * begun before does not undo them.
+   */
+  put(items: T[]): void {
+    this.#generation++;
+    this.#checking = undefined;
+    for (const item of items) {
+      this.#items?.set(this.#key(item), item);
     }
   }
 

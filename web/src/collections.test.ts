@@ -126,11 +126,11 @@ test("CachedCollection.applyWrite: the next version is taken, a gap checks again
   const { read, requests } = reader([page([{ id: "a", n: 1 }], '"d-1"'), page([{ id: "a", n: 3 }, { id: "c", n: 1 }], '"d-4"')]);
   const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
   await copy.check();
-  await copy.applyWrite({ id: "a", n: 2 }, 2);
+  await copy.applyWrite([{ id: "a", n: 2 }], 2);
   assert.deepEqual(copy.items, [{ id: "a", n: 2 }]);
   assert.equal(copy.version, 2);
   assert.equal(requests.length, 1);
-  await copy.applyWrite({ id: "b", n: 1 }, 4);
+  await copy.applyWrite([{ id: "b", n: 1 }], 4);
   assert.equal(requests.length, 2);
   assert.deepEqual(requests[1]?.condition, { ifNoneMatch: '"d-2"' });
   assert.deepEqual(copy.items, [{ id: "a", n: 3 }, { id: "c", n: 1 }]);
@@ -184,7 +184,7 @@ test("CachedCollection: a check begun before a write does not undo it (review of
 
   // A check reads version 5 while the member writes version 6.
   const checking = copy.check();
-  await copy.applyWrite({ id: "b", n: 1 }, 6);
+  await copy.applyWrite([{ id: "b", n: 1 }], 6);
   release(page([{ id: "a", n: 1 }], '"d-5"'));
   await checking;
   assert.deepEqual(copy.items, [{ id: "a", n: 1 }, { id: "b", n: 1 }]);
@@ -200,7 +200,7 @@ test("CachedCollection: after a write with a gap, a new check begins after the r
   await first;
 
   const running = copy.check();
-  const written = copy.applyWrite({ id: "b", n: 1 }, 8);
+  const written = copy.applyWrite([{ id: "b", n: 1 }], 8);
   // The running check, begun before the write, ends; its result is not taken.
   release(page([{ id: "a", n: 1 }], '"d-5"'));
   await running;
@@ -210,4 +210,37 @@ test("CachedCollection: after a write with a gap, a new check begins after the r
   await written;
   assert.deepEqual(copy.items?.map((i) => i.id), ["a", "b", "c"]);
   assert.equal(copy.version, 8);
+});
+
+test("CachedCollection.applyWrite: several items of one write, one version", async () => {
+  const { read } = reader([page([{ id: "a", n: 1 }], '"d-1"')]);
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  await copy.check();
+  await copy.applyWrite([{ id: "a", n: 2 }, { id: "b", n: 1 }], 2);
+  assert.deepEqual(copy.items, [{ id: "a", n: 2 }, { id: "b", n: 1 }]);
+  assert.equal(copy.version, 2);
+});
+
+test("CachedCollection.put: an item without version is taken, the version stays (D26)", async () => {
+  const { read, release, pending } = heldReader();
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  const first = copy.check();
+  release(page([{ id: "a", n: 1 }], '"d-5"'));
+  await first;
+
+  // A check begun before does not undo the item put.
+  const checking = copy.check();
+  copy.put([{ id: "a", n: 3 }]);
+  release(page([{ id: "a", n: 2 }], '"d-6"'));
+  await checking;
+  assert.deepEqual(copy.items, [{ id: "a", n: 3 }]);
+  assert.equal(copy.version, 5, "checked again at the next visit");
+  assert.equal(pending(), 0);
+});
+
+test("CachedCollection.put: nothing before a first loading", () => {
+  const { read } = reader([]);
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  copy.put([{ id: "a", n: 1 }]);
+  assert.equal(copy.items, undefined);
 });

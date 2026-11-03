@@ -63,51 +63,39 @@ func TestFamilies(t *testing.T) {
 	}
 }
 
+// TestParseQuantity runs the table of cases shared with web/src/dishes.ts (D20).
 func TestParseQuantity(t *testing.T) {
-	cases := []struct {
-		text    string
-		unit    Unit
-		amount  int64 // in the base unit
-		wantErr error
-	}{
-		{"500", Gram, 500_000, nil},
-		{"2,5", Centilitre, 25, nil},
-		{"2.5", Centilitre, 25, nil},
-		{"0,125", Kilogram, 125_000, nil},
-		{"1,5", Piece, 1500, nil},
-		{"1,5", Litre, 1500, nil},
-		{"0,001", Gram, 1, nil},
-		{"0,001", Pinch, 1, nil},
-		{"2", Tablespoon, 2000, nil},
-		{"2,50", Centilitre, 25, nil},
-		{" 600 ", Gram, 600_000, nil},
-		{"007", Millilitre, 7, nil},
-		{"999999", Kilogram, 999_999_000_000, nil},
-		{"2,5", Millilitre, 0, ErrQuantityTooPrecise},
-		{"2,55", Centilitre, 0, ErrQuantityTooPrecise},
-		{"0,1255", Kilogram, 0, ErrQuantityTooPrecise},
-		{"1,0001", Piece, 0, ErrQuantityTooPrecise},
-		{"0", Gram, 0, ErrInvalidQuantity},
-		{"0,000", Gram, 0, ErrInvalidQuantity},
-		{"-1", Gram, 0, ErrInvalidQuantity},
-		{"", Gram, 0, ErrInvalidQuantity},
-		{"abc", Gram, 0, ErrInvalidQuantity},
-		{"1,", Gram, 0, ErrInvalidQuantity},
-		{",5", Gram, 0, ErrInvalidQuantity},
-		{"1,2,3", Gram, 0, ErrInvalidQuantity},
-		{"1 000", Gram, 0, ErrInvalidQuantity},
-		{"1e3", Gram, 0, ErrInvalidQuantity},
-		{"1000000", Gram, 0, ErrInvalidQuantity},
-		{"١٢", Gram, 0, ErrInvalidQuantity},
+	data, err := os.ReadFile("testdata/quantities.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, c := range cases {
-		got, err := ParseQuantity(c.text, c.unit)
-		if !errors.Is(err, c.wantErr) {
-			t.Errorf("ParseQuantity(%q, %s): error %v, want %v", c.text, c.unit, err, c.wantErr)
+	var table struct {
+		Cases []struct {
+			Text   string `json:"text"`
+			Unit   Unit   `json:"unit"`
+			Amount int64  `json:"amount"` // in the base unit
+			Error  string `json:"error"`
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(data, &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Cases) == 0 {
+		t.Fatal("no case")
+	}
+	wantErrs := map[string]error{"": nil, string(InvalidQuantity): ErrInvalidQuantity, string(QuantityTooPrecise): ErrQuantityTooPrecise}
+	for _, c := range table.Cases {
+		wantErr, ok := wantErrs[c.Error]
+		if !ok {
+			t.Fatalf("unknown error %q", c.Error)
+		}
+		got, err := ParseQuantity(c.Text, c.Unit)
+		if !errors.Is(err, wantErr) {
+			t.Errorf("ParseQuantity(%q, %s): error %v, want %v", c.Text, c.Unit, err, wantErr)
 			continue
 		}
-		if err == nil && (got.Amount != c.amount || got.Unit != c.unit) {
-			t.Errorf("ParseQuantity(%q, %s) = %+v, want %d %s", c.text, c.unit, got, c.amount, c.unit)
+		if err == nil && (got.Amount != c.Amount || got.Unit != c.Unit) {
+			t.Errorf("ParseQuantity(%q, %s) = %+v, want %d %s", c.Text, c.Unit, got, c.Amount, c.Unit)
 		}
 	}
 }

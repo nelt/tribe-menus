@@ -1,7 +1,24 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { type Dish, initialOf, normalizeName, searchDishes, sortDishes, words } from "./dishes.ts";
+import {
+  type Dish,
+  type Ingredient,
+  checkDish,
+  dishErrorMessage,
+  highlight,
+  initialOf,
+  normalizeName,
+  parseQuantity,
+  quantityInput,
+  searchDishes,
+  sortDishes,
+  splitSaved,
+  suggestIngredients,
+  unitLabel,
+  units,
+  words,
+} from "./dishes.ts";
 
 // The table of cases shared with NormalizeName in Go (D9).
 const table = JSON.parse(readFileSync(new URL("../../internal/dish/testdata/normalized-names.json", import.meta.url), "utf8")) as {
@@ -84,4 +101,175 @@ test("initialOf: the first character as the reader sees it (review of PR #77, po
   assert.equal(initialOf("👨‍👩‍👧 Repas de famille"), "👨‍👩‍👧");
   assert.equal(initialOf("🇫🇷 Cassoulet"), "🇫🇷");
   assert.equal(initialOf(""), "");
+});
+
+// The table of cases shared with ParseQuantity in Go (D20).
+const quantities = JSON.parse(readFileSync(new URL("../../internal/dish/testdata/quantities.json", import.meta.url), "utf8")) as {
+  cases: { text: string; unit: string; amount?: number; error?: string }[];
+};
+
+test("parseQuantity: the table shared with Go", () => {
+  assert.ok(quantities.cases.length > 0);
+  for (const c of quantities.cases) {
+    const want = c.error === undefined ? { amount: c.amount } : { error: c.error };
+    assert.deepEqual(parseQuantity(c.text, c.unit), want, `${JSON.stringify(c.text)} ${c.unit}`);
+  }
+});
+
+test("units: the closed list, in the singular, the spoons abridged", () => {
+  assert.deepEqual(
+    units.map((u) => u.label),
+    ["g", "kg", "ml", "cl", "l", "pièce", "c. à soupe", "c. à café", "pincée"],
+  );
+  assert.equal(units.find((u) => u.code === "tablespoon")?.name, "cuillère à soupe");
+});
+
+test("unitLabel: plural from 2, spoons and metric units invariable", () => {
+  const cases: [string, string, string][] = [
+    ["1", "piece", "pièce"],
+    ["1,5", "piece", "pièce"],
+    ["2", "piece", "pièces"],
+    ["3", "piece", "pièces"],
+    ["2", "pinch", "pincées"],
+    ["2.5", "pinch", "pincées"],
+    ["500", "g", "g"],
+    ["2", "kg", "kg"],
+    ["2", "tablespoon", "c. à soupe"],
+    ["3", "teaspoon", "c. à café"],
+    ["", "piece", "pièce"],
+    ["abc", "piece", "pièce"],
+    ["2", "cup", ""],
+  ];
+  for (const [quantity, unit, want] of cases) {
+    assert.equal(unitLabel(unit, quantity), want, `${quantity} ${unit}`);
+  }
+});
+
+test("quantityInput: the quantity of the API with a decimal comma", () => {
+  assert.equal(quantityInput("2.5"), "2,5");
+  assert.equal(quantityInput("0.125"), "0,125");
+  assert.equal(quantityInput("500"), "500");
+  assert.equal(quantityInput(undefined), "");
+});
+
+const catalog: Ingredient[] = [
+  { name: "tomate", defaultUnit: "piece" },
+  { name: "tomate concassée", defaultUnit: "g" },
+  { name: "crème fraîche" },
+  { name: "riz", defaultUnit: "g" },
+  { name: "piment d'Espelette" },
+  { name: "Bœuf haché", defaultUnit: "g" },
+];
+
+const suggestions: { text: string; exclude?: string[]; names: string[]; create: boolean }[] = [
+  { text: "tom", names: ["tomate", "tomate concassée"], create: true },
+  { text: "CREME", names: ["crème fraîche"], create: true },
+  { text: "fraiche", names: ["crème fraîche"], create: true },
+  { text: "pim", names: ["piment d'Espelette"], create: true },
+  { text: "boeuf", names: ["Bœuf haché"], create: true },
+  { text: "tomate", names: ["tomate", "tomate concassée"], create: false },
+  { text: " Tomate ", names: ["tomate", "tomate concassée"], create: false },
+  { text: "tom", exclude: ["Tomate"], names: ["tomate concassée"], create: true },
+  { text: "tomate", exclude: ["tomate"], names: ["tomate concassée"], create: false },
+  { text: "ging", names: [], create: true },
+  { text: "ate", names: [], create: true },
+  { text: "  ", names: [], create: false },
+];
+
+for (const { text, exclude, names, create } of suggestions) {
+  test(`suggestIngredients: "${text}"${exclude === undefined ? "" : ` without ${exclude.join(", ")}`}`, () => {
+    const got = suggestIngredients(catalog, text, exclude ?? []);
+    assert.deepEqual(
+      got.ingredients.map((i) => i.name),
+      names,
+    );
+    assert.equal(got.create, create);
+  });
+}
+
+test("suggestIngredients: at most 6, by alphabetical order", () => {
+  const many = ["pomme f", "pomme b", "pomme a", "pomme e", "pomme d", "pomme c", "pomme g"].map((name) => ({ name }));
+  assert.deepEqual(
+    suggestIngredients(many, "pom", []).ingredients.map((i) => i.name),
+    ["pomme a", "pomme b", "pomme c", "pomme d", "pomme e", "pomme f"],
+  );
+});
+
+test("highlight: the beginnings of words the text found", () => {
+  assert.deepEqual(highlight("tomate concassée", "tom"), [
+    { text: "tom", found: true },
+    { text: "ate concassée", found: false },
+  ]);
+  assert.deepEqual(highlight("crème fraîche", "CREME"), [
+    { text: "crème", found: true },
+    { text: " fraîche", found: false },
+  ]);
+  assert.deepEqual(highlight("Bœuf haché", "boeu ha"), [
+    { text: "Bœu", found: true },
+    { text: "f ", found: false },
+    { text: "ha", found: true },
+    { text: "ché", found: false },
+  ]);
+  assert.deepEqual(highlight("piment d'Espelette", "esp"), [
+    { text: "piment d'", found: false },
+    { text: "Esp", found: true },
+    { text: "elette", found: false },
+  ]);
+  assert.deepEqual(highlight("riz", ""), [{ text: "riz", found: false }]);
+});
+
+const line = (name: string, quantity = "", unit = "") => ({ name, quantity, unit });
+
+const checks: { name: string; form: Parameters<typeof checkDish>[0]; want: ReturnType<typeof checkDish> }[] = [
+  { name: "valid", form: { name: "Chili", lines: [line("bœuf", "500", "g"), line("sel")] }, want: undefined },
+  { name: "name required", form: { name: "  ", lines: [] }, want: { error: "name_required" } },
+  { name: "quantity without unit", form: { name: "Chili", lines: [line("sel"), line("riz", "1")] }, want: { error: "unit_required", line: 1 } },
+  { name: "invalid quantity", form: { name: "Chili", lines: [line("riz", "0", "g")] }, want: { error: "invalid_quantity", line: 0 } },
+  { name: "quantity too precise", form: { name: "Chili", lines: [line("lait", "2,5", "ml")] }, want: { error: "quantity_too_precise", line: 0 } },
+  { name: "unit without quantity", form: { name: "Chili", lines: [line("sel", " ", "g")] }, want: undefined },
+  {
+    name: "same ingredient twice",
+    form: { name: "Ratatouille", lines: [line("courgette", "3", "piece"), line("tomate"), line(" Courgette", "200", "g")] },
+    want: { error: "duplicate_ingredient", line: 2, ingredient: "courgette" },
+  },
+];
+
+for (const { name, form, want } of checks) {
+  test(`checkDish: ${name}`, () => {
+    assert.deepEqual(checkDish(form), want);
+  });
+}
+
+test("dishErrorMessage: the messages of docs/design/README.md", () => {
+  assert.equal(dishErrorMessage({ error: "name_required" }), "Donnez un nom au plat.");
+  assert.equal(dishErrorMessage({ error: "name_taken" }), "Un plat porte déjà ce nom.");
+  assert.equal(dishErrorMessage({ error: "duplicate_ingredient", line: 1, ingredient: "courgette" }), "« courgette » figure déjà dans le plat.");
+  assert.equal(dishErrorMessage({ error: "invalid_quantity", line: 0 }), "Quantité invalide.");
+  assert.equal(dishErrorMessage({ error: "unit_required", line: 0 }), "Choisissez une unité.");
+  assert.equal(dishErrorMessage({ error: "quantity_too_precise", line: 0 }), "Quantité trop précise pour cette unité.");
+  // The codes a bounded entry cannot produce: an unforeseen response.
+  assert.equal(dishErrorMessage({ error: "name_invalid" }), undefined);
+  assert.equal(dishErrorMessage({ error: "too_many_lines" }), undefined);
+});
+
+test("splitSaved: the dish without the default units, and the ingredients of its lines (D27)", () => {
+  const saved: Dish = {
+    id: "a",
+    name: "Curry de lentilles",
+    color: "#3F7F25",
+    servings: 5,
+    revision: 1,
+    ingredients: [
+      { name: "lentilles", quantity: "300", unit: "g", defaultUnit: "g" },
+      { name: "gingembre", quantity: "1", unit: "piece", defaultUnit: "piece" },
+      { name: "sel" },
+    ],
+  };
+  assert.deepEqual(splitSaved(saved), {
+    dish: {
+      ...saved,
+      ingredients: [{ name: "lentilles", quantity: "300", unit: "g" }, { name: "gingembre", quantity: "1", unit: "piece" }, { name: "sel" }],
+    },
+    ingredients: [{ name: "lentilles", defaultUnit: "g" }, { name: "gingembre", defaultUnit: "piece" }, { name: "sel" }],
+  });
 });
