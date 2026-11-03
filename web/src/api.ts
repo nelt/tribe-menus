@@ -1,5 +1,7 @@
 // Client of the API under /tribes/<identifier>/api/ (contract: plan of 2026-10-03, notes of
-// lot B). The URLs are relative to the <base> of the page. A 401 brings back to the login.
+// lot B; docs/conception/bibliotheque-de-plats.md). The URLs are relative to the <base> of
+// the page. A 401 brings back to the login.
+import type { DishError } from "./dishes.ts";
 
 /** The tribe and the member of a session. */
 export interface Session {
@@ -129,6 +131,51 @@ export interface PageCondition {
   ifMatch?: string;
 }
 
+/** A dish as the screen sends it: each line names its ingredient, the quantity as typed. */
+export interface DishBody {
+  name: string;
+  /** Absent from a creation, the size of the tribe (D16). */
+  servings?: number;
+  ingredients: { name: string; quantity?: string; unit?: string }[];
+}
+
+/**
+ * The answer to a write of a dish: the dish and the versions of the collections after it
+ * (ADR 0029); a dish refused, with its error code; or a crossed change refused, with the
+ * current dish (Q25, D5). The dishes are read by library.ts.
+ */
+export type SaveResponse =
+  | { kind: "saved"; dish: unknown; versions: Record<string, number> }
+  | { kind: "refused"; error: DishError }
+  | { kind: "changed"; dish: unknown };
+
+/**
+ * Reads the response to a write of a dish. A body the contract does not foresee, and a 404,
+ * which only an unknown identifier gives, are network errors, as for outcomeOf.
+ */
+export function saveResponseOf(response: RawResponse): Outcome<SaveResponse> {
+  if (response === "network-error" || !isRecord(response.body)) {
+    const outcome = outcomeOf(response);
+    return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
+  }
+  const { status, body } = response;
+  if ((status === 200 || status === 201) && isRecord(body["versions"]) && Object.values(body["versions"]).every((v) => typeof v === "number")) {
+    return { kind: "ok", value: { kind: "saved", dish: body["dish"], versions: body["versions"] as Record<string, number> } };
+  }
+  const { error, line, ingredient } = body;
+  if (status === 409 && error === "dish_changed" && body["dish"] !== undefined) {
+    return { kind: "ok", value: { kind: "changed", dish: body["dish"] } };
+  }
+  if (status === 400 && typeof error === "string" && error !== "bad_request" && (line === undefined || typeof line === "number") && (ingredient === undefined || typeof ingredient === "string")) {
+    return {
+      kind: "ok",
+      value: { kind: "refused", error: { error, ...(line === undefined ? {} : { line }), ...(ingredient === undefined ? {} : { ingredient }) } },
+    };
+  }
+  const outcome = outcomeOf(response);
+  return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -190,6 +237,29 @@ export class Api {
     }
     const tribe = tribeInfoOf(outcome.value);
     return tribe === undefined ? { kind: "network-error" } : { kind: "ok", value: tribe };
+  }
+
+  /** Sets the size of the tribe (T3), from 1 to 50. */
+  async setTribeSize(size: number): Promise<Outcome<TribeInfo>> {
+    const outcome = await this.#call("PUT", "api/tribe/size", { size });
+    if (outcome.kind !== "ok") {
+      return outcome;
+    }
+    const tribe = tribeInfoOf(outcome.value);
+    return tribe === undefined ? { kind: "network-error" } : { kind: "ok", value: tribe };
+  }
+
+  /** Creates a dish, or saves a change of a dish read in the revision given (D5). */
+  async saveDish(existing: { id: string; revision: number } | undefined, body: DishBody): Promise<Outcome<SaveResponse>> {
+    const { raw } =
+      existing === undefined
+        ? await this.#send("POST", "api/dishes", body)
+        : await this.#send("PUT", `api/dishes/${encodeURIComponent(existing.id)}`, { ...body, revision: existing.revision });
+    const outcome = saveResponseOf(raw);
+    if (outcome.kind === "unauthorized") {
+      this.#options.onUnauthorized();
+    }
+    return outcome;
   }
 
   /** A page of a collection of the API (ADR 0029), after the cursor given. */

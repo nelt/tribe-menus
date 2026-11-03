@@ -37,6 +37,10 @@ export interface Script {
   getTribe?: Reply[];
   getDishes?: Reply[];
   getIngredients?: Reply[];
+  createDish?: Reply[];
+  /** PUT dishes/<id>, whatever the identifier. */
+  updateDish?: Reply[];
+  setTribeSize?: Reply[];
 }
 
 export interface Received {
@@ -60,6 +64,9 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "GET tribe": [...(script.getTribe ?? [replies.tribe])],
     "GET dishes": [...(script.getDishes ?? [pageReply("dishes", 1, [])])],
     "GET ingredients": [...(script.getIngredients ?? [pageReply("ingredients", 1, [])])],
+    "POST dishes": [...(script.createDish ?? [replies.networkError])],
+    "PUT dishes/{id}": [...(script.updateDish ?? [replies.networkError])],
+    "PUT tribe/size": [...(script.setTribeSize ?? [replies.networkError])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
@@ -79,7 +86,8 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
       entry.ifMatch = ifMatch;
     }
     received.push(entry);
-    const queue = queues[`${request.method()} ${path}`] ?? [{ status: 404, body: { error: "not_found" } }];
+    const routed = request.method() === "PUT" && path.startsWith("dishes/") ? "dishes/{id}" : path;
+    const queue = queues[`${request.method()} ${routed}`] ?? [{ status: 404, body: { error: "not_found" } }];
     const reply = (queue.length > 1 ? queue.shift() : queue[0]) ?? {};
     if (reply.delayMs !== undefined) {
       await new Promise((resolve) => setTimeout(resolve, reply.delayMs));

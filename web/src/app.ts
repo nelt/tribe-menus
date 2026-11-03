@@ -1,8 +1,10 @@
 // The application: checks the session at startup, then shows the login or the home page
 // of the tribe, under /tribes/<identifier>/ (ADR 0004, 0006).
-import { LitElement, html } from "lit";
+import { LitElement, html, nothing } from "lit";
+import { keyed } from "lit/directives/keyed.js";
 import { Api, type Session } from "./api.ts";
 import "./dish-library-screen.ts";
+import "./dish-screen.ts";
 import type { Dish } from "./dishes.ts";
 import { Library } from "./library.ts";
 import "./home-screen.ts";
@@ -10,6 +12,7 @@ import "./loading-screen.ts";
 import "./login-screen.ts";
 import type { SignedInEvent } from "./login-screen.ts";
 import { type Page, Router, pages, tabOf } from "./router.ts";
+import "./stepper.ts";
 import "./tab-bar.ts";
 
 /** Beyond this delay, a call to the API is a network error. */
@@ -81,8 +84,12 @@ export class App extends LitElement {
     if (this.session === undefined || this.page.name === "login") {
       return html`<mt-login .api=${this.#api} @signed-in=${this.#signedIn}></mt-login>`;
     }
+    // The screens opened from a tab, with their link back, have no tab bar, as their mock-ups.
+    const subScreen = this.page.name === "new-dish" || this.page.name === "dish" || this.page.name === "tribe";
     return html`${this.#screen(this.page, this.session)}
-      <mt-tab-bar active=${tabOf(this.page)} .planningHref=${this.#router.href(pages.home)} .dishesHref=${this.#router.href(pages.dishes)}></mt-tab-bar>`;
+      ${subScreen
+        ? nothing
+        : html`<mt-tab-bar active=${tabOf(this.page)} .planningHref=${this.#router.href(pages.home)} .dishesHref=${this.#router.href(pages.dishes)}></mt-tab-bar>`}`;
   }
 
   #screen(page: Page, session: Session) {
@@ -95,6 +102,20 @@ export class App extends LitElement {
           .newDishHref=${this.#router.href(pages.newDish)}
           .dishHref=${(dish: Dish) => this.#router.href({ name: "dish", id: dish.id })}
         ></mt-dish-library>`;
+      case "new-dish":
+      case "dish": {
+        const id = page.name === "dish" ? page.id : undefined;
+        return keyed(
+          id ?? "new",
+          html`<mt-dish-screen
+            .library=${this.#library}
+            .api=${this.#api}
+            .dishId=${id}
+            .libraryHref=${this.#router.href(pages.dishes)}
+            @saved=${() => this.#router.navigate(pages.dishes, { replace: true })}
+          ></mt-dish-screen>`,
+        );
+      }
       default:
         return comingSoon(page);
     }
@@ -158,12 +179,10 @@ export class App extends LitElement {
   }
 }
 
-/** The screens of the next lot of the plan bibliotheque: the creation and the change of a
- * dish, the screen Tribu. */
-function comingSoon(page: Page) {
-  const title = page.name === "tribe" ? "Tribu" : "Plats";
+/** The screen Tribu, until its step of the plan bibliotheque. */
+function comingSoon(_page: Page) {
   return html`<main class="screen">
-    <h1 class="screen-title">${title}</h1>
+    <h1 class="screen-title">Tribu</h1>
     <p class="screen-text">Cet écran arrive bientôt.</p>
   </main>`;
 }

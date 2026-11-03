@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Api, type Outcome, type RawResponse, collectionPageOf, outcomeOf, sessionOf, tribeInfoOf } from "./api.ts";
+import { Api, type Outcome, type RawResponse, type SaveResponse, collectionPageOf, outcomeOf, saveResponseOf, sessionOf, tribeInfoOf } from "./api.ts";
 
 const sessionBody = { tribe: { name: "Les Démo" }, member: { email: "alice@exemple.fr", displayName: "Alice" } };
 
@@ -152,4 +152,53 @@ test("Api.getPage: a 401 brings back to the login", async () => {
   const { api, unauthorized } = apiWith(async () => jsonResponse(401, { error: "no_session" }));
   assert.deepEqual(await api.getPage("dishes", undefined), { kind: "unauthorized" });
   assert.equal(unauthorized(), 1);
+});
+
+const dishBody = { id: "a", name: "Chili", color: "#C2502E", servings: 4, revision: 2, ingredients: [] };
+
+const saveCases: { name: string; response: RawResponse; want: Outcome<SaveResponse> }[] = [
+  { name: "created", response: { status: 201, body: { dish: dishBody, versions: { dishes: 3 } } }, want: { kind: "ok", value: { kind: "saved", dish: dishBody, versions: { dishes: 3 } } } },
+  { name: "saved", response: { status: 200, body: { dish: dishBody, versions: { dishes: 3, ingredients: 2 } } }, want: { kind: "ok", value: { kind: "saved", dish: dishBody, versions: { dishes: 3, ingredients: 2 } } } },
+  { name: "refused", response: { status: 400, body: { error: "name_taken" } }, want: { kind: "ok", value: { kind: "refused", error: { error: "name_taken" } } } },
+  {
+    name: "refused on a line",
+    response: { status: 400, body: { error: "duplicate_ingredient", line: 2, ingredient: "courgette" } },
+    want: { kind: "ok", value: { kind: "refused", error: { error: "duplicate_ingredient", line: 2, ingredient: "courgette" } } },
+  },
+  { name: "changed in between", response: { status: 409, body: { error: "dish_changed", dish: dishBody } }, want: { kind: "ok", value: { kind: "changed", dish: dishBody } } },
+  { name: "unreadable body", response: { status: 400, body: { error: "bad_request" } }, want: { kind: "network-error" } },
+  { name: "not found", response: { status: 404, body: { error: "not_found" } }, want: { kind: "network-error" } },
+  { name: "a 409 without the dish", response: { status: 409, body: { error: "dish_changed" } }, want: { kind: "network-error" } },
+  { name: "no session", response: { status: 401, body: { error: "no_session" } }, want: { kind: "unauthorized" } },
+  { name: "no response", response: "network-error", want: { kind: "network-error" } },
+];
+
+for (const { name, response, want } of saveCases) {
+  test(`saveResponseOf: ${name}`, () => {
+    assert.deepEqual(saveResponseOf(response), want);
+  });
+}
+
+test("Api.saveDish: POST for a new dish, PUT with the revision for a change", async () => {
+  const { api, requests } = apiWith(async () => jsonResponse(201, { dish: dishBody, versions: { dishes: 1 } }));
+  const body = { name: "Chili", servings: 5, ingredients: [{ name: "sel" }] };
+  await api.saveDish(undefined, body);
+  await api.saveDish({ id: "a", revision: 2 }, body);
+  assert.deepEqual(requests, [
+    { url: "api/dishes", method: "POST", body },
+    { url: "api/dishes/a", method: "PUT", body: { ...body, revision: 2 } },
+  ]);
+});
+
+test("Api.saveDish: a 401 brings back to the login", async () => {
+  const { api, unauthorized } = apiWith(async () => jsonResponse(401, { error: "no_session" }));
+  assert.deepEqual(await api.saveDish(undefined, { name: "Chili", servings: 4, ingredients: [] }), { kind: "unauthorized" });
+  assert.equal(unauthorized(), 1);
+});
+
+test("Api.setTribeSize", async () => {
+  const tribe = { name: "Les Démo", size: 5, activeMembers: 2 };
+  const { api, requests } = apiWith(async () => jsonResponse(200, tribe));
+  assert.deepEqual(await api.setTribeSize(5), { kind: "ok", value: tribe });
+  assert.deepEqual(requests, [{ url: "api/tribe/size", method: "PUT", body: { size: 5 } }]);
 });

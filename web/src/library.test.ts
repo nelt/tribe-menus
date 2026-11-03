@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Api, CollectionPage, Outcome } from "./api.ts";
+import type { Api, CollectionPage, Outcome, SaveResponse } from "./api.ts";
 import { Library, dishOf, ingredientOf } from "./library.ts";
 
 const chili = {
@@ -43,8 +43,9 @@ test("ingredientOf", () => {
 });
 
 /** An API whose collections are given, at the version given. */
-function fakeApi(collections: Record<string, { version: number; items: unknown[] }>): Api {
+function fakeApi(collections: Record<string, { version: number; items: unknown[] }>, saved?: Outcome<SaveResponse>): Api {
   return {
+    saveDish: async (): Promise<Outcome<SaveResponse>> => saved ?? { kind: "network-error" },
     getPage: async (collection: string): Promise<Outcome<CollectionPage>> => {
       const c = collections[collection];
       if (c === undefined) {
@@ -86,4 +87,31 @@ test("Library.applyCurrent: the current dish of a refusal enters the copy, its v
   assert.deepEqual(library.dishes.items, [{ ...current, ingredients: [{ name: "bœuf haché", quantity: "600", unit: "g" }, { name: "cumin" }] }]);
   assert.deepEqual(library.catalog.items, [{ name: "bœuf haché", defaultUnit: "g" }, { name: "cumin", defaultUnit: "teaspoon" }]);
   assert.equal(library.dishes.version, 3);
+});
+
+test("Library.save: the dish saved enters the copy", async () => {
+  const curry = { ...chili, id: "fedcba9876543210fedcba9876543210", name: "Curry", ingredients: [{ name: "gingembre", defaultUnit: "piece" }] };
+  const library = new Library(
+    fakeApi({ dishes: { version: 3, items: [chili] }, ingredients: { version: 2, items: [] } }, { kind: "ok", value: { kind: "saved", dish: curry, versions: { dishes: 4, ingredients: 3 } } }),
+  );
+  await library.check();
+  const result = await library.save(undefined, { name: "Curry", servings: 4, ingredients: [{ name: "gingembre" }] });
+  assert.deepEqual(result, { kind: "saved", dish: curry });
+  assert.deepEqual(library.catalog.items, [{ name: "gingembre", defaultUnit: "piece" }]);
+  assert.equal(library.dishes.version, 4);
+});
+
+test("Library.save: a crossed change refused gives the current dish, which enters the copy", async () => {
+  const current = { ...chili, revision: 3, servings: 6 };
+  const library = new Library(fakeApi({ dishes: { version: 3, items: [chili] }, ingredients: { version: 2, items: [] } }, { kind: "ok", value: { kind: "changed", dish: current } }));
+  await library.check();
+  assert.deepEqual(await library.save({ id: chili.id, revision: 2 }, { name: "Chili", servings: 4, ingredients: [] }), { kind: "changed", dish: current });
+  assert.deepEqual(library.dishes.items, [current]);
+});
+
+test("Library.save: a dish refused, an unreadable dish", async () => {
+  const refused = new Library(fakeApi({}, { kind: "ok", value: { kind: "refused", error: { error: "name_taken" } } }));
+  assert.deepEqual(await refused.save(undefined, { name: "Chili", servings: 4, ingredients: [] }), { kind: "refused", error: { error: "name_taken" } });
+  const unreadable = new Library(fakeApi({}, { kind: "ok", value: { kind: "saved", dish: { name: 1 }, versions: { dishes: 1 } } }));
+  assert.deepEqual(await unreadable.save(undefined, { name: "Chili", servings: 4, ingredients: [] }), { kind: "network-error" });
 });
