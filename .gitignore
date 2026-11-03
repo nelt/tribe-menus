@@ -10,6 +10,7 @@
 /web/playwright-report/
 /web/blob-report/
 /web/.e2e-data/
+/web/.e2e-tools/
 
 # Données locales (bases SQLite de développement)
 /data/

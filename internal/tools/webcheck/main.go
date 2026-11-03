@@ -19,7 +19,7 @@ import (
 
 var (
 	checkedExtensions = map[string]bool{".ts": true, ".js": true, ".mjs": true, ".html": true}
-	forbidden         = regexp.MustCompile(`\b(unsafeHTML|unsafeSVG|innerHTML|outerHTML|insertAdjacentHTML|document\.writeln|document\.write)\b`)
+	forbidden         = regexp.MustCompile(`\b(unsafeHTML|unsafeSVG|unsafeMathML|unsafeStatic|innerHTML|outerHTML|insertAdjacentHTML|setHTMLUnsafe|srcdoc|createContextualFragment|document\.writeln|document\.write)\b`)
 )
 
 // finding is a forbidden construct at a given line of a file.

@@ -9,6 +9,7 @@ export interface Reply {
   /** No response: the request fails as without network. */
   fail?: boolean;
   delayMs?: number;
+  headers?: Record<string, string>;
 }
 
 export const session = { tribe: { name: "Les Démo" }, member: { email: "alice@exemple.fr", displayName: "Alice" } };
@@ -23,6 +24,7 @@ export const replies = {
   tooManyRequests: { status: 429, body: { error: "too_many_requests" } },
   incorrectCode: (attemptsLeft: number): Reply => ({ status: 400, body: { error: "incorrect_code", attemptsLeft } }),
   newCodeNeeded: { status: 400, body: { error: "new_code_needed" } },
+  tribe: { status: 200, body: { name: "Les Démo", size: 4, activeMembers: 4 } },
   networkError: { fail: true },
 } satisfies Record<string, Reply | ((n: number) => Reply)>;
 
@@ -32,12 +34,19 @@ export interface Script {
   requestCode?: Reply[];
   openSession?: Reply[];
   deleteSession?: Reply[];
+  getTribe?: Reply[];
+  getDishes?: Reply[];
+  getIngredients?: Reply[];
 }
 
 export interface Received {
   method: string;
   path: string;
   body: unknown;
+  /** The query and the conditions of a request of a page (ADR 0029), when it has some. */
+  query?: string;
+  ifNoneMatch?: string;
+  ifMatch?: string;
 }
 
 /** Routes the API of the page to the script, and returns the requests it receives. */
@@ -48,12 +57,28 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "POST login-codes": [...(script.requestCode ?? [replies.codeSent])],
     "POST sessions": [...(script.openSession ?? [replies.sessionOpened])],
     "DELETE session": [...(script.deleteSession ?? [replies.signedOut])],
+    "GET tribe": [...(script.getTribe ?? [replies.tribe])],
+    "GET dishes": [...(script.getDishes ?? [pageReply("dishes", 1, [])])],
+    "GET ingredients": [...(script.getIngredients ?? [pageReply("ingredients", 1, [])])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace(/^.*\/api\//, "");
     const data = request.postData();
-    received.push({ method: request.method(), path, body: data === null ? undefined : JSON.parse(data) });
+    const entry: Received = { method: request.method(), path, body: data === null ? undefined : JSON.parse(data) };
+    const query = new URL(request.url()).search;
+    const ifNoneMatch = await request.headerValue("if-none-match");
+    const ifMatch = await request.headerValue("if-match");
+    if (query !== "") {
+      entry.query = query;
+    }
+    if (ifNoneMatch !== null) {
+      entry.ifNoneMatch = ifNoneMatch;
+    }
+    if (ifMatch !== null) {
+      entry.ifMatch = ifMatch;
+    }
+    received.push(entry);
     const queue = queues[`${request.method()} ${path}`] ?? [{ status: 404, body: { error: "not_found" } }];
     const reply = (queue.length > 1 ? queue.shift() : queue[0]) ?? {};
     if (reply.delayMs !== undefined) {
@@ -65,9 +90,19 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     }
     await route.fulfill({
       status: reply.status ?? 200,
-      headers: { "Cache-Control": "no-store" },
+      headers: { "Cache-Control": "no-store", ...reply.headers },
       ...(reply.body === undefined ? {} : { contentType: "application/json", body: JSON.stringify(reply.body) }),
     });
   });
   return received;
+}
+
+/** A page of a collection, with the ETag of its version (ADR 0029). */
+export function pageReply(collection: string, version: number, items: unknown[], next?: string): Reply {
+  return { status: 200, headers: { ETag: `"${collection}-${version}"` }, body: next === undefined ? { items } : { items, next } };
+}
+
+/** The version of a collection has not changed. */
+export function notModified(collection: string, version: number): Reply {
+  return { status: 304, headers: { ETag: `"${collection}-${version}"` } };
 }

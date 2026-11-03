@@ -6,9 +6,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/nelt/tribe-menus/internal/scenarios"
 )
 
 const (
@@ -24,7 +26,7 @@ func TestAcceptance(t *testing.T) {
 	if !*run {
 		t.Skip("run with make acceptance")
 	}
-	pending := readPending(t)
+	pending := godogPending(t, readPending(t))
 
 	base := t.TempDir()
 	results := map[string]error{}
@@ -54,6 +56,23 @@ func TestAcceptance(t *testing.T) {
 		t.Error(problem)
 	}
 	t.Logf("%d scenarios run, %d pending", len(results), len(pending))
+}
+
+// godogPending leaves out of the pending list the scenarios @ui: Playwright judges them
+// (ADR 0028, point 4).
+func godogPending(t *testing.T, pending []string) []string {
+	t.Helper()
+	all, err := scenarios.Read(os.DirFS(featuresDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ui := map[string]bool{}
+	for _, s := range all {
+		if s.HasTag(scenarios.UITag) {
+			ui[s.Key()] = true
+		}
+	}
+	return slices.DeleteFunc(pending, func(key string) bool { return ui[key] })
 }
 
 func readPending(t *testing.T) []string {

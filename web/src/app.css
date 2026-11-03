@@ -577,8 +577,9 @@ input {
   max-width: 480px;
   min-height: 100vh;
   min-height: 100dvh;
+  box-sizing: border-box;
   margin: 0 auto;
-  padding: 44px 20px 20px;
+  padding: 24px 20px calc(var(--tab-bar-height) + 20px);
 }
 
 .home-main {
@@ -602,4 +603,297 @@ input {
   font-family: var(--font-heading);
   font-size: 32px;
   font-weight: 800;
+}
+
+/* Chip of the tribe, at the top of the planning: opens the screen Tribu. */
+.tribe-chip {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-target);
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.tribe-chip-members {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Tab bar (plan bibliotheque, D11). */
+:root {
+  --tab-bar-height: 84px;
+}
+
+.tab-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  height: var(--tab-bar-height);
+  box-sizing: border-box;
+  padding: 10px 16px 18px;
+  border-top: var(--border-thin) solid var(--color-border);
+  background: var(--color-background);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-field);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tab[aria-current="page"] {
+  background: var(--color-action);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.tab--inactive {
+  color: var(--color-text-muted);
+}
+
+.tab-soon {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* A screen above the tab bar. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 480px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 24px 20px calc(var(--tab-bar-height) + 16px);
+}
+
+.screen-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.screen-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Screen Plats (Doux-Bibliotheque). */
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.button-new {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--touch-target);
+  box-sizing: border-box;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.button-new:hover {
+  background: var(--color-action-hover);
+  color: #ffffff;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-button);
+  color: var(--color-text-secondary);
+}
+
+.search:focus-within {
+  border-color: var(--color-focus);
+}
+
+.search-input {
+  flex-grow: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.dish-count {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dish-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dish-list-empty {
+  margin: 0;
+  padding: 24px;
+  border: var(--border-strong) dashed var(--color-dashed);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-align: center;
+}
+
+.dish-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.dish-initial {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  border: var(--border-thin) solid var(--dish-border);
+  border-radius: 14px;
+  color: var(--dish);
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.dish-card-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dish-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dish-name {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.dish-servings {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dish-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 2px 9px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chip--found {
+  border-color: var(--dish-border);
+  color: var(--dish);
+  font-weight: 800;
+}
+
+.dish-color-1 {
+  --dish: var(--color-dish-1);
+  --dish-border: var(--color-dish-1-border);
+}
+
+.dish-color-2 {
+  --dish: var(--color-dish-2);
+  --dish-border: var(--color-dish-2-border);
+}
+
+.dish-color-3 {
+  --dish: var(--color-dish-3);
+  --dish-border: var(--color-dish-3-border);
+}
+
+.dish-color-4 {
+  --dish: var(--color-dish-4);
+  --dish-border: var(--color-dish-4-border);
+}
+
+.dish-color-5 {
+  --dish: var(--color-dish-5);
+  --dish-border: var(--color-dish-5-border);
+}
+
+.dish-color-6 {
+  --dish: var(--color-dish-6);
+  --dish-border: var(--color-dish-6-border);
+}
+
+.dish-color-7 {
+  --dish: var(--color-dish-7);
+  --dish-border: var(--color-dish-7-border);
+}
+
+.dish-color-8 {
+  --dish: var(--color-dish-8);
+  --dish-border: var(--color-dish-8-border);
+}
+
+.dish-color-9 {
+  --dish: var(--color-dish-9);
+  --dish-border: var(--color-dish-9-border);
 }
