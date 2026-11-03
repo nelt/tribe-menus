@@ -1,7 +1,10 @@
 // The tribe of a scenario @ui: created by e2efixture in the data directory of the server of
-// the tests, with a session for each person (ADR 0028). The session goes through a header
-// added to the requests of the page to the API, WebKit refusing the Secure cookie on
-// http://localhost (plan socle, D14).
+// the tests, with a session for each person (ADR 0028). The requests of the page to the API
+// are relayed with the cookie of the session added, WebKit refusing the Secure cookie on
+// http://localhost (plan socle, D14); route.continue cannot set a cookie, hence route.fetch.
+// WebKit cannot be given back a 304 by Playwright either: under WebKit, the relay drops
+// If-None-Match, and a check always reloads the copy. The 304 is proved under Chromium and by
+// the unit tests of collections.ts.
 import { execFile } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
@@ -60,8 +63,13 @@ export class Tribe {
   /** Makes the requests of the page to the API those of this person. */
   async signInPage(page: Page, who: string): Promise<void> {
     const cookie = this.#cookie(who);
+    const webkit = page.context().browser()?.browserType().name() === "webkit";
     await page.route(`**${this.path("api/")}**`, async (route) => {
-      const response = await route.fetch({ headers: { ...route.request().headers(), cookie } });
+      const headers: Record<string, string> = { ...route.request().headers(), cookie };
+      if (webkit) {
+        delete headers["if-none-match"];
+      }
+      const response = await route.fetch({ headers });
       await route.fulfill({ response });
     });
   }
