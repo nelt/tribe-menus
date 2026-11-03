@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `recette` terminé (étape 37) : feuille de route à jour (plan terminé, « Ce que ce plan ne prouve pas » inscrit dans les points reportés, tests instables retirés), `docs/securite-depot.md` relu, `CLAUDE.md` (production ouverte).
 - Plan `recette`, séance S5 faite : répétition d'un traitement accéléré sur un faux constat, de la PR à la production en 17 minutes (15 d'exposition publique), retour arrière en production éprouvé ; durées et écarts dans le plan, `docs/traitement-des-vulnerabilites.md` accordé au déroulé vécu ; la question de la durée d'une séance de livraison (`canal-prive`) a sa réponse. ADR 0023 : l'évaluation additionne les tranches qui chevauchent la dernière heure (sept), comme le code depuis `v0.1.1`.
 
 ## 0.1.1 — 2026-11-03

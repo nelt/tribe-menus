@@ -1,6 +1,6 @@
 # Sécurité du dépôt GitHub
 
-Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Le dépôt est public depuis le 2026-10-03. Les protections sont appliquées au passage en public (certaines, comme les rulesets, n'existent qu'ensuite sur un compte Free), puis revues à chaque release majeure. Chaque case cochée correspond à un réglage vérifié. Dernière revue complète : 2026-10-05 (plan `revue-securite`, étape 7), par le développeur dans GitHub, avec une session Claude pour ce que l'API laisse lire.
+Liste des protections du dépôt public `nelt/tribe-menus` (ADR 0011). Le dépôt est public depuis le 2026-10-03. Les protections sont appliquées au passage en public (certaines, comme les rulesets, n'existent qu'ensuite sur un compte Free), puis revues à chaque release majeure. Chaque case cochée correspond à un réglage vérifié. Dernière revue complète : 2026-10-05 (plan `revue-securite`, étape 7), par le développeur dans GitHub, avec une session Claude pour ce que l'API laisse lire. Relue le 2026-11-03 à la clôture du plan `recette`, sans accès aux réglages : job `publish` confirmé par la deuxième release ; restent à vérifier par le développeur dans GitHub les deux cases de jetons non cochées (section 1).
 
 ## 1. Compte et accès
 
@@ -58,7 +58,7 @@ Projet mené seul : aucune approbation n'est exigée (on ne peut pas approuver s
 - [x] Aucun secret ni clé de déploiement chez GitHub : le déploiement est manuel, par SSH depuis le poste de l'administrateur (ADR 0016).
 - [x] Workflows analysés en CI par **actionlint** (écrit en Go, épinglé par `go tool`).
 - [x] `release.yml` (plan `production`, lot E), job `build` : il exécute le code du dépôt et de ses dépendances avec la seule lecture, sans restaurer de cache, et seulement sur un commit de `main`. Vérifié par l'essai à blanc du 2026-10-07 (exécution n° 1).
-- [x] `release.yml`, job `publish` : seul à avoir `contents: write`, il ne lance que `sha256sum` et `gh` sur les fichiers construits ; contrôles de l'étiquette `vX.Y.Z` et de la section de `CHANGELOG.md` avant le build. Réservé à une étiquette : vérifié à la première release réelle, `v0.1.0`, le 2026-11-02 (plan `recette`, S4).
+- [x] `release.yml`, job `publish` : seul à avoir `contents: write`, il ne lance que `sha256sum` et `gh` sur les fichiers construits ; contrôles de l'étiquette `vX.Y.Z` et de la section de `CHANGELOG.md` avant le build. Réservé à une étiquette : vérifié à la première release réelle, `v0.1.0`, le 2026-11-02 (plan `recette`, S4), puis à `v0.1.1` le 2026-11-03 (S5).
 
 ## 5. Sécurité du code et des dépendances
 

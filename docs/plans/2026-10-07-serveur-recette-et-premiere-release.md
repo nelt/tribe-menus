@@ -2,7 +2,7 @@
 
 - **Nom** : `recette`
 - **Date** : 2026-10-07
-- **Statut** : prêt (décisions D1 à D18 confirmées par le développeur le 2026-10-08)
+- **Statut** : terminé le 2026-11-03 (décisions D1 à D18 confirmées par le développeur le 2026-10-08) ; `v0.1.0` en production depuis le 2026-11-02, `v0.1.1` depuis le 2026-11-03
 
 ## Objectif
 
@@ -380,7 +380,7 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
 - [x] **34. Faux constat et correctif** (D12). Le développeur remet à Claude Code, dans la conversation, un constat écrit selon le modèle de `docs/traitement-des-vulnerabilites.md` : la fenêtre des compteurs d'alerte, qui ne couvre que 50 à 60 minutes (revue de la PR #47, point 2), jouée comme une vulnérabilité de `v0.1.0`. Claude Code écrit le test puis le correctif sur une branche locale, en termes neutres, lance `make ci` et **ne pousse pas**.
 - [x] **35. Séance 5**, par le développeur : check-list S5.
 - [x] **36. Bilan de la répétition** : durées dans les notes d'exécution ; la question ouverte de `canal-prive` sur la durée d'une séance de livraison reçoit sa réponse ; `docs/traitement-des-vulnerabilites.md` corrigé là où le déroulé écrit s'est écarté du déroulé vécu.
-- [ ] **37. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour, « Ce que ce plan ne prouve pas » inscrit) ; `docs/securite-depot.md` relu ; `CLAUDE.md` ; `CHANGELOG.md`.
+- [x] **37. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour, « Ce que ce plan ne prouve pas » inscrit) ; `docs/securite-depot.md` relu ; `CLAUDE.md` ; `CHANGELOG.md`.
 
 ## Critères de validation
 
@@ -565,3 +565,4 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Revue de la PR #72, point 1** (« à noter ») : l'ADR 0023, point 8, parlait encore des six dernières tranches. Corrigé dans cette PR, après la séance, sur décision du développeur.
   - **Mesure optimiste** : correctif de quelques lignes prêt d'avance, développeur disponible d'un bout à l'autre, relecture sans correction, CI sans aller-retour. La CI de la PR et `release.yml`, environ 6 minutes, sont le seul plancher incompressible.
 - **Étape 36, bilan** (2026-11-03) : la question ouverte de `canal-prive` sur la durée d'une séance de livraison a sa réponse (bien sous l'heure ; accéléré et urgent restent distincts, l'urgent ne gagnant qu'environ 5 minutes). Écarts entre le déroulé écrit et le déroulé vécu, corrigés dans `docs/traitement-des-vulnerabilites.md` : la recette ciblée ne peut pas rejouer un comportement qui demande une heure, le test en tient lieu ; la vérification en production se limite à la version en service et à la connexion quand rejouer la faille ferait du tort ; l'instantané du VPS avant le déploiement (ADR 0025) manquait au déroulé ; durée mesurée ajoutée. Le constat de la répétition aurait relevé du niveau normal (gravité faible) et se déduisait d'un document public (revue de la PR #47) : niveau et neutralité joués pour la répétition, comme le dit l'analyse.
+- **Étape 37, clôture** (2026-11-03, Claude Code en session cloud) : critères de validation relus d'après ces notes. Deux restent partiels, par décision du développeur : le code reçu sur **chaque** messagerie de la famille (Gmail seul, Outlook et iCloud reportés à l'invitation de la famille) et Safari sur un vrai iPhone (WebKit seul) ; les trois cases correspondantes de S3 restent ouvertes, reportées dans la feuille de route. La case des branches d'essai (S4) attend leur suppression par le développeur. « Ce que ce plan ne prouve pas » est inscrit dans la feuille de route, tout comme l'avis de sécurité publié (question ouverte, que la répétition ne tranche pas) ; les deux tests instables en sont retirés (corrigés par la PR #71). `docs/securite-depot.md` relu : job `publish` confirmé par la deuxième release ; deux cases restent à vérifier par le développeur dans GitHub (jetons à portée fine seulement, jeton du serveur). `CLAUDE.md` : production ouverte, mentionnée au déploiement.
