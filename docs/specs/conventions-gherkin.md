@@ -11,7 +11,7 @@ Les scénarios de `features/` sont exécutés tels quels (ADR 0005). Pour que ch
 ## Tags
 
 - Chaque scénario porte l'identifiant de sa story ou de son exigence (`@C2`, `@ENF-01`, `@EF-10`) ; plusieurs si besoin.
-- `@ui` : prouvé dans le navigateur par Playwright ; ajouté au fil de l'implémentation (ADR 0005).
+- `@ui` : prouvé dans le navigateur par Playwright, à partir du `.feature` (ADR 0028), et ignoré par godog ; posé quand le plan d'une story fixe le niveau de preuve de ses scénarios (ADR 0005, point 2).
 - `@manuel` : vérifié à la main en recette avant chaque release, exclu de `make ci` (ADR 0005, point 4).
 
 ## Personnes

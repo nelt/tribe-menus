@@ -17,11 +17,19 @@ Fonctionnalité: Tribu
     Quand Alice ajoute le plat "Ratatouille" au repas du mardi 6 octobre 2026 à midi
     Alors Bruno voit "Ratatouille" au repas du mardi 6 octobre 2026 à midi, après rafraîchissement
 
-  @T1
+  @T1 @ui
   Scénario: Le référentiel d'ingrédients est partagé entre membres
     Quand Alice ajoute le nouvel ingrédient "piment d'Espelette" au plat "Axoa"
     Et Bruno saisit "pim" comme ingrédient d'un plat
     Alors "piment d'Espelette" fait partie des propositions
+
+  @T1 @ui
+  Scénario: Un plat modifié par un autre membre apparaît quand je reviens sur l'application
+    Étant donné le plat "Ratatouille" défini pour 4 parts
+    Et Alice a affiché la bibliothèque de plats sur son téléphone
+    Quand Bruno modifie le plat "Ratatouille" pour 6 parts
+    Et Alice revient sur l'application, sans l'avoir rechargée
+    Alors Alice voit le plat "Ratatouille" défini pour 6 parts
 
   @T2
   Scénario: Tous les membres ont les mêmes droits
@@ -42,7 +50,7 @@ Fonctionnalité: Tribu
     Alors le repas du mercredi 7 octobre 2026 à midi contient "Ratatouille" pour 5 parts
     Et le repas du mardi 6 octobre 2026 à midi contient toujours "Ratatouille" pour 4 parts
 
-  @T3
+  @T3 @ui
   Scénario: La taille de la tribu est proposée pour un nouveau plat
     Étant donné la taille de la tribu est 5
     Et le plat "Chili con carne" défini pour 4 parts

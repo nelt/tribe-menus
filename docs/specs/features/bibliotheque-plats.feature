@@ -42,6 +42,33 @@ Fonctionnalité: Bibliothèque de plats
     Quand je crée le plat "Restes" sans ingrédient
     Alors le plat "Restes" figure dans la bibliothèque
 
+  @P1
+  Scénario: Deux plats ne peuvent pas porter le même nom
+    Étant donné le plat "Soupe à l'oignon" dans la bibliothèque
+    Quand je crée le plat " soupe a l’oignon "
+    Alors le plat n'est pas enregistré
+    Et un message m'indique qu'un plat porte déjà ce nom
+
+  @P1
+  Scénario: Un ingrédient peut n'avoir aucune quantité
+    Quand je crée le plat "Pâtes au beurre" avec les ingrédients :
+      | ingrédient | quantité | unité |
+      | pâtes      | 500      | g     |
+      | beurre     | 30       | g     |
+      | sel        |          |       |
+    Alors le plat "Pâtes au beurre" figure dans la bibliothèque
+    Et l'ingrédient "sel" du plat "Pâtes au beurre" n'a pas de quantité
+    Et l'ingrédient "sel" n'a pas d'unité par défaut
+
+  @P1 @P4
+  Scénario: Un même ingrédient ne figure qu'une fois dans un plat
+    Quand je crée le plat "Ratatouille" avec les ingrédients :
+      | ingrédient | quantité | unité |
+      | courgette  | 3        | pièce |
+      | Courgette  | 200      | g     |
+    Alors le plat n'est pas enregistré
+    Et un message m'indique que l'ingrédient "courgette" figure déjà dans le plat
+
   @P2
   Scénario: La modification d'un plat s'applique aux repas où il est servi
     Étant donné le plat "Chili con carne" défini pour 4 parts avec 500 g de "bœuf haché"
@@ -55,7 +82,17 @@ Fonctionnalité: Bibliothèque de plats
     Étant donné le plat "Chili con carne" dans la bibliothèque
     Alors aucune action ne permet de supprimer le plat "Chili con carne"
 
-  @P3
+  @P2
+  Scénario: Une modification faite entre-temps par un autre membre n'est pas écrasée
+    Étant donné le plat "Chili con carne" défini pour 4 parts avec 500 g de "bœuf haché"
+    Et j'ai ouvert le plat "Chili con carne"
+    Et Bruno a modifié entre-temps la quantité de "bœuf haché" du plat "Chili con carne" à 600 g
+    Quand j'ajoute 1 cuillère à café de "cumin" au plat "Chili con carne"
+    Alors mon enregistrement est refusé
+    Et un message m'indique que le plat a été modifié entre-temps
+    Et le plat "Chili con carne" m'est présenté à jour, avec 600 g de "bœuf haché" et sans "cumin"
+
+  @P3 @ui
   Plan du scénario: Rechercher un plat par les mots de son nom ou par ses ingrédients
     Étant donné la bibliothèque contient les plats :
       | plat               | ingrédients                   |
@@ -76,13 +113,13 @@ Fonctionnalité: Bibliothèque de plats
       | courg            | Gratin de courgettes, Ratatouille           |
       | poulet           |                                             |
 
-  @P4
+  @P4 @ui
   Scénario: L'autocomplétion propose les ingrédients existants
     Étant donné l'ingrédient "tomate" existe dans le référentiel
     Quand je saisis "tom" comme ingrédient d'un plat
     Alors l'ingrédient "tomate" m'est proposé
 
-  @P4
+  @P4 @ui
   Scénario: L'autocomplétion ignore la casse et les accents
     Étant donné l'ingrédient "crème fraîche" existe dans le référentiel
     Quand je saisis "CREME" comme ingrédient d'un plat
@@ -95,7 +132,7 @@ Fonctionnalité: Bibliothèque de plats
     Alors le référentiel contient un seul ingrédient "crème fraîche"
     Et le plat utilise l'ingrédient "crème fraîche"
 
-  @P4
+  @P4 @ui
   Scénario: L'unité par défaut est proposée à la saisie
     Étant donné l'ingrédient "riz" a été saisi pour la première fois en "g"
     Quand je saisis "riz" comme ingrédient d'un plat
@@ -107,4 +144,10 @@ Fonctionnalité: Bibliothèque de plats
     Étant donné l'ingrédient "gingembre" n'existe pas dans le référentiel
     Quand j'ajoute l'ingrédient "gingembre" à un plat
     Alors l'ingrédient "gingembre" est ajouté au référentiel
-    Et il m'est proposé lors des saisies suivantes
+
+  @P4 @ui
+  Scénario: Un ingrédient créé pendant la saisie est proposé à la saisie suivante
+    Étant donné l'ingrédient "gingembre" n'existe pas dans le référentiel
+    Et j'ai ajouté l'ingrédient "gingembre" au plat "Curry de lentilles"
+    Quand je saisis "ging" comme ingrédient d'un autre plat, sans avoir rechargé l'application
+    Alors l'ingrédient "gingembre" m'est proposé
