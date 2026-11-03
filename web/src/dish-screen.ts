@@ -23,10 +23,7 @@ import {
 } from "./dishes.ts";
 import type { Library } from "./library.ts";
 import { networkErrorMessage } from "./login.ts";
-import { alertMessage } from "./templates.ts";
-
-/** The message of a save without network, or of an unforeseen response (docs/design). */
-export const networkNeededMessage = "Réseau nécessaire. Le réseau est lent ou absent : réessayez.";
+import { alertMessage, networkNeededMessage } from "./templates.ts";
 
 /** At most this many lines in a dish (Q31). */
 const maxLines = 40;

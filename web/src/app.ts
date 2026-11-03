@@ -14,6 +14,7 @@ import type { SignedInEvent } from "./login-screen.ts";
 import { type Page, Router, pages, tabOf } from "./router.ts";
 import "./stepper.ts";
 import "./tab-bar.ts";
+import "./tribe-screen.ts";
 
 /** Beyond this delay, a call to the API is a network error. */
 const requestTimeoutMs = 10_000;
@@ -116,8 +117,10 @@ export class App extends LitElement {
           ></mt-dish-screen>`,
         );
       }
-      default:
-        return comingSoon(page);
+      case "tribe":
+        return html`<mt-tribe-screen .api=${this.#api} .planningHref=${this.#router.href(pages.home)}></mt-tribe-screen>`;
+      case "login":
+        return nothing;
     }
   }
 
@@ -177,14 +180,6 @@ export class App extends LitElement {
     this.#library.clear();
     this.#router.navigate(pages.login, { replace: true });
   }
-}
-
-/** The screen Tribu, until its step of the plan bibliotheque. */
-function comingSoon(_page: Page) {
-  return html`<main class="screen">
-    <h1 class="screen-title">Tribu</h1>
-    <p class="screen-text">Cet écran arrive bientôt.</p>
-  </main>`;
 }
 
 customElements.define("mt-app", App);
