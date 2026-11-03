@@ -205,7 +205,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 | Planning de la semaine | `maquettes/Doux-Main.dc.html` | R1, R5 |
 | Détail d'un repas | `maquettes/Doux-Repas.dc.html` | R2, R3, R4 |
 | Bibliothèque de plats (recherche) | `maquettes/Doux-Bibliotheque.dc.html` | P3 |
-| Création / édition d'un plat | `maquettes/Doux-Plat.dc.html` | P1, P4 |
+| Création / édition d'un plat | `maquettes/Doux-Plat.dc.html` | P1, P2, P4 |
 | Liste de courses (onglet Courses) | `maquettes/Doux-Courses.dc.html` (réglage `etat` : périmée, à jour, hors ligne, sélection) | C1, C3, C5, C6, C7, C8, C11 |
 | Sélection d'articles | `maquettes/Doux-CoursesSelection.dc.html` (l'écran précédent, réglage `etat` sur sélection) | C9, C10 |
 | Choix des listes | `maquettes/Doux-ListesCourses.dc.html` | C1, C2, C12 |
@@ -214,6 +214,38 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 | Ajouter un membre | `maquettes/Doux-AjoutMembre.dc.html` | EF-01, EF-06 |
 | Fiche d'un membre | `maquettes/Doux-Membre.dc.html` | EF-03, EF-06 |
 | Mes appareils | `maquettes/Doux-Appareils.dc.html` | EF-04, EF-05 |
+
+**Écarts de la réalisation avec les maquettes** (plan `bibliotheque`, lot A, 2026-11-03 ; réalisés aux lots C et D)
+
+- **Barre d'onglets** (D11) : les trois onglets dès ce plan. **Planning** ouvre provisoirement l'accueil actuel (symbole, nom de la tribu, « Se déconnecter »), surmonté de la pastille de la tribu (nom et nombre de membres actifs) qui ouvre l'écran Tribu ; il sera remplacé par `Doux-Main` avec le planning. **Courses** est inactif jusqu'aux listes de courses : il garde sa place, son icône et son libellé en texte atténué `#6E6680`, avec en dessous « À venir » (11 px) ; ce n'est pas un lien (`aria-disabled="true"`), et le toucher ne fait rien. Sans maquette : l'interprétation tient jusqu'à ce que le développeur la dessine, s'il le souhaite.
+- **Chemins**, sous `/tribes/<identifiant>/` : `plats` (bibliothèque), `plats/nouveau`, `plats/<id>` (modification), `tribu` ; le Planning reste à la racine de la tribu.
+- **Bibliothèque** (`Doux-Bibliotheque`) : plats par ordre alphabétique (Q30) ; compteur « 1 plat », « 8 plats », et pendant une recherche « 1 résultat pour « … » », « 2 résultats pour « … » » ; « Aucun plat ne correspond » ; une bibliothèque vide affiche, à la place de la liste, « Aucun plat pour l'instant » dans la même case en pointillé, avec « Nouveau » au-dessus. Toucher la carte d'un plat ouvre sa modification (D19). Chargement impossible : message d'erreur de réseau et « Réessayer ».
+- **Création et modification d'un plat** (`Doux-Plat`, D19) : la modification reprend l'écran de création, titré du nom du plat, avec les mêmes champs et « Enregistrer le plat ». Sa maquette, et celle du bandeau d'une modification croisée, sont à dessiner par le développeur dans le canevas de travail et à reporter ici avant le lot D (plan `bibliotheque`, D19) ; d'ici là, le bandeau suit la règle des bandeaux d'avertissement (ambre), en haut du formulaire : « Ce plat a été modifié entre-temps. Voici sa version à jour : refaites votre modification. »
+- **Ligne d'ingrédient sans quantité** (Q26) : le champ de la quantité reste vide (texte d'aide « Qté ») et le champ de l'unité est vide et inactif tant qu'aucune quantité n'est saisie ; une quantité saisie prend l'unité par défaut de l'ingrédient ; pour un ingrédient nouveau ou sans unité par défaut, aucune unité n'est préchoisie et le membre la choisit. 40 lignes au plus : « Ajouter un ingrédient » devient alors un bouton inactif.
+- **Propositions d'ingrédients** (P4, Q27) : un ingrédient déjà dans le plat n'est pas proposé ; « Créer « … » » n'apparaît pas quand le texte saisi désigne déjà un ingrédient du référentiel, au sens du nom normalisé.
+- **Écran Tribu** (`Doux-Tribu`, D3) : réduit au nom de la tribu, au nombre de membres actifs et au réglage **Taille de la tribu** (stepper, de 1 à 50) ; la liste des membres, « Ajouter un membre », « Mes appareils » et « Quitter la tribu » viendront avec les membres et les sessions. « Se déconnecter » reste sur le Planning provisoire.
+
+**Affichage des quantités** (décision du développeur, 2026-11-03)
+
+- Nombre avec une virgule décimale, sans zéro inutile (« 1,5 », « 0,125 ») ; unité au pluriel à partir de 2, comme en français : « 1,5 pièce », « 3 pièces », « 2 pincées » ; g, kg, ml, cl et l sont invariables.
+- Cuillères abrégées partout, dans les lignes, les cartes, les propositions et la liste fermée des unités : « c. à soupe », « c. à café », invariables. Le nom complet reste dans l'étiquette accessible (`aria-label`, « cuillère à soupe »).
+- La liste fermée des unités les présente au singulier : g, kg, ml, cl, l, pièce, c. à soupe, c. à café, pincée.
+- La maquette `Doux-Plat` (« 3 pièce ») est à accorder dans le canevas de travail, si le développeur le souhaite.
+
+**Messages** (plan `bibliotheque`, lot A), en rouge tomate avec l'icône d'erreur, sous le champ concerné, ou en haut du formulaire quand aucun champ n'est en cause ; le formulaire reste en l'état :
+
+| Cas | Message |
+| --- | --- |
+| Nom de plat vide (P1) | « Donnez un nom au plat. » |
+| Nom déjà porté par un plat (Q28) | « Un plat porte déjà ce nom. » |
+| Même ingrédient deux fois (Q27) | « « courgette » figure déjà dans le plat. » |
+| Quantité illisible, nulle ou négative (Q31) | « Quantité invalide. » |
+| Quantité sans unité (Q26) | « Choisissez une unité. » |
+| Trop de décimales pour l'unité (Q31) | « Quantité trop précise pour cette unité. » |
+| Modification croisée (Q25) | bandeau ci-dessus, et le formulaire montre le plat à jour |
+| Enregistrement sans réseau (D18), ou réponse imprévue du serveur | « Réseau nécessaire. Le réseau est lent ou absent : réessayez. » |
+
+Les noms trop longs (60 caractères pour un plat, 40 pour un ingrédient, Q31) sont bornés par le champ lui-même (`maxlength`), sans message.
 
 ### Planches de référence de l'identité
 
@@ -226,7 +258,8 @@ Dans `maquettes/identite/` : `Symbole`, `SymboleMini`, `SymboleMono` et `Wordmar
 - Barre d'onglets en bas : **Planning**, **Plats**, **Courses**. Onglet actif en aplat rouge tomate, texte blanc.
 - Planning → toucher une case de repas ouvre le détail du repas.
 - Planning → la pastille de l'en-tête (nom de la tribu et nombre de membres) ouvre l'écran Tribu. Pas d'onglet dédié : la gestion de la tribu est occasionnelle.
-- Plats → « Nouveau » ouvre la création d'un plat.
+- Plats → « Nouveau » ouvre la création d'un plat ; toucher un plat ouvre sa modification (D19). « Plats », en tête de l'une ou de l'autre, ramène à la bibliothèque.
+- Courses, tant que les listes de courses n'existent pas : onglet inactif, « À venir » (plan `bibliotheque`, D11).
 - Courses → l'onglet ouvre la liste principale. Son nom, en tête, ouvre le choix des listes ; « Ajouter les courses des repas » ouvre le choix de la période et de la liste ; « Sélectionner » fait passer la liste en mode sélection ; « Courses faites » retire les articles cochés, après confirmation.
 - Choix des listes → toucher une liste l'ouvre ; le bouton « ⋮ » d'une liste ouvre ses actions (renommer, définir comme principale, supprimer) ; « Nouvelle liste » crée une liste vide.
 - Courses des repas → « Ajouter à « … » » revient à la liste.
