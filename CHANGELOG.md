@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- `bibliotheque/A` (P1 à P4, T1, T3) : specs, conception et ADR. Décisions Q25 à Q31 dans `fonctionnalites.md` (modification croisée refusée, quantité facultative, une ligne par ingrédient, nom de plat unique, nom normalisé, recherche, limites) ; scénarios nouveaux (nom déjà pris, ingrédient sans quantité, ingrédient en double, modification croisée, ingrédient créé proposé ensuite, plat modifié visible au retour) et tags `@ui` ; glossaire ; ADR 0027 (recherche et autocomplétion dans le navigateur), 0028 (scénarios `@ui` exécutés par Playwright), 0029 (versions et ETag des collections) ; design : barre d'onglets, écrans du plan, affichage des quantités, messages ; conception accordée ; plan en cours.
 - Plan `recette` terminé (étape 37) : feuille de route à jour (plan terminé, « Ce que ce plan ne prouve pas » inscrit dans les points reportés, tests instables retirés), `docs/securite-depot.md` relu, `CLAUDE.md` (production ouverte).
 - Plan `recette`, séance S5 faite : répétition d'un traitement accéléré sur un faux constat, de la PR à la production en 17 minutes (15 d'exposition publique), retour arrière en production éprouvé ; durées et écarts dans le plan, `docs/traitement-des-vulnerabilites.md` accordé au déroulé vécu ; la question de la durée d'une séance de livraison (`canal-prive`) a sa réponse. ADR 0023 : l'évaluation additionne les tranches qui chevauchent la dernière heure (sept), comme le code depuis `v0.1.1`.
 
