@@ -32,6 +32,35 @@ type CodeRequest struct {
 	At string
 }
 
+type CollectionVersion struct {
+	Name    string
+	Version int64
+}
+
+type Dish struct {
+	ID             string
+	Name           string
+	NormalizedName string
+	Color          string
+	Servings       int64
+	Revision       int64
+}
+
+type DishIngredient struct {
+	DishID       string
+	Position     int64
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+}
+
+type Ingredient struct {
+	ID             int64
+	Name           string
+	NormalizedName string
+	DefaultUnit    sql.NullString
+}
+
 type LoginCode struct {
 	MemberID     int64
 	CodeHash     []byte
@@ -68,4 +97,5 @@ type Session struct {
 type Tribe struct {
 	ID   int64
 	Name string
+	Size int64
 }
