@@ -448,6 +448,5 @@ sequenceDiagram
 
 - Le plat servi et le planning (R1 à R5), qui ajouteront au modèle le repas et le plat servi.
 - Les listes de courses : article sans quantité issu d'une ligne sans quantité (Q26 ; plan, questions ouvertes).
-- L'écran de modification d'un plat et le bandeau d'une modification croisée, tels que le développeur les dessinera (plan, D19) : `docs/design/README.md` en donne l'interprétation d'ici là.
 - Le delta d'une collection (`?since=<version>`), qui éviterait de tout recharger pour une seule modification : au plan hors-ligne.
 - Le hors-ligne : stockage des plats et du référentiel sur l'appareil, cache du service worker ou IndexedDB, à choisir avec la pagination (plan, questions ouvertes) ; effacement à la déconnexion.
