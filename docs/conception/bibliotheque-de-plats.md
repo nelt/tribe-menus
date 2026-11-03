@@ -1,12 +1,12 @@
 # Conception : bibliothèque de plats
 
-- **Mise à jour** : 2026-10-29
-- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29 ; à tenir à jour pendant ses lots
+- **Mise à jour** : 2026-11-03
+- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29, accordé aux specs, au glossaire et aux ADR 0027 à 0029 par le lot A (2026-11-03) ; à tenir à jour pendant ses lots
 - **Stories** : P1 à P4, T1 à T3 ; ENF-02 pour les plats et le référentiel
 
-Ce document décrit la conception retenue pour la bibliothèque de plats, le référentiel d'ingrédients et la taille de la tribu : modèle, découpage du code, échanges. Il est tenu à jour par les plans qui touchent ce domaine (planning, listes de courses, hors-ligne) ; un plan, lui, se fige une fois terminé. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md`, les décisions dans les ADR et dans les plans ; ce document les cite sans les répéter.
+Ce document décrit la conception retenue pour la bibliothèque de plats, le référentiel d'ingrédients et la taille de la tribu : modèle, découpage du code, échanges. Il est tenu à jour par les plans qui touchent ce domaine (planning, listes de courses, hors-ligne) ; un plan, lui, se fige une fois terminé. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (P1 à P4, T3, Q19, Q20, Q25 à Q31), les décisions dans les ADR (0027 recherche et autocomplétion dans le navigateur, 0028 scénarios `@ui`, 0029 versions et ETag des collections) et dans les plans ; ce document les cite sans les répéter.
 
-Noms anglais du code selon `docs/specs/glossaire.md` ; les termes marqués « nouveau » y sont ajoutés par le lot A du plan.
+Noms anglais du code selon `docs/specs/glossaire.md`, qui contient depuis le lot A les termes de ce document : révision (*revision*), ligne d'ingrédient (*dish ingredient*), nom normalisé (*normalized name*), recherche (*search*), proposition (*suggestion*), collection, version d'une collection (*collection version*), copie d'une collection (*cached collection*), barre d'onglets (*tab bar*).
 
 ## Modèle du domaine
 
@@ -76,15 +76,15 @@ classDiagram
 ```
 
 - **Tribe** : la ligne unique de la base de la tribu (ADR 0003) gagne sa **taille** (T3), 4 par défaut, de 1 à 50 (plan, D12). Elle propose les parts d'un nouveau plat, puis, avec le planning, celles d'un plat servi.
-- **Dish** : identifiant aléatoire (D10), nom unique dans la tribu au sens du nom normalisé (D7), couleur attribuée à la création et jamais changée (Q19), parts de référence, **révision** (nouveau terme : *revision*), augmentée à chaque modification, qui fait refuser un enregistrement fait sur une version dépassée (D5).
-- **DishIngredient** : une ligne par ingrédient dans un plat (D6), dans l'ordre de saisie ; quantité **facultative** (D4) : sans quantité, pas d'unité.
+- **Dish** : identifiant aléatoire (D10), nom unique dans la tribu au sens du nom normalisé (D7), couleur attribuée à la création et jamais changée (Q19), parts de référence, **révision**, augmentée à chaque modification, qui fait refuser un enregistrement fait sur une version dépassée (Q25, D5).
+- **DishIngredient** : une ligne par ingrédient dans un plat (Q27, D6), dans l'ordre de saisie ; quantité **facultative** (Q26, D4) : sans quantité, pas d'unité.
 - **Ingredient** : nom affiché de la première saisie, nom normalisé unique dans la tribu, unité par défaut = première unité saisie avec lui, absente tant qu'aucune ligne n'en a eu (Q20, D4). Créé seulement en saisissant un plat, ici, ou un article ajouté, au plan des listes.
-- **Quantity** : un entier dans l'unité de base de la famille (milligramme, millilitre, millième de pièce, de cuillère ou de pincée ; ADR 0003, point 7) et l'unité choisie pour la ligne, qui sert à l'afficher comme elle a été saisie. Une saisie n'a que les décimales que l'unité de base représente : aucune en ml, une en cl, trois dans les autres unités ; au-delà, elle est refusée (plan, D20).
+- **Quantity** : un entier dans l'unité de base de la famille (milligramme, millilitre, millième de pièce, de cuillère ou de pincée ; ADR 0003, point 7) et l'unité choisie pour la ligne, qui sert à l'afficher comme elle a été saisie. Une saisie n'a que les décimales que l'unité de base représente : aucune en ml, une en cl, trois dans les autres unités ; au-delà, elle est refusée (Q31, D20). Affichage : virgule décimale, pluriel à partir de 2, cuillères abrégées (`docs/design/README.md`, « Affichage des quantités »).
 - **Pas de suppression** de plat (Q5b) ni d'ingrédient (pas d'écran du référentiel en V1).
 
 ### Nom normalisé
 
-Une seule règle, pour les noms d'ingrédients (Q20), les noms de plats (D7), la recherche (P3) et l'autocomplétion (P4) :
+Une seule règle (Q29, ADR 0027), pour les noms d'ingrédients (Q20), les noms de plats (Q28), la recherche (P3) et l'autocomplétion (P4) :
 
 1. minuscules, d'abord, pour que les étapes suivantes n'aient à connaître que des minuscules (« Œufs » devient « œufs ») ;
 2. ligatures dépliées : œ → oe, æ → ae (D8, au-delà de Q20 : sans cela, « boeuf » ne trouve pas « bœuf ») ;
@@ -96,9 +96,9 @@ La table de cas commune (D9) contient au moins « Œufs brouillés », « oeufs 
 
 Ces règles fixent l'identité d'un ingrédient et l'unicité d'un nom de plat, que les index uniques de la migration `0007` figent : les corriger après coup demanderait de fusionner des données.
 
-Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. La décomposition Unicode se fait par `golang.org/x/text/unicode/norm` en Go, seule dépendance d'exécution nouvelle, et par `String.prototype.normalize` dans le navigateur. Une table de cas commune, lue par `go test` et `node:test`, les garde d'accord (D9).
+Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. La décomposition Unicode se fait par `golang.org/x/text/unicode/norm` en Go, seule dépendance d'exécution nouvelle, et par `String.prototype.normalize` dans le navigateur. Une table de cas commune, un fichier JSON de `internal/dish/testdata/` lu par `go test` et par `node:test` (chemin fixé au lot B), les garde d'accord (D9).
 
-Pour la recherche et l'autocomplétion, le nom normalisé est découpé en **mots** sur tout caractère hors `a-z` et `0-9` ; un terme recherché trouve un mot qui **commence** par lui, et tous les termes doivent être trouvés (P3, comme la maquette `Doux-Bibliotheque`).
+Pour la recherche et l'autocomplétion (Q30), le nom normalisé est découpé en **mots** sur tout caractère hors `a-z` et `0-9` ; un terme recherché trouve un mot qui **commence** par lui, et tous les termes doivent être trouvés (P3, comme la maquette `Doux-Bibliotheque`).
 
 ## Découpage du code
 
@@ -233,8 +233,8 @@ Les noms des méthodes sont indicatifs : le lot B les fixe.
 | Route | Corps | Réponses |
 | --- | --- | --- |
 | `GET dishes?after=…` | | 200 : une page de 50 plats au plus, avec leurs lignes, dans l'ordre des identifiants, et le curseur de la page suivante, absent à la dernière (D2) |
-| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat, chaque ligne portant le nom affiché et l'unité par défaut de son ingrédient (D27) ; 400 : `name_required`, `name_taken`, `invalid_line`… |
-| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat, comme pour `POST` ; 409 `dish_changed` avec le plat à jour (D5) ; 404 comme un identifiant inconnu (ENF-02) |
+| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat, chaque ligne portant le nom affiché et l'unité par défaut de son ingrédient (D27), et les versions des collections (ADR 0029) ; 400 : une erreur par cas de `docs/design/README.md`, « Messages » (codes indicatifs, fixés au lot B : `name_required`, `name_taken`, `duplicate_ingredient`, `invalid_quantity`, `quantity_too_precise`, `unit_required`, `too_many_lines`, `name_too_long`) |
+| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat, comme pour `POST` ; 400 comme pour `POST` ; 409 `dish_changed` avec le plat à jour (Q25, D5) ; 404 comme un identifiant inconnu (ENF-02) |
 | `DELETE dishes/{id}` | | 405 : la route n'existe pas (P2, ADR 0005, point 4) |
 | `GET ingredients?after=…` | | 200 : une page de 500 ingrédients au plus, nom et unité par défaut, et le curseur de la page suivante (D2) |
 | `GET tribe` | | 200 : nom, taille, nombre de membres actifs |
@@ -244,7 +244,7 @@ Une ligne désigne son ingrédient **par son nom** : le serveur le rapproche d'u
 
 ### Versions des collections
 
-Mécanisme générique, pour toutes les collections de l'API (plan, D28 ; ADR 0029) :
+Mécanisme générique, pour toutes les collections de l'API (plan, D28 ; ADR 0029, qui fixe aussi la lecture de la version et de la page dans une même transaction) :
 
 | Échange | Requête | Réponse |
 | --- | --- | --- |
@@ -268,31 +268,38 @@ sequenceDiagram
     autonumber
     actor M as Membre
     participant S as Écran Plats (SPA)
+    participant C as library.ts
     participant A as API
     participant L as dish.Library
     participant D as Base de la tribu
 
     M->>S: touche l'onglet Plats
-    par
-        loop jusqu'à la dernière page
-            S->>A: GET dishes?after=curseur
+    S->>C: refresh()
+    par plats
+        alt aucune copie
+            C->>A: GET dishes
             A->>L: List
-            L->>D: 50 plats au plus et leurs lignes
-            A-->>S: 200, une page et le curseur suivant
+            L->>D: version de dishes et 50 plats au plus avec leurs lignes, même transaction
+            A-->>C: 200, première page, ETag "dishes-42"
+            loop jusqu'à la dernière page
+                C->>A: GET dishes?after=curseur, If-Match "dishes-42"
+                A-->>C: 200, page suivante (412 : reprise, ADR 0029)
+            end
+        else copie en version 42
+            C->>A: GET dishes, If-None-Match "dishes-42"
+            A-->>C: 304, la copie reste
         end
-    and
-        loop jusqu'à la dernière page
-            S->>A: GET ingredients?after=curseur
-            A-->>S: 200, 500 ingrédients au plus et le curseur suivant
-        end
+    and référentiel
+        Note over C,A: même échange pour GET ingredients,<br/>500 ingrédients au plus par page
     end
-    S-->>M: « 8 plats », par ordre alphabétique
+    C-->>S: plats et référentiel
+    S-->>M: « 8 plats », par ordre alphabétique (Q30)
     M->>S: saisit « courg »
     Note over S: searchDishes, sans réseau :<br/>mots du nom et des ingrédients,<br/>préfixes, tous les termes
     S-->>M: « 2 résultats pour « courg » »
 ```
 
-Chaque réponse est bornée (D2), mais l'écran garde tout : la recherche ne coûte ensuite aucune requête, et fonctionnera hors ligne quand le plan hors-ligne mettra ces pages en cache (ADR 0004, point 7 ; PT-04).
+Chaque réponse est bornée (D2), mais l'écran garde tout : la recherche ne coûte ensuite aucune requête, et une visite suivante sans changement ne coûte qu'un `304` par collection (ADR 0029). Elle fonctionnera hors ligne quand le plan hors-ligne gardera ces pages sur l'appareil (ADR 0004, point 7 ; PT-04).
 
 ### Créer un plat
 
@@ -308,9 +315,9 @@ sequenceDiagram
     M->>S: « Nouveau »
     S->>A: GET tribe
     A-->>S: 200, taille 5
-    S-->>M: parts proposées = 5, la taille de la tribu (T3)
+    S-->>M: parts proposées = 5, la taille de la tribu (T3, D16)
     M->>S: saisit « tom » comme ingrédient
-    Note over S: suggestIngredients sur le référentiel chargé,<br/>sans ceux déjà dans le plat (D6)
+    Note over S: suggestIngredients sur le référentiel chargé,<br/>sans ceux déjà dans le plat (Q27)
     S-->>M: « tomate » (pièce), « tomate concassée » (g), Créer « tom »
     M->>S: choisit « tomate », 4 pièces, « Enregistrer le plat »
     S->>A: POST dishes { name, servings, lines }
@@ -329,7 +336,7 @@ sequenceDiagram
     L->>D: couleurs en usage, puis PickColor (Q19)
     L->>D: insère le plat et ses lignes, révision 1
     L->>D: COMMIT
-    A-->>S: 201, le plat et les ingrédients de ses lignes (D27)
+    A-->>S: 201, le plat, les ingrédients de ses lignes (D27) et les versions (ADR 0029)
     Note over S: library.applySaved : le plat entre dans la copie en mémoire,<br/>« tomate » et toute création à la volée dans le référentiel (D26)
     S-->>M: retour à la bibliothèque, le plat y figure
 ```
@@ -416,9 +423,16 @@ sequenceDiagram
     Note over T,D: Les plats existants gardent leurs parts,<br/>un nouveau plat est proposé pour 5 (T3).
 ```
 
+## Preuves
+
+- **Contre l'API** (godog) : création, modification, refus d'une modification croisée, limites, défaut des parts, référentiel, compartimentage (ENF-02), absence de route de suppression ; tableau « Scénarios couverts » du plan.
+- **Dans le navigateur** (`@ui`, ADR 0028) : recherche (P3), propositions et unité par défaut (P4), ingrédient créé proposé à la saisie suivante (P4, D27), référentiel partagé et plat modifié par un autre membre visible au retour (T1), taille proposée pour un nouveau plat (T3, D16), sous Chromium et WebKit.
+- **Tests unitaires** : règles de `internal/dish` (`go test`), `dishes.ts` et la décision de `collections.ts` (`node:test`) ; la table de cas du nom normalisé, commune aux deux.
+
 ## Ce que ce document ne couvre pas encore
 
 - Le plat servi et le planning (R1 à R5), qui ajouteront au modèle le repas et le plat servi.
-- Les listes de courses : article sans quantité issu d'une ligne sans quantité (plan, questions ouvertes).
+- Les listes de courses : article sans quantité issu d'une ligne sans quantité (Q26 ; plan, questions ouvertes).
+- L'écran de modification d'un plat et le bandeau d'une modification croisée, tels que le développeur les dessinera (plan, D19) : `docs/design/README.md` en donne l'interprétation d'ici là.
 - Le delta d'une collection (`?since=<version>`), qui éviterait de tout recharger pour une seule modification : au plan hors-ligne.
 - Le hors-ligne : stockage des plats et du référentiel sur l'appareil, cache du service worker ou IndexedDB, à choisir avec la pagination (plan, questions ouvertes) ; effacement à la déconnexion.
