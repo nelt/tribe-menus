@@ -248,6 +248,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 | Cas | Message |
 | --- | --- |
 | Nom de plat vide ou sans caractère visible (P1, Q31) | « Donnez un nom au plat. » |
+| Caractère de contrôle collé dans le nom d'un plat ou d'un ingrédient (D30) | « Ce nom contient un caractère invalide. » |
 | Nom déjà porté par un plat (Q28) | « Un plat porte déjà ce nom. » |
 | Même ingrédient deux fois (Q27) | « « courgette » figure déjà dans le plat. » |
 | Quantité illisible, nulle ou négative (Q31) | « Quantité invalide. » |
@@ -256,7 +257,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 | Modification croisée (Q25) | bandeau ci-dessus, et le formulaire montre le plat à jour |
 | Enregistrement sans réseau (D18), ou réponse imprévue du serveur | « Réseau nécessaire. Le réseau est lent ou absent : réessayez. » |
 
-Les noms trop longs (60 caractères pour un plat, 40 pour un ingrédient, Q31) sont bornés par le champ lui-même (`maxlength`), sans message.
+Les noms trop longs (60 caractères pour un plat, 40 pour un ingrédient, Q31) sont bornés par le champ lui-même (`maxlength`), sans message ; la quantité aussi, à 10 caractères (6 chiffres, la virgule et 3 décimales). Un nom sans caractère visible (espaces, caractères invisibles collés, D30) est traité comme un nom vide : « Donnez un nom au plat. » pour le plat ; pour une ligne, l'ingrédient tapé est ignoré comme une ligne vide, et « Créer « … » » n'est pas proposé. Aucun refus du serveur que l'écran peut provoquer ne s'affiche comme « Réseau nécessaire ».
 
 ### Planches de référence de l'identité
 

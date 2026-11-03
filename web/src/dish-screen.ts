@@ -13,11 +13,14 @@ import {
   type Ingredient,
   checkDish,
   dishErrorMessage,
+  hasVisible,
   highlight,
   initialOf,
+  maxQuantityLength,
   normalizeName,
   quantityInput,
   suggestIngredients,
+  trimSpaces,
   unitLabel,
   units,
 } from "./dishes.ts";
@@ -265,7 +268,7 @@ export class DishScreen extends LitElement {
     const error = this.#errorOf(line.key);
     const errorId = `line-error-${line.key}`;
     const of = draft ? "" : ` de ${line.name}`;
-    const hasQuantity = line.quantity.trim() !== "";
+    const hasQuantity = trimSpaces(line.quantity) !== "";
     return html`<li class="line ${draft ? "line--draft" : ""}">
       <div class="line-row">
         <input
@@ -273,6 +276,7 @@ export class DishScreen extends LitElement {
           type="text"
           inputmode="decimal"
           autocomplete="off"
+          maxlength=${maxQuantityLength}
           placeholder="Qté"
           aria-label=${`Quantité${of}`}
           aria-invalid=${error === undefined ? "false" : "true"}
@@ -305,7 +309,7 @@ export class DishScreen extends LitElement {
     const { ingredients, create } = suggestIngredients(this.library.catalog.items ?? [], line.text, inDish);
     const options: { ingredient?: Ingredient; create?: string }[] = ingredients.map((ingredient) => ({ ingredient }));
     if (create) {
-      options.push({ create: line.text.trim() });
+      options.push({ create: trimSpaces(line.text) });
     }
     return options;
   }
@@ -409,7 +413,7 @@ export class DishScreen extends LitElement {
   /** An ingredient chosen: the line takes it, and its default unit if a quantity is there. */
   #choose(line: FormLine, option: { ingredient?: Ingredient; create?: string }) {
     const name = option.ingredient?.name ?? option.create ?? "";
-    const unit = line.unit === "" && line.quantity.trim() !== "" ? (option.ingredient?.defaultUnit ?? "") : line.unit;
+    const unit = line.unit === "" && trimSpaces(line.quantity) !== "" ? (option.ingredient?.defaultUnit ?? "") : line.unit;
     this.#update(line, { name, text: "", unit });
     this.open = false;
     this.active = -1;
@@ -417,7 +421,7 @@ export class DishScreen extends LitElement {
 
   /** A quantity typed takes the default unit of the ingredient; without quantity, no unit. */
   #setQuantity(line: FormLine, quantity: string) {
-    if (quantity.trim() === "") {
+    if (trimSpaces(quantity) === "") {
       this.#update(line, { quantity, unit: "" });
       return;
     }
@@ -460,11 +464,14 @@ export class DishScreen extends LitElement {
     return onLine === key ? dishErrorMessage(error) : undefined;
   }
 
-  /** The lines sent: those chosen, and a draft taken as typed; an empty draft is dropped. */
+  /**
+   * The lines sent: those chosen, and a draft taken as typed; a draft without visible
+   * character is dropped as an empty one (D30), the server refusing it.
+   */
   #sentLines(): (FormLine & { sentName: string })[] {
     return this.lines
       .map((l) => ({ ...l, sentName: l.name === "" ? l.text : l.name }))
-      .filter((l) => normalizeName(l.sentName) !== "");
+      .filter((l) => hasVisible(l.sentName));
   }
 
   async #submit(e: Event) {
@@ -473,7 +480,7 @@ export class DishScreen extends LitElement {
       return;
     }
     const sent = this.#sentLines();
-    const lines = sent.map((l) => ({ name: l.sentName, quantity: l.quantity, unit: l.quantity.trim() === "" ? "" : l.unit }));
+    const lines = sent.map((l) => ({ name: l.sentName, quantity: l.quantity, unit: trimSpaces(l.quantity) === "" ? "" : l.unit }));
     // The banner of a crossed change goes at the next save (docs/design/README.md).
     this.conflict = false;
     const refused = checkDish({ name: this.name, lines });
@@ -487,7 +494,7 @@ export class DishScreen extends LitElement {
       const result = await this.library.save(existing, {
         name: this.name,
         ...(this.servings === undefined || this.#servingsGuessed ? {} : { servings: this.servings }),
-        ingredients: lines.map((l) => (l.quantity.trim() === "" ? { name: l.name } : l)),
+        ingredients: lines.map((l) => (trimSpaces(l.quantity) === "" ? { name: l.name } : l)),
       });
       switch (result.kind) {
         case "saved":

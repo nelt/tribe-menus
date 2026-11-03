@@ -263,3 +263,37 @@ func TestValidateResult(t *testing.T) {
 		t.Errorf("line 1 %+v", l)
 	}
 }
+
+// TestNameRules runs the table of cases of a displayed name shared with web/src/dishes.ts
+// (D30): the screen refuses before sending what the server refuses.
+func TestNameRules(t *testing.T) {
+	data, err := os.ReadFile("testdata/names.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var table struct {
+		Cases []struct {
+			Text    string `json:"text"`
+			Control bool   `json:"control"`
+			Visible bool   `json:"visible"`
+			Trimmed string `json:"trimmed"`
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(data, &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Cases) == 0 {
+		t.Fatal("no case")
+	}
+	for _, c := range table.Cases {
+		if got := hasControl(displayName(c.Text)); got != c.Control {
+			t.Errorf("hasControl(displayName(%q)) = %v, want %v", c.Text, got, c.Control)
+		}
+		if got := hasVisible(c.Text); got != c.Visible {
+			t.Errorf("hasVisible(%q) = %v, want %v", c.Text, got, c.Visible)
+		}
+		if got := trimName(c.Text); got != c.Trimmed {
+			t.Errorf("trimName(%q) = %q, want %q", c.Text, got, c.Trimmed)
+		}
+	}
+}

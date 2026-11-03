@@ -6,6 +6,8 @@ import {
   type Ingredient,
   checkDish,
   dishErrorMessage,
+  hasControl,
+  hasVisible,
   highlight,
   initialOf,
   normalizeName,
@@ -15,6 +17,7 @@ import {
   sortDishes,
   splitSaved,
   suggestIngredients,
+  trimSpaces,
   unitLabel,
   units,
   words,
@@ -174,6 +177,9 @@ const suggestions: { text: string; exclude?: string[]; names: string[]; create: 
   { text: "ging", names: [], create: true },
   { text: "ate", names: [], create: true },
   { text: "  ", names: [], create: false },
+  { text: "\u200b", names: [], create: false },
+  { text: "\u0301", names: [], create: false },
+  { text: "\u2003\ufeff", names: [], create: false },
 ];
 
 for (const { text, exclude, names, create } of suggestions) {
@@ -223,6 +229,24 @@ const line = (name: string, quantity = "", unit = "") => ({ name, quantity, unit
 const checks: { name: string; form: Parameters<typeof checkDish>[0]; want: ReturnType<typeof checkDish> }[] = [
   { name: "valid", form: { name: "Chili", lines: [line("bœuf", "500", "g"), line("sel")] }, want: undefined },
   { name: "name required", form: { name: "  ", lines: [] }, want: { error: "name_required" } },
+  { name: "invisible name", form: { name: "\u200b", lines: [] }, want: { error: "name_required" } },
+  { name: "mark alone as name", form: { name: "\u0301", lines: [] }, want: { error: "name_required" } },
+  { name: "emoji as name", form: { name: "🍲", lines: [] }, want: undefined },
+  {
+    name: "quantity of spaces trim() would remove",
+    form: { name: "Chili", lines: [line("riz", "\u2003", "")] },
+    want: { error: "unit_required", line: 0 },
+  },
+  { name: "control character in the name", form: { name: "Soupe\u0007", lines: [] }, want: { error: "name_invalid" } },
+  { name: "control character alone in the name", form: { name: "\u0085", lines: [] }, want: { error: "name_invalid" } },
+  { name: "spaces are not control characters", form: { name: "Soupe\tà\nl'oignon\r", lines: [line("sel\t")] }, want: undefined },
+  { name: "format character kept", form: { name: "Pain 👨\u200d🍳", lines: [] }, want: undefined },
+  {
+    name: "control character in a line",
+    form: { name: "Chili", lines: [line("sel"), line("riz\u0085", "0", "g")] },
+    want: { error: "ingredient_name_invalid", line: 1 },
+  },
+  { name: "delete character in a line", form: { name: "Chili", lines: [line("\u007f")] }, want: { error: "ingredient_name_invalid", line: 0 } },
   { name: "quantity without unit", form: { name: "Chili", lines: [line("sel"), line("riz", "1")] }, want: { error: "unit_required", line: 1 } },
   { name: "invalid quantity", form: { name: "Chili", lines: [line("riz", "0", "g")] }, want: { error: "invalid_quantity", line: 0 } },
   { name: "quantity too precise", form: { name: "Chili", lines: [line("lait", "2,5", "ml")] }, want: { error: "quantity_too_precise", line: 0 } },
@@ -240,15 +264,32 @@ for (const { name, form, want } of checks) {
   });
 }
 
+// The table of cases of a displayed name shared with Go (D30).
+const names = JSON.parse(readFileSync(new URL("../../internal/dish/testdata/names.json", import.meta.url), "utf8")) as {
+  cases: { text: string; control: boolean; visible: boolean; trimmed: string }[];
+};
+
+test("hasControl, hasVisible and trimSpaces: the table shared with Go", () => {
+  assert.ok(names.cases.length > 0);
+  for (const c of names.cases) {
+    const text = JSON.stringify(c.text);
+    assert.equal(hasControl(c.text), c.control, `hasControl(${text})`);
+    assert.equal(hasVisible(c.text), c.visible, `hasVisible(${text})`);
+    assert.equal(trimSpaces(c.text), c.trimmed, `trimSpaces(${text})`);
+  }
+});
+
 test("dishErrorMessage: the messages of docs/design/README.md", () => {
   assert.equal(dishErrorMessage({ error: "name_required" }), "Donnez un nom au plat.");
+  assert.equal(dishErrorMessage({ error: "name_invalid" }), "Ce nom contient un caractère invalide.");
+  assert.equal(dishErrorMessage({ error: "ingredient_name_invalid", line: 0 }), "Ce nom contient un caractère invalide.");
   assert.equal(dishErrorMessage({ error: "name_taken" }), "Un plat porte déjà ce nom.");
   assert.equal(dishErrorMessage({ error: "duplicate_ingredient", line: 1, ingredient: "courgette" }), "« courgette » figure déjà dans le plat.");
   assert.equal(dishErrorMessage({ error: "invalid_quantity", line: 0 }), "Quantité invalide.");
   assert.equal(dishErrorMessage({ error: "unit_required", line: 0 }), "Choisissez une unité.");
   assert.equal(dishErrorMessage({ error: "quantity_too_precise", line: 0 }), "Quantité trop précise pour cette unité.");
   // The codes a bounded entry cannot produce: an unforeseen response.
-  assert.equal(dishErrorMessage({ error: "name_invalid" }), undefined);
+  assert.equal(dishErrorMessage({ error: "name_too_long" }), undefined);
   assert.equal(dishErrorMessage({ error: "too_many_lines" }), undefined);
 });
 
