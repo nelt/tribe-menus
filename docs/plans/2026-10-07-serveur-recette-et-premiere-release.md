@@ -246,17 +246,17 @@ Prérequis : faux constat remis et correctif prêt sur une branche locale, non p
 
 Chronométré :
 
-- [ ] Heure de début notée ; Claude Code prépare la version `v0.1.1` dans la branche, pousse et ouvre la PR, en termes neutres.
-- [ ] Relecture demandée à la session cloud, en termes neutres ; arbitrage.
-- [ ] CI verte : archive de la PR déployée en recette, et seul le scénario touché par le correctif est rejoué.
-- [ ] Fusion, étiquette `v0.1.1`, `release.yml` au vert.
-- [ ] `sudo tribe-menus-deploy v0.1.1` ; le défaut du faux constat n'est plus là.
-- [ ] Heure de fin notée, avec la durée de chaque phase.
+- [x] Heure de début notée ; Claude Code prépare la version `v0.1.1` dans la branche, pousse et ouvre la PR, en termes neutres.
+- [x] Relecture demandée à la session cloud, en termes neutres ; arbitrage.
+- [x] CI verte : archive de la PR déployée en recette, et seul le scénario touché par le correctif est rejoué. *Le 2026-11-03 : le comportement corrigé (une fenêtre d'une heure) ne se rejoue pas à la main ; prouvé par le test, la recette a vérifié le démarrage et la connexion.*
+- [x] Fusion, étiquette `v0.1.1`, `release.yml` au vert.
+- [x] `sudo tribe-menus-deploy v0.1.1` ; le défaut du faux constat n'est plus là. *Instantané du VPS pris avant ; version en service et connexion vérifiées, le défaut n'étant pas rejouable en production sans une heure de refus.*
+- [x] Heure de fin notée, avec la durée de chaque phase.
 
 Hors chronomètre :
 
-- [ ] `sudo tribe-menus-deploy --rollback` en production : `v0.1.0` revient sans demander de restauration, aucune migration n'ayant changé le schéma ; puis `sudo tribe-menus-deploy v0.1.1`.
-- [ ] Publication demandée : commentaire « Analyse » sur la PR, marqué comme une répétition ; ligne de `CHANGELOG.md` complétée par une PR ordinaire.
+- [x] `sudo tribe-menus-deploy --rollback` en production : `v0.1.0` revient sans demander de restauration, aucune migration n'ayant changé le schéma ; puis `sudo tribe-menus-deploy v0.1.1`.
+- [x] Publication demandée : commentaire « Analyse » sur la PR, marqué comme une répétition ; ligne de `CHANGELOG.md` complétée par une PR ordinaire.
 
 ## Étapes
 
@@ -377,9 +377,9 @@ Ce que les séances 2 et 3 ont appris, en une PR ordinaire ; la PR de release es
 
 ### Répétition d'un traitement accéléré : `v0.1.1`
 
-- [ ] **34. Faux constat et correctif** (D12). Le développeur remet à Claude Code, dans la conversation, un constat écrit selon le modèle de `docs/traitement-des-vulnerabilites.md` : la fenêtre des compteurs d'alerte, qui ne couvre que 50 à 60 minutes (revue de la PR #47, point 2), jouée comme une vulnérabilité de `v0.1.0`. Claude Code écrit le test puis le correctif sur une branche locale, en termes neutres, lance `make ci` et **ne pousse pas**.
-- [ ] **35. Séance 5**, par le développeur : check-list S5.
-- [ ] **36. Bilan de la répétition** : durées dans les notes d'exécution ; la question ouverte de `canal-prive` sur la durée d'une séance de livraison reçoit sa réponse ; `docs/traitement-des-vulnerabilites.md` corrigé là où le déroulé écrit s'est écarté du déroulé vécu.
+- [x] **34. Faux constat et correctif** (D12). Le développeur remet à Claude Code, dans la conversation, un constat écrit selon le modèle de `docs/traitement-des-vulnerabilites.md` : la fenêtre des compteurs d'alerte, qui ne couvre que 50 à 60 minutes (revue de la PR #47, point 2), jouée comme une vulnérabilité de `v0.1.0`. Claude Code écrit le test puis le correctif sur une branche locale, en termes neutres, lance `make ci` et **ne pousse pas**.
+- [x] **35. Séance 5**, par le développeur : check-list S5.
+- [x] **36. Bilan de la répétition** : durées dans les notes d'exécution ; la question ouverte de `canal-prive` sur la durée d'une séance de livraison reçoit sa réponse ; `docs/traitement-des-vulnerabilites.md` corrigé là où le déroulé écrit s'est écarté du déroulé vécu.
 - [ ] **37. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour, « Ce que ce plan ne prouve pas » inscrit) ; `docs/securite-depot.md` relu ; `CLAUDE.md` ; `CHANGELOG.md`.
 
 ## Critères de validation
@@ -549,4 +549,19 @@ D1 à D13 proposées par la session qui a écrit le plan le 2026-10-07 ; confirm
   - **Mise en attente et pannes** : `tribe-menus-maintenance production on` sert la page d'attente, le service reste inactif ; `off` le remet en service. `tribe-menus-check drill` : e-mail de panne (de la recette, pour ne pas arrêter la production) et e-mail d'essai du disque reçus.
   - **Durées** : `release.yml` 4 min 27 s de l'étiquette à la release ; déploiement 4,8 s ; retour arrière avec restauration 0,57 s ; retour automatique après un démarrage en échec : le temps des cinq relances de systemd, environ 25 s.
   - **À reprendre après `v0.1.0`** (feuille de route) : un démarrage en échec envoie un e-mail de panne à chaque relance de systemd (six pour la PR #68), et leur texte dit « systemd a cessé de le relancer » dès le premier ; deux tests instables (notes de la PR #58) ; la sonde `-timing` envoie le membre en premier à chaque heure, sur une connexion à rétablir (mesure du 2026-11-01).
+- **Étape 34** (2026-11-03, avant 7 h 09) : faux constat rédigé par Claude Code en session cloud (relecteur), transmis par le développeur à une session neuve de Claude Code dans le Dev Container ; test puis correctif sur la branche locale `feature/compteurs-sur-l-heure`, `make ci`, rien de poussé.
+- **Séance S5** (2026-11-03, 7 h 09 à 7 h 26, le développeur, Claude Code dans le Dev Container en auteur, Claude Code en session cloud en relecteur) : **17 minutes de séance, 15 d'exposition publique**.
 
+  | Phase | Début → fin | Durée |
+  | --- | --- | --- |
+  | Version corrective `0.1.1` dans la branche, push, PR #72 ouverte | 7:09 → 7:11 | 2 min |
+  | Relecture (aucun point à corriger, un point noté) et arbitrage ; CI verte à 7:13, en parallèle | 7:11 → 7:14 | 3 min |
+  | Archive de la PR en recette, démarrage et connexion | 7:14 → 7:16 | 2 min |
+  | Fusion (`dedc07e`), étiquette `v0.1.1` poussée de l'hôte | 7:16 → 7:19 | 3 min |
+  | `release.yml` : `build` 4 min, `publish` 10 s ; release vérifiée (empreinte, `tribe-menus v0.1.1 (dedc07e)`, notes) | 7:18 → 7:22 | 4 min |
+  | Instantané du VPS, `tribe-menus-deploy v0.1.1`, version en service et connexion | 7:22 → 7:26 | 4 min |
+
+  - **Hors chronomètre** : `--rollback` en production, `v0.1.0` revenue sans demander de restauration (aucune migration), puis `v0.1.1` redéployée. Commentaire « Analyse » posté sur la PR #72, marqué comme une répétition ; ligne de `CHANGELOG.md` complétée par cette PR.
+  - **Revue de la PR #72, point 1** (« à noter ») : l'ADR 0023, point 8, parlait encore des six dernières tranches. Corrigé dans cette PR, après la séance, sur décision du développeur.
+  - **Mesure optimiste** : correctif de quelques lignes prêt d'avance, développeur disponible d'un bout à l'autre, relecture sans correction, CI sans aller-retour. La CI de la PR et `release.yml`, environ 6 minutes, sont le seul plancher incompressible.
+- **Étape 36, bilan** (2026-11-03) : la question ouverte de `canal-prive` sur la durée d'une séance de livraison a sa réponse (bien sous l'heure ; accéléré et urgent restent distincts, l'urgent ne gagnant qu'environ 5 minutes). Écarts entre le déroulé écrit et le déroulé vécu, corrigés dans `docs/traitement-des-vulnerabilites.md` : la recette ciblée ne peut pas rejouer un comportement qui demande une heure, le test en tient lieu ; la vérification en production se limite à la version en service et à la connexion quand rejouer la faille ferait du tort ; l'instantané du VPS avant le déploiement (ADR 0025) manquait au déroulé ; durée mesurée ajoutée. Le constat de la répétition aurait relevé du niveau normal (gravité faible) et se déduisait d'un document public (revue de la PR #47) : niveau et neutralité joués pour la répétition, comme le dit l'analyse.
