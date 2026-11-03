@@ -395,11 +395,12 @@ export class DishScreen extends LitElement {
   }
 
   #addLine() {
-    this.#focusDraft = true;
     if (this.lines.some((l) => l.name === "")) {
       this.querySelector<HTMLInputElement>(".line-combobox")?.focus();
       return;
     }
+    // The new line takes the focus once rendered, and only it.
+    this.#focusDraft = true;
     this.lines = [...this.lines, { key: this.#nextKey++, name: "", text: "", quantity: "", unit: "" }];
   }
 

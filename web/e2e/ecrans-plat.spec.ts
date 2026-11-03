@@ -247,3 +247,20 @@ test("the name of an ingredient is bounded to 40 characters, as the server (revi
   await combobox.pressSequentially("a".repeat(41));
   await expect(combobox).toHaveValue("a".repeat(40));
 });
+
+test("“Ajouter un ingrédient” with a line already being typed does not take the focus later (review of PR #81, point 2)", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session] });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
+  await combobox.fill("riz");
+  // The suggestions closed first: the button does not move under the pointer.
+  await combobox.press("Escape");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  await expect(combobox).toBeFocused();
+  const quantity = page.getByLabel("Quantité", { exact: true });
+  await quantity.click();
+  await quantity.pressSequentially("25");
+  await expect(quantity).toHaveValue("25");
+  await expect(combobox).toHaveValue("riz");
+});
