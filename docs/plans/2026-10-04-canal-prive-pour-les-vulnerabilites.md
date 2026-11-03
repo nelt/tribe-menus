@@ -118,7 +118,7 @@ Le 2026-10-06, avec le développeur, après le rodage de la grille par `revue-se
 ## Questions ouvertes
 
 - **Avis de sécurité publié** : en plus de `CHANGELOG.md` et de l'analyse sur la PR, publier un avis GitHub après le déploiement ? Utile s'il existe un jour d'autres instances que la nôtre (ADR 0022, conséquences).
-- **Durée réelle d'une séance de livraison** : inconnue tant que la chaîne de release et le déploiement n'existent pas. Si elle dépasse l'heure, les niveaux accéléré et urgent se rapprochent ; à mesurer à la répétition du plan `recette`.
+- ~~**Durée réelle d'une séance de livraison**~~ : inconnue tant que la chaîne de release et le déploiement n'existent pas. Si elle dépasse l'heure, les niveaux accéléré et urgent se rapprochent ; à mesurer à la répétition du plan `recette`. *Répondu le 2026-11-03 (plan `recette`, S5) : 17 minutes, dont 15 d'exposition publique, bien sous l'heure. Les deux niveaux restent distincts ; l'urgent ne gagne qu'environ 5 minutes (relecture sur la PR et recette ciblée) et se justifie quand on ne peut pas attendre une séance, pas pour gagner du temps dans la séance.*
 
 ## Notes d'exécution
 

@@ -106,9 +106,11 @@ Le flux habituel : le constat est écrit, le correctif passe par une PR relue se
 4. **L'auteur** écrit, sur une branche locale, le test qui échoue puis le correctif ; `make ci` ; **il ne pousse pas**. Nom de branche, messages de commit et commentaires du code sont neutres (voir plus bas).
 5. **Le développeur** ouvre la séance de livraison quand il a le temps de l'enchaîner jusqu'au bout. L'auteur prépare la version corrective dans la même branche (`RELEASING.md`), pousse et ouvre la PR, en termes neutres.
 6. **Le relecteur** relit la PR selon `docs/revue-de-pr.md`, sans décrire la faille : son commentaire dit si le correctif est conforme à ce qui était convenu, et ce qui touche à la faille est dit au développeur, hors de GitHub.
-7. **Le développeur** déploie l'archive de la PR en recette et déroule les scénarios touchés par le correctif, pas la recette complète.
-8. **Le développeur** fusionne, pose l'étiquette, attend la release et déploie en production (ADR 0012, 0016). Il vérifie que la faille n'est plus exploitable.
+7. **Le développeur** déploie l'archive de la PR en recette et déroule les scénarios touchés par le correctif, pas la recette complète. Un comportement qui ne se rejoue pas à la main en quelques minutes (une fenêtre d'une heure, par exemple) est prouvé par le test du correctif ; la recette vérifie alors que la version démarre et que la connexion passe.
+8. **Le développeur** fusionne, pose l'étiquette, attend la release et déploie en production selon `RELEASING.md`, étape 11 : instantané du VPS depuis l'espace client, puis `tribe-menus-deploy` (ADR 0012, 0016, 0025). Il vérifie que la faille n'est plus exploitable ; quand la rejouer en production ferait du tort ou prendrait trop de temps, il vérifie que la version corrigée est en service et que la connexion passe, et le test du correctif tient lieu de preuve.
 9. **Publication** (voir plus bas).
+
+**Durée mesurée** (répétition du 2026-11-03, plan `recette`, S5) : 17 minutes de l'ouverture de la séance à la production, dont 15 d'exposition publique : 2 pour la PR, 3 pour la relecture (CI en parallèle), 2 pour la recette, 3 pour la fusion et l'étiquette, 4 pour `release.yml`, 4 pour l'instantané et le déploiement. Un correctif minuscule, prêt d'avance, sans correction à la relecture : une séance réelle sera plus longue, mais la CI de la PR et `release.yml`, environ 6 minutes à eux deux, sont le seul plancher incompressible.
 
 ### Urgent
 
