@@ -1,5 +1,5 @@
 {
-  "comment": "Table of cases of the normalized name (Q29, ADR 0027), read by go test (internal/dish) and by node:test (web/src/dishes.ts): a case added for one language holds for the other. Spaces are the ASCII spaces (space, tab, line feed, carriage return, form feed, vertical tab), U+00A0 and U+202F, and no other.",
+  "comment": "Table of cases of the normalized name (Q29, ADR 0027), read by go test (internal/dish) and by node:test (web/src/dishes.ts): a case added for one language holds for the other. Spaces are the ASCII spaces (space, tab, line feed, carriage return, form feed, vertical tab), U+00A0 and U+202F, and no other: neither unicode.IsSpace in Go nor \\s or trim() in JavaScript.",
   "cases": [
     { "name": "Œufs brouillés", "normalized": "oeufs brouilles" },
     { "name": "oeufs brouillés", "normalized": "oeufs brouilles" },
@@ -20,17 +20,19 @@
     { "name": "Soupe à l'oignon", "normalized": "soupe a l'oignon" },
     { "name": " soupe a l’oignon ", "normalized": "soupe a l'oignon" },
     { "name": "pomme de terre", "normalized": "pomme de terre" },
-    { "name": "pomme de terre", "normalized": "pomme de terre" },
-    { "name": "\tpomme \n de\r\nterre\u000b\u000c", "normalized": "pomme de terre" },
+    { "name": "pomme\u00a0de\u202fterre", "normalized": "pomme de terre" },
+    { "name": "\tpomme \n de\r\nterre\u000b\f", "normalized": "pomme de terre" },
     { "name": "Maïs", "normalized": "mais" },
     { "name": "Ñoquis", "normalized": "noquis" },
     { "name": "Façon grand-mère", "normalized": "facon grand-mere" },
-    { "name": "éclair", "normalized": "eclair" },
+    { "name": "e\u0301clair", "normalized": "eclair" },
     { "name": "Ŝ", "normalized": "s" },
     { "name": "Straße", "normalized": "straße" },
     { "name": "Chili con carne 2", "normalized": "chili con carne 2" },
     { "name": "", "normalized": "" },
     { "name": "   ", "normalized": "" },
-    { "name": " ", "normalized": "" }
+    { "name": "\u00a0", "normalized": "" },
+    { "name": "a\u2003b", "normalized": "a\u2003b" },
+    { "name": "\ufeffa", "normalized": "\ufeffa" }
   ]
 }
