@@ -73,6 +73,29 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | parts de référence | reference servings | taille de la tribu par défaut |
 | unité par défaut | default unit | |
 | couleur (d'un plat) | color | teinte de la palette, Q19 |
+| ligne d'ingrédient | dish ingredient | un ingrédient d'un plat, avec sa quantité facultative, Q26, Q27 |
+| révision (d'un plat) | revision | augmentée à chaque modification, Q25 |
+| modification croisée | concurrent edit | enregistrement sur une révision dépassée, refusé (`dish_changed`), Q25 |
+| nom normalisé | normalized name | Q29 ; `NormalizeName` en Go, `normalizeName` en TypeScript |
+| recherche | search | dans la bibliothèque, Q30 |
+| proposition (d'ingrédient) | suggestion | autocomplétion, P4 |
+
+## Collections de l'API
+
+| Français | Anglais | Remarque |
+| --- | --- | --- |
+| collection | collection | ensemble d'éléments d'une tribu servi par pages : plats, référentiel, puis planning, listes, membres, sessions ; ADR 0029 |
+| version (d'une collection) | collection version | entier augmenté par les déclencheurs SQLite à toute écriture, table `collection_versions` |
+| page (d'une collection) | page | bornée par le serveur, avec un curseur vers la suivante |
+| curseur | cursor | paramètre `after` |
+| copie (d'une collection, dans le navigateur) | cached collection | en mémoire seulement, `collections.ts` |
+
+## Interface
+
+| Français | Anglais | Remarque |
+| --- | --- | --- |
+| barre d'onglets | tab bar | Planning, Plats, Courses |
+| onglet (de la barre d'onglets) | tab | homonyme de l'onglet du navigateur, mode d'une session (EF-04), que le code ne nomme que par son contraire (`installedApp`) |
 
 ## Planning
 
