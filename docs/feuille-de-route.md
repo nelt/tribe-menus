@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-11-02
+- **Mise à jour** : 2026-11-03
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -30,7 +30,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `canal-prive` | Traitement des vulnérabilités (canal privé écarté) | [`2026-10-04-canal-prive-pour-les-vulnerabilites.md`](plans/2026-10-04-canal-prive-pour-les-vulnerabilites.md) | terminé |
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | terminé |
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
-| `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | en cours |
+| `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | prêt |
 
 ### `production` : application prête pour la production
@@ -41,11 +41,11 @@ Ce qui manque au binaire, sans toucher au serveur : envoi SMTP réel et alerte s
 
 `deploy/provision.sh`, unité systemd confinée, configuration de Caddy, script `tribe-menus-deploy` avec instantané et retour arrière (ADR 0015, 0016) ; DNS et e-mail (CAA, DNSSEC, SPF, DKIM, DMARC, boîtes `no-reply@` et `server@`, ADR 0007 et 0014) ; déploiement en recette et vérification sur téléphone : scénarios `@manuel`, connexion sous Safari (`socle`, D14), réception du code sur les messageries réelles ; ce que la revue de sécurité renvoie à Caddy et au serveur (`revue-securite`, constats 4, 6, 9 et 11 : HSTS, cookie `__Host-` ou recette hors du nom d'hôte de production, dossier de données en 0700 et `UMask=0077`, adresses de la tribu de recette) ; relecture de sécurité des scripts de déploiement dans leurs PR, puis contrôle du serveur en place ; ce que demande le traitement des vulnérabilités (`canal-prive`) : déploiement en production tenant dans une séance, recette ciblée sur une archive de PR, retour arrière fiable, mesure d'attente documentée, répétition d'un traitement accéléré sur un faux constat ; ce que le plan `production` lui remet (« Ce que ce plan ne prouve pas », « Ce que ce plan demande à `recette` ») : unité lancée avec `serve -config`, adresse du client en dernière position de `X-Forwarded-For`, relais par `msmtp` des alertes écrites dans le journal (enregistrements portant l'attribut `alert`, ADR 0023) et adresse de l'administrateur dans `alerts.to`, `deploy/` au complet dans l'archive, première release par une étiquette (contrôle de l'étiquette, notes de version et job `publish` de `release.yml`, que l'essai à blanc n'exerce pas).
 
-Le plan est prêt (décisions confirmées le 2026-10-08) : cinq lots (cookies `__Host-` et tribu de recette, provisionnement, déploiement et supervision, site public minimal, suites de la recette), deux PR de release (`v0.1.0`, puis `v0.1.1` pour la répétition du traitement accéléré), et les gestes du développeur regroupés en cinq séances, chacune avec sa check-list. **La production ouvre dans ce plan**, avec la seule tribu du développeur (`recette`, D1).
+Terminé le 2026-11-03 : cinq lots (cookies `__Host-` et tribu de recette, provisionnement, déploiement et supervision, site public minimal, suites de la recette), cinq séances du développeur, chacune avec sa check-list. **La production est ouverte depuis le 2026-11-02** avec `v0.1.0` et la seule tribu du développeur (`recette`, D1). `v0.1.1` a servi à répéter un traitement accéléré, de la PR à la production en 17 minutes, dont 15 d'exposition publique (S5).
 
 ### `bibliotheque` : bibliothèque de plats
 
-Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17).
+Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17) : *posée le 2026-11-02, le plan peut avancer.*
 
 ## Décisions d'ordonnancement
 
@@ -80,8 +80,13 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) | `recette`, S3 (décision du 2026-11-01) | avant d'inviter la famille |
 | Sauvegarde hors du VPS | ADR 0025, point 4 | avant `v0.2.0` |
 | Un démarrage en échec envoie un e-mail de panne à chaque relance de systemd, dont le texte dit qu'il a cessé de le relancer | `recette`, S4 | prochaine PR touchant `deploy/` |
-| Tests instables : `TestProvisionRefusesInstance/key_twice` (valeur cherchée dans un chemin aléatoire), `TestServeOnTCPFromConfig` (durée de l'arrêt, qui vide la file des demandes de code) | `recette`, PR #68 | après `v0.1.0`, PR ordinaire |
 | `make probe -timing` : le membre passe toujours en premier, sur une connexion à rétablir après l'heure d'attente | `recette`, mesure du 2026-11-01 | avant la prochaine mesure |
+| Retour arrière automatique quand une migration échoue à mi-chemin : non éprouvé | `recette`, « Ce que ce plan ne prouve pas » | première migration risquée, au plus tard `bibliotheque` (migration `0007`) |
+| Reconstruction du serveur avec des données à reprendre : procédure écrite (étape 19), jouée seulement à vide | `recette`, « Ce que ce plan ne prouve pas » | avec la sauvegarde hors site, avant `v0.2.0` |
+| Délivrabilité dans la durée : rapports DMARC à lire avant de durcir la politique | `recette` ; ADR 0014, point 3 | après quelques semaines de production |
+| Seuils des alertes à revoir | `production`, D8 ; `recette` | après les premières semaines de production |
+| Durée de HSTS à allonger | `recette` | après quelques semaines sans incident |
+| Avis de sécurité GitHub publié après une version corrective, en plus de l'analyse et de `CHANGELOG.md` | `canal-prive` et `recette`, questions ouvertes | à la première vraie vulnérabilité, ou s'il existe d'autres instances |
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
