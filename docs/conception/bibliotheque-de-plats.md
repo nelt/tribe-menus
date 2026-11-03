@@ -1,7 +1,7 @@
 # Conception : bibliothèque de plats
 
 - **Mise à jour** : 2026-11-03
-- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29, accordé aux specs, au glossaire et aux ADR 0027 à 0029 par le lot A (2026-11-03) ; à tenir à jour pendant ses lots
+- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29, accordé aux specs, au glossaire et aux ADR 0027 à 0029 par le lot A (2026-11-03), API et noms du code fixés par le lot B (2026-11-03) ; à tenir à jour pendant ses lots
 - **Stories** : P1 à P4, T1 à T3 ; ENF-02 pour les plats et le référentiel
 
 Ce document décrit la conception retenue pour la bibliothèque de plats, le référentiel d'ingrédients et la taille de la tribu : modèle, découpage du code, échanges. Il est tenu à jour par les plans qui touchent ce domaine (planning, listes de courses, hors-ligne) ; un plan, lui, se fige une fois terminé. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (P1 à P4, T3, Q19, Q20, Q25 à Q31), les décisions dans les ADR (0027 recherche et autocomplétion dans le navigateur, 0028 scénarios `@ui`, 0029 versions et ETag des collections) et dans les plans ; ce document les cite sans les répéter.
@@ -96,7 +96,9 @@ La table de cas commune (D9) contient au moins « Œufs brouillés », « oeufs 
 
 Ces règles fixent l'identité d'un ingrédient et l'unicité d'un nom de plat, que les index uniques de la migration `0007` figent : les corriger après coup demanderait de fusionner des données.
 
-Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. La décomposition Unicode se fait par `golang.org/x/text/unicode/norm` en Go, seule dépendance d'exécution nouvelle, et par `String.prototype.normalize` dans le navigateur. Une table de cas commune, un fichier JSON de `internal/dish/testdata/` lu par `go test` et par `node:test` (chemin fixé au lot B), les garde d'accord (D9).
+Les espaces de l'étape 5 sont un ensemble fixé, le même dans les deux langages : les espaces ASCII (espace, tabulation, saut de ligne, retour chariot, saut de page, tabulation verticale), U+00A0 et U+202F, et aucun autre ; ni `unicode.IsSpace` en Go ni `\s` en JavaScript, qui ne retiennent pas les mêmes caractères (lot B).
+
+Elle existe deux fois : en Go, qui décide de l'identité d'un ingrédient et de l'unicité d'un nom de plat, et en TypeScript, qui cherche et propose. La décomposition Unicode se fait par `golang.org/x/text/unicode/norm` en Go, seule dépendance d'exécution nouvelle, et par `String.prototype.normalize` dans le navigateur. Une table de cas commune, le fichier `internal/dish/testdata/normalized-names.json`, lu par `go test` et par `node:test`, les garde d'accord (D9).
 
 Pour la recherche et l'autocomplétion (Q30), le nom normalisé est découpé en **mots** sur tout caractère hors `a-z` et `0-9` ; un terme recherché trouve un mot qui **commence** par lui, et tous les termes doivent être trouvés (P3, comme la maquette `Doux-Bibliotheque`).
 
@@ -226,21 +228,32 @@ classDiagram
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session (ADR 0001, 0003).
 - **`web/src`** : `collections.ts`, copie générique d'une collection, dont la décision (garder, recharger, reprendre) est une fonction pure (plan, D29) ; `dishes.ts`, module pur testé par `node:test` (ADR 0005, point 3) ; écrans en DOM classique, stepper de parts en shadow DOM avec `ElementInternals` (ADR 0004, point 3).
 
-Les noms des méthodes sont indicatifs : le lot B les fixe.
+Noms fixés au lot B :
+
+- **`internal/dish`** : règles (`NormalizeName`, `ParseUnit`, `ParseQuantity`, `Quantity.Text`, `PickColor`, `Palette`), validation d'un `Input` (codes `ErrorCode`, erreur `InputError` avec la ligne en cause), `Library` (`Dishes`, `Catalog`, `Version`, `Create`, `Update`) derrière les interfaces `Store` (lectures par pages, `Write`) et `Tx` (lectures et écritures d'une transaction d'écriture) ; erreurs `ErrNotFound` et `ChangedError` (le plat à jour).
+- **`internal/collection`** : `Versions`, `Page[T]`, `Source[T]` (version, puis page et version dans une même transaction), `Serve`, `ETag`, `ErrBadCursor`.
+- **`internal/storage`** : `DishStore`, adaptateur de `dish.Store`, et la déclaration `Collections` (nom d'une collection et ses tables), que lit le test de schéma. L'adaptateur est dans `internal/storage`, comme le prévoit le plan, alors que celui des membres et des sessions (`tribe.Store`) est dans `internal/tribe`.
+- **`internal/tribe`** : `Store.Size`, `Store.SetSize`, `Store.ActiveMembers`.
 
 ## API
 
 | Route | Corps | Réponses |
 | --- | --- | --- |
-| `GET dishes?after=…` | | 200 : une page de 50 plats au plus, avec leurs lignes, dans l'ordre des identifiants, et le curseur de la page suivante, absent à la dernière (D2) |
-| `POST dishes` | nom, parts (facultatives : taille de la tribu), lignes `{ name, quantity?, unit? }` | 201 : le plat, chaque ligne portant le nom affiché et l'unité par défaut de son ingrédient (D27), et les versions des collections (ADR 0029) ; 400 : une erreur par cas de `docs/design/README.md`, « Messages » (codes indicatifs, fixés au lot B : `name_required`, `name_taken`, `duplicate_ingredient`, `invalid_quantity`, `quantity_too_precise`, `unit_required`, `too_many_lines`, `name_too_long`) |
-| `PUT dishes/{id}` | révision lue, nom, parts, lignes | 200 : le plat, comme pour `POST` ; 400 comme pour `POST` ; 409 `dish_changed` avec le plat à jour (Q25, D5) ; 404 comme un identifiant inconnu (ENF-02) |
-| `DELETE dishes/{id}` | | 405 : la route n'existe pas (P2, ADR 0005, point 4) |
-| `GET ingredients?after=…` | | 200 : une page de 500 ingrédients au plus, nom et unité par défaut, et le curseur de la page suivante (D2) |
-| `GET tribe` | | 200 : nom, taille, nombre de membres actifs |
-| `PUT tribe/size` | taille | 200 ; 400 hors de 1 à 50 |
+| `GET dishes?after=…` | | 200 : `{ items, next? }`, une page de 50 plats au plus, avec leurs lignes, dans l'ordre des identifiants, et le curseur de la page suivante, absent à la dernière (D2) |
+| `POST dishes` | `{ name, servings?, ingredients: [{ name, quantity?, unit? }] }` | 201 : `{ dish, versions }`, le plat, chaque ligne portant le nom affiché et l'unité par défaut de son ingrédient (D27), et les versions des collections (ADR 0029) ; 400 : `{ error, line?, ingredient? }` |
+| `PUT dishes/{id}` | `{ revision, name, servings, ingredients }` | 200 : comme pour `POST` ; 400 comme pour `POST`, et `bad_request` sans révision ; 409 `{ error: "dish_changed", dish }`, le plat à jour (Q25, D5) ; 404 `not_found` pour un identifiant inconnu comme pour celui d'une autre tribu (ENF-02) |
+| `DELETE dishes/{id}` | | 405 : la route n'existe pas (P2, ADR 0005, point 4) ; `GET dishes/{id}` non plus : 404 de toute route `GET` inconnue |
+| `GET ingredients?after=…` | | 200 : `{ items: [{ name, defaultUnit? }], next? }`, une page de 500 ingrédients au plus (D2) ; 400 `bad_request` pour un curseur illisible |
+| `GET tribe` | | 200 : `{ name, size, activeMembers }` |
+| `PUT tribe/size` | `{ size }` | 200 : comme `GET tribe` ; 400 `invalid_size` hors de 1 à 50 |
 
-Une ligne désigne son ingrédient **par son nom** : le serveur le rapproche d'un ingrédient existant de même nom normalisé, ou le crée (Q20). C'est déjà le mode prévu pour un article ajouté hors ligne (ADR 0004, point 7).
+Toutes ces routes répondent 401 `no_session` sans session, pour une tribu existante comme pour une autre, et gardent `Cache-Control: no-store`. Corps limité à 16 Kio pour un plat, 4 Kio ailleurs (D20).
+
+- **Une ligne désigne son ingrédient par son nom** : le serveur le rapproche d'un ingrédient existant de même nom normalisé, ou le crée (Q20). C'est déjà le mode prévu pour un article ajouté hors ligne (ADR 0004, point 7).
+- **Quantité** : le texte saisi, une chaîne JSON (« 2,5 » ou « 2.5 »), lue et contrôlée par le serveur (Q31) ; il la rend dans l'unité de la ligne, avec un point et sans zéro inutile (« 0.125 ») : `dishes.ts` l'affiche avec une virgule. Un nombre JSON est refusé (`bad_request`). **Unité** : son code, `g`, `kg`, `ml`, `cl`, `l`, `piece`, `tablespoon`, `teaspoon`, `pinch`. Une unité sans quantité est ignorée : sans quantité, pas d'unité (Q26).
+- **Parts** : de 1 à 50, comme la taille de la tribu ; absentes de `POST`, la taille de la tribu (D16), obligatoires dans `PUT`.
+- **Unité par défaut** : dans les lignes du plat renvoyé par une écriture ou un refus `409` (D27), et dans `GET ingredients` ; pas dans les lignes de `GET dishes`, pour qu'un changement du référentiel ne laisse pas une page de plats périmée sous la même version.
+- **Codes d'erreur** (`dish.ErrorCode`) : `name_required`, `name_too_long`, `name_taken`, `invalid_servings`, `too_many_lines`, `ingredient_name_required`, `ingredient_name_too_long`, `invalid_unit`, `unit_required`, `invalid_quantity`, `quantity_too_precise`, `duplicate_ingredient` ; `line` est l'indice de la ligne en cause, `ingredient` le nom de l'ingrédient déjà dans le plat. Les messages sont ceux de `docs/design/README.md` ; les codes qui n'y ont pas de message (parts, noms d'ingrédients, unité inconnue) ne viennent que d'un écran qui ne borne pas sa saisie.
 
 ### Versions des collections
 
@@ -254,6 +267,8 @@ Mécanisme générique, pour toutes les collections de l'API (plan, D28 ; ADR 00
 | Écriture | `POST dishes`, `PUT dishes/{id}` | le plat, et `versions` : `{ "dishes": 43, "ingredients": 18 }` |
 
 La version d'une collection est un entier de la table `collection_versions`, augmenté par des déclencheurs SQLite sur chacune de ses tables : `dishes` pour les tables `dishes` et `dish_ingredients`, `ingredients` pour la table `ingredients`. Aucune écriture ne peut oublier de l'augmenter.
+
+SQLite n'a que des déclencheurs par ligne : un plat de cinq lignes augmenterait la version de six. Une écriture passée par `storage` (`writeCollections`) ramène donc, avant de valider sa transaction, chaque collection qu'elle a changée à sa version d'avant plus un : une écriture augmente une version d'une unité exactement, ce qui permet au navigateur de savoir si un autre membre a écrit entre-temps (ADR 0029, point 4). La transaction est immédiate : personne n'écrit entre la lecture et l'écriture, et une version validée n'est jamais diminuée. Une écriture qui ne passerait pas par là augmenterait la version de plus d'une unité : les copies se rechargeraient, ce qui reste correct (lot B).
 
 ## Données dans le navigateur
 

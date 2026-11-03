@@ -66,8 +66,9 @@ type world struct {
 	processed chan struct{}
 	recorder  *mail.Recorder
 
-	auth   loginState
-	alerts alertState
+	auth    loginState
+	alerts  alertState
+	kitchen kitchenState
 }
 
 // loginState is what the login scenarios remember from step to step.
@@ -115,6 +116,7 @@ func (w *world) registerSteps(sc *godog.ScenarioContext) {
 	w.registerLoginSteps(sc)
 	w.registerCompartmentSteps(sc)
 	w.registerAlertSteps(sc)
+	w.registerDishSteps(sc)
 }
 
 // reset prepares the world of a new scenario.
@@ -123,6 +125,7 @@ func (w *world) reset(dir string) {
 	w.recorder = &mail.Recorder{}
 	w.outbox = mail.NewOutbox(w.recorder, tribe.LoginCodeValidity, slog.New(slog.DiscardHandler))
 	w.auth = loginState{declared: map[string]string{}, devices: map[string]*device{}, ignored: map[int]bool{}}
+	w.kitchen = kitchenState{people: map[string]*device{}, opened: map[string]apiDish{}}
 }
 
 func (w *world) clock() time.Time { return w.now }

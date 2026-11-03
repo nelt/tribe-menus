@@ -18,6 +18,15 @@ func (q *Queries) InsertTribe(ctx context.Context, name string) error {
 	return err
 }
 
+const setTribeSize = `-- name: SetTribeSize :exec
+UPDATE tribe SET size = ? WHERE id = 1
+`
+
+func (q *Queries) SetTribeSize(ctx context.Context, size int64) error {
+	_, err := q.db.ExecContext(ctx, setTribeSize, size)
+	return err
+}
+
 const tribeName = `-- name: TribeName :one
 SELECT name FROM tribe WHERE id = 1
 `
@@ -27,4 +36,15 @@ func (q *Queries) TribeName(ctx context.Context) (string, error) {
 	var name string
 	err := row.Scan(&name)
 	return name, err
+}
+
+const tribeSize = `-- name: TribeSize :one
+SELECT size FROM tribe WHERE id = 1
+`
+
+func (q *Queries) TribeSize(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, tribeSize)
+	var size int64
+	err := row.Scan(&size)
+	return size, err
 }

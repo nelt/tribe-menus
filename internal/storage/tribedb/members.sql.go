@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const countActiveMembers = `-- name: CountActiveMembers :one
+SELECT count(*) FROM members WHERE status = 'active'
+`
+
+func (q *Queries) CountActiveMembers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countActiveMembers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const insertMember = `-- name: InsertMember :one
 INSERT INTO members (email, display_name, status, added_at, added_by)
 VALUES (?, ?, 'active', ?, ?)
