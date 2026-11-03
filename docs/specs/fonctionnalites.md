@@ -1,6 +1,6 @@
 # Spécifications fonctionnelles : menus de la semaine (V1)
 
-- **Date** : 2026-09-26 (listes de courses révisées le 2026-09-27, refondues le 2026-10-01)
+- **Date** : 2026-09-26 (listes de courses révisées le 2026-09-27, refondues le 2026-10-01 ; bibliothèque de plats précisée le 2026-11-03, plan `bibliotheque`)
 - **Statut** : prêt
 
 ## Objectif
@@ -11,10 +11,10 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 
 | Concept | Description |
 | --- | --- |
-| **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Elle a une **taille** (4 par défaut, réglable, T3), qui sert de nombre de parts initial. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
-| **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut, proposée à chaque saisie (Q20). Il est créé en saisissant un plat (P4) ou un article ajouté (C3), jamais seul. |
+| **Tribu** | Groupe de membres qui partagent la bibliothèque de plats, le référentiel d'ingrédients, le planning et les listes de courses. Elle a une **taille** (4 par défaut, réglable de 1 à 50, T3, Q31), qui sert de nombre de parts initial. Rien n'est partagé entre tribus (voir `gestion-membres-et-sessions.md` et ENF-02). |
+| **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut, proposée à chaque saisie, absente tant qu'aucune ligne ne lui a donné de quantité (Q20, Q26). Son nom normalisé (Q29) est unique dans la tribu. Il est créé en saisissant un plat (P4) ou un article ajouté (C3), jamais seul. |
 | **Bibliothèque de plats** | L'ensemble des plats de la tribu. Un plat y reste indépendamment de son utilisation dans les repas. |
-| **Plat** | Un nom et une liste d'ingrédients avec quantités, exprimée pour un **nombre de parts de référence** (la taille de la tribu par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
+| **Plat** | Un nom, unique dans la tribu (Q28), et une liste d'ingrédients, chacun une seule fois (Q27) et avec une quantité facultative (Q26), exprimée pour un **nombre de parts de référence** (la taille de la tribu par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
 | **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis. |
 | **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (la taille de la tribu par défaut). Exemple : chili 3 parts et chili végétarien 1 part. |
 | **Liste de courses** | Liste nommée, **indépendante du planning** : elle existe par elle-même et reçoit des articles ajoutés à la main (C3) ou les courses des repas d'une période (C4). Une tribu a toujours **au moins une liste**, et exactement une **liste principale**, celle que montre l'onglet Courses (C1). Plusieurs listes peuvent exister en même temps. Une liste n'est jamais close : déclarer les courses faites en retire les articles cochés (C11) ; elle n'est supprimée que vide (C12). |
@@ -82,10 +82,10 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 
 ### Bibliothèque de plats (`features/bibliotheque-plats.feature`)
 
-- **P1** : Je crée un plat avec un nom et une liste d'ingrédients (ingrédient, quantité, unité), pour un nombre de parts égal par défaut à la taille de la tribu.
-- **P2** : Je modifie un plat ; la modification s'applique à tous les repas où il est servi. Pas de suppression en V1.
-- **P3** : Je retrouve un plat en cherchant sur les mots de son nom et sur ses ingrédients.
-- **P4** : La saisie d'un ingrédient propose ceux qui existent déjà (autocomplétion, sans tenir compte de la casse ni des accents) ; je peux en créer un nouveau. L'unité par défaut de l'ingrédient est proposée.
+- **P1** : Je crée un plat avec un nom, que ne porte aucun autre plat de la tribu, et une liste d'ingrédients (ingrédient, puis quantité et unité facultatives ; chaque ingrédient une seule fois), pour un nombre de parts égal par défaut à la taille de la tribu.
+- **P2** : Je modifie un plat ; la modification s'applique à tous les repas où il est servi. Si un autre membre l'a modifié entre-temps, mon enregistrement est refusé et le plat à jour m'est présenté (Q25). Pas de suppression en V1.
+- **P3** : Je retrouve un plat en cherchant sur les mots de son nom et sur ses ingrédients (Q30).
+- **P4** : La saisie d'un ingrédient propose ceux qui existent déjà (autocomplétion, sans tenir compte de la casse ni des accents) ; je peux en créer un nouveau. Un ingrédient déjà dans le plat n'est pas proposé (Q27). L'unité par défaut de l'ingrédient est proposée.
 
 ### Planning des repas (`features/planning-repas.feature`)
 
@@ -168,3 +168,20 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
 - **Q22** : un plat servi n'est reçu qu'une fois par liste. Une liste mémorise les plats servis qu'elle a reçus, par ajout ou par déplacement, y compris ceux dont les articles ont depuis été achetés ou déplacés : ajouter de nouveau les courses d'une période n'apporte que les plats servis nouveaux (2026-10-01).
 - **Q23** : une tribu a toujours au moins une liste et exactement une liste principale. La liste principale est créée avec la tribu (nom « Courses ») ; en désigner une autre retire ce rôle à la précédente ; la liste principale ne peut pas être supprimée (2026-10-01).
 - **Q24** : un article calculé agrège, pour un ingrédient et une famille d'unités, les quantités de tous ses plats servis : une seule ligne par liste, dépliable vers ses provenances, déplacée d'un bloc (2026-10-01).
+- **Q25** : un plat porte une **révision**, augmentée à chaque modification. Un enregistrement fait sur une révision dépassée, parce qu'un autre membre a modifié le plat entre-temps, est refusé : rien n'est écrasé ; le membre voit « Ce plat a été modifié entre-temps » et le plat à jour, qu'il modifie de nouveau. Pas de fusion automatique des deux modifications (plan `bibliotheque`, D5, 2026-10-29).
+- **Q26** : la quantité d'un ingrédient dans un plat est **facultative** (« sel », « poivre »), comme pour un article ajouté (Q13). Sans quantité, pas d'unité ; avec une quantité, une unité. L'unité par défaut d'un ingrédient est la première unité saisie avec lui ; tant qu'aucune ligne ne lui en a donné, il n'en a pas (précise Q20). Ce que devient une ligne sans quantité dans les courses (C4) sera fixé avec les listes de courses (plan `bibliotheque`, D4, 2026-10-29).
+- **Q27** : un ingrédient ne figure qu'**une fois dans un plat**, quelle que soit l'unité : « 3 pièces » et « 200 g » de courgette sont refusés dans un même plat. Un ingrédient déjà dans le plat n'est plus proposé à la saisie (plan `bibliotheque`, D6, 2026-10-29).
+- **Q28** : deux plats d'une tribu ne portent pas le **même nom**, au sens du nom normalisé (Q29) : « Soupe à l'oignon » et « soupe a l’oignon » sont le même nom ; le second est refusé avec « Un plat porte déjà ce nom ». Contrairement aux listes de courses (Q17) (plan `bibliotheque`, D7, 2026-10-29).
+- **Q29** : **nom normalisé**, une seule règle pour l'identité d'un ingrédient (Q20), l'unicité d'un nom de plat (Q28), la recherche (P3) et l'autocomplétion (P4). Deux noms sont le même s'ils ne diffèrent que par (complète Q20) :
+  - la casse ;
+  - les ligatures œ et æ, qui valent oe et ae (« Bœuf » et « boeuf ») ;
+  - les accents et autres signes diacritiques ;
+  - l'apostrophe, droite ou typographique (« piment d’Espelette » et « piment d'Espelette ») ;
+  - les espaces : en tête, en fin, répétées, insécables.
+
+  La règle exacte (ordre des étapes, caractères concernés) est dans `docs/conception/bibliotheque-de-plats.md` ; le nom affiché reste celui de la première saisie (plan `bibliotheque`, D8, 2026-10-29).
+- **Q30** : la **bibliothèque** est présentée par ordre alphabétique du nom des plats, les résultats d'une recherche aussi. Une recherche découpe le texte saisi en termes, et le nom et les ingrédients de chaque plat en mots, après normalisation (Q29) ; un terme trouve un mot qui commence par lui (« courg » trouve « courgette ») ; un plat est un résultat s'il contient tous les termes (« gratin courgette ») (plan `bibliotheque`, D22, 2026-10-29).
+- **Q31** : **limites** (plan `bibliotheque`, D12 et D20, 2026-10-29) :
+  - taille de la tribu de 1 à 50 ;
+  - nom d'un plat de 60 caractères au plus, nom d'un ingrédient de 40, 40 ingrédients par plat ;
+  - quantité strictement positive, saisie avec une virgule ou un point ; au plus les décimales que l'unité permet : aucune en ml, une en cl, trois en l, g, kg, pièce, cuillère à soupe, cuillère à café et pincée (« 2,5 cl » et « 0,125 kg » acceptés, « 2,5 ml » refusé). Au-delà, la quantité est refusée (« Quantité trop précise pour cette unité ») plutôt qu'arrondie en silence.
