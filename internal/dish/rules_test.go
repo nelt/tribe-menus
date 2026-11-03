@@ -166,7 +166,9 @@ func TestPickColor(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	line := func(name, quantity, unit string) LineInput { return LineInput{Name: name, Quantity: quantity, Unit: unit} }
+	line := func(name, quantity, unit string) LineInput {
+		return LineInput{Name: name, Quantity: quantity, Unit: unit}
+	}
 	lines := func(n int) []LineInput {
 		var l []LineInput
 		for i := range n {
