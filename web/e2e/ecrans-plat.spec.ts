@@ -254,8 +254,6 @@ test("“Ajouter un ingrédient” with a line already being typed does not take
   await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
   const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
   await combobox.fill("riz");
-  // The suggestions closed first: the button does not move under the pointer.
-  await combobox.press("Escape");
   await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
   await expect(combobox).toBeFocused();
   const quantity = page.getByLabel("Quantité", { exact: true });
@@ -263,4 +261,36 @@ test("“Ajouter un ingrédient” with a line already being typed does not take
   await quantity.pressSequentially("25");
   await expect(quantity).toHaveValue("25");
   await expect(combobox).toHaveValue("riz");
+});
+
+test("a click on a button below the open suggestions reaches it", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session], getIngredients: [pageReply("ingredients", 1, catalog)] });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
+  await combobox.fill("tom");
+  const suggestions = page.getByRole("listbox", { name: "Ingrédients proposés" }).getByRole("option");
+  await expect(suggestions).toHaveCount(3);
+  // The suggestions close when the combobox loses the focus, but only after the click, so
+  // that the button does not move under the pointer.
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  await expect(combobox).toBeFocused();
+  await page.getByRole("button", { name: "Une part de plus" }).click();
+  await expect(page.getByRole("group", { name: "Pour combien de parts ?" })).toContainText("5");
+  await expect(suggestions).toHaveCount(0);
+});
+
+// A tap reached the button even before the suggestions closed after the gesture: the test
+// keeps it so.
+test("a tap on a button below the open suggestions reaches it", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session], getIngredients: [pageReply("ingredients", 1, catalog)] });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).tap();
+  const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
+  await combobox.fill("tom");
+  const suggestions = page.getByRole("listbox", { name: "Ingrédients proposés" }).getByRole("option");
+  await expect(suggestions).toHaveCount(3);
+  await page.getByRole("button", { name: "Une part de plus" }).tap();
+  await expect(page.getByRole("group", { name: "Pour combien de parts ?" })).toContainText("5");
+  await expect(suggestions).toHaveCount(0);
 });

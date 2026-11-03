@@ -83,7 +83,16 @@ export class DishScreen extends LitElement {
   #nextKey = 0;
   #busy = false;
   #focusDraft = false;
+  /** A pointer is pressed: the suggestions close only once it is released (see #blur). */
+  #pointerDown = false;
+  #afterPointerUp: (() => void) | undefined;
   readonly #onChange = () => this.#libraryChanged();
+  readonly #onPointerDown = () => (this.#pointerDown = true);
+  readonly #onPointerUp = () => {
+    this.#pointerDown = false;
+    this.#afterPointerUp?.();
+    this.#afterPointerUp = undefined;
+  };
 
   protected override createRenderRoot() {
     return this;
@@ -92,12 +101,18 @@ export class DishScreen extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.library.addEventListener("change", this.#onChange);
+    document.addEventListener("pointerdown", this.#onPointerDown, true);
+    document.addEventListener("pointerup", this.#onPointerUp, true);
+    document.addEventListener("pointercancel", this.#onPointerUp, true);
     void this.#start();
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.library.removeEventListener("change", this.#onChange);
+    document.removeEventListener("pointerdown", this.#onPointerDown, true);
+    document.removeEventListener("pointerup", this.#onPointerUp, true);
+    document.removeEventListener("pointercancel", this.#onPointerUp, true);
   }
 
   protected override updated(changed: PropertyValues<this>) {
@@ -311,7 +326,7 @@ export class DishScreen extends LitElement {
       .value=${live(line.text)}
       @input=${(e: Event) => this.#type(line, (e.target as HTMLInputElement).value)}
       @keydown=${(e: KeyboardEvent) => this.#key(line, e)}
-      @blur=${() => (this.open = false)}
+      @blur=${this.#blur}
       @focus=${() => (this.open = true)}
     >`;
   }
@@ -334,6 +349,27 @@ export class DishScreen extends LitElement {
         </li>`;
       })}
     </ul>`;
+  }
+
+  /**
+   * The suggestions close when the combobox loses the focus, but after the gesture that took
+   * it: closed at once, the list would move what is below it, and the click would miss the
+   * button pressed. With a mouse, the pointer is released after the blur; with a finger,
+   * the blur, the release and the click come in the same task.
+   */
+  #blur() {
+    const close = () =>
+      setTimeout(() => {
+        if (!this.contains(document.activeElement) || !document.activeElement?.classList.contains("line-combobox")) {
+          this.open = false;
+          this.active = -1;
+        }
+      }, 0);
+    if (this.#pointerDown) {
+      this.#afterPointerUp = close;
+    } else {
+      close();
+    }
   }
 
   #type(line: FormLine, text: string) {
