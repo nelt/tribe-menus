@@ -180,7 +180,7 @@ test("a draft without visible character: nothing to create, and dropped as an em
   await expect(page.getByLabel("Quantité", { exact: true })).toHaveAttribute("maxlength", "10");
   const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
   await combobox.fill("\u200b");
-  await expect(page.getByRole("option")).toHaveCount(0);
+  await expect(page.getByRole("listbox", { name: "Ingrédients proposés" }).getByRole("option")).toHaveCount(0);
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
   await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
   const created = received.filter((r) => r.method === "POST" && r.path === "dishes");
