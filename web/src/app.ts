@@ -2,6 +2,9 @@
 // of the tribe, under /tribes/<identifier>/ (ADR 0004, 0006).
 import { LitElement, html } from "lit";
 import { Api, type Session } from "./api.ts";
+import "./dish-library-screen.ts";
+import type { Dish } from "./dishes.ts";
+import { Library } from "./library.ts";
 import "./home-screen.ts";
 import "./loading-screen.ts";
 import "./login-screen.ts";
@@ -29,6 +32,8 @@ export class App extends LitElement {
   declare page: Page;
   readonly #router: Router;
   readonly #api: Api;
+  /** The dish library and the catalog in memory, shared by the screens (D25). */
+  readonly #library: Library;
 
   constructor() {
     super();
@@ -39,11 +44,20 @@ export class App extends LitElement {
       fetch: (input, init) => window.fetch(input, init),
       onUnauthorized: () => {
         this.session = undefined;
+        this.#library.clear();
         this.#router.navigate(pages.login, { replace: true });
       },
       timeoutMs: requestTimeoutMs,
     });
+    this.#library = new Library(this.#api);
     this.addEventListener("click", (e) => this.#followLink(e));
+    // Back in the foreground, the copy is checked: what another member changed in between
+    // appears (D25, D29).
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && this.session !== undefined && this.#library.loaded) {
+        void this.#library.check();
+      }
+    });
   }
 
   protected override createRenderRoot() {
@@ -75,6 +89,12 @@ export class App extends LitElement {
     switch (page.name) {
       case "home":
         return html`<mt-home .api=${this.#api} .session=${session} .tribeHref=${this.#router.href(pages.tribe)} @signed-out=${this.#signedOut}></mt-home>`;
+      case "dishes":
+        return html`<mt-dish-library
+          .library=${this.#library}
+          .newDishHref=${this.#router.href(pages.newDish)}
+          .dishHref=${(dish: Dish) => this.#router.href({ name: "dish", id: dish.id })}
+        ></mt-dish-library>`;
       default:
         return comingSoon(page);
     }
@@ -133,6 +153,7 @@ export class App extends LitElement {
 
   #signedOut() {
     this.session = undefined;
+    this.#library.clear();
     this.#router.navigate(pages.login, { replace: true });
   }
 }
