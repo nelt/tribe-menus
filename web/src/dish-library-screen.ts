@@ -2,7 +2,7 @@
 // The library is checked at each visit (plan bibliotheque, D25); the search runs in the
 // browser, at each keystroke, on the copy in memory (ADR 0027).
 import { LitElement, html, nothing } from "lit";
-import { type Dish, type Result, searchDishes } from "./dishes.ts";
+import { type Dish, type Result, initialOf, searchDishes } from "./dishes.ts";
 import type { Library } from "./library.ts";
 import { networkErrorMessage } from "./login.ts";
 import { alertMessage } from "./templates.ts";
@@ -99,7 +99,7 @@ export class DishLibraryScreen extends LitElement {
   #card({ dish, found }: Result) {
     return html`<li>
       <a class="dish-card ${colorClass(dish.color)}" href=${this.dishHref(dish)}>
-        <span class="dish-initial" aria-hidden="true">${dish.name.charAt(0)}</span>
+        <span class="dish-initial" aria-hidden="true">${initialOf(dish.name)}</span>
         <span class="dish-card-body">
           <span class="dish-card-head">
             <span class="dish-name">${dish.name}</span>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { type Dish, normalizeName, searchDishes, sortDishes, words } from "./dishes.ts";
+import { type Dish, initialOf, normalizeName, searchDishes, sortDishes, words } from "./dishes.ts";
 
 // The table of cases shared with NormalizeName in Go (D9).
 const table = JSON.parse(readFileSync(new URL("../../internal/dish/testdata/normalized-names.json", import.meta.url), "utf8")) as {
@@ -74,4 +74,14 @@ test("sortDishes: alphabetical order in French", () => {
     sorted.map((d) => d.name),
     ["ail", "Eau", "éclair", "Œufs brouillés", "Zucchini"],
   );
+});
+
+test("initialOf: the first character as the reader sees it (review of PR #77, point 3)", () => {
+  assert.equal(initialOf("Chili con carne"), "C");
+  assert.equal(initialOf("Éclair"), "É");
+  assert.equal(initialOf("e\u0301clair"), "e\u0301");
+  assert.equal(initialOf("🍕 Pizza"), "🍕");
+  assert.equal(initialOf("👨‍👩‍👧 Repas de famille"), "👨‍👩‍👧");
+  assert.equal(initialOf("🇫🇷 Cassoulet"), "🇫🇷");
+  assert.equal(initialOf(""), "");
 });

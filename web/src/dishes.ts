@@ -58,6 +58,19 @@ export function words(name: string): string[] {
     .filter((w) => w !== "");
 }
 
+const graphemes = new Intl.Segmenter("fr", { granularity: "grapheme" });
+
+/**
+ * The initial of a dish, shown in its color: the first character as the reader sees it, an
+ * emoji whole, composed or not, and not a half of a UTF-16 surrogate pair.
+ */
+export function initialOf(name: string): string {
+  for (const { segment } of graphemes.segment(name.trimStart())) {
+    return segment;
+  }
+  return "";
+}
+
 const collator = new Intl.Collator("fr");
 
 /** The dishes by alphabetical order of their name (Q30). */
