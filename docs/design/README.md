@@ -238,7 +238,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 
 | Cas | Message |
 | --- | --- |
-| Nom de plat vide (P1) | « Donnez un nom au plat. » |
+| Nom de plat vide ou sans caractère visible (P1, Q31) | « Donnez un nom au plat. » |
 | Nom déjà porté par un plat (Q28) | « Un plat porte déjà ce nom. » |
 | Même ingrédient deux fois (Q27) | « « courgette » figure déjà dans le plat. » |
 | Quantité illisible, nulle ou négative (Q31) | « Quantité invalide. » |
