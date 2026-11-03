@@ -238,3 +238,12 @@ test("a dish opened without network: the message and “Réessayer”", async ({
   await page.getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByLabel("Nom du plat")).toHaveValue("Chili con carne");
 });
+
+test("the name of an ingredient is bounded to 40 characters, as the server (review of PR #81, point 1)", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session] });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
+  await combobox.pressSequentially("a".repeat(41));
+  await expect(combobox).toHaveValue("a".repeat(40));
+});

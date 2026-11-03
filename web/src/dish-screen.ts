@@ -302,6 +302,7 @@ export class DishScreen extends LitElement {
       type="text"
       role="combobox"
       autocomplete="off"
+      maxlength="40"
       aria-label="Ingrédient"
       aria-autocomplete="list"
       aria-expanded=${expanded ? "true" : "false"}
