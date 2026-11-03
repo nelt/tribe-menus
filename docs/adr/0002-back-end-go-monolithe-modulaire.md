@@ -30,7 +30,7 @@ Critères retenus :
    - configuration : fichier non secret par environnement, secrets lus comme des fichiers (credentials systemd), jamais en variables d'environnement ; *précisé par l'ADR 0015, points 9 et 10* ;
    - câblage des dépendances explicite dans `main`, sans conteneur d'injection.
 4. **Un seul binaire, plusieurs commandes** : le serveur et les commandes d'administration (EF-08 à EF-11) font partie du même exécutable (sous-commandes). Le front compilé y est embarqué (`embed`) et servi sur la même origine que l'API, comme l'exige l'ADR 0001.
-5. **Dépendances tierces** limitées à ce que la bibliothèque standard ne couvre pas (pilote SQLite, exécuteur Gherkin), chacune justifiée. Leur liste est tenue à jour dans `go.mod` et revue à chaque ajout.
+5. **Dépendances tierces** limitées à ce que la bibliothèque standard ne couvre pas (pilote SQLite, exécuteur Gherkin), chacune justifiée. Leur liste est tenue à jour dans `go.mod` et revue à chaque ajout. *Ajout du 2026-11-03 : `golang.org/x/text`, pour la décomposition Unicode du nom normalisé (ADR 0027).*
 
 ## Alternatives envisagées
 
