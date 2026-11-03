@@ -90,7 +90,7 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 - [x] **22. `dishes.ts`** : `suggestIngredients` (sans ceux déjà dans le plat, D6), fusion d'un plat enregistré et de ses ingrédients dans la copie en mémoire (D26, D27), lecture et affichage des quantités (D20), avec leurs tests, sur les mêmes cas de précision qu'à l'étape 10.
 - [x] **23. Écran d'un plat** d'après `Doux-Plat` en création, `Doux-PlatModif` en modification (D19) : nom, parts (en création, la taille de la tribu lue par `GET tribe`, D2, D16), lignes (quantité facultative, unité dans la liste fermée, ingrédient en combobox ARIA, « Créer « … » », unité par défaut proposée, retrait d'une ligne), « Enregistrer le plat » ; erreurs de l'API ; modification croisée : bandeau et plat à jour, d'après `Doux-PlatConflit` (D5) ; « Réseau nécessaire » (D18). Après un enregistrement, et après un refus `409`, la copie en mémoire prend le plat renvoyé et ses ingrédients, sans tout recharger (D26, D27) : « gingembre », créé à la volée, est proposé à la saisie suivante (P4).
 - [x] **24. Écran Tribu** d'après `Doux-Tribu`, réduit au nom, au nombre de membres actifs et au stepper de la taille (D3), ouvert par la pastille de l'en-tête du Planning ; « Se déconnecter » reste sur le Planning provisoire.
-- [ ] **25. P4, T1 (référentiel partagé) et T3 (taille proposée pour un nouveau plat) sous Chromium et WebKit**, retirés de `pending.txt`.
+- [x] **25. P4, T1 (référentiel partagé) et T3 (taille proposée pour un nouveau plat) sous Chromium et WebKit**, retirés de `pending.txt`.
 
 ### Recette et release
 
