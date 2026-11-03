@@ -1084,3 +1084,46 @@ func TestCheckAlerts(t *testing.T) {
 		t.Errorf("repeated requests: alert on %v, want repeated requests", got)
 	}
 }
+
+// TestAlertCountsWindow: an event counts as long as it is less than AlertWindow old,
+// wherever it falls in its slot, and stops counting once its slot is entirely out of the
+// window, in both databases.
+func TestAlertCountsWindow(t *testing.T) {
+	ctx := context.Background()
+	at := time.Date(2026, 10, 5, 9, 9, 59, 0, time.UTC)
+	cases := []struct {
+		name  string
+		after time.Duration
+		want  int
+	}{
+		{name: "just recorded", after: 0, want: 1},
+		{name: "fifty minutes later", after: 50*time.Minute + time.Second, want: 1},
+		{name: "a second short of the window", after: AlertWindow - time.Second, want: 1},
+		{name: "slot out of the window", after: AlertWindow + time.Second, want: 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newLoginFixture(t)
+			now := at.Add(tc.after)
+			for db, event := range map[*sql.DB]AlertEvent{f.store.RateLimit(): EmailLimitRefusal, f.martin.db: TribeLimitRefusal} {
+				if _, err := db.ExecContext(ctx, "INSERT INTO alert_counters (slot, event, n) VALUES (?, ?, 1)", alertSlot(at), string(event)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			counts, err := NewRateLimitDB(f.store.RateLimit()).AlertCounts(ctx, now)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := counts.Events[EmailLimitRefusal]; got != tc.want {
+				t.Errorf("rate limit database: %d, want %d", got, tc.want)
+			}
+			events, err := f.martin.AlertCounts(ctx, now)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := events[TribeLimitRefusal]; got != tc.want {
+				t.Errorf("tribe database: %d, want %d", got, tc.want)
+			}
+		})
+	}
+}

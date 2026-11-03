@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Compteurs des alertes : toute tranche de dix minutes qui chevauche l'heure écoulée est comptée, si bien qu'un événement compte pendant une heure entière, quelle que soit sa place dans sa tranche ; purge accordée.
 - Plan `recette`, séance S4 faite : `v0.1.0` publiée par `release.yml` et vérifiée, déployée en production, provisionnement relancé depuis la production, tribu du développeur créée ; `make probe` sur la production (seul échec : le constat de Caddy connu, contenu par le pare-feu), ports contrôlés en IPv6 ; retours arrière éprouvés en recette avec les PR d'essai #67 et #68 ; mise en attente et `drill` ; durées notées. Job `publish` coché dans `docs/securite-depot.md` ; trois points reportés à la feuille de route.
 - `dependency-review` : `golang.org/x/net`, `x/sys` et `x/tools` admis par exception, leur licence étant désormais lue comme « BSD-3-Clause AND LicenseRef-scancode-google-patent-license-golang » (concession de brevets du fichier `PATENTS` de Go, compatible avec l'AGPL) ; débloque la PR Dependabot #66.
 - Deux tests instables de la CI corrigés : `TestProvisionRefusesInstance` trouvait une valeur refusée (« 587 ») dans le nom aléatoire du répertoire temporaire cité par l'erreur ; `TestServeOnTCPFromConfig` attendait 5 s l'arrêt du serveur, retenu par une connexion ouverte par le client sans requête : elle est fermée avant l'arrêt, comme dans le test voisin.
