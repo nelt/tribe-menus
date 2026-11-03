@@ -91,6 +91,7 @@ type contextKey int
 
 const (
 	tribeKey contextKey = iota
+	tribeDBKey
 	sessionKey
 )
 
@@ -115,6 +116,7 @@ func (a *api) routes(mux *http.ServeMux) {
 	handle("POST /tribes/{tribe}/api/sessions", http.HandlerFunc(a.openSession))
 	handle("GET /tribes/{tribe}/api/session", a.withSession(a.getSession))
 	handle("DELETE /tribes/{tribe}/api/session", a.withSession(a.deleteSession))
+	a.dishRoutes(handle)
 	// Other methods on an API path get 405 from the mux.
 	mux.Handle("GET /tribes/{tribe}/api/{rest...}", withNoStore(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: errNotFound})
@@ -128,16 +130,25 @@ func withNoStore(next http.Handler) http.Handler {
 	})
 }
 
-// withTribe resolves the tribe of the URL: its store, or nil for an unknown tribe, which
-// the handlers treat exactly as an existing tribe without session (ENF-02).
+// withTribe resolves the tribe of the URL: its database and its store, or nil for an
+// unknown tribe, which the handlers treat exactly as an existing tribe without session
+// (ENF-02).
 func (a *api) withTribe(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		store, err := TribeStores(a.tribes)(r.Context(), r.PathValue("tribe"))
-		if err != nil {
+		db, err := a.tribes.Tribe(r.Context(), r.PathValue("tribe"))
+		var store *tribe.Store
+		switch {
+		case errors.Is(err, storage.ErrUnknownTribe):
+			db = nil
+		case err != nil:
 			a.server.fail(w, err)
 			return
+		default:
+			store = tribe.NewStore(db)
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), tribeKey, store)))
+		ctx := context.WithValue(r.Context(), tribeKey, store)
+		ctx = context.WithValue(ctx, tribeDBKey, db)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -168,6 +179,13 @@ func (a *api) withSession(next http.HandlerFunc) http.Handler {
 func tribeOf(r *http.Request) *tribe.Store {
 	store, _ := r.Context().Value(tribeKey).(*tribe.Store)
 	return store
+}
+
+// tribeDBOf returns the database of the tribe of the URL: past withMember, the tribe of the
+// session, never one named elsewhere in the request (ENF-02).
+func tribeDBOf(r *http.Request) *sql.DB {
+	db, _ := r.Context().Value(tribeDBKey).(*sql.DB)
+	return db
 }
 
 func sessionOf(r *http.Request) (tribe.Session, bool) {
@@ -352,7 +370,12 @@ func (s *server) clientIP(r *http.Request) string {
 
 // readJSON decodes the body of the request, or answers 400 and returns false.
 func readJSON(w http.ResponseWriter, r *http.Request, v any) bool {
-	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes))
+	return readJSONLimit(w, r, v, maxBodyBytes)
+}
+
+// readJSONLimit decodes a body of limit bytes at most, or answers 400 and returns false.
+func readJSONLimit(w http.ResponseWriter, r *http.Request, v any, limit int64) bool {
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, limit))
 	if err := dec.Decode(v); err != nil {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errBadRequest})
 		return false
