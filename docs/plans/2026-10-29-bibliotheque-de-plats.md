@@ -94,9 +94,63 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Recette et release
 
-- [ ] **26. Recette**, après S4 et sur l'archive de la PR du lot D (D17) : création, recherche et modification d'un plat sur Android et, si possible, sur un iPhone ; deux appareils qui modifient le même plat ; taille de la tribu ; retour arrière avec restauration (migration `0007`).
+- [ ] **26. Recette**, après S4 et sur l'archive de la PR du lot D (D17) : création, recherche et modification d'un plat sur Android et, si possible, sur un iPhone ; deux appareils qui modifient le même plat ; taille de la tribu ; retour arrière avec restauration (migration `0007`). *Le 2026-11-04 : les PR du lot D (#81) et de sa suite (#82) étant fusionnées, et `tribe-menus-deploy --pr` n'acceptant qu'une PR ouverte, la recette se fait sur l'archive de la PR de release `release/v0.2.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous.*
 - [ ] **27. Release `v0.2.0`** selon `RELEASING.md`, déployée en production (D24).
 - [ ] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : dossier `conception/`, paquets `internal/dish` et `internal/collection`, versions des collections) ; `CHANGELOG.md`.
+
+### Séance de recette (étape 26)
+
+Par le développeur, sur l'archive de la PR `release/v0.2.0`, CI verte (artefact gardé trois jours, sinon `gh run rerun <identifiant>`). Deux appareils : Android (Chrome) et un second, iPhone si possible, sinon un ordinateur. La tribu de recette n'a aucun plat (D21). Les demandes de code partagent la limite de dix par heure et par adresse IP (ENF-01) : deux appareils sur la même connexion la consomment ensemble.
+
+Déploiement :
+
+- [ ] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0007` s'applique à la tribu de recette ; connexion depuis les deux appareils.
+
+Taille de la tribu (T3, D3, D12) :
+
+- [ ] Pastille de l'en-tête du Planning → écran Tribu : nom, nombre de membres actifs, taille à 4.
+- [ ] Taille passée à 6 ; revenir et rouvrir : 6 est gardé ; sur l'autre appareil aussi.
+
+Création d'un plat (P1, P4, D4, D6, D7, D20) :
+
+- [ ] Bibliothèque vide, puis « Nouveau » : parts proposées à 6.
+- [ ] Plat à quatre ingrédients ou plus : une quantité en « c. à soupe », une sans quantité (« sel »), un ingrédient créé à la volée (« Créer « gingembre » ») ; enregistré, il apparaît dans la bibliothèque avec sa couleur et ses ingrédients.
+- [ ] Second plat : « gingembre » est proposé dès « gin », avec son unité par défaut ; un ingrédient déjà dans la ligne n'est plus proposé.
+- [ ] Refus affichés : nom vide (« Donnez un nom au plat. »), nom déjà pris avec une autre casse ou sans accents, « 2,5 ml » (« Quantité trop précise pour cette unité »).
+- [ ] Clavier du téléphone : la virgule décimale passe (« 1,5 pièce »), la liste des unités s'ouvre et se lit, les propositions se touchent sans manquer leur cible.
+
+Recherche (P3, D8) :
+
+- [ ] Par un mot du nom, par un ingrédient, sans accents ni majuscules (« boeuf » trouve « Bœuf … » s'il y en a un, sinon un autre accent), par deux termes ; « Aucun plat ne correspond ».
+
+Modification (P2, D5, D19, D29) :
+
+- [ ] Toucher un plat ouvre sa modification ; changer les parts et une ligne, enregistrer : la bibliothèque le montre.
+- [ ] Modification croisée : le même plat ouvert sur les deux appareils ; A enregistre, puis B : bandeau « Ce plat a été modifié entre-temps » et plat à jour, rien de ce qu'avait fait A n'est perdu ; B modifie de nouveau et enregistre.
+- [ ] Retour sur l'application : A modifie un plat ; B, laissé en arrière-plan sur la bibliothèque, revient au premier plan : la modification apparaît sans recharger la page.
+
+Sans réseau (D18) :
+
+- [ ] Mode avion pendant une modification, puis « Enregistrer le plat » : « Réseau nécessaire », rien n'est changé une fois le réseau revenu ; de même pour la taille de la tribu.
+
+iPhone, s'il y en a un (revue #77, point 4) :
+
+- [ ] Les étapes ci-dessus sous Safari, au moins la création, la recherche et la modification croisée.
+- [ ] Un retour sur l'application sans changement rend un `304` sur `GET dishes`, et non un rechargement complet : `sudo journalctl -u caddy --since -5min | grep 'api/dishes' | grep -o '"status":[0-9]*'`.
+
+Scénarios `@manuel` (`RELEASING.md`) :
+
+- [ ] La session survit au redémarrage du navigateur, sous Chrome (et sous Safari s'il y a un iPhone).
+
+Retour arrière avec restauration (migration `0007`, ADR 0016, point 2) :
+
+- [ ] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
+- [ ] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : la version précédente revient, la connexion fonctionne, les plats saisis ont disparu, les bases remplacées sont dans `backups/remplacees-<date>/`.
+- [ ] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, la bibliothèque est vide, un plat se crée.
+
+Fin de séance :
+
+- [ ] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
 
 ## Critères de validation
 

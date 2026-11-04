@@ -4,6 +4,8 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+## 0.2.0 — 2026-11-04
+
 - Plan `bibliotheque` (D30, revue #81, point 3) : un caractère de contrôle collé dans le nom d'un plat ou d'un ingrédient est refusé avant l'envoi avec « Ce nom contient un caractère invalide. », message aussi affiché pour un refus `name_invalid` ou `ingredient_name_invalid` du serveur, au lieu de « Réseau nécessaire ». Défauts proches : un nom sans caractère visible est traité comme un nom vide (pas de « Créer « … » », ligne ignorée), une quantité faite d'espaces que la règle ne retire pas est lue comme le serveur la lit, et le champ de la quantité est borné à 10 caractères ; règles des noms tenues en accord avec Go par une table de cas commune.
 - `bibliotheque/D` (P1, P2, P4, T1, T3) : écran d'un plat d'après `Doux-Plat`, `Doux-PlatModif` et `Doux-PlatConflit` (création, modification, ingrédient en combobox sur le référentiel en mémoire, « Créer « … » », unité par défaut proposée, messages, bandeau et plat à jour après une modification croisée, « Réseau nécessaire ») ; écran Tribu réduit à la taille de la tribu, d'après `Doux-Tribu` ; stepper en shadow DOM, champ de formulaire par `ElementInternals` ; la copie en mémoire prend le plat enregistré et ses ingrédients sans tout recharger ; noms affichés d'un plat et d'un ingrédient (D30) : espaces réduites, caractère de contrôle et nom invisible refusés ; table de cas des quantités commune à Go et à TypeScript ; P4, T1 et T3 passent sous Chromium et WebKit, D30 contre l'API.
 - Plan `bibliotheque`, questions tranchées avant le lot D : noms affichés d'un plat et d'un ingrédient, espaces réduites, caractère de contrôle refusé, nom sans caractère visible refusé comme un nom vide (D30, Q31, étape 21 bis) ; onglet Courses inactif sans maquette ; interprétations du lot A validées.
@@ -14,6 +16,12 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 - `bibliotheque/A` (P1 à P4, T1, T3) : specs, conception et ADR. Décisions Q25 à Q31 dans `fonctionnalites.md` (modification croisée refusée, quantité facultative, une ligne par ingrédient, nom de plat unique, nom normalisé, recherche, limites) ; scénarios nouveaux (nom déjà pris, ingrédient sans quantité, ingrédient en double, modification croisée, ingrédient créé proposé ensuite, plat modifié visible au retour) et tags `@ui` ; glossaire ; ADR 0027 (recherche et autocomplétion dans le navigateur), 0028 (scénarios `@ui` exécutés par Playwright), 0029 (versions et ETag des collections) ; design : barre d'onglets, écrans du plan, affichage des quantités, messages ; conception accordée ; plan en cours.
 - Plan `recette` terminé (étape 37) : feuille de route à jour (plan terminé, « Ce que ce plan ne prouve pas » inscrit dans les points reportés, tests instables retirés), `docs/securite-depot.md` relu, `CLAUDE.md` (production ouverte).
 - Plan `recette`, séance S5 faite : répétition d'un traitement accéléré sur un faux constat, de la PR à la production en 17 minutes (15 d'exposition publique), retour arrière en production éprouvé ; durées et écarts dans le plan, `docs/traitement-des-vulnerabilites.md` accordé au déroulé vécu ; la question de la durée d'une séance de livraison (`canal-prive`) a sa réponse. ADR 0023 : l'évaluation additionne les tranches qui chevauchent la dernière heure (sept), comme le code depuis `v0.1.1`.
+
+### Migrations
+
+Revenir de cette version à une version antérieure restaure l'instantané pris avant son déploiement et perd tout ce qui a été écrit depuis (`tribe-menus-deploy --rollback --restore-data`).
+
+- `0007_dish_library` (base de chaque tribu) : taille de la tribu (colonne `size` de `tribe`, 4 par défaut), tables `ingredients`, `dishes` et `dish_ingredients`, table `collection_versions` et déclencheurs qui augmentent la version des plats et du référentiel à chaque écriture.
 
 ## 0.1.1 — 2026-11-03
 
