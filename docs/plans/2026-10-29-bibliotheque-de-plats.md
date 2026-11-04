@@ -104,39 +104,39 @@ Par le développeur, sur l'archive de la PR `release/v0.2.0`, CI verte (artefact
 
 Déploiement :
 
-- [ ] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0007` s'applique à la tribu de recette ; connexion depuis les deux appareils.
+- [x] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0007` s'applique à la tribu de recette ; connexion depuis les deux appareils.
 
 Taille de la tribu (T3, D3, D12) :
 
-- [ ] Pastille de l'en-tête du Planning → écran Tribu : nom, nombre de membres actifs, taille à 4.
-- [ ] Taille passée à 6 ; revenir et rouvrir : 6 est gardé ; sur l'autre appareil aussi.
+- [x] Pastille de l'en-tête du Planning → écran Tribu : nom, nombre de membres actifs, taille à 4.
+- [x] Taille passée à 6 ; revenir et rouvrir : 6 est gardé ; sur l'autre appareil aussi.
 
 Création d'un plat (P1, P4, D4, D6, D7, D20) :
 
-- [ ] Bibliothèque vide, puis « Nouveau » : parts proposées à 6.
-- [ ] Plat à quatre ingrédients ou plus : une quantité en « c. à soupe », une sans quantité (« sel »), un ingrédient créé à la volée (« Créer « gingembre » ») ; enregistré, il apparaît dans la bibliothèque avec sa couleur et ses ingrédients.
-- [ ] Second plat : « gingembre » est proposé dès « gin », avec son unité par défaut ; un ingrédient déjà dans la ligne n'est plus proposé.
-- [ ] Refus affichés : nom vide (« Donnez un nom au plat. »), nom déjà pris avec une autre casse ou sans accents, « 2,5 ml » (« Quantité trop précise pour cette unité »).
-- [ ] Clavier du téléphone : la virgule décimale passe (« 1,5 pièce »), la liste des unités s'ouvre et se lit, les propositions se touchent sans manquer leur cible.
+- [x] Bibliothèque vide, puis « Nouveau » : parts proposées à 6.
+- [x] Plat à quatre ingrédients ou plus : une quantité en « c. à soupe », une sans quantité (« sel »), un ingrédient créé à la volée (« Créer « gingembre » ») ; enregistré, il apparaît dans la bibliothèque avec sa couleur et ses ingrédients (sans les quantités, qui sont sur sa fiche, comme dans `Doux-Bibliotheque`).
+- [x] Second plat : « gingembre » est proposé dès « gin », avec son unité par défaut ; un ingrédient déjà dans la ligne n'est plus proposé.
+- [x] Refus affichés : nom vide (« Donnez un nom au plat. »), nom déjà pris avec une autre casse ou sans accents, « 2,5 ml » (« Quantité trop précise pour cette unité »).
+- [x] Clavier du téléphone : la virgule décimale passe (« 1,5 pièce »), la liste des unités s'ouvre et se lit, les propositions se touchent sans manquer leur cible.
 
 Recherche (P3, D8) :
 
-- [ ] Par un mot du nom, par un ingrédient, sans accents ni majuscules (« boeuf » trouve « Bœuf … » s'il y en a un, sinon un autre accent), par deux termes ; « Aucun plat ne correspond ».
+- [x] Par un mot du nom, par un ingrédient, sans accents ni majuscules (« boeuf » trouve « Bœuf … » s'il y en a un, sinon un autre accent), par deux termes ; « Aucun plat ne correspond ».
 
 Modification (P2, D5, D19, D29) :
 
-- [ ] Toucher un plat ouvre sa modification ; changer les parts et une ligne, enregistrer : la bibliothèque le montre.
-- [ ] Modification croisée : le même plat ouvert sur les deux appareils ; A enregistre, puis B : bandeau « Ce plat a été modifié entre-temps » et plat à jour, rien de ce qu'avait fait A n'est perdu ; B modifie de nouveau et enregistre.
-- [ ] Retour sur l'application : A modifie un plat ; B, laissé en arrière-plan sur la bibliothèque, revient au premier plan : la modification apparaît sans recharger la page.
+- [x] Toucher un plat ouvre sa modification ; changer les parts et une ligne, enregistrer : la bibliothèque le montre.
+- [x] Modification croisée : le même plat ouvert sur les deux appareils ; A enregistre, puis B : bandeau « Ce plat a été modifié entre-temps » et plat à jour, rien de ce qu'avait fait A n'est perdu ; B modifie de nouveau et enregistre.
+- [x] Retour sur l'application : A modifie un plat ; B, laissé en arrière-plan sur la bibliothèque, revient au premier plan : la modification apparaît sans recharger la page.
 
 Sans réseau (D18) :
 
-- [ ] Mode avion pendant une modification, puis « Enregistrer le plat » : « Réseau nécessaire », rien n'est changé une fois le réseau revenu ; de même pour la taille de la tribu.
+- [x] Mode avion pendant une modification, puis « Enregistrer le plat » : « Réseau nécessaire », rien n'est changé une fois le réseau revenu ; de même pour la taille de la tribu.
 
 iPhone, s'il y en a un (revue #77, point 4) :
 
-- [ ] Les étapes ci-dessus sous Safari, au moins la création, la recherche et la modification croisée.
-- [ ] Un retour sur l'application sans changement rend un `304` sur `GET dishes`, et non un rechargement complet : `sudo journalctl -u caddy --since -5min | grep 'api/dishes' | grep -o '"status":[0-9]*'`.
+- [ ] *(Reporté : pas d'iPhone à la séance.)* Les étapes ci-dessus sous Safari, au moins la création, la recherche et la modification croisée.
+- [ ] *(Reporté avec Safari.)* Un retour sur l'application sans changement rend un `304` sur `GET dishes`, et non un rechargement complet : `sudo journalctl -u caddy --since -5min | grep 'api/dishes' | grep -o '"status":[0-9]*'`.
 
 Scénarios `@manuel` (`RELEASING.md`) :
 
@@ -144,13 +144,21 @@ Scénarios `@manuel` (`RELEASING.md`) :
 
 Retour arrière avec restauration (migration `0007`, ADR 0016, point 2) :
 
-- [ ] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
-- [ ] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : la version précédente revient, la connexion fonctionne, les plats saisis ont disparu, les bases remplacées sont dans `backups/remplacees-<date>/`.
-- [ ] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, la bibliothèque est vide, un plat se crée.
+- [x] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
+- [x] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : la version précédente revient, la connexion fonctionne, les plats saisis ont disparu, les bases remplacées sont dans `backups/remplacees-<date>/`.
+- [x] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, la bibliothèque est vide, un plat se crée.
 
 Fin de séance :
 
-- [ ] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
+- [x] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
+
+Exécution du 2026-11-04, sur l'archive de #83 (`pr-83-bdc833cd4135`), Android (Chrome, membre `recette-alice`) et un ordinateur (Chrome, `recette-bruno`), sans iPhone :
+
+- Tout est passé, sauf un défaut : une ligne d'ingrédient en cours de saisie, tapée en entier sans choisir de proposition et refusée en double (« « Gin » figure déjà dans le plat. »), ne pouvait pas être retirée, faute de bouton de retrait (note du lot D).
+- Deux remarques retenues par le développeur : l'onglet Courses inactif ne se distinguait pas des autres onglets ; l'unité par défaut n'apparaissait qu'après la saisie d'une quantité. Corrigées avec le défaut par #84, ainsi que la barre d'onglets, qui s'étalait sur toute la largeur d'un écran d'ordinateur. Une vraie mise en page d'ordinateur est ajoutée aux points reportés de la feuille de route.
+- Retour arrière : sans `--restore-data`, refusé (« schema version 7, 6 in the snapshot ») avec la date de l'instantané ; avec, l'instantané de 07:18 restauré et `pr-72` remis en service, sans onglet Plats ; le redéploiement de #83 a repassé la migration, bibliothèque vide et taille revenue à 4.
+- `tribe-menus-check report` : ni alerte, ni erreur, ni avertissement ; deux contrôles SMTP réussis, démarrages `pr-72` puis `pr-83`.
+- Safari sur iPhone et le `304` restent à vérifier, avec la connexion sous Safari déjà reportée (`recette`, S3).
 
 ## Critères de validation
 
@@ -269,7 +277,7 @@ Le 2026-10-29, sur la fraîcheur des données dans le navigateur, avec le dével
   - **Table de cas commune des quantités** : les cas de précision de l'étape 10 passent de `rules_test.go` à `internal/dish/testdata/quantities.json`, lu par `go test` et par `node:test`, comme le nom normalisé (D9) : `parseQuantity` en TypeScript ne peut pas s'écarter de `ParseQuantity`.
   - **Contrôle avant l'envoi** : `checkDish` reprend, dans l'ordre du serveur, le nom obligatoire, l'unité manquante, la quantité invalide ou trop précise et l'ingrédient en double, avec les messages de `docs/design/README.md` ; le serveur reste juge, ses refus sont affichés de la même façon. Un code sans message (D30, limites bornées par l'écran) est traité comme une réponse imprévue : « Réseau nécessaire ».
   - **Sous-écrans sans barre d'onglets** : la création, la modification d'un plat et l'écran Tribu n'ont pas la barre d'onglets, comme leurs maquettes ; on en revient par leur lien « Plats » ou « Planning ». Le bouton « Enregistrer le plat » reste en bas de l'écran.
-  - **Ligne d'ingrédient** : l'ingrédient d'une ligne est fixé une fois choisi (texte, comme dans les maquettes) ; pour en changer, on retire la ligne. La ligne en cours de saisie (combobox, sans bouton de retrait, comme `Doux-Plat`) est envoyée telle que tapée si aucune proposition n'est choisie, et ignorée si elle est vide. Entrée choisit la proposition active et n'envoie jamais le formulaire ; au plus six propositions, par ordre alphabétique, débuts de mots trouvés en gras.
+  - **Ligne d'ingrédient** : l'ingrédient d'une ligne est fixé une fois choisi (texte, comme dans les maquettes) ; pour en changer, on retire la ligne. La ligne en cours de saisie (combobox, sans bouton de retrait, comme `Doux-Plat` ; bouton ajouté après la recette, dès qu'elle contient un texte ou une quantité, #84) est envoyée telle que tapée si aucune proposition n'est choisie, et ignorée si elle est vide. Entrée choisit la proposition active et n'envoie jamais le formulaire ; au plus six propositions, par ordre alphabétique, débuts de mots trouvés en gras.
   - **Unité** : la liste fermée native, transparente, sous le libellé affiché (au pluriel à partir de 2, « 3 pièces ») : la liste ouverte présente les unités au singulier, nom complet dans l'étiquette accessible. Vider la quantité vide l'unité.
   - **Parts en création** : le stepper paraît une fois la taille lue par `GET tribe` ; si elle ne peut l'être, il propose 4, et les parts ne sont envoyées que si le membre les change : le serveur prend alors la taille de la tribu (D16).
   - **Après un enregistrement**, retour à la bibliothèque, l'entrée de la création ou de la modification étant remplacée dans l'historique. Un identifiant absent de la copie affiche « Ce plat est introuvable. ».
