@@ -269,8 +269,13 @@ export class DishScreen extends LitElement {
     const errorId = `line-error-${line.key}`;
     const of = draft ? "" : ` de ${line.name}`;
     const hasQuantity = trimSpaces(line.quantity) !== "";
+    // Without quantity, the default unit of the ingredient chosen is announced, not chosen (D4).
+    const hint = hasQuantity || draft ? "" : unitLabel(this.#known(line)?.defaultUnit ?? "", "");
+    // A draft holding something can be removed, like a line chosen (recette du plan bibliotheque).
+    const removable = !draft || line.text !== "" || hasQuantity;
+    const removeLabel = draft ? "Retirer l’ingrédient en cours de saisie" : `Retirer l’ingrédient ${line.name}`;
     return html`<li class="line ${draft ? "line--draft" : ""}">
-      <div class="line-row">
+      <div class="line-row ${removable ? "" : "line-row--fixed"}">
         <input
           class="line-quantity"
           type="text"
@@ -285,18 +290,18 @@ export class DishScreen extends LitElement {
           @input=${(e: Event) => this.#setQuantity(line, (e.target as HTMLInputElement).value)}
         >
         <span class="line-unit ${hasQuantity ? "" : "line-unit--empty"}">
-          <span class="line-unit-label" aria-hidden="true">${hasQuantity ? unitLabel(line.unit, line.quantity) : ""}</span>
+          <span class="line-unit-label ${hasQuantity ? "" : "line-unit-label--hint"}" aria-hidden="true">${hasQuantity ? unitLabel(line.unit, line.quantity) : hint}</span>
           <select aria-label=${`Unité${of}`} ?disabled=${!hasQuantity} @change=${(e: Event) => this.#update(line, { unit: (e.target as HTMLSelectElement).value })}>
             <option value="" ?selected=${line.unit === ""}></option>
             ${units.map((u) => html`<option value=${u.code} aria-label=${u.name} ?selected=${line.unit === u.code}>${u.label}</option>`)}
           </select>
         </span>
-        ${draft
-          ? this.#combobox(line)
-          : html`<span class="line-name">${line.name}</span>
-              <button class="line-remove" type="button" aria-label=${`Retirer l’ingrédient ${line.name}`} @click=${() => this.#removeLine(index)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-              </button>`}
+        ${draft ? this.#combobox(line) : html`<span class="line-name">${line.name}</span>`}
+        ${removable
+          ? html`<button class="line-remove" type="button" aria-label=${removeLabel} @click=${() => this.#removeLine(index)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>`
+          : nothing}
       </div>
       ${draft ? this.#suggestions(line) : nothing}
       ${error === undefined ? nothing : alertMessage(errorId, error)}
@@ -425,9 +430,17 @@ export class DishScreen extends LitElement {
       this.#update(line, { quantity, unit: "" });
       return;
     }
-    const known = this.library.catalog.items?.find((i) => normalizeName(i.name) === normalizeName(line.name || line.text));
-    const unit = line.unit === "" && line.name !== "" ? (known?.defaultUnit ?? "") : line.unit;
+    const unit = line.unit === "" && line.name !== "" ? (this.#known(line)?.defaultUnit ?? "") : line.unit;
     this.#update(line, { quantity, unit });
+  }
+
+  /** The ingredient of the referential that a line names, chosen or typed. */
+  #known(line: FormLine): Ingredient | undefined {
+    const name = line.name || line.text;
+    if (!hasVisible(name)) {
+      return undefined;
+    }
+    return this.library.catalog.items?.find((i) => normalizeName(i.name) === normalizeName(name));
   }
 
   #update(line: FormLine, change: Partial<FormLine>) {
@@ -446,6 +459,10 @@ export class DishScreen extends LitElement {
 
   #removeLine(index: number) {
     this.lines = this.lines.filter((_, i) => i !== index);
+    // An error on a line points at it by position: once the lines shift, it would land elsewhere.
+    if (this.error !== undefined && this.error !== "network" && this.error.line !== undefined) {
+      this.error = undefined;
+    }
   }
 
   #servingsChanged(e: Event) {
