@@ -217,3 +217,7 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 
 - **Plages aux bornes de 2000 à 2099** (point 2, lot C) : `?du=2099-12-28` montre des jours de 2100, dont le repas serait refusé par l'API (`400 invalid_date`, affiché « Réseau nécessaire ») ; « Semaine suivante » mène alors à une date hors bornes, qui ramène à aujourd'hui sans le dire ; de même avant 2000. Cas très improbable. À trancher au lot C, avec un test `node:test` dans `meal-plan.ts` ; proposition du relecteur : flèche inactive quand la plage voisine sortirait des bornes, cases hors bornes inactives.
 - **Retrait d'un plat servi déjà retiré** (point 3, Q33, D19) : aucun scénario ne prouve le `404 not_found` pour un plat servi retiré de la même tribu, seul l'accès d'une autre tribu le fait. Au lot B, un test du handler le prouve ; au lot D, un état d'écran sur l'API simulée montre que le plat disparaît sans message.
+
+**Revue de la PR #88**, point à reprendre plus tard :
+
+- **Après un `409 dish_already_served`, la copie se vérifie** (point 1, lot D, étape 19) : la réponse porte le repas à jour mais pas les versions ; si `planning.ts` ne faisait que prendre ce repas, la copie garderait une version plus ancienne que son contenu (sans perte : la vérification suivante rechargerait tout). `planning.ts` prend le repas, puis vérifie la copie, comme après un `404` ; un état d'écran sur l'API simulée le montre.
