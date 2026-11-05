@@ -1,7 +1,7 @@
 # Conception : planning des repas
 
-- **Mise à jour** : 2026-11-05 (lot B)
-- **Statut** : retenu avec le plan [`planning`](../plans/2026-11-05-planning-des-repas.md) ; accordé aux specs, au glossaire et au design par le lot A (2026-11-05) ; noms du serveur fixés par le lot B, ceux du navigateur à fixer par les lots C et D ; à tenir à jour par les plans qui touchent ce domaine (listes de courses, hors-ligne)
+- **Mise à jour** : 2026-11-05 (lot C)
+- **Statut** : retenu avec le plan [`planning`](../plans/2026-11-05-planning-des-repas.md) ; accordé aux specs, au glossaire et au design par le lot A (2026-11-05) ; noms du serveur fixés par le lot B, ceux du planning de la semaine par le lot C, ceux du détail d'un repas à fixer par le lot D ; à tenir à jour par les plans qui touchent ce domaine (listes de courses, hors-ligne)
 - **Stories** : R1 à R5 ; T1 et T3 pour le planning ; ENF-02 pour le planning
 
 Ce document décrit la conception retenue pour le planning des repas : modèle, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise la taille de la tribu, la copie des collections et la recherche, sans les répéter. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (R1 à R5, Q1, Q2, Q5, Q8, Q21, Q32 à Q35), les décisions dans les ADR (0027, 0029) et dans le plan (D1 à D20).
@@ -191,7 +191,7 @@ classDiagram
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
 - **`web/src`** : `meal-plan.ts`, module pur testé par `node:test` (dates de l'appareil, plages, cases, propositions) ; `planning.ts`, copie du planning sur `CachedCollection`, vérifiée avec `library.ts` ; écrans `planning-screen.ts` (remplace `home-screen.ts`) et `meal-screen.ts` ; le stepper de parts (`mt-stepper`) et `searchDishes` (`dishes.ts`) sont repris tels quels.
 
-Noms du lot B, côté serveur : paquet `mealplan` (`Plan`, `ServeInput`, `ServedDish`, `ID`, `Date`, `Mealtime`, `AlreadyServedError`, collection `mealplan.Collection`, pages de `mealplan.PageSize`) ; `SetServings` et `Delete` du `Tx` rendent `ErrNotFound` pour un plat servi absent, `NextRank` donne un rang supérieur à tous ceux de la tribu ; `storage.MealPlanStore` ; handlers dans `internal/server/api_meal_plan.go`. Noms du navigateur à fixer aux lots C et D, et à reporter ici.
+Noms du lot B, côté serveur : paquet `mealplan` (`Plan`, `ServeInput`, `ServedDish`, `ID`, `Date`, `Mealtime`, `AlreadyServedError`, collection `mealplan.Collection`, pages de `mealplan.PageSize`) ; `SetServings` et `Delete` du `Tx` rendent `ErrNotFound` pour un plat servi absent, `NextRank` donne un rang supérieur à tous ceux de la tribu ; `storage.MealPlanStore` ; handlers dans `internal/server/api_meal_plan.go`. Noms du lot C, côté navigateur : `meal-plan.ts` (`Day`, `Mealtime`, `ServedDish`, `today`, `parseDay`, `addDays`, `dayRange`, `previousStart` et `nextStart`, bornés de 2000 à 2099, `rangeTitle`, `weekdayName`, `shortDate`, `mealTiles` qui rend des `DayTiles` et des `MealTile`, `totalServings`, `servingsLabel`) ; `planning.ts` (`Planning`, `served`, `check`, `clear`, `servedDishOf`), sans écriture : `serve`, `setServings` et `remove` viennent au lot D ; écran `planning-screen.ts` (`mt-planning-screen`) ; page `planning` du routeur, avec `start` pour `?du=`. Noms du lot D à reporter ici.
 
 ## API
 
