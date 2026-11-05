@@ -244,3 +244,21 @@ test("CachedCollection.put: nothing before a first loading", () => {
   copy.put([{ id: "a", n: 1 }]);
   assert.equal(copy.items, undefined);
 });
+
+test("CachedCollection.applyWrite: an item removed, with the version", async () => {
+  const { read } = reader([page([{ id: "a", n: 1 }, { id: "b", n: 1 }], '"d-1"')]);
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  await copy.check();
+  await copy.applyWrite([], 2, ["a"]);
+  assert.deepEqual(copy.items, [{ id: "b", n: 1 }]);
+  assert.equal(copy.version, 2);
+});
+
+test("CachedCollection.put: items removed without version, the version stays", async () => {
+  const { read } = reader([page([{ id: "a", n: 1 }, { id: "b", n: 1 }], '"d-1"')]);
+  const copy = new CachedCollection<Item>("d", read, parse, (i) => i.id);
+  await copy.check();
+  copy.put([{ id: "c", n: 1 }], ["a"]);
+  assert.deepEqual(copy.items, [{ id: "b", n: 1 }, { id: "c", n: 1 }]);
+  assert.equal(copy.version, 1);
+});

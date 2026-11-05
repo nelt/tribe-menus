@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Api, CollectionPage, Outcome } from "./api.ts";
+import type { Api, CollectionPage, MealPlanWrite, Outcome } from "./api.ts";
 import { Library } from "./library.ts";
 import { Planning, servedDishOf } from "./planning.ts";
 
@@ -84,4 +84,116 @@ test("Planning.clear: the copy of the meal plan is forgotten", async () => {
   assert.equal(planning.served.items, undefined);
   assert.equal(planning.served.version, undefined);
   assert.equal(planning.loaded, false);
+});
+
+const vegeId = "0000000000000000000000000000000v";
+const other = { ...served, id: "11111111111111111111111111111111", dish: vegeId, servings: 2, rank: 4 };
+const elsewhere = { ...served, id: "22222222222222222222222222222222", date: "2026-10-07", rank: 5 };
+
+/** An API whose meal plan is given, and whose writes answer in turn. */
+function writingApi(plan: unknown[], version: number, writes: Outcome<MealPlanWrite>[], reloads: { version: number; items: unknown[] }[] = []) {
+  const calls: string[] = [];
+  const pages = [{ version, items: plan }, ...reloads];
+  const api = {
+    getPage: async (collection: string): Promise<Outcome<CollectionPage>> => {
+      if (collection !== "meal-plan") {
+        return { kind: "ok", value: { kind: "page", items: collection === "dishes" ? [chili] : [], next: undefined, etag: `"${collection}-1"` } };
+      }
+      calls.push("GET meal-plan");
+      const p = pages.length > 1 ? pages.shift() : pages[0];
+      return { kind: "ok", value: { kind: "page", items: p?.items ?? [], next: undefined, etag: `"meal_plan-${p?.version ?? 0}"` } };
+    },
+    serveDish: async (body: unknown) => {
+      calls.push(`POST ${JSON.stringify(body)}`);
+      return writes.shift() ?? { kind: "network-error" };
+    },
+    setServings: async (id: string, n: number) => {
+      calls.push(`PUT ${id} ${n}`);
+      return writes.shift() ?? { kind: "network-error" };
+    },
+    removeServedDish: async (id: string) => {
+      calls.push(`DELETE ${id}`);
+      return writes.shift() ?? { kind: "network-error" };
+    },
+  } as unknown as Api;
+  return { api, calls };
+}
+
+async function loaded(api: Api): Promise<Planning> {
+  const planning = new Planning(api, new Library(api));
+  await planning.check();
+  return planning;
+}
+
+const ids = (planning: Planning) => planning.served.items?.map((s) => s.id).sort();
+
+test("Planning.serve: the dish served and the next version are taken, nothing reloaded", async () => {
+  const { api, calls } = writingApi([served], 7, [{ kind: "ok", value: { kind: "written", servedDish: other, version: 8 } }]);
+  const planning = await loaded(api);
+  let changes = 0;
+  planning.addEventListener("change", () => changes++);
+  assert.deepEqual(await planning.serve("2026-10-06", "dinner", vegeId), { kind: "served", served: other });
+  assert.deepEqual(calls, ["GET meal-plan", `POST {"date":"2026-10-06","mealtime":"dinner","dish":"${vegeId}"}`]);
+  assert.deepEqual(ids(planning), [served.id, other.id].sort());
+  assert.equal(planning.served.version, 8);
+  assert.equal(changes, 1);
+});
+
+test("Planning.serve: another member wrote in between, the copy is checked", async () => {
+  const { api, calls } = writingApi([served], 7, [{ kind: "ok", value: { kind: "written", servedDish: other, version: 9 } }], [{ version: 9, items: [served, other, elsewhere] }]);
+  const planning = await loaded(api);
+  await planning.serve("2026-10-06", "dinner", vegeId);
+  assert.equal(calls.filter((c) => c === "GET meal-plan").length, 2);
+  assert.deepEqual(ids(planning), [served.id, other.id, elsewhere.id].sort());
+  assert.equal(planning.served.version, 9);
+});
+
+// Review of PR #88, point 1: the meal sent back has no version, the copy is checked.
+test("Planning.serve: a dish already served, the meal as it is now taken, then the copy checked (D3)", async () => {
+  const { api, calls } = writingApi([served, elsewhere], 7, [{ kind: "ok", value: { kind: "already-served", meal: [other] } }], [{ version: 9, items: [other, elsewhere] }]);
+  const planning = await loaded(api);
+  assert.deepEqual(await planning.serve("2026-10-06", "dinner", vegeId), { kind: "already-served" });
+  assert.equal(calls.filter((c) => c === "GET meal-plan").length, 2);
+  assert.deepEqual(ids(planning), [other.id, elsewhere.id].sort());
+  assert.equal(planning.served.version, 9);
+});
+
+test("Planning.serve: an unreadable answer is a network error", async () => {
+  const { api } = writingApi([served], 7, [{ kind: "ok", value: { kind: "written", servedDish: { id: "x" }, version: 8 } }]);
+  const planning = await loaded(api);
+  assert.deepEqual(await planning.serve("2026-10-06", "dinner", vegeId), { kind: "network-error" });
+  assert.deepEqual(ids(planning), [served.id]);
+});
+
+test("Planning.setServings: the dish served taken; removed in between, dropped and the copy checked (D3)", async () => {
+  const set = { ...served, servings: 3 };
+  const { api, calls } = writingApi([served, other], 7, [{ kind: "ok", value: { kind: "written", servedDish: set, version: 8 } }, { kind: "ok", value: { kind: "not-found" } }], [{ version: 10, items: [set] }]);
+  const planning = await loaded(api);
+  assert.deepEqual(await planning.setServings(served.id, 3), { kind: "saved", served: set });
+  assert.equal(planning.served.items?.find((s) => s.id === served.id)?.servings, 3);
+  assert.deepEqual(await planning.setServings(other.id, 1), { kind: "removed" });
+  assert.deepEqual(ids(planning), [served.id]);
+  assert.equal(planning.served.version, 10);
+  assert.deepEqual(calls.slice(1, 3), [`PUT ${served.id} 3`, `PUT ${other.id} 1`]);
+});
+
+test("Planning.remove: removed with the version; already removed, dropped without failure (D19)", async () => {
+  const { api } = writingApi([served, other], 7, [{ kind: "ok", value: { kind: "written", servedDish: undefined, version: 8 } }, { kind: "ok", value: { kind: "not-found" } }], [{ version: 9, items: [] }]);
+  const planning = await loaded(api);
+  assert.deepEqual(await planning.remove(served.id), { kind: "ok", value: undefined });
+  assert.deepEqual(ids(planning), [other.id]);
+  assert.equal(planning.served.version, 8);
+  assert.deepEqual(await planning.remove(other.id), { kind: "ok", value: undefined });
+  assert.deepEqual(ids(planning), []);
+  assert.equal(planning.served.version, 9);
+});
+
+test("Planning: a write without network changes nothing", async () => {
+  const { api } = writingApi([served], 7, [{ kind: "network-error" }, { kind: "network-error" }, { kind: "network-error" }]);
+  const planning = await loaded(api);
+  assert.deepEqual(await planning.serve("2026-10-06", "dinner", vegeId), { kind: "network-error" });
+  assert.deepEqual(await planning.setServings(served.id, 3), { kind: "network-error" });
+  assert.deepEqual(await planning.remove(served.id), { kind: "network-error" });
+  assert.deepEqual(planning.served.items, [served]);
+  assert.equal(planning.served.version, 7);
 });

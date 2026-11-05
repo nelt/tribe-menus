@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Api, type Outcome, type RawResponse, type SaveResponse, collectionPageOf, outcomeOf, saveResponseOf, sessionOf, tribeInfoOf } from "./api.ts";
+import { Api, type MealPlanWrite, type Outcome, type RawResponse, type SaveResponse, collectionPageOf, mealPlanWriteOf, outcomeOf, saveResponseOf, sessionOf, tribeInfoOf } from "./api.ts";
 
 const sessionBody = { tribe: { name: "Les Démo" }, member: { email: "alice@exemple.fr", displayName: "Alice" } };
 
@@ -201,4 +201,51 @@ test("Api.setTribeSize", async () => {
   const { api, requests } = apiWith(async () => jsonResponse(200, tribe));
   assert.deepEqual(await api.setTribeSize(5), { kind: "ok", value: tribe });
   assert.deepEqual(requests, [{ url: "api/tribe/size", method: "PUT", body: { size: 5 } }]);
+});
+
+const servedBody = { id: "s", date: "2026-10-06", mealtime: "dinner", dish: "a", servings: 4, rank: 3 };
+
+const mealPlanCases: { name: string; response: RawResponse; want: Outcome<MealPlanWrite> }[] = [
+  {
+    name: "served",
+    response: { status: 201, body: { servedDish: servedBody, versions: { meal_plan: 18 } } },
+    want: { kind: "ok", value: { kind: "written", servedDish: servedBody, version: 18 } },
+  },
+  { name: "servings set", response: { status: 200, body: { servedDish: servedBody, versions: { meal_plan: 19 } } }, want: { kind: "ok", value: { kind: "written", servedDish: servedBody, version: 19 } } },
+  { name: "removed", response: { status: 200, body: { versions: { meal_plan: 20 } } }, want: { kind: "ok", value: { kind: "written", servedDish: undefined, version: 20 } } },
+  {
+    name: "already served, with the meal (Q21, D3)",
+    response: { status: 409, body: { error: "dish_already_served", meal: [servedBody] } },
+    want: { kind: "ok", value: { kind: "already-served", meal: [servedBody] } },
+  },
+  { name: "removed in between (D3, D19)", response: { status: 404, body: { error: "not_found" } }, want: { kind: "ok", value: { kind: "not-found" } } },
+  { name: "a 409 without the meal", response: { status: 409, body: { error: "dish_already_served" } }, want: { kind: "network-error" } },
+  { name: "without the version", response: { status: 200, body: { versions: {} } }, want: { kind: "network-error" } },
+  { name: "unknown dish", response: { status: 400, body: { error: "unknown_dish" } }, want: { kind: "network-error" } },
+  { name: "no session", response: { status: 401, body: { error: "no_session" } }, want: { kind: "unauthorized" } },
+  { name: "no response", response: "network-error", want: { kind: "network-error" } },
+];
+
+for (const { name, response, want } of mealPlanCases) {
+  test(`mealPlanWriteOf: ${name}`, () => {
+    assert.deepEqual(mealPlanWriteOf(response), want);
+  });
+}
+
+test("Api: serve a dish, set its servings, remove it", async () => {
+  const { api, requests } = apiWith(async () => jsonResponse(200, { versions: { meal_plan: 2 } }));
+  await api.serveDish({ date: "2026-10-06", mealtime: "dinner", dish: "a" });
+  await api.setServings("s/1", 3);
+  await api.removeServedDish("s/1");
+  assert.deepEqual(requests, [
+    { url: "api/meal-plan", method: "POST", body: { date: "2026-10-06", mealtime: "dinner", dish: "a" } },
+    { url: "api/meal-plan/s%2F1/servings", method: "PUT", body: { servings: 3 } },
+    { url: "api/meal-plan/s%2F1", method: "DELETE", body: undefined },
+  ]);
+});
+
+test("Api: a write of the meal plan, a 401 brings back to the login", async () => {
+  const { api, unauthorized } = apiWith(async () => jsonResponse(401, { error: "no_session" }));
+  assert.deepEqual(await api.removeServedDish("s"), { kind: "unauthorized" });
+  assert.equal(unauthorized(), 1);
 });
