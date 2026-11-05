@@ -117,6 +117,7 @@ func (a *api) routes(mux *http.ServeMux) {
 	handle("GET /tribes/{tribe}/api/session", a.withSession(a.getSession))
 	handle("DELETE /tribes/{tribe}/api/session", a.withSession(a.deleteSession))
 	a.dishRoutes(handle)
+	a.mealPlanRoutes(handle)
 	// Other methods on an API path get 405 from the mux.
 	mux.Handle("GET /tribes/{tribe}/api/{rest...}", withNoStore(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusNotFound, errorResponse{Error: errNotFound})

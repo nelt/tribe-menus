@@ -80,6 +80,15 @@ type Member struct {
 	RevokedBy   sql.NullInt64
 }
 
+type ServedDish struct {
+	ID       string
+	Date     string
+	Mealtime string
+	DishID   string
+	Servings int64
+	Rank     int64
+}
+
 type Session struct {
 	ID           int64
 	TokenHash    []byte

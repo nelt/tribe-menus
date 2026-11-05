@@ -3,12 +3,14 @@ package admin
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/nelt/tribe-menus/internal/dish"
+	"github.com/nelt/tribe-menus/internal/mealplan"
 	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
@@ -64,6 +66,35 @@ func TestSeed(t *testing.T) {
 			t.Errorf("%s: want the hue %s of the mock-up, held by %q", d.Name, dish.Palette[i], colors[dish.Palette[i]])
 		}
 	}
+
+	// The week of the mock-up Doux-Main, from the day of the seed (plan planning, D16).
+	names := map[dish.ID]string{}
+	for _, d := range page.Items {
+		names[d.ID] = d.Name
+	}
+	_, served, err := mealplan.NewPlan(storage.NewMealPlanStore(db)).ServedDishes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.SortFunc(served.Items, func(a, b mealplan.ServedDish) int { return int(a.Rank - b.Rank) })
+	var got []string
+	for _, s := range served.Items {
+		got = append(got, fmt.Sprintf("%s %s %s %d", s.Date, s.Mealtime, names[s.Dish], s.Servings))
+	}
+	day := func(n int) string { return now.AddDate(0, 0, n).Format(time.DateOnly) }
+	want := []string{
+		day(0) + " lunch Pizza maison 4",
+		day(0) + " dinner Ratatouille 4",
+		day(1) + " lunch Pâtes pesto 4",
+		day(1) + " dinner Chili con carne 3",
+		day(1) + " dinner Chili végétarien 1",
+		day(2) + " dinner Soupe à l'oignon 4",
+		day(3) + " lunch Chili con carne 4",
+		day(3) + " dinner Gratin de courgettes 4",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("week %q, want %q", got, want)
+	}
 }
 
 func TestSeedWithMembers(t *testing.T) {
@@ -93,6 +124,9 @@ func TestSeedWithMembers(t *testing.T) {
 	}
 	if _, page, err := dish.NewLibrary(storage.NewDishStore(db)).Dishes(ctx, ""); err != nil || len(page.Items) != 0 {
 		t.Errorf("dishes %+v, %v; want none in the tribe of a members file", page.Items, err)
+	}
+	if _, page, err := mealplan.NewPlan(storage.NewMealPlanStore(db)).ServedDishes(ctx, ""); err != nil || len(page.Items) != 0 {
+		t.Errorf("meal plan %+v, %v; want none in the tribe of a members file", page.Items, err)
 	}
 	entries, err := s.AuditLog(ctx)
 	if err != nil || len(entries) != 2 || entries[0].Operation != tribe.TribeInitialized || entries[1].Operation != tribe.MemberAdded {

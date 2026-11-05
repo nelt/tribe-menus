@@ -4,10 +4,17 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- `planning/B` (R2 à R5, T1, T3, ENF-02) : domaine et API du planning des repas. Migration `0008` de la base de la tribu (table `served_dishes`, collection `meal_plan`) : revenir à `v0.2.0` demande la restauration de l'instantané. Paquet `internal/mealplan` (dates réelles de 2000 à 2099, moments, parts de 1 à 50, ajout à la taille de la tribu, plat déjà servi refusé avec le repas à jour, dernier réglage gagnant, retrait), adaptateur `MealPlanStore` ; routes `GET`/`POST meal-plan`, `PUT meal-plan/{id}/servings`, `DELETE meal-plan/{id}`, `404` identique pour un plat servi retiré, inconnu ou d'une autre tribu ; 21 scénarios passent contre l'API ; `make seed` ajoute la semaine de `Doux-Main` à la tribu `demo`.
 - Tests de bout en bout : chaque scénario `@ui` attend, à sa fin, les requêtes encore interceptées par la session simulée et ignore leur erreur, qui faisait échouer un scénario au hasard (« route.fetch: Test ended », CI de la PR #88).
 - `planning/A` (R1 à R5, T1, T3, ENF-02) : specs, design et conception du planning. Décisions Q32 à Q35 dans `fonctionnalites.md` (plat retiré puis remis = nouveau plat servi, écritures croisées sur un repas, « aujourd'hui » de l'appareil, limites et ordre d'ajout), R1, R2 et R4 accordés ; scénario R2 du doublon scindé (refus de l'API, `@ui` « ne m'est pas proposé »), `@ui` sur R1 et la navigation de R5, scénarios nouveaux (bornes des parts et des dates, plat inconnu, ordre d'ajout, écritures croisées), « Le planning est propre à la tribu » et accès croisés aux plats servis (ENF-02) ; glossaire ; design : Planning et détail d'un repas, interprétations des maquettes, messages, « Se déconnecter » sur l'écran Tribu ; conception accordée ; plan en cours.
 - Plan `planning` (R1 à R5, T1, T3, ENF-02) : plan du planning des repas, cadré avec le développeur (D1 à D8 : planning chargé en entier comme collection, plat retiré puis remis = nouveau plat servi, écritures croisées sans révision, « aujourd'hui » de l'appareil, « Se déconnecter » sur l'écran Tribu, preuves, quatre lots et `v0.3.0`, pas de nouvelle maquette ; D9 à D20 proposées) ; conception `docs/conception/planning-des-repas.md` avec ses diagrammes de classes et de séquence ; feuille de route (plan `planning` prêt, puis les listes de courses).
 - Plan `bibliotheque` terminé (étape 28) : `v0.2.0` en production ; feuille de route (plan terminé, Safari et `304` reportés, sauvegarde hors site repoussée après une application viable, au plus tard avant d'inviter la famille, ADR 0025 révisé), conception, `CLAUDE.md` (métier, paquets `internal/dish` et `internal/collection`), ADR 0028, point 7 (`cucumber/messages`).
+
+### Migrations
+
+Revenir de cette version à une version antérieure restaure l'instantané pris avant son déploiement et perd tout ce qui a été écrit depuis (`tribe-menus-deploy --rollback --restore-data`).
+
+- `0008_meal_plan` (base de chaque tribu) : table `served_dishes` (plats servis, un même plat une fois par repas) et ses déclencheurs, collection `meal_plan` dans `collection_versions`.
 
 ## 0.2.0 — 2026-11-05
 

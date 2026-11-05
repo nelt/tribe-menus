@@ -16,6 +16,7 @@ import (
 var Collections = map[string][]string{
 	"dishes":      {"dishes", "dish_ingredients"},
 	"ingredients": {"ingredients"},
+	"meal_plan":   {"served_dishes"},
 }
 
 // readCollection runs read in a transaction of the tribe database and returns the version
