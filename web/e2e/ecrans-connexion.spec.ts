@@ -148,7 +148,7 @@ test("resend refused: the message of the email screen, the code received stays u
   await page.getByRole("button", { name: "Je n’ai rien reçu : renvoyer un code" }).click();
   await expect(page.getByRole("alert")).toHaveText("Trop de demandes depuis cet appareil. Réessayez dans quelques minutes.");
   await submitCode(page);
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
 });
 
 test("network error on the code form", async ({ page }) => {
@@ -172,11 +172,11 @@ test("the address is kept in memory only: a reload goes back to the email", asyn
   await expect(page.getByLabel("Votre adresse e-mail")).toHaveValue("");
 });
 
-test("slow loading: the loading screen, then the home page", async ({ page }) => {
+test("slow loading: the loading screen, then the planning", async ({ page }) => {
   await mockApi(page, { getSession: [{ ...replies.session, delayMs: 1500 }] });
   await page.goto("/tribes/demo/");
   await expect(page.getByRole("status", { name: "Chargement" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
   await expect(page.getByRole("status", { name: "Chargement" })).toHaveCount(0);
 });
 
@@ -192,7 +192,7 @@ test("fast loading: no loading screen", async ({ page }) => {
     }).observe(document, { childList: true, subtree: true });
   });
   await page.goto("/tribes/demo/");
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
   expect(loadingShown).toBe(false);
 });
 
@@ -203,25 +203,6 @@ test("slow or absent network at startup: the message and “Réessayer”", asyn
   await expect(page.getByText(/planning/)).toHaveCount(0);
   await page.getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
-});
-
-test("home and sign-out", async ({ page }) => {
-  const received = await mockApi(page, { getSession: [replies.session] });
-  await page.goto("/tribes/demo/connexion");
-  await expect(page).toHaveURL(/\/tribes\/demo\/$/);
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
-  await page.getByRole("button", { name: "Se déconnecter" }).click();
-  await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
-  await expect(page).toHaveURL(/\/tribes\/demo\/connexion$/);
-  expect(received).toContainEqual({ method: "DELETE", path: "session", body: undefined });
-});
-
-test("sign-out without network", async ({ page }) => {
-  await mockApi(page, { getSession: [replies.session], deleteSession: [replies.networkError] });
-  await page.goto("/tribes/demo/");
-  await page.getByRole("button", { name: "Se déconnecter" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
 });
 
 test("footer: the link to the source code", async ({ page }) => {

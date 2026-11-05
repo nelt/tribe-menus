@@ -2,7 +2,7 @@
 
 - **Nom** : `planning`
 - **Date** : 2026-11-05
-- **Statut** : en cours (lot B). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
+- **Statut** : en cours (lot C). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
 
 ## Objectif
 
@@ -72,13 +72,13 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 - [x] **11. Étapes godog** des scénarios « API » du tableau, retirés de `pending.txt`.
 - [x] **12. `make seed`** : la semaine de `Doux-Main` dans la tribu `demo`, à partir du jour du seed (D16). La tribu de recette n'en reçoit pas.
 
-### Lot C : planning de la semaine (`feature/planning-semaine`)
+### Lot C : planning de la semaine (`feature/planning-sept-jours` ; `feature/planning-semaine`, prévu, contient « main », refusé au push par `.claude/settings.json`)
 
-- [ ] **13. `web/src/meal-plan.ts`**, module pur testé par `node:test` : date du jour de l'appareil (D4), plage de 7 jours et ses voisines, titre de la plage (« 5 – 11 octobre », « 28 septembre – 4 octobre », « 29 décembre 2026 – 4 janvier 2027 »), cases de repas d'une plage à partir des plats servis et de la bibliothèque, total des parts d'un repas.
-- [ ] **14. Copie du planning** : `web/src/planning.ts`, une copie générique de la collection `meal_plan` (`collections.ts`, ADR 0029, point 4), vérifiée avec la bibliothèque à chaque visite du Planning ou d'un repas et à chaque retour au premier plan (D15) ; mise à jour par la réponse d'une écriture. Rien n'est écrit sur l'appareil.
-- [ ] **15. Écran Planning** d'après `Doux-Main`, à la place de l'accueil provisoire : en-tête (titre, pastille de la tribu vers l'écran Tribu), plage et ses flèches, « Revenir à aujourd'hui » (D8), « Aujourd'hui » sur le jour courant, cases de repas (liserés midi et soir, pilules des plats et leurs parts, case vide « + Ajouter »), chargement et erreur de réseau ; chemins `?du=AAAA-MM-JJ` (D14) ; changement de jour au retour au premier plan (D17). `home-screen.ts` disparaît.
-- [ ] **16. « Se déconnecter »** en bas de l'écran Tribu, bouton au contour rouge tomate (D5), avec le test d'écran qui le suivait sur l'accueil.
-- [ ] **17. R1 et R5 (navigation) sous Chromium et WebKit**, horloge de Playwright au lundi 5 octobre 2026, retirés de `pending.txt`.
+- [x] **13. `web/src/meal-plan.ts`**, module pur testé par `node:test` : date du jour de l'appareil (D4), plage de 7 jours et ses voisines, titre de la plage (« 5 – 11 octobre », « 28 septembre – 4 octobre », « 29 décembre 2026 – 4 janvier 2027 »), cases de repas d'une plage à partir des plats servis et de la bibliothèque, total des parts d'un repas.
+- [x] **14. Copie du planning** : `web/src/planning.ts`, une copie générique de la collection `meal_plan` (`collections.ts`, ADR 0029, point 4), vérifiée avec la bibliothèque à chaque visite du Planning ou d'un repas et à chaque retour au premier plan (D15) ; mise à jour par la réponse d'une écriture. Rien n'est écrit sur l'appareil.
+- [x] **15. Écran Planning** d'après `Doux-Main`, à la place de l'accueil provisoire : en-tête (titre, pastille de la tribu vers l'écran Tribu), plage et ses flèches, « Revenir à aujourd'hui » (D8), « Aujourd'hui » sur le jour courant, cases de repas (liserés midi et soir, pilules des plats et leurs parts, case vide « + Ajouter »), chargement et erreur de réseau ; chemins `?du=AAAA-MM-JJ` (D14) ; changement de jour au retour au premier plan (D17). `home-screen.ts` disparaît.
+- [x] **16. « Se déconnecter »** en bas de l'écran Tribu, bouton au contour rouge tomate (D5), avec le test d'écran qui le suivait sur l'accueil.
+- [x] **17. R1 et R5 (navigation) sous Chromium et WebKit**, horloge de Playwright au lundi 5 octobre 2026, retirés de `pending.txt`.
 
 ### Lot D : détail d'un repas (`feature/planning-repas`)
 
@@ -213,9 +213,19 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 - **Étapes godog** : « j'ajoute le plat "…" au repas du … » crée le plat s'il manque à la bibliothèque, pour T1 (« Ratatouille », absente du contexte) ; « nous sommes le … » règle l'horloge du scénario, que le serveur ne lit pas (D4) ; « je ne vois aucun élément de la tribu "…" » vérifie aussi le planning consulté (identifiants des plats servis et des plats de l'autre tribu). 21 titres retirés de `acceptance/pending.txt` ; restent de ce plan les quatre scénarios `@ui` (lots C et D) et ceux marqués « reste en attente ».
 - **`make seed`** : « Pizza maison » remplace « Restes » le premier jour à midi (D16) ; les dates partent du jour du seed, dans le fuseau du poste.
 
+**Lot C** (2026-11-05, Dev Container, `feature/planning-sept-jours`), à valider à la revue :
+
+- **Bornes de 2000 à 2099** (revue de la PR #87, point 2, tranché ici) : « Semaine suivante » est inactive quand la plage suivante commencerait après le 31 décembre 2099 ; « Semaine précédente » recule de 7 jours, mais pas avant le 1er janvier 2000, et devient inactive à cette date : tous les jours des bornes restent atteignables. Les cases d'un jour hors des bornes sont inactives (libellé atténué, sans « Ajouter »). Tests `node:test` et d'écran.
+- **Cases de repas pas encore des liens** : le détail d'un repas vient au lot D, qui en fera des liens vers `repas/AAAA-MM-JJ/midi|soir` ; « + Ajouter » est déjà dessiné, comme `Doux-Main`. Rien n'en part en production avant `v0.3.0`.
+- **Écritures du planning reportées au lot D** (étape 14) : `planning.ts` ne fait au lot C que charger, vérifier et oublier la copie ; la prise en compte d'une écriture (plat servi renvoyé, retrait, repas à jour d'un `409`) vient avec les écritures elles-mêmes, et demandera à `CachedCollection` de savoir retirer un élément.
+- **En-tête d'après `Doux-Main`** : titre « Menus » ; pastille de la tribu au liseré midi, « Les Démo · 4 », lue « Tribu Les Démo, 4 membres ». Le premier du mois s'écrit « 1er » à l'écran comme dans les scénarios (« Vendredi 1er janv. », « 1er – 7 juin »). Chaque case est un groupe nommé (« Mardi 6 oct., soir ») ; le badge des parts est lu « 3 parts ».
+- **Lien vers le code source** (ADR 0011, point 2) : l'accueil provisoire le portait ; il passe en bas de l'écran Tribu, sous « Se déconnecter », pour rester accessible une fois connecté.
+- **Plage `?du=` égale à aujourd'hui** : affichée comme la racine (« À partir d'aujourd'hui ») ; les flèches qui y ramènent mènent à la racine, pour que le changement de jour (D17) la suive.
+- **Retour au premier plan** : l'application vérifie la copie du planning, avec la bibliothèque, dès qu'elle a été chargée, sinon la seule bibliothèque comme avant.
+
 **Revue de la PR #87**, points à reprendre plus tard :
 
-- **Plages aux bornes de 2000 à 2099** (point 2, lot C) : `?du=2099-12-28` montre des jours de 2100, dont le repas serait refusé par l'API (`400 invalid_date`, affiché « Réseau nécessaire ») ; « Semaine suivante » mène alors à une date hors bornes, qui ramène à aujourd'hui sans le dire ; de même avant 2000. Cas très improbable. À trancher au lot C, avec un test `node:test` dans `meal-plan.ts` ; proposition du relecteur : flèche inactive quand la plage voisine sortirait des bornes, cases hors bornes inactives.
+- **Plages aux bornes de 2000 à 2099** (point 2, lot C, *tranché au lot C, ci-dessus*) : `?du=2099-12-28` montre des jours de 2100, dont le repas serait refusé par l'API (`400 invalid_date`, affiché « Réseau nécessaire ») ; « Semaine suivante » mène alors à une date hors bornes, qui ramène à aujourd'hui sans le dire ; de même avant 2000. Cas très improbable. À trancher au lot C, avec un test `node:test` dans `meal-plan.ts` ; proposition du relecteur : flèche inactive quand la plage voisine sortirait des bornes, cases hors bornes inactives.
 - **Retrait d'un plat servi déjà retiré** (point 3, Q33, D19) : aucun scénario ne prouve le `404 not_found` pour un plat servi retiré de la même tribu, seul l'accès d'une autre tribu le fait. Au lot B, un test du handler le prouve ; au lot D, un état d'écran sur l'API simulée montre que le plat disparaît sans message.
 
 **Revue de la PR #88**, point à reprendre plus tard :

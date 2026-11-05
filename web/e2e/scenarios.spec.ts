@@ -6,6 +6,7 @@ import { test } from "@playwright/test";
 import { parsePending } from "./pending.ts";
 import { World, findStep } from "./steps.ts";
 import "./steps-dishes.ts";
+import "./steps-planning.ts";
 
 interface Scenario {
   file: string;

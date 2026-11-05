@@ -40,7 +40,7 @@ test("sign in with the code received by email, then sign out", async ({ page }) 
 
   await page.getByLabel("Code de connexion").fill(await codeSentTo("alice@exemple.fr"));
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
   await expect(page).toHaveURL(/\/tribes\/demo\/$/);
 
   // The browser keeps the session cookie of the tribe, prefixed __Host- (ADR 0024); the
@@ -52,8 +52,10 @@ test("sign in with the code received by email, then sign out", async ({ page }) 
 
   // The session survives a reload.
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
 
+  // « Se déconnecter » is on the screen Tribu (plan planning, D5).
+  await page.getByRole("link", { name: /^Tribu Les Démo/ }).click();
   await page.getByRole("button", { name: "Se déconnecter" }).click();
   await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
   expect(await page.context().cookies()).toEqual([]);

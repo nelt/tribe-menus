@@ -569,62 +569,38 @@ input {
   line-height: 1.4;
 }
 
-/* Provisional home, until the planning */
-.home {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  max-width: 480px;
-  min-height: 100vh;
-  min-height: 100dvh;
-  box-sizing: border-box;
-  margin: 0 auto;
-  padding: 24px 20px calc(var(--tab-bar-height) + 20px);
-}
-
-.home-main {
-  display: flex;
-  flex-grow: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  text-align: center;
-}
-
-.home-symbol {
-  display: block;
-  width: 120px;
-  height: 120px;
-}
-
-.home-title {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: 32px;
-  font-weight: 800;
-}
-
-/* Chip of the tribe, at the top of the planning: opens the screen Tribu. */
+/* Chip of the tribe, in the header of the planning (Doux-Main): opens the screen Tribu. */
 .tribe-chip {
   display: flex;
-  align-self: flex-start;
+  flex-shrink: 0;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+  max-width: 60%;
   min-height: var(--touch-target);
   box-sizing: border-box;
-  padding: 0 16px;
-  border: var(--border-thin) solid var(--color-border);
+  padding: 0 12px;
+  border: var(--border-thin) solid var(--color-lunch-border);
   border-radius: var(--radius-pill);
-  color: var(--color-text);
-  font-weight: 800;
+  color: var(--color-lunch-text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
   text-decoration: none;
 }
 
-.tribe-chip-members {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 600;
+.tribe-chip:hover {
+  color: var(--color-lunch-text);
+}
+
+.tribe-chip svg {
+  flex-shrink: 0;
+}
+
+.tribe-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Tab bar (plan bibliotheque, D11). */
@@ -1271,4 +1247,223 @@ input {
   color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 600;
+}
+
+/* Screen Planning (Doux-Main, plan planning). */
+.range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-card);
+}
+
+.range-arrow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.range-arrow:disabled {
+  color: var(--color-dashed);
+  cursor: default;
+}
+
+.range-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.range-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.range-today {
+  color: var(--color-action);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.range-back {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-action);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.range-back:hover {
+  color: var(--color-action-hover);
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: 22px;
+}
+
+.day-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.day-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.day-date {
+  margin-left: 4px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.day-today {
+  margin-left: auto;
+  padding: 2px 10px;
+  border: var(--border-thin) solid var(--color-focus);
+  border-radius: var(--radius-pill);
+  color: var(--color-action);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.day-meals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.meal-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 84px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: var(--border-thin) solid var(--meal-border);
+  border-radius: var(--radius-field);
+  color: var(--color-text);
+}
+
+.meal-tile--lunch {
+  --meal-border: var(--color-lunch-border);
+  --meal-text: var(--color-lunch-text);
+}
+
+.meal-tile--dinner {
+  --meal-border: var(--color-dinner-border);
+  --meal-text: var(--color-dinner-text);
+}
+
+.meal-tile--empty {
+  border: var(--border-strong) dashed var(--color-dashed);
+}
+
+.meal-tile--inactive .meal-tile-label {
+  color: var(--color-text-muted);
+}
+
+.meal-tile-label {
+  color: var(--meal-text);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.meal-tile-add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.meal-tile-dishes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dish-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 3px 2px 9px;
+  border: var(--border-thin) solid var(--dish-border);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dish-pill-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dish-pill-servings {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: var(--border-thin) solid var(--dish-border);
+  border-radius: var(--radius-pill);
+  color: var(--dish);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Sign-out at the bottom of the screen Tribu (plan planning, D5). */
+.sign-out {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
 }
