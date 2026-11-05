@@ -58,10 +58,42 @@ Fonctionnalité: Compartimentage des données entre tribus
     Exemples:
       | donnée                  |
       | la bibliothèque de plats |
-      | le planning             |
       | les listes de courses   |
       | la liste des membres    |
       | mes sessions            |
+
+  @ENF-02 @T1
+  Scénario: Le planning est propre à la tribu
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et le plat "Tartiflette" servi pour 4 parts le mardi 6 octobre 2026 au soir dans la tribu "durand"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je consulte le planning
+    Alors je ne vois aucun élément de la tribu "durand"
+    Et le repas du mardi 6 octobre 2026 au soir ne contient aucun plat
+
+  @ENF-02
+  Plan du scénario: Un plat servi d'une autre tribu ne peut être ni modifié ni retiré
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et le plat "Tartiflette" servi pour 4 parts le mardi 6 octobre 2026 au soir dans la tribu "durand"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je tente de <action> ce plat servi de la tribu "durand" en utilisant son identifiant
+    Alors la requête est refusée
+    Et la réponse est la même que pour un identifiant qui n'existe pas
+    Et le plat servi de la tribu "durand" est inchangé
+
+    Exemples:
+      | action              |
+      | régler les parts de |
+      | retirer             |
+
+  @ENF-02
+  Scénario: Un plat d'une autre tribu ne peut pas être servi
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand j'ajoute au repas du mardi 6 octobre 2026 au soir le plat "Tartiflette" de la tribu "durand" en utilisant son identifiant
+    Alors l'ajout est refusé
+    Et la réponse est la même que pour un identifiant qui n'existe pas
+    Et le repas du mardi 6 octobre 2026 au soir ne contient aucun plat
 
   @ENF-02
   Scénario: La session d'une tribu ne donne pas accès à une autre tribu

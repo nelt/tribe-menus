@@ -106,6 +106,15 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | moment : midi / soir | mealtime: lunch / dinner | |
 | plat servi | served dish | |
 | parts (d'un plat servi) | servings | |
+| rang (d'un plat servi) | rank | ordre d'ajout dans la tribu, qui ordonne les plats d'un repas, Q35 |
+| ajouter (un plat à un repas) | serve (a dish) | R2 ; le résultat est un plat servi |
+| retirer (un plat d'un repas) | remove | R4 ; le plat reste dans la bibliothèque |
+| jour | day | une date du planning, sans heure ni fuseau (`AAAA-MM-JJ`), Q34 |
+| aujourd'hui | today | la date de l'appareil, jamais celle du serveur, Q34 |
+| plage de jours | day range | les 7 jours que montre le Planning, à partir d'un jour, R1, R5 |
+| case de repas | meal tile | un repas sur l'écran Planning, avec ses plats en pilules |
+| proposition de plat | dish suggestion | plat proposé à l'ajout dans un repas, sans les plats déjà servis, Q21 |
+| copie du planning | cached meal plan | copie de la collection `meal_plan` dans le navigateur, en mémoire seulement, `planning.ts` |
 
 ## Listes de courses
 

@@ -1,6 +1,6 @@
 # Spécifications fonctionnelles : menus de la semaine (V1)
 
-- **Date** : 2026-09-26 (listes de courses révisées le 2026-09-27, refondues le 2026-10-01 ; bibliothèque de plats précisée le 2026-11-03, plan `bibliotheque`)
+- **Date** : 2026-09-26 (listes de courses révisées le 2026-09-27, refondues le 2026-10-01 ; bibliothèque de plats précisée le 2026-11-03, plan `bibliotheque` ; planning précisé le 2026-11-05, plan `planning`)
 - **Statut** : prêt
 
 ## Objectif
@@ -15,8 +15,8 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 | **Ingrédient** | Élément du référentiel d'ingrédients de la tribu (ex. « tomate », « riz »), avec une unité par défaut, proposée à chaque saisie, absente tant qu'aucune ligne ne lui a donné de quantité (Q20, Q26). Son nom normalisé (Q29) est unique dans la tribu. Il est créé en saisissant un plat (P4) ou un article ajouté (C3), jamais seul. |
 | **Bibliothèque de plats** | L'ensemble des plats de la tribu. Un plat y reste indépendamment de son utilisation dans les repas. |
 | **Plat** | Un nom, unique dans la tribu (Q28), et une liste d'ingrédients, chacun une seule fois (Q27) et avec une quantité facultative (Q26), exprimée pour un **nombre de parts de référence** (la taille de la tribu par défaut). Il porte une **couleur**, attribuée automatiquement à sa création (Q19). Pas de recette (étapes) en V1. |
-| **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis. |
-| **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (la taille de la tribu par défaut). Exemple : chili 3 parts et chili végétarien 1 part. |
+| **Repas** | Une case du planning : une date et un moment (**midi** ou **soir**). Elle contient zéro, un ou plusieurs plats servis, dans l'ordre où ils ont été ajoutés (Q35). Un repas n'a pas d'existence propre : il est vide tant qu'aucun plat n'y est servi. |
+| **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (la taille de la tribu au moment de l'ajout, de 1 à 50, Q35). Exemple : chili 3 parts et chili végétarien 1 part. Il a une **identité propre**, distincte de celle du plat : retiré puis ajouté de nouveau au même repas, c'est un nouveau plat servi (Q32). |
 | **Liste de courses** | Liste nommée, **indépendante du planning** : elle existe par elle-même et reçoit des articles ajoutés à la main (C3) ou les courses des repas d'une période (C4). Une tribu a toujours **au moins une liste**, et exactement une **liste principale**, celle que montre l'onglet Courses (C1). Plusieurs listes peuvent exister en même temps. Une liste n'est jamais close : déclarer les courses faites en retire les articles cochés (C11) ; elle n'est supprimée que vide (C12). |
 | **Liste principale** | La liste ouverte par défaut et proposée par défaut pour ajouter des courses. Créée avec la tribu ; tout membre peut désigner une autre liste comme principale ; elle ne peut pas être supprimée. |
 | **Article** | Une ligne d'une liste de courses : un ingrédient, une quantité et une unité. Un article **calculé** provient de plats servis (ses **provenances**) et reste lié à eux : on voit à quels plats il participe (C5) ; une liste a au plus un article calculé par ingrédient et famille d'unités. Un article **ajouté** a été saisi à la main, hors planning. |
@@ -89,10 +89,10 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 
 ### Planning des repas (`features/planning-repas.feature`)
 
-- **R1** : Je vois les repas de 7 jours à partir d'aujourd'hui (J à J+6), avec deux cases par jour : midi et soir.
-- **R2** : J'ajoute un ou plusieurs plats de la bibliothèque à un repas ; chaque plat servi part d'un nombre de parts égal à la taille de la tribu. Un même plat ne figure qu'une fois dans un repas.
+- **R1** : Je vois les repas de 7 jours à partir d'aujourd'hui (J à J+6), avec deux cases par jour : midi et soir. « Aujourd'hui » est la date de mon appareil (Q34).
+- **R2** : J'ajoute un ou plusieurs plats de la bibliothèque à un repas ; chaque plat servi part d'un nombre de parts égal à la taille de la tribu au moment de l'ajout. Un même plat ne figure qu'une fois dans un repas : un plat déjà servi dans le repas ne m'est pas proposé (Q21), et un plat qu'un autre membre y a servi entre-temps est refusé (Q33).
 - **R3** : Je modifie le nombre de parts d'un plat servi.
-- **R4** : Je retire un plat d'un repas ; il reste dans la bibliothèque, mais sa configuration dans ce repas est perdue.
+- **R4** : Je retire un plat d'un repas ; il reste dans la bibliothèque, mais sa configuration dans ce repas est perdue : ajouté de nouveau, il repart de la taille de la tribu (Q32).
 - **R5** : Je navigue vers les semaines précédentes et suivantes. Les repas passés restent modifiables comme les autres.
 
 ### Liste de courses (`features/liste-courses.feature`)
@@ -186,3 +186,14 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
   - nom d'un plat de 60 caractères au plus, nom d'un ingrédient de 40, 40 ingrédients par plat ;
   - dans le nom d'un plat ou d'un ingrédient, les espaces sont réduites à une seule entre deux mots ; un caractère de contrôle est refusé ; un nom sans aucun caractère visible est refusé comme un nom vide (plan `bibliotheque`, D30, 2026-11-03) ;
   - quantité strictement positive, saisie avec une virgule ou un point ; au plus les décimales que l'unité permet : aucune en ml, une en cl, trois en l, g, kg, pièce, cuillère à soupe, cuillère à café et pincée (« 2,5 cl » et « 0,125 kg » acceptés, « 2,5 ml » refusé). Au-delà, la quantité est refusée (« Quantité trop précise pour cette unité ») plutôt qu'arrondie en silence.
+- **Q32** : un plat **retiré puis ajouté de nouveau** à un repas est un **nouveau plat servi** : il repart de la taille de la tribu (R4) et passe en dernier dans le repas (Q35) ; rien ne le relie au plat servi retiré. Les listes de courses le traiteront comme un plat servi qu'elles n'ont pas encore reçu (Q22) (plan `planning`, D2, 2026-11-05).
+- **Q33** : **écritures croisées sur un repas**, quand deux membres le modifient en même temps. Un plat servi n'a pas de révision, contrairement à un plat (Q25) : il n'y a pas de temps réel (Q6), et un réglage de parts se prête mal à un refus (plan `planning`, D3, 2026-11-05).
+  - **parts** : le dernier enregistrement l'emporte, sans message ;
+  - **ajout d'un plat qu'un autre membre a servi entre-temps** dans le repas : refusé (Q21) ; le membre voit « « Chili con carne » est déjà servi dans ce repas. » et le repas à jour ;
+  - **parts d'un plat servi qu'un autre membre a retiré entre-temps** : refusées ; le membre voit « Ce plat a été retiré du repas entre-temps. » et le repas à jour ;
+  - **retrait d'un plat servi déjà retiré** par un autre membre : rien n'est signalé, le retrait est fait.
+- **Q34** : **« aujourd'hui » est la date de l'appareil** du membre ; le serveur ne la connaît pas. Deux membres dans des fuseaux horaires différents voient chacun leur « aujourd'hui », sur le même planning. Un repas est désigné par sa seule date, sans heure ni fuseau. Quand la date de l'appareil change pendant que le planning montre les 7 jours à partir d'aujourd'hui, il passe au nouveau jour au retour sur l'application ; une autre semaine affichée reste affichée (plan `planning`, D4 et D17, 2026-11-05).
+- **Q35** : **limites et ordre du planning** (plan `planning`, D4 et D11, 2026-11-05) :
+  - parts d'un plat servi de 1 à 50, comme la taille de la tribu (Q31) ;
+  - repas du 1er janvier 2000 au 31 décembre 2099, passés comme futurs (Q2) ;
+  - les plats d'un repas sont présentés dans l'ordre où ils ont été ajoutés, sur le planning comme dans le détail du repas ; un plat retiré puis ajouté de nouveau passe en dernier (Q32). L'ordre alphabétique est écarté : il déplacerait un plat sous le doigt.

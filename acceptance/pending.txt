@@ -21,8 +21,11 @@ authentification.feature: La déconnexion efface les données de la tribu sur l'
 authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 bibliotheque-plats.feature: La modification d'un plat s'applique aux repas où il est servi
+compartimentage-tribus.feature: Le planning est propre à la tribu
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
+compartimentage-tribus.feature: Un plat d'une autre tribu ne peut pas être servi
+compartimentage-tribus.feature: Un plat servi d'une autre tribu ne peut être ni modifié ni retiré
 liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Ajouter un article à la main
 liste-courses.feature: Changer de liste principale
@@ -119,6 +122,10 @@ membres-et-sessions.feature: Un membre révoqué est déconnecté à sa requête
 membres-et-sessions.feature: Une adresse déjà membre d'une autre tribu peut être ajoutée
 planning-repas.feature: Afficher les repas de 7 jours à partir d'aujourd'hui
 planning-repas.feature: Ajouter un plat à un repas
+planning-repas.feature: Le dernier réglage des parts l'emporte
+planning-repas.feature: Le nombre de parts d'un plat servi va de 1 à 50
+planning-repas.feature: Les parts d'un plat retiré entre-temps par un autre membre ne sont pas enregistrées
+planning-repas.feature: Les plats d'un repas sont dans l'ordre où ils ont été ajoutés
 planning-repas.feature: Les repas passés restent modifiables
 planning-repas.feature: Modifier le nombre de parts d'un plat servi
 planning-repas.feature: Naviguer vers la semaine précédente
@@ -126,6 +133,12 @@ planning-repas.feature: Naviguer vers la semaine suivante
 planning-repas.feature: Retirer un plat d'un repas
 planning-repas.feature: Servir plusieurs plats dans un même repas
 planning-repas.feature: Un même plat ne peut pas être ajouté deux fois à un repas
+planning-repas.feature: Un nombre de parts hors de 1 à 50 est refusé
+planning-repas.feature: Un plat absent de la bibliothèque ne peut pas être servi
+planning-repas.feature: Un plat déjà servi dans un repas ne m'est pas proposé
 planning-repas.feature: Un plat retiré puis ajouté de nouveau repart de 4 parts
+planning-repas.feature: Un plat servi entre-temps par un autre membre n'est pas ajouté une seconde fois
+planning-repas.feature: Un repas hors de 2000 à 2099 est refusé
+planning-repas.feature: Un repas se place entre 2000 et 2099
 tribu.feature: La taille de la tribu fixe les parts des plats servis ajoutés ensuite
 tribu.feature: Le planning est partagé entre membres

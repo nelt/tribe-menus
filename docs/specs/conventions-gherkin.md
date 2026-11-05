@@ -31,7 +31,7 @@ Les scénarios de `features/` sont exécutés tels quels (ADR 0005). Pour que ch
 
 ## Dates et repas
 
-- Un jour s'écrit avec le jour de la semaine et l'année : `le mardi 6 octobre 2026`.
+- Un jour s'écrit avec le jour de la semaine et l'année : `le mardi 6 octobre 2026`. Le premier du mois s'écrit `1er` : `le samedi 1er janvier 2000`.
 - Un repas : `le mardi 6 octobre 2026 à midi` ou `le mardi 6 octobre 2026 au soir` ; `le repas du mardi 6 octobre 2026 au soir`.
 - La période dont on ajoute les courses s'écrit sans jour de la semaine : `du 6 au 12 octobre 2026`. Les jours affichés par le planning gardent le jour de la semaine (`du lundi 5 au dimanche 11 octobre 2026`), puisque c'est ce que montre l'écran.
 - `dans la période` et `de la période` désignent la période dont le même scénario ajoute les courses ; sans date précisée, c'est la période par défaut (C4) relative à la date du `Contexte`.

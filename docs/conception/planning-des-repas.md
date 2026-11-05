@@ -1,12 +1,12 @@
 # Conception : planning des repas
 
 - **Mise à jour** : 2026-11-05
-- **Statut** : proposé avec le plan [`planning`](../plans/2026-11-05-planning-des-repas.md), à revoir dans sa PR ; à accorder aux specs, au glossaire et au design par le lot A, noms du code à fixer par les lots B à D ; à tenir à jour par les plans qui touchent ce domaine (listes de courses, hors-ligne)
+- **Statut** : retenu avec le plan [`planning`](../plans/2026-11-05-planning-des-repas.md) ; accordé aux specs, au glossaire et au design par le lot A (2026-11-05) ; noms du code à fixer par les lots B à D ; à tenir à jour par les plans qui touchent ce domaine (listes de courses, hors-ligne)
 - **Stories** : R1 à R5 ; T1 et T3 pour le planning ; ENF-02 pour le planning
 
-Ce document décrit la conception retenue pour le planning des repas : modèle, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise la taille de la tribu, la copie des collections et la recherche, sans les répéter. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (R1 à R5, Q1, Q2, Q5, Q8, Q21, et Q32 à Q35 au lot A), les décisions dans les ADR (0027, 0029) et dans le plan (D1 à D20).
+Ce document décrit la conception retenue pour le planning des repas : modèle, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise la taille de la tribu, la copie des collections et la recherche, sans les répéter. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (R1 à R5, Q1, Q2, Q5, Q8, Q21, Q32 à Q35), les décisions dans les ADR (0027, 0029) et dans le plan (D1 à D20).
 
-Noms anglais du code selon `docs/specs/glossaire.md` : planning (*meal plan*), repas (*meal*), moment (*mealtime* : *lunch*, *dinner*), plat servi (*served dish*), parts (*servings*) ; au lot A : jour (*day*), plage de jours (*day range*), case de repas (*meal tile*), ajout d'un plat à un repas (*serve a dish*), retrait (*remove*), copie du planning (*cached meal plan*), proposition de plat (*dish suggestion*).
+Noms anglais du code selon `docs/specs/glossaire.md` : planning (*meal plan*), repas (*meal*), moment (*mealtime* : *lunch*, *dinner*), plat servi (*served dish*), parts (*servings*), rang (*rank*), ajouter un plat à un repas (*serve a dish*), retirer (*remove*), jour (*day*), aujourd'hui (*today*), plage de jours (*day range*), case de repas (*meal tile*), proposition de plat (*dish suggestion*), copie du planning (*cached meal plan*).
 
 ## Modèle du domaine
 
@@ -56,7 +56,7 @@ classDiagram
 ```
 
 - **Meal** : une case du planning, une date et un moment (Q1). Il n'est **pas stocké** : un repas existe dès qu'on le désigne, vide tant qu'aucun plat n'y est servi. Rien à créer, rien à supprimer.
-- **ServedDish** : identifiant aléatoire (D10) ; date, moment et plat, uniques ensemble (Q21) ; **parts** de 1 à 50 (Q35), la taille de la tribu au moment de l'ajout (Q8, T3, D9) ; **rang** d'ajout, qui ordonne les plats d'un repas (D11). Ni auteur ni date de modification (D18), ni révision (D3). Un plat retiré puis ajouté de nouveau est un **nouveau** plat servi (D2, Q32).
+- **ServedDish** : identifiant aléatoire (D10) ; date, moment et plat, uniques ensemble (Q21) ; **parts** de 1 à 50 (Q35), la taille de la tribu au moment de l'ajout (Q8, T3, D9) ; **rang** d'ajout, qui ordonne les plats d'un repas (D11, Q35). Ni auteur ni date de modification (D18), ni révision (D3). Un plat retiré puis ajouté de nouveau est un **nouveau** plat servi (D2, Q32).
 - **Dish** : inchangé. Un plat n'est jamais supprimé (Q5b) : un plat servi désigne toujours un plat existant. Les parts de référence d'un plat ne fixent pas celles d'un plat servi (Q8) ; elles sont affichées dans le détail d'un repas (« Défini pour 4 parts ») et serviront au calcul des courses.
 - **Date** : sans fuseau ni heure. Le serveur ne connaît pas « aujourd'hui » ; c'est la date de l'appareil qui fixe la plage affichée (D4, Q34). Les repas passés sont modifiables comme les autres (R5, Q2).
 - **Tribe** : sa taille sert désormais aussi aux plats servis ajoutés ; ceux déjà placés ne changent pas (T3).
@@ -133,7 +133,7 @@ classDiagram
             <<module pur>>
             +today() Date
             +dayRange(start) Day[7]
-            +rangeTitle(range) string
+            +rangeTitle(range, today) string
             +mealTiles(range, served, dishes) Tile[]
             +mealDishes(meal, served, dishes) Row[]
             +dishSuggestions(dishes, served, query) Dish[]
@@ -209,6 +209,8 @@ Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Con
 Le planning vit dans une **copie en mémoire** (`web/src/planning.ts`), une `CachedCollection` de la collection `meal_plan`, comme les plats et le référentiel (ADR 0029, point 4). Elle est vérifiée **avec la bibliothèque** à chaque visite du Planning ou d'un repas et à chaque retour au premier plan (D15) : les cases montrent le nom et la couleur des plats, que seule la bibliothèque connaît. Après une écriture, la copie prend le plat servi renvoyé (ou retire celui qui a été retiré) et la version, ou se vérifie aussitôt si un autre membre a écrit entre-temps ; après un `409`, elle prend les plats servis du repas à jour ; après un `404`, elle se vérifie. Rien n'est écrit sur l'appareil : la copie disparaît au rechargement, à la déconnexion et sur un 401.
 
 La plage affichée, ses voisines et les cases se calculent dans le navigateur (`meal-plan.ts`), sans requête : changer de semaine ne coûte rien.
+
+Ce que l'écran montre de ces échanges (titres des plages, propositions, bandeaux d'avertissement après un `409` ou un `404`, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Planning et détail d'un repas ».
 
 ## Échanges
 
@@ -362,9 +364,9 @@ Sans changement, le retour coûte trois `304` : planning, plats et référentiel
 
 ## Preuves
 
-- **Contre l'API** (godog) : ajout, plusieurs plats dans un repas, refus d'un doublon, parts, retrait, plat retiré puis ajouté de nouveau, repas passés, limites, plat inconnu, écritures croisées, planning partagé (T1), taille de la tribu (T3), compartimentage (ENF-02) ; tableau « Scénarios couverts » du plan.
+- **Contre l'API** (godog) : ajout, plusieurs plats dans un repas, refus d'un doublon, parts, retrait, plat retiré puis ajouté de nouveau, ordre d'ajout, repas passés, limites (parts de 1 à 50, repas de 2000 à 2099), plat inconnu, écritures croisées (ajout du même plat, dernier réglage des parts, parts d'un plat retiré), planning partagé (T1), taille de la tribu (T3), compartimentage (ENF-02) ; tableau « Scénarios couverts » du plan.
 - **Dans le navigateur** (`@ui`, ADR 0028), horloge de Playwright au lundi 5 octobre 2026 : 7 jours à partir d'aujourd'hui (R1), semaines suivante et précédente (R5), plat déjà servi non proposé (R2), sous Chromium et WebKit.
-- **Tests unitaires** : règles de `internal/mealplan` (`go test`) ; `meal-plan.ts` (`node:test`) : plages, titres, cases, propositions, changement de jour.
+- **Tests unitaires** : règles de `internal/mealplan` (`go test`), dont les dates réelles (un 30 février est refusé) ; `meal-plan.ts` (`node:test`) : plages, titres (à cheval sur deux mois, deux années, autre année), cases, propositions, changement de jour.
 
 ## Ce que ce document ne couvre pas encore
 
