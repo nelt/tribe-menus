@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `planning` (R1 à R5, T1, T3, ENF-02) : plan du planning des repas, cadré avec le développeur (D1 à D8 : planning chargé en entier comme collection, plat retiré puis remis = nouveau plat servi, écritures croisées sans révision, « aujourd'hui » de l'appareil, « Se déconnecter » sur l'écran Tribu, preuves, quatre lots et `v0.3.0`, pas de nouvelle maquette ; D9 à D20 proposées) ; conception `docs/conception/planning-des-repas.md` avec ses diagrammes de classes et de séquence ; feuille de route (plan `planning` prêt, puis les listes de courses).
 - Plan `bibliotheque` terminé (étape 28) : `v0.2.0` en production ; feuille de route (plan terminé, Safari et `304` reportés, sauvegarde hors site repoussée après une application viable, au plus tard avant d'inviter la famille, ADR 0025 révisé), conception, `CLAUDE.md` (métier, paquets `internal/dish` et `internal/collection`), ADR 0028, point 7 (`cucumber/messages`).
 
 ## 0.2.0 — 2026-11-05

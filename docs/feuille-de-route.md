@@ -32,6 +32,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
+| `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | prêt |
 
 ### `production` : application prête pour la production
 
@@ -48,6 +49,10 @@ Terminé le 2026-11-03 : cinq lots (cookies `__Host-` et tribu de recette, provi
 Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17) : *posée le 2026-11-02, le plan peut avancer.* En cours depuis le 2026-11-03 : lot A (specs, ADR 0027 à 0029, design, conception), lot B (domaine et API), lot C (navigation, bibliothèque, scénarios `@ui` sous Playwright), lot D (fiche d'un plat, écran Tribu, noms affichés) 
 
 Terminé le 2026-11-05 : recette sur l'archive de la PR de release (#83), un défaut et deux remarques corrigés par #84, puis un second passage ; **`v0.2.0` en production le 2026-11-05**. Safari sur iPhone reste à vérifier, faute d'appareil.
+
+### `planning` : planning des repas
+
+Deuxième plan du métier, pour une application viable à montrer : le Planning de `Doux-Main` remplace l'accueil provisoire, 7 jours à partir d'aujourd'hui, midi et soir, semaines précédentes et suivantes (R1, R5) ; détail d'un repas d'après `Doux-Repas`, ajout de plats de la bibliothèque à la taille de la tribu, parts, retrait (R2 à R4) ; planning partagé et compartimenté (T1, T3, ENF-02) ; « Se déconnecter » passe sur l'écran Tribu. Planning chargé en entier comme collection (ADR 0029), « aujourd'hui » pris sur l'appareil. Conception dans `conception/planning-des-repas.md`. Quatre lots (specs et design, domaine et API, planning de la semaine, détail d'un repas), puis la release `v0.3.0` en production. Cadré le 2026-11-05.
 
 ## Décisions d'ordonnancement
 
@@ -66,13 +71,14 @@ Le 2026-10-29, avec le développeur.
 Le 2026-11-05, avec le développeur, après `v0.2.0`.
 
 - **Le fonctionnel passe avant la sauvegarde hors site.** Il s'agit de pouvoir montrer une application viable (planning des repas, listes de courses) ; la sauvegarde hors site et la reconstruction du serveur avec des données suivent, au plus tard avant d'inviter la famille. D'ici là, les données de production (la tribu du développeur et ses plats) n'ont que les instantanés de PulseHeberg et ceux de `tribe-menus-deploy`, sur le même disque (ADR 0025, point 4).
+- **Le planning, puis les listes de courses, en deux plans.** `planning` d'abord, livré seul en `v0.3.0` : il est utilisable sans les listes, qui s'appuient sur lui (plats servis, parts). Les listes de courses suivent dans leur propre plan.
 
 ## Ensuite, sans ordre arrêté
 
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **Métier, suite** : planning des repas, listes de courses (la bibliothèque de plats a son plan, `bibliotheque`), leurs collections servies par le mécanisme générique de versions et d'ETag (`bibliotheque`, D28 ; ADR 0029) ; avec eux, les derniers scénarios de compartimentage des données métier (ENF-02).
+- **Métier, suite** : listes de courses, après `planning` (décision du 2026-11-05), leurs collections servies par le mécanisme générique de versions et d'ETag (`bibliotheque`, D28 ; ADR 0029) ; avec elles, les derniers scénarios de compartimentage des données métier (ENF-02), et P2 « La modification d'un plat s'applique aux repas où il est servi ».
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
