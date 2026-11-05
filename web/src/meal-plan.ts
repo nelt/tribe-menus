@@ -1,7 +1,8 @@
 // Rules of the meal plan in the browser (plan planning, D4, D11, D14): the day of the device,
 // the ranges of 7 days and their titles, the meal tiles of a range. Pure functions, tested by
-// node:test. A day is written YYYY-MM-DD, without time zone, as the API stores it.
-import type { Dish } from "./dishes.ts";
+// node:test. A day is written YYYY-MM-DD, without time zone, as the API stores it. The
+// screen of a meal reads here its dishes and the dish suggestions (Q21, D12).
+import { type Dish, searchDishes, sortDishes } from "./dishes.ts";
 
 /** A day, YYYY-MM-DD. */
 export type Day = string;
@@ -121,6 +122,16 @@ export function shortDate(day: Day): string {
 }
 
 /**
+ * The day of a meal, as the screen of a meal titles it: « Mardi 6 octobre »; the year
+ * follows in another year than that of today, as for the title of a range.
+ */
+export function longDate(day: Day, todayDay: Day): string {
+  const { year, month, date } = parts(day);
+  const other = year === parts(todayDay).year ? "" : ` ${year}`;
+  return `${weekdayName(day)} ${dateNumber(date)} ${months[month] ?? ""}${other}`;
+}
+
+/**
  * The title of a range (docs/design/README.md): « 5 – 11 octobre », « 28 septembre –
  * 4 octobre », « 29 décembre 2026 – 4 janvier 2027 »; the year follows in another year than
  * that of today: « 6 – 12 octobre 2025 ».
@@ -161,37 +172,62 @@ export interface DayTiles {
   meals: MealTile[];
 }
 
-/**
- * The days and meal tiles of a range, from the dishes served and the library. A dish served
- * whose dish the copy of the library does not hold yet is left out until the next check of
- * both copies (D15).
- */
-export function mealTiles(days: Day[], served: Iterable<ServedDish>, dishes: Iterable<Dish>, todayDay: Day): DayTiles[] {
+/** The dishes of each meal, by "<date> <mealtime>", in the order they were added (D11). */
+function byMeal(served: Iterable<ServedDish>, dishes: Iterable<Dish>): Map<string, TileDish[]> {
   const library = new Map<string, Dish>();
   for (const d of dishes) {
     library.set(d.id, d);
   }
-  const byMeal = new Map<string, TileDish[]>();
+  const meals = new Map<string, TileDish[]>();
   for (const s of served) {
     const dish = library.get(s.dish);
     if (dish === undefined) {
       continue;
     }
     const key = `${s.date} ${s.mealtime}`;
-    const meal = byMeal.get(key) ?? [];
+    const meal = meals.get(key) ?? [];
     meal.push({ served: s, dish });
-    byMeal.set(key, meal);
+    meals.set(key, meal);
   }
+  for (const meal of meals.values()) {
+    meal.sort((a, b) => a.served.rank - b.served.rank);
+  }
+  return meals;
+}
+
+/**
+ * The days and meal tiles of a range, from the dishes served and the library. A dish served
+ * whose dish the copy of the library does not hold yet is left out until the next check of
+ * both copies (D15).
+ */
+export function mealTiles(days: Day[], served: Iterable<ServedDish>, dishes: Iterable<Dish>, todayDay: Day): DayTiles[] {
+  const meals = byMeal(served, dishes);
   return days.map((date) => ({
     date,
     today: date === todayDay,
     meals: mealtimes.map((mealtime) => ({
       date,
       mealtime,
-      dishes: (byMeal.get(`${date} ${mealtime}`) ?? []).sort((a, b) => a.served.rank - b.served.rank),
+      dishes: meals.get(`${date} ${mealtime}`) ?? [],
       inactive: !inBounds(date),
     })),
   }));
+}
+
+/** The dishes of a meal, in the order they were added (D11), as mealTiles gives them. */
+export function mealDishes(date: Day, mealtime: Mealtime, served: Iterable<ServedDish>, dishes: Iterable<Dish>): TileDish[] {
+  return byMeal(served, dishes).get(`${date} ${mealtime}`) ?? [];
+}
+
+/**
+ * The dish suggestions of a meal (D12): without search, the whole library by alphabetical
+ * order (Q30); with one, the results of the search of the tab Plats (P3); never the dishes
+ * already served in the meal (Q21).
+ */
+export function dishSuggestions(dishes: Iterable<Dish>, meal: TileDish[], query: string): Dish[] {
+  const served = new Set(meal.map((d) => d.dish.id));
+  const found = query.trim() === "" ? sortDishes(dishes) : searchDishes(dishes, query).map((r) => r.dish);
+  return found.filter((d) => !served.has(d.id));
 }
 
 /** The total of the servings of a meal. */
