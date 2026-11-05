@@ -90,7 +90,7 @@ Fonctionnalité: Compartimentage des données entre tribus
   Scénario: Un plat d'une autre tribu ne peut pas être servi
     Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
     Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
-    Quand j'ajoute au repas du mardi 6 octobre 2026 au soir le plat "Tartiflette" de la tribu "durand", par son identifiant
+    Quand j'ajoute au repas du mardi 6 octobre 2026 au soir le plat "Tartiflette" de la tribu "durand" en utilisant son identifiant
     Alors l'ajout est refusé
     Et la réponse est la même que pour un identifiant qui n'existe pas
     Et le repas du mardi 6 octobre 2026 au soir ne contient aucun plat
