@@ -4,7 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
-- Plan `bibliotheque` terminé (étape 28) : `v0.2.0` en production ; feuille de route (plan terminé, Safari et `304` reportés, échéances « avant `v0.2.0` » de la sauvegarde hors site dépassées), conception, `CLAUDE.md` (métier, paquets `internal/dish` et `internal/collection`), ADR 0028, point 7 (`cucumber/messages`).
+- Plan `bibliotheque` terminé (étape 28) : `v0.2.0` en production ; feuille de route (plan terminé, Safari et `304` reportés, sauvegarde hors site repoussée après une application viable, au plus tard avant d'inviter la famille, ADR 0025 révisé), conception, `CLAUDE.md` (métier, paquets `internal/dish` et `internal/collection`), ADR 0028, point 7 (`cucumber/messages`).
 
 ## 0.2.0 — 2026-11-05
 

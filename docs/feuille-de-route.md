@@ -63,6 +63,10 @@ Le 2026-10-29, avec le développeur.
 
 - **Le métier commence pendant la fin de `recette`.** Ce qui reste de `recette` attend le poste du développeur et des séances ; le plan `bibliotheque` avance en parallèle, sur ses propres branches, sans rien fusionner avant l'étiquette `v0.1.0` (`bibliotheque`, D17). *La décision du 2026-10-04, « le déploiement passe avant le métier », tient pour la livraison : aucun plat n'est en production avant `v0.2.0`.*
 
+Le 2026-11-05, avec le développeur, après `v0.2.0`.
+
+- **Le fonctionnel passe avant la sauvegarde hors site.** Il s'agit de pouvoir montrer une application viable (planning des repas, listes de courses) ; la sauvegarde hors site et la reconstruction du serveur avec des données suivent, au plus tard avant d'inviter la famille. D'ici là, les données de production (la tribu du développeur et ses plats) n'ont que les instantanés de PulseHeberg et ceux de `tribe-menus-deploy`, sur le même disque (ADR 0025, point 4).
+
 ## Ensuite, sans ordre arrêté
 
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
@@ -72,7 +76,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
-- **Sauvegarde hors site** par Litestream (ADR 0007, point 3), à décider avant `v0.2.0` : jusque-là, le niveau de PulseHeberg est accepté (ADR 0025, point 4). *`v0.2.0` est publiée le 2026-11-05 sans elle : échéance dépassée, à replanifier.*
+- **Sauvegarde hors site** par Litestream (ADR 0007, point 3), à décider avant `v0.2.0` : jusque-là, le niveau de PulseHeberg est accepté (ADR 0025, point 4). *Révisé le 2026-11-05 par le développeur : le fonctionnel passe d'abord ; la sauvegarde hors site vient après une application viable à montrer (planning et listes de courses), au plus tard avant d'inviter la famille.*
 
 ## Points reportés, à reprendre dans un plan
 
@@ -80,11 +84,11 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | --- | --- | --- |
 | Réception du code sur Outlook et iCloud non vérifiée | `recette`, S3 | avant d'inviter un membre qui utilise l'une de ces messageries |
 | Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque et le `304` sur `GET dishes` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) | avant d'inviter la famille |
-| Sauvegarde hors du VPS | ADR 0025, point 4 | avant `v0.2.0` : **dépassée**, `v0.2.0` publiée le 2026-11-05 sans elle ; à replanifier |
+| Sauvegarde hors du VPS | ADR 0025, point 4 | après une application viable à montrer (planning et listes de courses), au plus tard avant d'inviter la famille (décision du 2026-11-05) |
 | Un démarrage en échec envoie un e-mail de panne à chaque relance de systemd, dont le texte dit qu'il a cessé de le relancer | `recette`, S4 | prochaine PR touchant `deploy/` |
 | `make probe -timing` : le membre passe toujours en premier, sur une connexion à rétablir après l'heure d'attente | `recette`, mesure du 2026-11-01 | avant la prochaine mesure |
 | Retour arrière automatique quand une migration échoue à mi-chemin : non éprouvé | `recette`, « Ce que ce plan ne prouve pas » | première migration risquée (la `0007` de `bibliotheque` a réussi sans l'éprouver) |
-| Reconstruction du serveur avec des données à reprendre : procédure écrite (étape 19), jouée seulement à vide | `recette`, « Ce que ce plan ne prouve pas » | avec la sauvegarde hors site, avant `v0.2.0` : **dépassée** ; à replanifier avec elle |
+| Reconstruction du serveur avec des données à reprendre : procédure écrite (étape 19), jouée seulement à vide | `recette`, « Ce que ce plan ne prouve pas » | avec la sauvegarde hors site |
 | Délivrabilité dans la durée : rapports DMARC à lire avant de durcir la politique | `recette` ; ADR 0014, point 3 | après quelques semaines de production |
 | Seuils des alertes à revoir | `production`, D8 ; `recette` | après les premières semaines de production |
 | Durée de HSTS à allonger | `recette` | après quelques semaines sans incident |
