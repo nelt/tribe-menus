@@ -1,9 +1,9 @@
 // Screen Tribu, after the mock-up Doux-Tribu, reduced to the name of the tribe, its number of
 // active members and the setting of its size (T3, plan bibliotheque, D3), with the sign-out
 // at the bottom (plan planning, D5) and, under it, the link to the source code that the
-// provisional home carried (ADR 0011, point 2); opened by the chip of the planning. The members and the
-// sessions come with their own plan. Without network, a change of the size fails and changes
-// nothing (D18).
+// provisional home carried (ADR 0011, point 2); opened by the chip of the planning. The
+// members and the sessions come with their own plan. Without network, a change of the size
+// fails and changes nothing (D18).
 import { LitElement, html, nothing } from "lit";
 import type { Api, TribeInfo } from "./api.ts";
 import { networkErrorMessage } from "./login.ts";
