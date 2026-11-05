@@ -1,7 +1,7 @@
 # Conception : bibliothèque de plats
 
-- **Mise à jour** : 2026-11-03
-- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29, accordé aux specs, au glossaire et aux ADR 0027 à 0029 par le lot A (2026-11-03), API et noms du code fixés par le lot B (2026-11-03), noms du navigateur par le lot D (2026-11-03) ; à tenir à jour pendant ses lots
+- **Mise à jour** : 2026-11-05
+- **Statut** : retenu avec le plan [`bibliotheque`](../plans/2026-10-29-bibliotheque-de-plats.md), prêt depuis le 2026-10-29, accordé aux specs, au glossaire et aux ADR 0027 à 0029 par le lot A (2026-11-03), API et noms du code fixés par le lot B (2026-11-03), noms du navigateur par le lot D (2026-11-03) ; en production avec `v0.2.0` (2026-11-05), à tenir à jour par les plans qui touchent ce domaine
 - **Stories** : P1 à P4, T1 à T3 ; ENF-02 pour les plats et le référentiel
 
 Ce document décrit la conception retenue pour la bibliothèque de plats, le référentiel d'ingrédients et la taille de la tribu : modèle, découpage du code, échanges. Il est tenu à jour par les plans qui touchent ce domaine (planning, listes de courses, hors-ligne) ; un plan, lui, se fige une fois terminé. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (P1 à P4, T3, Q19, Q20, Q25 à Q31), les décisions dans les ADR (0027 recherche et autocomplétion dans le navigateur, 0028 scénarios `@ui`, 0029 versions et ETag des collections) et dans les plans ; ce document les cite sans les répéter.
