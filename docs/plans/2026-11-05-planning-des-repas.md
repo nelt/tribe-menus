@@ -2,7 +2,7 @@
 
 - **Nom** : `planning`
 - **Date** : 2026-11-05
-- **Statut** : prêt, à revoir dans la PR du plan. Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées, à confirmer à la revue du plan.
+- **Statut** : en cours (lot A). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
 
 ## Objectif
 
@@ -43,9 +43,9 @@ La conception (modèle, découpage du code, API, échanges) est dans [`docs/conc
 | | R4 : retirer un plat d'un repas ; un plat retiré puis ajouté de nouveau repart de 4 parts | API | B |
 | | R5 : naviguer vers la semaine suivante, vers la semaine précédente | navigateur, `@ui` | C |
 | | R5 : les repas passés restent modifiables | API | B |
-| | Scénarios nouveaux du lot A : parts hors de 1 à 50, plat inconnu, plat servi retiré entre-temps, ajout croisé du même plat (Q33, Q35) | API | B |
+| | Scénarios nouveaux du lot A : parts de 1 à 50 et hors de ces bornes, repas de 2000 à 2099 et hors de ces bornes, plat inconnu, ordre d'ajout, plat servi entre-temps, dernier réglage des parts, parts d'un plat retiré entre-temps (Q33, Q35) | API | B |
 | `tribu.feature` | T1 : le planning est partagé entre membres ; T3 : la taille de la tribu fixe les parts des plats servis ajoutés ensuite | API | B |
-| `compartimentage-tribus.feature` | ENF-02 : « le planning est propre à la tribu », **tiré** au lot A de « Toutes les données sont compartimentées » (D6) ; un plat servi d'une autre tribu ne peut être ni modifié ni retiré, un plat d'une autre tribu ne peut pas être servi (nouveau) | API | B |
+| `compartimentage-tribus.feature` | ENF-02 : « Le planning est propre à la tribu », **tiré** au lot A de « Toutes les données sont compartimentées » (D6) ; « Un plat servi d'une autre tribu ne peut être ni modifié ni retiré », « Un plat d'une autre tribu ne peut pas être servi » (nouveaux) | API | B |
 | | ENF-02 : toutes les données sont compartimentées | **reste en attente** : ses exemples listes, membres et sessions | — |
 | `bibliotheque-plats.feature` | P2 : la modification d'un plat s'applique aux repas où il est servi | **reste en attente** : listes de courses | — |
 | `authentification.feature` | ENF-01 : consultation hors ligne (du planning) ; les modifications autres que les listes nécessitent le réseau | **restent en attente** : plan hors-ligne | — |
@@ -56,12 +56,12 @@ La conception (modèle, découpage du code, API, échanges) est dans [`docs/conc
 
 Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
-- [ ] **1. `fonctionnalites.md`** : décisions nouvelles, à la suite de Q31 : Q32, un plat retiré puis ajouté de nouveau est un nouveau plat servi (D2) ; Q33, écritures croisées sur un repas (D3) ; Q34, « aujourd'hui » est la date de l'appareil (D4) ; Q35, limites et ordre (parts de 1 à 50, dates de 2000 à 2099, plats d'un repas dans l'ordre d'ajout, D4, D11). R2 et R4 accordés ; concept « Plat servi » : identité propre.
-- [ ] **2. Scénarios**, selon `conventions-gherkin.md` : scission du scénario R2 « Un même plat ne peut pas être ajouté deux fois à un repas » en un refus contre l'API et « Un plat déjà servi dans un repas ne m'est pas proposé » (`@ui`) ; tags `@ui` sur R1 et les deux scénarios de navigation de R5 ; scénarios nouveaux contre l'API (tableau ci-dessus) ; dans `compartimentage-tribus.feature`, l'exemple « le planning » sorti de « Toutes les données sont compartimentées » en un scénario « Le planning est propre à la tribu », et « Un plat servi d'une autre tribu ne peut être ni modifié ni retiré » (D6). Les nouveaux titres entrent dans `acceptance/pending.txt`, les scénarios `@ui` y restent (ADR 0028, point 4).
-- [ ] **3. `glossaire.md`** : les termes nouveaux de « Contexte et contraintes ».
-- [ ] **4. `docs/design/README.md`** : le Planning remplace l'accueil provisoire (« Écarts » du plan `bibliotheque` mis à jour) ; interprétations de ce que les maquettes ne montrent pas (D8) : plage de jours et son titre à cheval sur deux mois ou deux années, « Revenir à aujourd'hui », chargement et erreur de réseau, bibliothèque vide dans le détail d'un repas, ordre et recherche des propositions (D12), messages (plat déjà servi, plat retiré entre-temps, réseau nécessaire) ; « Se déconnecter » en bas de l'écran Tribu (D5) ; chemins (D14). Écarts à reporter dans le canevas de travail par le développeur s'il le souhaite.
-- [ ] **5. Document de conception** : accordé aux specs, au glossaire et au design du lot.
-- [ ] **6. Feuille de route** : plan « en cours ».
+- [x] **1. `fonctionnalites.md`** : décisions nouvelles, à la suite de Q31 : Q32, un plat retiré puis ajouté de nouveau est un nouveau plat servi (D2) ; Q33, écritures croisées sur un repas (D3) ; Q34, « aujourd'hui » est la date de l'appareil (D4) ; Q35, limites et ordre (parts de 1 à 50, dates de 2000 à 2099, plats d'un repas dans l'ordre d'ajout, D4, D11). R2 et R4 accordés ; concept « Plat servi » : identité propre.
+- [x] **2. Scénarios**, selon `conventions-gherkin.md` : scission du scénario R2 « Un même plat ne peut pas être ajouté deux fois à un repas » en un refus contre l'API et « Un plat déjà servi dans un repas ne m'est pas proposé » (`@ui`) ; tags `@ui` sur R1 et les deux scénarios de navigation de R5 ; scénarios nouveaux contre l'API (tableau ci-dessus) ; dans `compartimentage-tribus.feature`, l'exemple « le planning » sorti de « Toutes les données sont compartimentées » en un scénario « Le planning est propre à la tribu », et « Un plat servi d'une autre tribu ne peut être ni modifié ni retiré » (D6). Les nouveaux titres entrent dans `acceptance/pending.txt`, les scénarios `@ui` y restent (ADR 0028, point 4).
+- [x] **3. `glossaire.md`** : les termes nouveaux de « Contexte et contraintes ».
+- [x] **4. `docs/design/README.md`** : le Planning remplace l'accueil provisoire (« Écarts » du plan `bibliotheque` mis à jour) ; interprétations de ce que les maquettes ne montrent pas (D8) : plage de jours et son titre à cheval sur deux mois ou deux années, « Revenir à aujourd'hui », chargement et erreur de réseau, bibliothèque vide dans le détail d'un repas, ordre et recherche des propositions (D12), messages (plat déjà servi, plat retiré entre-temps, réseau nécessaire) ; « Se déconnecter » en bas de l'écran Tribu (D5) ; chemins (D14). Écarts à reporter dans le canevas de travail par le développeur s'il le souhaite.
+- [x] **5. Document de conception** : accordé aux specs, au glossaire et au design du lot.
+- [x] **6. Feuille de route** : plan « en cours ».
 
 ### Lot B : domaine et API (`feature/planning-api`)
 
@@ -195,4 +195,11 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 
 ## Notes d'exécution
 
-*(à remplir au fil des lots)*
+**Lot A** (2026-11-05, session cloud, `feature/specs-planning-des-repas`), à valider à la revue :
+
+- **D9 à D20** appliquées telles que proposées ; la fusion de la PR du plan ne valait pas revue explicite, d'où la confirmation demandée dans la PR du lot.
+- **Scénarios au-delà de la liste de l'étape 2** : « Les plats d'un repas sont dans l'ordre où ils ont été ajoutés » (Q35, D11, avec le cas du plat retiré puis remis, qui passe en dernier), et deux plans de scénario pour les bornes des dates (2000 à 2099, D4), en plus de ceux des parts. L'étape « contient, dans cet ordre : » est nouvelle ; « contient : » ne juge pas l'ordre. 13 titres nouveaux dans `acceptance/pending.txt`, vérifiés contre les `.feature` (les outils Go ne s'installent pas dans la session cloud : `make ci` reste à lancer dans le Dev Container avant la fusion).
+- **`conventions-gherkin.md`** : le premier du mois s'écrit `1er` (« le samedi 1er janvier 2000 »).
+- **Glossaire** : en plus des termes de « Contexte et contraintes », rang (*rank*, champ de l'API) et aujourd'hui (*today*, `today()` de `meal-plan.ts`).
+- **Design, interprétations** (D8) : année dans le titre d'une plage hors de l'année en cours ; « Revenir à aujourd'hui » à la place de « À partir d'aujourd'hui » ; jours et cases affichés une fois les deux copies chargées ; retrait sans confirmation ; « Tous les plats de la bibliothèque sont déjà dans ce repas. » ; bandeaux d'avertissement, comme pour la modification croisée d'un plat, pour les deux messages de Q33.
+- **« Se déconnecter »** (D5) : bouton au contour rouge tomate, comme sur l'accueil provisoire. Dans `Doux-Tribu`, « Quitter la tribu » est un texte rouge tomate dans un contour neutre `#E7E1EE`, à côté de « Mes appareils » ; à trancher à la revue si le bouton doit plutôt suivre la maquette.

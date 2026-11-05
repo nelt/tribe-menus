@@ -32,7 +32,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
-| `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | prêt |
+| `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | en cours |
 
 ### `production` : application prête pour la production
 
@@ -52,7 +52,7 @@ Terminé le 2026-11-05 : recette sur l'archive de la PR de release (#83), un dé
 
 ### `planning` : planning des repas
 
-Deuxième plan du métier, pour une application viable à montrer : le Planning de `Doux-Main` remplace l'accueil provisoire, 7 jours à partir d'aujourd'hui, midi et soir, semaines précédentes et suivantes (R1, R5) ; détail d'un repas d'après `Doux-Repas`, ajout de plats de la bibliothèque à la taille de la tribu, parts, retrait (R2 à R4) ; planning partagé et compartimenté (T1, T3, ENF-02) ; « Se déconnecter » passe sur l'écran Tribu. Planning chargé en entier comme collection (ADR 0029), « aujourd'hui » pris sur l'appareil. Conception dans `conception/planning-des-repas.md`. Quatre lots (specs et design, domaine et API, planning de la semaine, détail d'un repas), puis la release `v0.3.0` en production. Cadré le 2026-11-05.
+Deuxième plan du métier, pour une application viable à montrer : le Planning de `Doux-Main` remplace l'accueil provisoire, 7 jours à partir d'aujourd'hui, midi et soir, semaines précédentes et suivantes (R1, R5) ; détail d'un repas d'après `Doux-Repas`, ajout de plats de la bibliothèque à la taille de la tribu, parts, retrait (R2 à R4) ; planning partagé et compartimenté (T1, T3, ENF-02) ; « Se déconnecter » passe sur l'écran Tribu. Planning chargé en entier comme collection (ADR 0029), « aujourd'hui » pris sur l'appareil. Conception dans `conception/planning-des-repas.md`. Quatre lots (specs et design, domaine et API, planning de la semaine, détail d'un repas), puis la release `v0.3.0` en production. Cadré le 2026-11-05. En cours depuis le 2026-11-05 : lot A (specs, design, conception).
 
 ## Décisions d'ordonnancement
 
