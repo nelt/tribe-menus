@@ -458,7 +458,7 @@ sequenceDiagram
 
 ## Ce que ce document ne couvre pas encore
 
-- Le plat servi et le planning (R1 à R5), qui ajouteront au modèle le repas et le plat servi.
+- Le plat servi et le planning (R1 à R5) : dans [`planning-des-repas.md`](planning-des-repas.md) (plan `planning`).
 - Les listes de courses : article sans quantité issu d'une ligne sans quantité (Q26 ; plan, questions ouvertes).
 - Le delta d'une collection (`?since=<version>`), qui éviterait de tout recharger pour une seule modification : au plan hors-ligne.
 - Le hors-ligne : stockage des plats et du référentiel sur l'appareil, cache du service worker ou IndexedDB, à choisir avec la pagination (plan, questions ouvertes) ; effacement à la déconnexion.
