@@ -41,6 +41,7 @@ export interface Script {
   /** PUT dishes/<id>, whatever the identifier. */
   updateDish?: Reply[];
   setTribeSize?: Reply[];
+  getMealPlan?: Reply[];
 }
 
 export interface Received {
@@ -67,6 +68,7 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "POST dishes": [...(script.createDish ?? [replies.networkError])],
     "PUT dishes/{id}": [...(script.updateDish ?? [replies.networkError])],
     "PUT tribe/size": [...(script.setTribeSize ?? [replies.networkError])],
+    "GET meal-plan": [...(script.getMealPlan ?? [pageReply("meal_plan", 1, [])])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();

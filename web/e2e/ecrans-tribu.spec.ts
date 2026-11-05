@@ -1,5 +1,6 @@
 // States of the screen Tribu (Doux-Tribu, reduced to the size of the tribe, plan
-// bibliotheque, D3), with a simulated API (plan socle, D15). The size proposed for a new dish
+// bibliotheque, D3, with the sign-out, plan planning, D5), with a simulated API (plan socle,
+// D15). The size proposed for a new dish
 // is proved by the scenario T3 against the real server (scenarios.spec.ts).
 import { expect, test } from "@playwright/test";
 import { mockApi, replies } from "./api-mock.ts";
@@ -52,4 +53,38 @@ test("the tribe read without network: the message and “Réessayer”", async (
   await page.getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("sign-out at the bottom of the screen, without confirmation (D5)", async ({ page }) => {
+  const received = await mockApi(page, { getSession: [replies.session], getTribe: [tribe(4)] });
+  await page.goto("/tribes/demo/tribu");
+  const signOut = page.getByRole("button", { name: "Se déconnecter" });
+  await expect(signOut).toBeVisible();
+  // Under the size of the tribe, in tomato red, outlined.
+  const size = await page.getByRole("group", { name: "Taille de la tribu" }).boundingBox();
+  const button = await signOut.boundingBox();
+  expect(button!.y).toBeGreaterThan(size!.y + size!.height);
+  expect(await signOut.evaluate((e) => getComputedStyle(e).borderColor)).toBe("rgb(198, 61, 36)");
+  // The link to the source code of the provisional home is kept (ADR 0011, point 2).
+  await expect(page.getByRole("link", { name: "logiciel libre, code source" })).toBeVisible();
+
+  await signOut.click();
+  await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
+  await expect(page).toHaveURL(/\/tribes\/demo\/connexion$/);
+  expect(received).toContainEqual({ method: "DELETE", path: "session", body: undefined });
+});
+
+test("sign-out without network: the message, the screen stays", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session], getTribe: [tribe(4)], deleteSession: [replies.networkError] });
+  await page.goto("/tribes/demo/tribu");
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
+  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+});
+
+test("sign-out while the tribe cannot be read", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session], getTribe: [replies.networkError] });
+  await page.goto("/tribes/demo/tribu");
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
 });

@@ -1,10 +1,12 @@
 // Client-side router (ADR 0004, point 6), on the History API, under the tribe prefix
 // /tribes/<identifier>/ given by the <base> of the page. Paths in French (plan bibliotheque,
-// D11; docs/design/README.md).
+// D11; plan planning, D14; docs/design/README.md).
+import { type Day, parseDay } from "./meal-plan.ts";
 
 /** The pages of the application. */
 export type Page =
-  | { name: "home" }
+  /** The 7 days from today, or from the day given (?du=, D14). */
+  | { name: "planning"; start?: Day }
   | { name: "login" }
   | { name: "dishes" }
   | { name: "new-dish" }
@@ -12,7 +14,7 @@ export type Page =
   | { name: "tribe" };
 
 export const pages = {
-  home: { name: "home" },
+  planning: { name: "planning" },
   login: { name: "login" },
   dishes: { name: "dishes" },
   newDish: { name: "new-dish" },
@@ -20,7 +22,7 @@ export const pages = {
 } as const satisfies Record<string, Page>;
 
 const fixedPaths: [string, Page][] = [
-  ["", pages.home],
+  ["", pages.planning],
   ["connexion", pages.login],
   ["plats", pages.dishes],
   ["plats/nouveau", pages.newDish],
@@ -30,27 +32,38 @@ const fixedPaths: [string, Page][] = [
 /** A dish identifier: 128 random bits in hexadecimal (plan bibliotheque, D10). */
 const dishPath = /^plats\/([0-9a-f]{32})$/;
 
+/** The query of the planning: the first day of the range shown (D14). */
+const startParameter = "du";
+
 /**
- * Returns the page of a path, relative to the base of the tribe (with its trailing slash).
- * An unknown path, inside the tribe or not, gives the home page.
+ * Returns the page of a path and its query, relative to the base of the tribe (with its
+ * trailing slash). An unknown path, inside the tribe or not, gives the planning; so does a
+ * day of the planning unreadable or out of the bounds (D14).
  */
-export function pageFromPath(pathname: string, base: string): Page {
+export function pageFromPath(pathname: string, base: string, search = ""): Page {
   if (!pathname.startsWith(base)) {
-    return pages.home;
+    return pages.planning;
   }
   const rest = pathname.slice(base.length).replace(/\/+$/, "");
+  if (rest === "") {
+    const start = parseDay(new URLSearchParams(search).get(startParameter) ?? "");
+    return start === undefined ? pages.planning : { name: "planning", start };
+  }
   const fixed = fixedPaths.find(([path]) => path === rest);
   if (fixed !== undefined) {
     return fixed[1];
   }
   const id = dishPath.exec(rest)?.[1];
-  return id === undefined ? pages.home : { name: "dish", id };
+  return id === undefined ? pages.planning : { name: "dish", id };
 }
 
-/** Returns the path of a page under the base of the tribe. */
+/** Returns the path of a page under the base of the tribe, with its query. */
 export function pathOfPage(page: Page, base: string): string {
   if (page.name === "dish") {
     return `${base}plats/${page.id}`;
+  }
+  if (page.name === "planning" && page.start !== undefined) {
+    return `${base}?${startParameter}=${page.start}`;
   }
   const fixed = fixedPaths.find(([, p]) => p.name === page.name);
   return base + (fixed?.[0] ?? "");
@@ -63,7 +76,7 @@ export function tabOf(page: Page): "planning" | "dishes" {
 
 /** What the router needs from the browser, so that the tests can provide it. */
 export interface RouterWindow {
-  location: { pathname: string };
+  location: { pathname: string; search: string };
   history: {
     pushState(data: unknown, unused: string, url: string): void;
     replaceState(data: unknown, unused: string, url: string): void;
@@ -86,7 +99,7 @@ export class Router {
 
   /** The current page. */
   get page(): Page {
-    return pageFromPath(this.#window.location.pathname, this.#base);
+    return pageFromPath(this.#window.location.pathname, this.#base, this.#window.location.search);
   }
 
   /** The path of a page, for a link. */
@@ -115,11 +128,11 @@ export class Router {
    * Follows a link of the application: true when the path is a page of the tribe, which the
    * router then shows; false for any other address, left to the browser.
    */
-  follow(pathname: string): boolean {
+  follow(pathname: string, search = ""): boolean {
     if (!pathname.startsWith(this.#base)) {
       return false;
     }
-    this.navigate(pageFromPath(pathname, this.#base));
+    this.navigate(pageFromPath(pathname, this.#base, search));
     return true;
   }
 }

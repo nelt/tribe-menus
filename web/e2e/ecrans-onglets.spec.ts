@@ -46,7 +46,8 @@ test("Courses inactive is paler than the other tabs; wide, the tabs keep to the 
 test("the chip of the tribe opens the screen Tribu", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session] });
   await page.goto("/tribes/demo/");
-  const chip = page.getByRole("link", { name: "Les Démo 4 membres" });
+  const chip = page.getByRole("link", { name: "Tribu Les Démo, 4 membres" });
+  await expect(chip).toHaveText("Les Démo · 4");
   await expect(chip).toBeVisible();
   await chip.click();
   await expect(page).toHaveURL(/\/tribes\/demo\/tribu$/);
@@ -60,7 +61,7 @@ test("the chip of the tribe opens the screen Tribu", async ({ page }) => {
 test("without the tribe, no chip", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session], getTribe: [replies.networkError] });
   await page.goto("/tribes/demo/");
-  await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
   await expect(page.getByRole("link", { name: /membre/ })).toHaveCount(0);
 });
 

@@ -1,11 +1,13 @@
 // Screen Tribu, after the mock-up Doux-Tribu, reduced to the name of the tribe, its number of
-// active members and the setting of its size (T3, plan bibliotheque, D3); opened by the chip
-// of the planning. The members and the sessions come with their own plan. Without network, a
-// change of the size fails and changes nothing (D18).
+// active members and the setting of its size (T3, plan bibliotheque, D3), with the sign-out
+// at the bottom (plan planning, D5) and, under it, the link to the source code that the
+// provisional home carried (ADR 0011, point 2); opened by the chip of the planning. The members and the
+// sessions come with their own plan. Without network, a change of the size fails and changes
+// nothing (D18).
 import { LitElement, html, nothing } from "lit";
 import type { Api, TribeInfo } from "./api.ts";
 import { networkErrorMessage } from "./login.ts";
-import { alertMessage, networkNeededMessage } from "./templates.ts";
+import { alertMessage, footer, networkNeededMessage } from "./templates.ts";
 
 /** The number of active members, under the name of the tribe. */
 export function activeMembersLabel(n: number): string {
@@ -19,6 +21,7 @@ export class TribeScreen extends LitElement {
     tribe: { state: true },
     size: { state: true },
     failed: { state: true },
+    signOutFailed: { state: true },
   };
 
   declare api: Api;
@@ -29,7 +32,10 @@ export class TribeScreen extends LitElement {
   size = 0;
   /** Why the last call failed: the tribe could not be read, or the size not saved. */
   failed: "read" | "save" | undefined = undefined;
+  /** The sign-out failed for lack of network. */
+  signOutFailed = false;
   #saving = false;
+  #signingOut = false;
 
   protected override createRenderRoot() {
     return this;
@@ -59,7 +65,30 @@ export class TribeScreen extends LitElement {
       </a>
       ${this.failed === "read" ? html`${alertMessage("tribe-error", networkErrorMessage)}<button class="button-secondary" type="button" @click=${this.#read}>Réessayer</button>` : nothing}
       ${this.tribe === undefined ? nothing : this.#tribe(this.tribe)}
+      <div class="sign-out">
+        <button class="button-danger" type="button" @click=${this.#signOut}>Se déconnecter</button>
+        ${this.signOutFailed ? alertMessage("sign-out-error", networkErrorMessage) : nothing}
+      </div>
+      ${footer()}
     </main>`;
+  }
+
+  /** Signs out, without confirmation (D5): the application goes back to the login. */
+  async #signOut() {
+    if (this.#signingOut) {
+      return;
+    }
+    this.#signingOut = true;
+    try {
+      const outcome = await this.api.deleteSession();
+      // A 401 has already brought back to the login.
+      if (outcome.kind === "ok") {
+        this.dispatchEvent(new Event("signed-out", { bubbles: true, composed: true }));
+      }
+      this.signOutFailed = outcome.kind === "network-error";
+    } finally {
+      this.#signingOut = false;
+    }
   }
 
   #tribe(tribe: TribeInfo) {
