@@ -20,6 +20,13 @@ const exported = ".e2e-tools/scenarios.json";
 const scenarios = JSON.parse(readFileSync(exported, "utf8")) as Scenario[];
 const pending = parsePending(readFileSync("../acceptance/pending.txt", "utf8"));
 
+// A request of the page may still be in a route of Tribe.signInPage when the scenario ends:
+// waiting for it here, its error ignored, keeps it from failing the test ("route.fetch: Test
+// ended").
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 for (const scenario of scenarios) {
   const key = `${scenario.file}: ${scenario.title}`;
   const name = scenario.example > 0 ? `${key} (exemple ${scenario.example})` : key;
