@@ -72,7 +72,7 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 - [x] **11. Étapes godog** des scénarios « API » du tableau, retirés de `pending.txt`.
 - [x] **12. `make seed`** : la semaine de `Doux-Main` dans la tribu `demo`, à partir du jour du seed (D16). La tribu de recette n'en reçoit pas.
 
-### Lot C : planning de la semaine (`feature/planning-semaine`)
+### Lot C : planning de la semaine (`feature/planning-sept-jours` ; `feature/planning-semaine`, prévu, contient « main », refusé au push par `.claude/settings.json`)
 
 - [x] **13. `web/src/meal-plan.ts`**, module pur testé par `node:test` : date du jour de l'appareil (D4), plage de 7 jours et ses voisines, titre de la plage (« 5 – 11 octobre », « 28 septembre – 4 octobre », « 29 décembre 2026 – 4 janvier 2027 »), cases de repas d'une plage à partir des plats servis et de la bibliothèque, total des parts d'un repas.
 - [x] **14. Copie du planning** : `web/src/planning.ts`, une copie générique de la collection `meal_plan` (`collections.ts`, ADR 0029, point 4), vérifiée avec la bibliothèque à chaque visite du Planning ou d'un repas et à chaque retour au premier plan (D15) ; mise à jour par la réponse d'une écriture. Rien n'est écrit sur l'appareil.
@@ -213,7 +213,7 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 - **Étapes godog** : « j'ajoute le plat "…" au repas du … » crée le plat s'il manque à la bibliothèque, pour T1 (« Ratatouille », absente du contexte) ; « nous sommes le … » règle l'horloge du scénario, que le serveur ne lit pas (D4) ; « je ne vois aucun élément de la tribu "…" » vérifie aussi le planning consulté (identifiants des plats servis et des plats de l'autre tribu). 21 titres retirés de `acceptance/pending.txt` ; restent de ce plan les quatre scénarios `@ui` (lots C et D) et ceux marqués « reste en attente ».
 - **`make seed`** : « Pizza maison » remplace « Restes » le premier jour à midi (D16) ; les dates partent du jour du seed, dans le fuseau du poste.
 
-**Lot C** (2026-11-05, Dev Container, `feature/planning-semaine`), à valider à la revue :
+**Lot C** (2026-11-05, Dev Container, `feature/planning-sept-jours`), à valider à la revue :
 
 - **Bornes de 2000 à 2099** (revue de la PR #87, point 2, tranché ici) : « Semaine suivante » est inactive quand la plage suivante commencerait après le 31 décembre 2099 ; « Semaine précédente » recule de 7 jours, mais pas avant le 1er janvier 2000, et devient inactive à cette date : tous les jours des bornes restent atteignables. Les cases d'un jour hors des bornes sont inactives (libellé atténué, sans « Ajouter »). Tests `node:test` et d'écran.
 - **Cases de repas pas encore des liens** : le détail d'un repas vient au lot D, qui en fera des liens vers `repas/AAAA-MM-JJ/midi|soir` ; « + Ajouter » est déjà dessiné, comme `Doux-Main`. Rien n'en part en production avant `v0.3.0`.
