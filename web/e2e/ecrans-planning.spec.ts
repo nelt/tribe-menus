@@ -191,10 +191,24 @@ test("the tribe not read: read again back in the foreground", async ({ page }) =
   await expect(page.getByRole("alert")).toBeVisible();
   await backToForeground(page);
   await expect(page.getByRole("link", { name: "Tribu Les Démo, 4 membres" })).toBeVisible();
+  // Nothing missing any more: the message goes, as with « Réessayer » (review of PR #91, point 1).
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Réessayer" })).toHaveCount(0);
   // Once read, the tribe is not read again.
   await backToForeground(page);
   await expect.poll(() => received.filter((r) => r.path === "meal-plan").length).toBe(3);
   expect(received.filter((r) => r.path === "tribe").length).toBe(2);
+});
+
+test("the tribe read again back in the foreground: the message stays if the copies could not be read", async ({ page }) => {
+  await mondayMorning(page);
+  await mockPlanning(page, week, { getTribe: [replies.networkError, replies.tribe], getMealPlan: [replies.networkError] });
+  await page.goto("/tribes/demo/");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await backToForeground(page);
+  await expect(page.getByRole("link", { name: "Tribu Les Démo, 4 membres" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
+  await expect(page.getByRole("button", { name: "Réessayer" })).toBeVisible();
 });
 
 test("a meal tile opens its meal; « Planning » goes back to the same range (D14)", async ({ page }) => {

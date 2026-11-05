@@ -55,6 +55,8 @@ export class PlanningScreen extends LitElement {
   tribe: TribeInfo | undefined = undefined;
   /** The last check, or the reading of the tribe, failed for lack of network. */
   failed = false;
+  /** The last check of the copies failed for lack of network. */
+  #checkFailed = false;
   /** Increases at each change of the copies, to render again. */
   revision = 0;
   readonly #onChange = () => this.revision++;
@@ -63,7 +65,10 @@ export class PlanningScreen extends LitElement {
       this.today = today();
       // The chip is the only way to the screen Tribu, so to the sign-out (review of PR #90).
       if (this.tribe === undefined) {
-        void this.#readTribe();
+        void this.#readTribe().then((read) => {
+          // Read, the tribe no longer keeps the message (review of PR #91, point 1).
+          this.failed = this.#checkFailed || !read;
+        });
       }
     }
   };
@@ -93,7 +98,8 @@ export class PlanningScreen extends LitElement {
     this.failed = false;
     const [checked, tribe] = await Promise.all([this.planning.check(), this.tribe === undefined ? this.#readTribe() : true]);
     // A 401 has already brought back to the login.
-    this.failed = checked.kind === "network-error" || !tribe;
+    this.#checkFailed = checked.kind === "network-error";
+    this.failed = this.#checkFailed || !tribe;
   }
 
   /** Reads the tribe, for its chip; false for lack of network. */
