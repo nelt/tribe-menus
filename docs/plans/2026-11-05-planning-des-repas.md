@@ -235,6 +235,10 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 - **Chemin d'un repas illisible** (date hors de 2000 à 2099 ou inexistante, moment autre que `midi` ou `soir`) : le Planning d'aujourd'hui, comme un `?du=` illisible (D14).
 - **Commentaire d'en-tête de `tribe-screen.ts`** reformaté (revue de la PR #90, « pour information »).
 
+**Revue de la PR #91**, point à reprendre plus tard :
+
+- **Lignes des plats servis sans clé** (point 2, à vérifier à la séance de recette, étape 21) : `#served` (`meal-screen.ts`) rend les plats servis par `meal.map`, sans `repeat` sur l'identifiant du plat servi ; après un retrait, Lit réutilise les lignes par position : le focus de la croix passe au plat suivant, et un double toucher lent pourrait retirer le plat suivant une fois la première réponse arrivée. Non reproduit. À essayer au clavier et au double toucher ; si c'est confirmé, `repeat(meal, (d) => d.served.id, …)`.
+
 **Revue de la PR #87**, points à reprendre plus tard :
 
 - **Plages aux bornes de 2000 à 2099** (point 2, lot C, *tranché au lot C, ci-dessus*) : `?du=2099-12-28` montre des jours de 2100, dont le repas serait refusé par l'API (`400 invalid_date`, affiché « Réseau nécessaire ») ; « Semaine suivante » mène alors à une date hors bornes, qui ramène à aujourd'hui sans le dire ; de même avant 2000. Cas très improbable. À trancher au lot C, avec un test `node:test` dans `meal-plan.ts` ; proposition du relecteur : flèche inactive quand la plage voisine sortirait des bornes, cases hors bornes inactives.
