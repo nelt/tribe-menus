@@ -2,7 +2,7 @@
 // day of the path (?du=, D14), two meals a day; the arrows change the range without request
 // (D1). The days wait for the copies of the meal plan and of the library (D15), never to show
 // a week empty by mistake. Back in the foreground on another day, the range of today follows
-// it; another range stays (D17).
+// it; another range stays (D17). A meal tile opens the screen of its meal (D14).
 import { LitElement, html, nothing } from "lit";
 import type { Api, TribeInfo } from "./api.ts";
 import { colorClass } from "./dish-library-screen.ts";
@@ -11,6 +11,7 @@ import {
   type Day,
   type DayTiles,
   type MealTile,
+  type Mealtime,
   dayRange,
   mealTiles,
   nextStart,
@@ -32,6 +33,7 @@ export class PlanningScreen extends LitElement {
     api: { attribute: false },
     start: { attribute: false },
     tribeHref: { attribute: false },
+    mealHref: { attribute: false },
     go: { attribute: false },
     today: { state: true },
     tribe: { state: true },
@@ -44,13 +46,14 @@ export class PlanningScreen extends LitElement {
   /** The first day of the range of the path; undefined for the range of today. */
   declare start: Day | undefined;
   declare tribeHref: string;
+  declare mealHref: (date: Day, mealtime: Mealtime) => string;
   /** Shows another range: undefined for that of today. */
   declare go: (start: Day | undefined) => void;
   /** The day of the device (D4), read again at each return to the foreground (D17). */
   today: Day = today();
   /** The tribe, for its chip; undefined until read, or if it cannot be. */
   tribe: TribeInfo | undefined = undefined;
-  /** The last check failed for lack of network. */
+  /** The last check, or the reading of the tribe, failed for lack of network. */
   failed = false;
   /** Increases at each change of the copies, to render again. */
   revision = 0;
@@ -58,6 +61,10 @@ export class PlanningScreen extends LitElement {
   readonly #onVisibility = () => {
     if (document.visibilityState === "visible") {
       this.today = today();
+      // The chip is the only way to the screen Tribu, so to the sign-out (review of PR #90).
+      if (this.tribe === undefined) {
+        void this.#readTribe();
+      }
     }
   };
 
@@ -71,8 +78,7 @@ export class PlanningScreen extends LitElement {
     this.planning.addEventListener("change", this.#onChange);
     this.planning.library.addEventListener("change", this.#onChange);
     document.addEventListener("visibilitychange", this.#onVisibility);
-    void this.#check();
-    void this.#readTribe();
+    void this.#retry();
   }
 
   override disconnectedCallback() {
@@ -82,18 +88,21 @@ export class PlanningScreen extends LitElement {
     document.removeEventListener("visibilitychange", this.#onVisibility);
   }
 
-  async #check() {
+  /** Checks the copies and reads the tribe, if not read yet (review of PR #90, point 1). */
+  async #retry() {
     this.failed = false;
-    const outcome = await this.planning.check();
+    const [checked, tribe] = await Promise.all([this.planning.check(), this.tribe === undefined ? this.#readTribe() : true]);
     // A 401 has already brought back to the login.
-    this.failed = outcome.kind === "network-error";
+    this.failed = checked.kind === "network-error" || !tribe;
   }
 
-  async #readTribe() {
+  /** Reads the tribe, for its chip; false for lack of network. */
+  async #readTribe(): Promise<boolean> {
     const outcome = await this.api.getTribe();
     if (outcome.kind === "ok") {
       this.tribe = outcome.value;
     }
+    return outcome.kind !== "network-error";
   }
 
   override render() {
@@ -122,7 +131,7 @@ export class PlanningScreen extends LitElement {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
         </button>
       </div>
-      ${this.failed ? html`${alertMessage("planning-error", networkErrorMessage)}<button class="button-secondary" type="button" @click=${this.#check}>Réessayer</button>` : nothing}
+      ${this.failed ? html`${alertMessage("planning-error", networkErrorMessage)}<button class="button-secondary" type="button" @click=${this.#retry}>Réessayer</button>` : nothing}
       ${served === undefined || dishes === undefined ? nothing : html`<ol class="days">${mealTiles(days, served, dishes, this.today).map((d) => this.#day(d))}</ol>`}
     </main>`;
   }
@@ -147,20 +156,26 @@ export class PlanningScreen extends LitElement {
   #meal(meal: MealTile) {
     const empty = meal.dishes.length === 0;
     const classes = ["meal-tile", `meal-tile--${meal.mealtime}`, empty ? "meal-tile--empty" : "", meal.inactive ? "meal-tile--inactive" : ""].filter((c) => c !== "").join(" ");
-    return html`<div class=${classes} role="group" aria-label=${`${weekdayName(meal.date)} ${shortDate(meal.date)}, ${mealtimeLabels[meal.mealtime].toLowerCase()}`}>
-      <span class="meal-tile-label">${mealtimeLabels[meal.mealtime].toUpperCase()}</span>
-      ${meal.inactive
-        ? nothing
-        : empty
-          ? html`<span class="meal-tile-add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Ajouter</span>`
-          : html`<ul class="meal-tile-dishes">
-              ${meal.dishes.map(
-                ({ served, dish }) => html`<li class="dish-pill ${colorClass(dish.color)}">
-                  <span class="dish-pill-name">${dish.name}</span><span class="visually-hidden">, ${servingsLabel(served.servings)}</span><span class="dish-pill-servings" aria-hidden="true">${served.servings}</span>
-                </li>`,
-              )}
-            </ul>`}
-    </div>`;
+    const name = `${weekdayName(meal.date)} ${shortDate(meal.date)}, ${mealtimeLabels[meal.mealtime].toLowerCase()}`;
+    const label = html`<span class="meal-tile-label" aria-hidden="true">${mealtimeLabels[meal.mealtime].toUpperCase()}</span>`;
+    if (meal.inactive) {
+      return html`<div class=${classes} role="group" aria-label=${name}>${label}</div>`;
+    }
+    // The whole tile opens the meal, full or empty (docs/design/README.md); read as its day,
+    // its mealtime and its dishes.
+    const dishes = empty ? "aucun plat" : meal.dishes.map(({ served, dish }) => `${dish.name}, ${servingsLabel(served.servings)}`).join(" ; ");
+    return html`<a class=${classes} href=${this.mealHref(meal.date, meal.mealtime)} aria-label=${`${name} : ${dishes}`}>
+      ${label}
+      ${empty
+        ? html`<span class="meal-tile-add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Ajouter</span>`
+        : html`<ul class="meal-tile-dishes">
+            ${meal.dishes.map(
+              ({ served, dish }) => html`<li class="dish-pill ${colorClass(dish.color)}">
+                <span class="dish-pill-name">${dish.name}</span><span class="dish-pill-servings">${served.servings}</span>
+              </li>`,
+            )}
+          </ul>`}
+    </a>`;
   }
 }
 

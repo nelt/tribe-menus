@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { type Page, Router, type RouterWindow, pageFromPath, pages, pathOfPage, tabOf } from "./router.ts";
+import { type Page, Router, type RouterWindow, pageFromPath, pages, pathOfPage, planningAround, tabOf } from "./router.ts";
 
 const base = "/tribes/demo/";
 
@@ -24,6 +24,14 @@ const pageCases: { name: string; pathname: string; search?: string; want: Page }
   { name: "planning from an unreadable day", pathname: "/tribes/demo/", search: "?du=lundi", want: pages.planning },
   { name: "planning, another parameter", pathname: "/tribes/demo/", search: "?de=2026-09-28", want: pages.planning },
   { name: "the day is a query of the planning only", pathname: "/tribes/demo/plats", search: "?du=2026-09-28", want: pages.dishes },
+  { name: "a meal, lunch (D14)", pathname: "/tribes/demo/repas/2026-10-06/midi", want: { name: "meal", date: "2026-10-06", mealtime: "lunch" } },
+  { name: "a meal, dinner", pathname: "/tribes/demo/repas/2026-10-06/soir", want: { name: "meal", date: "2026-10-06", mealtime: "dinner" } },
+  { name: "a meal, trailing slash", pathname: "/tribes/demo/repas/2026-10-06/soir/", want: { name: "meal", date: "2026-10-06", mealtime: "dinner" } },
+  { name: "a meal, unknown mealtime", pathname: "/tribes/demo/repas/2026-10-06/matin", want: pages.planning },
+  { name: "a meal, mealtime in English", pathname: "/tribes/demo/repas/2026-10-06/dinner", want: pages.planning },
+  { name: "a meal, day out of the bounds", pathname: "/tribes/demo/repas/2100-01-01/midi", want: pages.planning },
+  { name: "a meal, day that does not exist", pathname: "/tribes/demo/repas/2026-02-30/midi", want: pages.planning },
+  { name: "a meal without mealtime", pathname: "/tribes/demo/repas/2026-10-06", want: pages.planning },
   { name: "login of another tribe", pathname: "/tribes/autre/connexion", want: pages.planning },
   { name: "prefix of the login", pathname: "/tribes/demo/connexionx", want: pages.planning },
 ];
@@ -42,11 +50,21 @@ test("pathOfPage", () => {
   assert.equal(pathOfPage(pages.newDish, base), "/tribes/demo/plats/nouveau");
   assert.equal(pathOfPage({ name: "dish", id }, base), `/tribes/demo/plats/${id}`);
   assert.equal(pathOfPage(pages.tribe, base), "/tribes/demo/tribu");
+  assert.equal(pathOfPage({ name: "meal", date: "2026-10-06", mealtime: "lunch" }, base), "/tribes/demo/repas/2026-10-06/midi");
+  assert.equal(pathOfPage({ name: "meal", date: "2026-10-06", mealtime: "dinner" }, base), "/tribes/demo/repas/2026-10-06/soir");
+});
+
+test("planningAround: the range of today if it holds the day, else the range from the day", () => {
+  assert.deepEqual(planningAround("2026-10-05", "2026-10-05"), pages.planning);
+  assert.deepEqual(planningAround("2026-10-11", "2026-10-05"), pages.planning);
+  assert.deepEqual(planningAround("2026-10-12", "2026-10-05"), { name: "planning", start: "2026-10-12" });
+  assert.deepEqual(planningAround("2026-10-04", "2026-10-05"), { name: "planning", start: "2026-10-04" });
 });
 
 test("tabOf", () => {
   assert.equal(tabOf(pages.planning), "planning");
   assert.equal(tabOf(pages.tribe), "planning");
+  assert.equal(tabOf({ name: "meal", date: "2026-10-06", mealtime: "dinner" }), "planning");
   assert.equal(tabOf(pages.dishes), "dishes");
   assert.equal(tabOf(pages.newDish), "dishes");
   assert.equal(tabOf({ name: "dish", id }), "dishes");

@@ -1383,6 +1383,19 @@ input {
   color: var(--color-text);
 }
 
+a.meal-tile {
+  text-decoration: none;
+}
+
+a.meal-tile:hover {
+  color: var(--color-text);
+}
+
+a.meal-tile:focus-visible {
+  outline: var(--border-strong) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .meal-tile--lunch {
   --meal-border: var(--color-lunch-border);
   --meal-text: var(--color-lunch-text);
@@ -1466,4 +1479,192 @@ input {
   flex-direction: column;
   gap: 8px;
   margin-top: 12px;
+}
+
+/* Screen of a meal (Doux-Repas, plan planning). */
+.meal {
+  gap: 18px;
+}
+
+.meal-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border: var(--border-thin) solid var(--meal-border);
+  border-radius: 24px;
+  color: var(--meal-text);
+}
+
+.meal-head--lunch {
+  --meal-border: var(--color-lunch-border);
+  --meal-text: var(--color-lunch-text);
+}
+
+.meal-head--dinner {
+  --meal-border: var(--color-dinner-border);
+  --meal-text: var(--color-dinner-text);
+}
+
+.meal-head-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.meal-head-date {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.meal-head-time {
+  font-family: var(--font-heading);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.meal-head-total {
+  flex-shrink: 0;
+  color: var(--color-action);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.meal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meal-empty {
+  margin: 0;
+  padding: 18px;
+  border: var(--border-strong) dashed var(--color-dashed);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-align: center;
+}
+
+.meal-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+a.button-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.served-dishes,
+.dish-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.served-dish {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.dish-initial--small {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+
+.served-dish-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.served-dish-name {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.served-dish-reference {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.served-dish-remove {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: var(--touch-target);
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.served-dish-remove:focus-visible,
+.dish-suggestion:focus-visible {
+  outline: var(--border-strong) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.dish-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 10px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dish-suggestion-name {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dish-suggestion-add {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: #ffffff;
 }

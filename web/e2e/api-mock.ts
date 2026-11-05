@@ -42,6 +42,11 @@ export interface Script {
   updateDish?: Reply[];
   setTribeSize?: Reply[];
   getMealPlan?: Reply[];
+  serveDish?: Reply[];
+  /** PUT meal-plan/<id>/servings, whatever the identifier. */
+  setServings?: Reply[];
+  /** DELETE meal-plan/<id>, whatever the identifier. */
+  removeServedDish?: Reply[];
 }
 
 export interface Received {
@@ -69,6 +74,9 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "PUT dishes/{id}": [...(script.updateDish ?? [replies.networkError])],
     "PUT tribe/size": [...(script.setTribeSize ?? [replies.networkError])],
     "GET meal-plan": [...(script.getMealPlan ?? [pageReply("meal_plan", 1, [])])],
+    "POST meal-plan": [...(script.serveDish ?? [replies.networkError])],
+    "PUT meal-plan/{id}/servings": [...(script.setServings ?? [replies.networkError])],
+    "DELETE meal-plan/{id}": [...(script.removeServedDish ?? [replies.networkError])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
@@ -88,7 +96,7 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
       entry.ifMatch = ifMatch;
     }
     received.push(entry);
-    const routed = request.method() === "PUT" && path.startsWith("dishes/") ? "dishes/{id}" : path;
+    const routed = routedPath(request.method(), path);
     const queue = queues[`${request.method()} ${routed}`] ?? [{ status: 404, body: { error: "not_found" } }];
     const reply = (queue.length > 1 ? queue.shift() : queue[0]) ?? {};
     if (reply.delayMs !== undefined) {
@@ -105,6 +113,20 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     });
   });
   return received;
+}
+
+/** The route of a path whose identifier is left out. */
+function routedPath(method: string, path: string): string {
+  if (method === "PUT" && path.startsWith("dishes/")) {
+    return "dishes/{id}";
+  }
+  if (method === "PUT" && /^meal-plan\/[^/]+\/servings$/.test(path)) {
+    return "meal-plan/{id}/servings";
+  }
+  if (method === "DELETE" && path.startsWith("meal-plan/")) {
+    return "meal-plan/{id}";
+  }
+  return path;
 }
 
 /** A page of a collection, with the ETag of its version (ADR 0029). */

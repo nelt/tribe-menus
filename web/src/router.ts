@@ -1,12 +1,14 @@
 // Client-side router (ADR 0004, point 6), on the History API, under the tribe prefix
 // /tribes/<identifier>/ given by the <base> of the page. Paths in French (plan bibliotheque,
 // D11; plan planning, D14; docs/design/README.md).
-import { type Day, parseDay } from "./meal-plan.ts";
+import { type Day, type Mealtime, addDays, parseDay, rangeLength } from "./meal-plan.ts";
 
 /** The pages of the application. */
 export type Page =
   /** The 7 days from today, or from the day given (?du=, D14). */
   | { name: "planning"; start?: Day }
+  /** A meal: its day and its mealtime (D14). */
+  | { name: "meal"; date: Day; mealtime: Mealtime }
   | { name: "login" }
   | { name: "dishes" }
   | { name: "new-dish" }
@@ -32,6 +34,11 @@ const fixedPaths: [string, Page][] = [
 /** A dish identifier: 128 random bits in hexadecimal (plan bibliotheque, D10). */
 const dishPath = /^plats\/([0-9a-f]{32})$/;
 
+/** A meal: repas/YYYY-MM-DD/midi or soir (D14). */
+const mealPath = /^repas\/([^/]+)\/(midi|soir)$/;
+
+const mealtimePaths: Record<Mealtime, string> = { lunch: "midi", dinner: "soir" };
+
 /** The query of the planning: the first day of the range shown (D14). */
 const startParameter = "du";
 
@@ -53,6 +60,11 @@ export function pageFromPath(pathname: string, base: string, search = ""): Page 
   if (fixed !== undefined) {
     return fixed[1];
   }
+  const meal = mealPath.exec(rest);
+  if (meal !== null) {
+    const date = parseDay(meal[1] ?? "");
+    return date === undefined ? pages.planning : { name: "meal", date, mealtime: meal[2] === "midi" ? "lunch" : "dinner" };
+  }
   const id = dishPath.exec(rest)?.[1];
   return id === undefined ? pages.planning : { name: "dish", id };
 }
@@ -62,11 +74,22 @@ export function pathOfPage(page: Page, base: string): string {
   if (page.name === "dish") {
     return `${base}plats/${page.id}`;
   }
+  if (page.name === "meal") {
+    return `${base}repas/${page.date}/${mealtimePaths[page.mealtime]}`;
+  }
   if (page.name === "planning" && page.start !== undefined) {
     return `${base}?${startParameter}=${page.start}`;
   }
   const fixed = fixedPaths.find(([, p]) => p.name === page.name);
   return base + (fixed?.[0] ?? "");
+}
+
+/**
+ * The planning to go back to from a meal opened without coming from the planning: the range
+ * of today if it holds the day of the meal, the range from that day otherwise.
+ */
+export function planningAround(day: Day, today: Day): Page {
+  return day >= today && day < addDays(today, rangeLength) ? pages.planning : { name: "planning", start: day };
 }
 
 /** The tab of a page: the dish pages are under Plats, the others under Planning. */

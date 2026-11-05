@@ -26,7 +26,7 @@ import {
 } from "./dishes.ts";
 import type { Library } from "./library.ts";
 import { networkErrorMessage } from "./login.ts";
-import { alertMessage, networkNeededMessage } from "./templates.ts";
+import { alertMessage, networkNeededMessage, warningBanner } from "./templates.ts";
 
 /** At most this many lines in a dish (Q31). */
 const maxLines = 40;
@@ -539,14 +539,7 @@ export class DishScreen extends LitElement {
 
 /** The banner of a crossed change refused (Doux-PlatConflit, Q25, D5). */
 function conflictBanner() {
-  return html`<div class="banner-warning" role="alert">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M10.3 3.9L2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path>
-      <path d="M12 9.5v4.5"></path>
-      <circle cx="12" cy="17.2" r="0.6" fill="currentColor"></circle>
-    </svg>
-    <span>Ce plat a été modifié entre-temps. Voici sa version à jour : refaites votre modification.</span>
-  </div>`;
+  return warningBanner("Ce plat a été modifié entre-temps. Voici sa version à jour : refaites votre modification.");
 }
 
 customElements.define("mt-dish-screen", DishScreen);

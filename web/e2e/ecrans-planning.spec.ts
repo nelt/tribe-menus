@@ -46,6 +46,8 @@ function mockPlanning(page: Page, plan = week, extra: Parameters<typeof mockApi>
 }
 
 const title = (page: Page) => page.getByRole("heading", { level: 2 });
+/** A meal tile, a link named by its day, its mealtime and its dishes. */
+const tile = (page: Page, name: string) => page.getByRole("link", { name: new RegExp(`^${name} : `) });
 const dayNames = (page: Page) => page.getByRole("heading", { level: 3 });
 
 test("the 7 days from today, two meals a day, the dishes in the order they were added (R1, D11)", async ({ page }) => {
@@ -61,20 +63,22 @@ test("the 7 days from today, two meals a day, the dishes in the order they were 
   await expect(page.locator(".day").first().locator(".day-today")).toHaveText("Aujourd'hui");
   await expect(page.locator(".meal-tile-label")).toHaveText(Array.from({ length: 7 }, () => ["MIDI", "SOIR"]).flat());
 
-  const tuesdayDinner = page.getByRole("group", { name: "Mardi 6 oct., soir" });
+  const tuesdayDinner = tile(page, "Mardi 6 oct., soir");
   await expect(tuesdayDinner.locator(".dish-pill-name")).toHaveText(["Chili con carne", "Chili végétarien"]);
   await expect(tuesdayDinner.locator(".dish-pill-servings")).toHaveText(["3", "1"]);
   // Read aloud: the badge alone would be a bare number.
-  await expect(tuesdayDinner.locator(".dish-pill-servings").first()).toHaveAttribute("aria-hidden", "true");
-  await expect(tuesdayDinner.locator(".dish-pill .visually-hidden")).toHaveText([", 3 parts", ", 1 part"]);
+  await expect(tuesdayDinner).toHaveAccessibleName("Mardi 6 oct., soir : Chili con carne, 3 parts ; Chili végétarien, 1 part");
+  await expect(tuesdayDinner).toHaveAttribute("href", "/tribes/demo/repas/2026-10-06/soir");
   // The colour of a dish on its pill: the badge in its strong hue.
   expect(await tuesdayDinner.locator(".dish-pill-servings").first().evaluate((e) => getComputedStyle(e).color)).toBe("rgb(194, 80, 46)");
   // An empty meal: dashed, « Ajouter ».
-  const wednesdayLunch = page.getByRole("group", { name: "Mercredi 7 oct., midi" });
+  const wednesdayLunch = tile(page, "Mercredi 7 oct., midi");
   await expect(wednesdayLunch).toContainText("Ajouter");
+  await expect(wednesdayLunch).toHaveAccessibleName("Mercredi 7 oct., midi : aucun plat");
+  await expect(wednesdayLunch).toHaveAttribute("href", "/tribes/demo/repas/2026-10-07/midi");
   expect(await wednesdayLunch.evaluate((e) => getComputedStyle(e).borderStyle)).toBe("dashed");
-  expect(await page.getByRole("group", { name: "Lundi 5 oct., soir" }).evaluate((e) => getComputedStyle(e).borderColor)).toBe("rgb(189, 186, 240)");
-  expect(await page.getByRole("group", { name: "Mardi 6 oct., midi" }).evaluate((e) => getComputedStyle(e).borderColor)).toBe("rgb(242, 210, 122)");
+  expect(await tile(page, "Lundi 5 oct., soir").evaluate((e) => getComputedStyle(e).borderColor)).toBe("rgb(189, 186, 240)");
+  expect(await tile(page, "Mardi 6 oct., midi").evaluate((e) => getComputedStyle(e).borderColor)).toBe("rgb(242, 210, 122)");
 
   // The meal plan and the library are read together (D15).
   expect(received.filter((r) => r.method === "GET").map((r) => r.path).sort()).toEqual(["dishes", "ingredients", "meal-plan", "session", "tribe"]);
@@ -134,8 +138,10 @@ test("at the bounds of 2000 and 2099: no range beyond, no meal beyond (review of
   await page.goto("/tribes/demo/?du=2099-12-28");
   await expect(page.getByRole("button", { name: "Semaine suivante" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Semaine précédente" })).toBeEnabled();
-  await expect(page.getByRole("group", { name: "Jeudi 31 déc., soir" })).toContainText("Ajouter");
+  await expect(tile(page, "Jeudi 31 déc., soir")).toContainText("Ajouter");
+  // Out of the bounds, a tile is not a link.
   await expect(page.getByRole("group", { name: "Vendredi 1er janv., midi" })).not.toContainText("Ajouter");
+  await expect(page.getByRole("link", { name: /^Vendredi 1er janv\./ })).toHaveCount(0);
   await expect(page.locator(".meal-tile--inactive")).toHaveCount(6);
 
   await page.goto("/tribes/demo/?du=2000-01-03");
@@ -165,6 +171,44 @@ test("loading impossible: the message and “Réessayer”", async ({ page }) =>
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
+// Review of PR #90, point 1: the chip is the only way to the screen Tribu, so to the sign-out.
+test("the tribe not read: read again by “Réessayer”, and back in the foreground", async ({ page }) => {
+  await mondayMorning(page);
+  await mockPlanning(page, week, { getTribe: [replies.networkError, replies.tribe] });
+  await page.goto("/tribes/demo/");
+  await expect(dayNames(page)).toHaveCount(7);
+  await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
+  await expect(page.locator(".tribe-chip")).toHaveCount(0);
+  await page.getByRole("button", { name: "Réessayer" }).click();
+  await expect(page.getByRole("link", { name: "Tribu Les Démo, 4 membres" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("the tribe not read: read again back in the foreground", async ({ page }) => {
+  await mondayMorning(page);
+  const received = await mockPlanning(page, week, { getTribe: [replies.networkError, replies.tribe] });
+  await page.goto("/tribes/demo/");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await backToForeground(page);
+  await expect(page.getByRole("link", { name: "Tribu Les Démo, 4 membres" })).toBeVisible();
+  // Once read, the tribe is not read again.
+  await backToForeground(page);
+  await expect.poll(() => received.filter((r) => r.path === "meal-plan").length).toBe(3);
+  expect(received.filter((r) => r.path === "tribe").length).toBe(2);
+});
+
+test("a meal tile opens its meal; « Planning » goes back to the same range (D14)", async ({ page }) => {
+  await mondayMorning(page);
+  await mockPlanning(page);
+  await page.goto("/tribes/demo/?du=2026-10-12");
+  await tile(page, "Mardi 13 oct., soir").click();
+  await expect(page).toHaveURL(/\/tribes\/demo\/repas\/2026-10-13\/soir$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Mardi 13 octobre\s*Soir/);
+  await page.getByRole("link", { name: "Planning", exact: true }).first().click();
+  await expect(page).toHaveURL(/\?du=2026-10-12$/);
+  await expect(title(page)).toHaveText("12 – 18 octobre");
+});
+
 async function backToForeground(page: Page) {
   await page.evaluate(() => {
     for (const state of ["hidden", "visible"]) {
@@ -184,9 +228,9 @@ test("back in the foreground: the copies are checked, a dish served by another m
   });
   await page.goto("/tribes/demo/");
   await expect(dayNames(page)).toHaveCount(7);
-  await expect(page.getByRole("group", { name: "Jeudi 8 oct., midi" })).toContainText("Ajouter");
+  await expect(tile(page, "Jeudi 8 oct., midi")).toContainText("Ajouter");
   await backToForeground(page);
-  await expect(page.getByRole("group", { name: "Jeudi 8 oct., midi" })).toContainText("Chili con carne");
+  await expect(tile(page, "Jeudi 8 oct., midi")).toContainText("Chili con carne");
   const checks = received.filter((r) => r.ifNoneMatch !== undefined).map((r) => [r.path, r.ifNoneMatch]);
   expect(checks).toContainEqual(["meal-plan", '"meal_plan-7"']);
   expect(checks).toContainEqual(["dishes", '"dishes-3"']);

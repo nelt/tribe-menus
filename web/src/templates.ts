@@ -23,6 +23,18 @@ export function alertMessage(id: string, text: string): TemplateResult {
   </p>`;
 }
 
+/** A warning banner, announced to screen readers: a crossed change (Q25, Q33). */
+export function warningBanner(text: string): TemplateResult {
+  return html`<div class="banner-warning" role="alert">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M10.3 3.9L2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path>
+      <path d="M12 9.5v4.5"></path>
+      <circle cx="12" cy="17.2" r="0.6" fill="currentColor"></circle>
+    </svg>
+    <span>${text}</span>
+  </div>`;
+}
+
 /** The footer of the screens: the brand and the link to the source code. */
 export function footer(): TemplateResult {
   return html`<footer class="app-footer">
