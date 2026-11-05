@@ -94,7 +94,7 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Recette et release
 
-- [ ] **26. Recette**, après S4 et sur l'archive de la PR du lot D (D17) : création, recherche et modification d'un plat sur Android et, si possible, sur un iPhone ; deux appareils qui modifient le même plat ; taille de la tribu ; retour arrière avec restauration (migration `0007`). *Le 2026-11-04 : les PR du lot D (#81) et de sa suite (#82) étant fusionnées, et `tribe-menus-deploy --pr` n'acceptant qu'une PR ouverte, la recette se fait sur l'archive de la PR de release `release/v0.2.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous.*
+- [x] **26. Recette**, après S4 et sur l'archive de la PR du lot D (D17) : création, recherche et modification d'un plat sur Android et, si possible, sur un iPhone ; deux appareils qui modifient le même plat ; taille de la tribu ; retour arrière avec restauration (migration `0007`). *Le 2026-11-04 : les PR du lot D (#81) et de sa suite (#82) étant fusionnées, et `tribe-menus-deploy --pr` n'acceptant qu'une PR ouverte, la recette se fait sur l'archive de la PR de release `release/v0.2.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous.*
 - [ ] **27. Release `v0.2.0`** selon `RELEASING.md`, déployée en production (D24).
 - [ ] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : dossier `conception/`, paquets `internal/dish` et `internal/collection`, versions des collections) ; `CHANGELOG.md`.
 
@@ -159,6 +159,8 @@ Exécution du 2026-11-04, sur l'archive de #83 (`pr-83-bdc833cd4135`), Android (
 - Retour arrière : sans `--restore-data`, refusé (« schema version 7, 6 in the snapshot ») avec la date de l'instantané ; avec, l'instantané de 07:18 restauré et `pr-72` remis en service, sans onglet Plats ; le redéploiement de #83 a repassé la migration, bibliothèque vide et taille revenue à 4.
 - `tribe-menus-check report` : ni alerte, ni erreur, ni avertissement ; deux contrôles SMTP réussis, démarrages `pr-72` puis `pr-83`.
 - Safari sur iPhone et le `304` restent à vérifier, avec la connexion sous Safari déjà reportée (`recette`, S3).
+
+Second passage du 2026-11-05, sur #83 mise à jour avec `main` (`pr-83-63896958810a`, construite sur `f00f4ea`, qui contient #84) : les trois corrections vérifiées sur Android et sur l'ordinateur. Elles n'apparaissaient qu'après avoir rechargé les onglets ouverts depuis la veille, qui gardaient l'ancienne version : mise à jour automatique ajoutée aux points reportés de la feuille de route.
 
 ## Critères de validation
 
