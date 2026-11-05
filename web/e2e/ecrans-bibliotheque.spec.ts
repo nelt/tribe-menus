@@ -74,14 +74,17 @@ test("each visit checks the copy: unchanged, one request and a 304 (D25)", async
   });
   await page.goto("/tribes/demo/plats");
   await expect(page.getByText("3 plats")).toBeVisible();
+  // The Planning checks the library too, with the meal plan (plan planning, D15).
   await page.getByRole("link", { name: "Planning" }).click();
+  await expect(page.locator(".day")).toHaveCount(7);
   await page.getByRole("link", { name: "Plats" }).click();
   await expect(page.getByText("3 plats")).toBeVisible();
-  const checks = received.filter((r) => r.path === "dishes" || r.path === "ingredients");
-  expect(checks.slice(2)).toEqual([
+  const checks = () => received.filter((r) => r.path === "dishes" || r.path === "ingredients");
+  const unchanged = [
     { method: "GET", path: "dishes", body: undefined, ifNoneMatch: '"dishes-3"' },
     { method: "GET", path: "ingredients", body: undefined, ifNoneMatch: '"ingredients-2"' },
-  ]);
+  ];
+  await expect.poll(() => checks().slice(2)).toEqual([...unchanged, ...unchanged]);
 });
 
 test("without network: the message and “Réessayer”", async ({ page }) => {
