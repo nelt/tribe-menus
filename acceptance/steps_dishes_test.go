@@ -139,7 +139,7 @@ func (w *world) registerDishSteps(sc *godog.ScenarioContext) {
 	sc.Step(`^je crée un plat sans nom$`, func(ctx context.Context) error {
 		return w.create(ctx, "je", dishBody{Ingredients: []apiLine{{Name: "sel"}}})
 	})
-	sc.Step(`^le plat "([^"]*)" figure dans la bibliothèque$`, func(ctx context.Context, name string) error {
+	sc.Step(`^le plat "([^"]*)" figure (?:toujours )?dans la bibliothèque$`, func(ctx context.Context, name string) error {
 		_, err := w.findDish(ctx, "je", name)
 		return err
 	})
@@ -1012,8 +1012,11 @@ func (w *world) otherDishUnchanged(ctx context.Context, slug string) error {
 }
 
 // nothingOfOtherTribe: neither the dishes nor the ingredients of the other tribe are in what
-// "je" consulted.
+// "je" consulted, nor its meal plan.
 func (w *world) nothingOfOtherTribe(ctx context.Context, slug string) error {
+	if err := w.nothingOfOtherPlan(ctx, slug); err != nil {
+		return err
+	}
 	library, err := w.otherLibrary(ctx, slug)
 	if err != nil {
 		return err

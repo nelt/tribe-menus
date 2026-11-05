@@ -66,9 +66,10 @@ type world struct {
 	processed chan struct{}
 	recorder  *mail.Recorder
 
-	auth    loginState
-	alerts  alertState
-	kitchen kitchenState
+	auth     loginState
+	alerts   alertState
+	kitchen  kitchenState
+	planning planningState
 }
 
 // loginState is what the login scenarios remember from step to step.
@@ -117,6 +118,7 @@ func (w *world) registerSteps(sc *godog.ScenarioContext) {
 	w.registerCompartmentSteps(sc)
 	w.registerAlertSteps(sc)
 	w.registerDishSteps(sc)
+	w.registerMealPlanSteps(sc)
 }
 
 // reset prepares the world of a new scenario.
