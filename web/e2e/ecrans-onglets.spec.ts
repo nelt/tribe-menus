@@ -25,6 +25,24 @@ test("the tab bar: Planning, Plats, and Courses to come", async ({ page }) => {
   await expect(tabs.getByRole("link", { name: "Planning" })).toHaveAttribute("aria-current", "page");
 });
 
+test("Courses inactive is paler than the other tabs; wide, the tabs keep to the column (recette du plan bibliotheque)", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session] });
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto("/tribes/demo/");
+  const tabs = page.getByRole("navigation", { name: "Onglets" });
+  const color = (name: string) => tabs.getByText(name, { exact: true }).evaluate((e) => getComputedStyle(e).color);
+  expect(await tabs.locator(".tab--inactive").evaluate((e) => getComputedStyle(e).color)).toBe("rgb(207, 198, 222)");
+  expect(await color("À venir")).toBe("rgb(110, 102, 128)");
+
+  const planning = await tabs.getByRole("link", { name: "Planning" }).boundingBox();
+  const courses = await tabs.locator(".tab--inactive").boundingBox();
+  expect(planning).not.toBeNull();
+  expect(courses).not.toBeNull();
+  // From the left edge of the first tab to the right edge of the last: the 480 px column, less its margins.
+  expect(courses!.x + courses!.width - planning!.x).toBeLessThanOrEqual(480);
+  expect(Math.abs(planning!.x + (courses!.x + courses!.width - planning!.x) / 2 - 800)).toBeLessThan(2);
+});
+
 test("the chip of the tribe opens the screen Tribu", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session] });
   await page.goto("/tribes/demo/");

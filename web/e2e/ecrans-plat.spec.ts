@@ -145,6 +145,70 @@ test("a dish refused on a line: the message under the line", async ({ page }) =>
   await expect(line.getByRole("alert")).toHaveText("« bœuf haché » figure déjà dans le plat.");
 });
 
+test("a draft refused as a duplicate can be removed, an empty one has nothing to remove (recette du plan bibliotheque)", async ({ page }) => {
+  const received = await mockApi(page, {
+    getSession: [replies.session],
+    getDishes: [pageReply("dishes", 1, [chili]), pageReply("dishes", 2, [chili])],
+    getIngredients: [pageReply("ingredients", 1, catalog)],
+    updateDish: [{ status: 200, body: { dish: { ...chili, revision: 3 }, versions: { dishes: 2 } } }],
+  });
+  await page.goto(`/tribes/demo/plats/${chili.id}`);
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  const remove = page.getByRole("button", { name: "Retirer l’ingrédient en cours de saisie" });
+  await expect(remove).toHaveCount(0);
+
+  await page.getByRole("combobox", { name: "Ingrédient", exact: true }).fill("Oignon");
+  await page.getByLabel("Quantité", { exact: true }).fill("1");
+  await page.getByLabel("Unité", { exact: true }).selectOption("piece");
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  const draft = page.locator(".line").nth(3);
+  await expect(draft.getByRole("alert")).toHaveText("« oignon » figure déjà dans le plat.");
+
+  // Refused before sending, as during the recette.
+  expect(received.filter((r) => r.method === "PUT")).toHaveLength(0);
+  await remove.click();
+  await expect(page.locator(".line")).toHaveCount(3);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
+  const updates = received.filter((r) => r.method === "PUT");
+  expect(updates.map((r) => (r.body as { ingredients: unknown[] }).ingredients.length)).toEqual([3]);
+});
+
+test("without quantity, the default unit of the ingredient chosen is announced, not chosen (D4)", async ({ page }) => {
+  await mockApi(page, {
+    getSession: [replies.session],
+    getDishes: [pageReply("dishes", 1, [chili])],
+    getIngredients: [pageReply("ingredients", 1, catalog)],
+  });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  const combobox = page.getByRole("combobox", { name: "Ingrédient", exact: true });
+  await combobox.fill("tomate");
+  // Typed, not chosen: nothing announced yet.
+  const line = page.locator(".line").nth(0);
+  await expect(line.locator(".line-unit-label")).toHaveText("");
+  await page.getByRole("option", { name: "tomate pièce", exact: true }).click();
+
+  const hint = line.locator(".line-unit-label");
+  await expect(hint).toHaveText("pièce");
+  await expect(hint).toHaveClass(/line-unit-label--hint/);
+  const unit = page.getByLabel("Unité de tomate");
+  await expect(unit).toBeDisabled();
+  await expect(unit).toHaveValue("");
+
+  await page.getByLabel("Quantité de tomate").fill("2");
+  await expect(unit).toBeEnabled();
+  await expect(unit).toHaveValue("piece");
+  await expect(hint).not.toHaveClass(/line-unit-label--hint/);
+
+  // An ingredient without default unit announces nothing.
+  await page.getByRole("button", { name: "Ajouter un ingrédient" }).click();
+  await combobox.fill("sel");
+  await page.getByRole("option", { name: "sel", exact: true }).click();
+  await expect(page.locator(".line").nth(1).locator(".line-unit-label")).toHaveText("");
+});
+
 test("a control character pasted in a name: refused before sending, and from the API (D30)", async ({ page }) => {
   const received = await mockApi(page, {
     getSession: [replies.session],
