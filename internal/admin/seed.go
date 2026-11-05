@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/nelt/tribe-menus/internal/dish"
+	"github.com/nelt/tribe-menus/internal/mealplan"
 	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
@@ -64,6 +66,29 @@ var demoDishes = []dish.Input{
 	}},
 }
 
+// demoServed is a dish served in the week of the demonstration tribe: day 0 is the day of
+// the seed.
+type demoServed struct {
+	day      int
+	mealtime mealplan.Mealtime
+	dish     string
+	servings int
+}
+
+// demoWeek is the week of the mock-up Doux-Main, Monday to Thursday, from the day of the
+// seed (plan planning, D16); « Restes », absent from the library, is replaced by « Pizza
+// maison ».
+var demoWeek = []demoServed{
+	{0, mealplan.Lunch, "Pizza maison", 4},
+	{0, mealplan.Dinner, "Ratatouille", 4},
+	{1, mealplan.Lunch, "Pâtes pesto", 4},
+	{1, mealplan.Dinner, "Chili con carne", 3},
+	{1, mealplan.Dinner, "Chili végétarien", 1},
+	{2, mealplan.Dinner, "Soupe à l'oignon", 4},
+	{3, mealplan.Lunch, "Chili con carne", 4},
+	{3, mealplan.Dinner, "Gratin de courgettes", 4},
+}
+
 var demoMembers = []SeedMember{
 	{"alice@exemple.fr", "Alice"},
 	{"bruno@exemple.fr", "Bruno"},
@@ -106,12 +131,14 @@ func ParseMembers(r io.Reader) ([]SeedMember, error) {
 }
 
 // Seed creates the demonstration tribe with the members given, or without them with the
-// people of the Gherkin conventions and the dishes of the mock-up (plan bibliotheque, D21);
-// the first member adds the others. It does nothing if the tribe exists.
+// people of the Gherkin conventions, the dishes of the mock-up (plan bibliotheque, D21) and
+// its week from the day of the seed (plan planning, D16); the first member adds the others.
+// It does nothing if the tribe exists.
 func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 	var dishes []dish.Input
+	var week []demoServed
 	if len(members) == 0 {
-		members, dishes = demoMembers, demoDishes
+		members, dishes, week = demoMembers, demoDishes, demoWeek
 	}
 	taken, err := c.Store.SlugTaken(ctx, string(demoSlug))
 	if err != nil {
@@ -139,8 +166,21 @@ func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 			}
 		}
 		library := dish.NewLibrary(storage.NewDishStore(db))
+		ids := map[string]dish.ID{}
 		for _, d := range dishes {
-			if _, _, err := library.Create(ctx, d); err != nil {
+			created, _, err := library.Create(ctx, d)
+			if err != nil {
+				return err
+			}
+			ids[created.Name] = created.ID
+		}
+		plan := mealplan.NewPlan(storage.NewMealPlanStore(db))
+		for _, s := range week {
+			_, _, err := plan.Serve(ctx, mealplan.ServeInput{
+				Date: now.AddDate(0, 0, s.day).Format(time.DateOnly), Mealtime: string(s.mealtime),
+				Dish: ids[s.dish], Servings: &s.servings,
+			})
+			if err != nil {
 				return err
 			}
 		}
