@@ -2,7 +2,7 @@
 
 - **Nom** : `bibliotheque`
 - **Date** : 2026-10-29
-- **Statut** : en cours (lots A, B, C et D faits le 2026-11-03 ; recette et release à venir). Décisions D1 à D29 prises ou confirmées par le développeur le 2026-10-29, D30 le 2026-11-03 avant le lot D : D1, D3 à D7, D11 et D13 au cadrage ; D9, D16 et D20 à la revue du plan (PR #61) ; les autres à la revue des propositions, D2, D12 et D19 modifiées ; D25 à D27 sur le stockage dans le navigateur ; D28 et D29 sur la fraîcheur des données.
+- **Statut** : terminé le 2026-11-05 (lots A, B, C et D faits le 2026-11-03 ; recette les 2026-11-04 et 05 ; `v0.2.0` en production le 2026-11-05). Décisions D1 à D29 prises ou confirmées par le développeur le 2026-10-29, D30 le 2026-11-03 avant le lot D : D1, D3 à D7, D11 et D13 au cadrage ; D9, D16 et D20 à la revue du plan (PR #61) ; les autres à la revue des propositions, D2, D12 et D19 modifiées ; D25 à D27 sur le stockage dans le navigateur ; D28 et D29 sur la fraîcheur des données.
 
 ## Objectif
 
@@ -95,8 +95,8 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 ### Recette et release
 
 - [x] **26. Recette**, après S4 et sur l'archive de la PR du lot D (D17) : création, recherche et modification d'un plat sur Android et, si possible, sur un iPhone ; deux appareils qui modifient le même plat ; taille de la tribu ; retour arrière avec restauration (migration `0007`). *Le 2026-11-04 : les PR du lot D (#81) et de sa suite (#82) étant fusionnées, et `tribe-menus-deploy --pr` n'acceptant qu'une PR ouverte, la recette se fait sur l'archive de la PR de release `release/v0.2.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous.*
-- [ ] **27. Release `v0.2.0`** selon `RELEASING.md`, déployée en production (D24).
-- [ ] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : dossier `conception/`, paquets `internal/dish` et `internal/collection`, versions des collections) ; `CHANGELOG.md`.
+- [x] **27. Release `v0.2.0`** selon `RELEASING.md`, déployée en production (D24). *Le 2026-11-05 : PR #83 fusionnée, étiquette sur `5b44239`, release publiée (empreinte vérifiée, `tribe-menus v0.2.0 (5b44239)`), déployée en production à la place de `v0.1.1`, la migration `0007` appliquée à la tribu du développeur.*
+- [x] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : dossier `conception/`, paquets `internal/dish` et `internal/collection`, versions des collections) ; `CHANGELOG.md`.
 
 ### Séance de recette (étape 26)
 
@@ -173,7 +173,8 @@ Second passage du 2026-11-05, sur #83 mise à jour avec `main` (`pr-83-638969588
 
 - Que la modification d'un plat s'applique aux repas où il est servi (P2) et que la taille fixe les parts des plats servis (T3) : avec le planning et les listes de courses.
 - La consultation hors ligne de la bibliothèque et du référentiel : avec le plan hors-ligne.
-- Le vrai Safari sur iPhone, si aucun n'est disponible en recette.
+- Le vrai Safari sur iPhone, si aucun n'est disponible en recette. *Aucun ne l'était : Safari et le `304` sur `GET dishes` (revue #77, point 4) rejoignent la connexion sous Safari dans les points reportés.*
+- Que le développeur saisit ses vrais plats en production (dernier critère de validation) : il le fera à l'usage, après la clôture.
 
 ## Décisions
 
@@ -287,3 +288,6 @@ Le 2026-10-29, sur la fraîcheur des données dans le navigateur, avec le dével
   - **Taille de la tribu** enregistrée à chaque pas du stepper ; les pas faits pendant un enregistrement sont envoyés ensuite, le dernier seul ; sans réseau, la taille enregistrée revient avec « Réseau nécessaire ».
 - **Revue de la PR #81 (lot D)**, 2026-11-03 : les deux points « à corriger » sont corrigés dans la PR (nom d'un ingrédient borné à 40 caractères dans la combobox ; focus de « Ajouter un ingrédient » gardé pour plus tard). Constaté en traitant la revue et corrigé à la demande du développeur : un clic de souris sur un bouton placé sous les propositions ouvertes manquait sa cible, la liste se fermant au `blur` et déplaçant le bouton ; elle se ferme désormais après le geste. Au toucher (émulation de Playwright), le bouton était atteint dès avant la correction. Point à noter, à traiter au moment indiqué :
   - **`name_invalid` et `ingredient_name_invalid` s'affichent comme « Réseau nécessaire »** (#81, point 3) : un champ texte ne retire que les retours à la ligne, si bien qu'un caractère de contrôle collé (U+0007, U+0085…) passe `checkDish` ; le serveur refuse avec le bon code, et l'écran invite à réessayer une action qui échouera toujours. **À traiter à la recette (étape 26), avant `v0.2.0`** : un message dans `docs/design/README.md` (« Messages »), par exemple « Ce nom contient un caractère invalide. », et la même règle dans `checkDish`, sur le nom et sur chaque ligne. *Traité le 2026-11-03 (session cloud, avant la recette) : message « Ce nom contient un caractère invalide. » pour les deux codes, et `checkDish` refuse, avant l'envoi et dans l'ordre du serveur, un caractère de contrôle (`Cc`, hors des espaces que la règle réduit) dans le nom puis dans chaque ligne ; tests unitaires et état de l'écran sous Playwright. Revue des défauts proches, dans la même PR, tous les codes de refus du plat et de la taille de la tribu passés en revue : un nom fait de caractères invisibles (U+200B) était envoyé (`ingredient_name_required` sans message pour une ligne), une quantité faite d'espaces que `trim()` retire et pas la règle (U+2003) rendait l'unité inactive tout en l'exigeant, et des zéros collés par milliers dans une quantité dépassaient la taille du corps lue par le serveur (`bad_request`). L'écran s'appuie désormais sur `hasControl`, `hasVisible` et `trimSpaces`, tenus en accord avec Go par `internal/dish/testdata/names.json` ; le champ de la quantité est borné à 10 caractères. Les autres codes (`name_too_long`, `ingredient_name_too_long`, `invalid_servings`, `too_many_lines`, `invalid_unit`, `invalid_size`) restent impossibles à provoquer depuis l'écran.*
+- **Clôture** (2026-11-05, session cloud) : feuille de route (plan terminé, points reportés), conception, `CLAUDE.md`, ADR 0028 (point 7 : `cucumber/messages` suit godog comme le parseur, revue #77, point 5).
+  - **Échéances dépassées** : la sauvegarde hors du VPS et la reconstruction du serveur avec des données étaient attendues « avant `v0.2.0` » (ADR 0025, point 4) ; `v0.2.0` est publiée sans elles, la production ne tenant encore que la tribu du développeur. Signalé au développeur, qui fixe la suite.
+  - **Retour arrière automatique quand une migration échoue à mi-chemin** : toujours non éprouvé, la migration `0007` ayant réussi en recette comme en production ; le point reporté garde « première migration risquée ».

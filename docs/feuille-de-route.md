@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-11-03
+- **Mise à jour** : 2026-11-05
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -31,7 +31,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `revue-securite` | Revue de sécurité avant mise en ligne | [`2026-10-04-revue-de-securite-avant-mise-en-ligne.md`](plans/2026-10-04-revue-de-securite-avant-mise-en-ligne.md) | terminé |
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
-| `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | en cours |
+| `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
 
 ### `production` : application prête pour la production
 
@@ -45,7 +45,9 @@ Terminé le 2026-11-03 : cinq lots (cookies `__Host-` et tribu de recette, provi
 
 ### `bibliotheque` : bibliothèque de plats
 
-Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17) : *posée le 2026-11-02, le plan peut avancer.* En cours depuis le 2026-11-03 : lot A (specs, ADR 0027 à 0029, design, conception), lot B (domaine et API), lot C (navigation, bibliothèque, scénarios `@ui` sous Playwright), lot D (fiche d'un plat, écran Tribu, noms affichés) ; restent la recette et la release `v0.2.0`.
+Premier plan du métier : barre d'onglets, bibliothèque et recherche (P3) dans le navigateur, création et modification d'un plat avec autocomplétion du référentiel (P1, P2, P4), taille de la tribu sur un écran Tribu réduit (T3), compartimentage des plats et du référentiel (ENF-02) ; premiers scénarios `@ui` exécutés par Playwright à partir des `.feature`. Conception dans `conception/bibliotheque-de-plats.md`. Quatre lots (specs et ADR, domaine et API, bibliothèque, fiche d'un plat et écran Tribu), puis la release `v0.2.0`. Préparé pendant la fin de `recette`, rien n'en est fusionné avant l'étiquette `v0.1.0` (D17) : *posée le 2026-11-02, le plan peut avancer.* En cours depuis le 2026-11-03 : lot A (specs, ADR 0027 à 0029, design, conception), lot B (domaine et API), lot C (navigation, bibliothèque, scénarios `@ui` sous Playwright), lot D (fiche d'un plat, écran Tribu, noms affichés) 
+
+Terminé le 2026-11-05 : recette sur l'archive de la PR de release (#83), un défaut et deux remarques corrigés par #84, puis un second passage ; **`v0.2.0` en production le 2026-11-05**. Safari sur iPhone reste à vérifier, faute d'appareil.
 
 ## Décisions d'ordonnancement
 
@@ -70,19 +72,19 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
-- **Sauvegarde hors site** par Litestream (ADR 0007, point 3), à décider avant `v0.2.0` : jusque-là, le niveau de PulseHeberg est accepté (ADR 0025, point 4).
+- **Sauvegarde hors site** par Litestream (ADR 0007, point 3), à décider avant `v0.2.0` : jusque-là, le niveau de PulseHeberg est accepté (ADR 0025, point 4). *`v0.2.0` est publiée le 2026-11-05 sans elle : échéance dépassée, à replanifier.*
 
 ## Points reportés, à reprendre dans un plan
 
 | Point | Origine | À reprendre |
 | --- | --- | --- |
 | Réception du code sur Outlook et iCloud non vérifiée | `recette`, S3 | avant d'inviter un membre qui utilise l'une de ces messageries |
-| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) | `recette`, S3 (décision du 2026-11-01) | avant d'inviter la famille |
-| Sauvegarde hors du VPS | ADR 0025, point 4 | avant `v0.2.0` |
+| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque et le `304` sur `GET dishes` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) | avant d'inviter la famille |
+| Sauvegarde hors du VPS | ADR 0025, point 4 | avant `v0.2.0` : **dépassée**, `v0.2.0` publiée le 2026-11-05 sans elle ; à replanifier |
 | Un démarrage en échec envoie un e-mail de panne à chaque relance de systemd, dont le texte dit qu'il a cessé de le relancer | `recette`, S4 | prochaine PR touchant `deploy/` |
 | `make probe -timing` : le membre passe toujours en premier, sur une connexion à rétablir après l'heure d'attente | `recette`, mesure du 2026-11-01 | avant la prochaine mesure |
-| Retour arrière automatique quand une migration échoue à mi-chemin : non éprouvé | `recette`, « Ce que ce plan ne prouve pas » | première migration risquée, au plus tard `bibliotheque` (migration `0007`) |
-| Reconstruction du serveur avec des données à reprendre : procédure écrite (étape 19), jouée seulement à vide | `recette`, « Ce que ce plan ne prouve pas » | avec la sauvegarde hors site, avant `v0.2.0` |
+| Retour arrière automatique quand une migration échoue à mi-chemin : non éprouvé | `recette`, « Ce que ce plan ne prouve pas » | première migration risquée (la `0007` de `bibliotheque` a réussi sans l'éprouver) |
+| Reconstruction du serveur avec des données à reprendre : procédure écrite (étape 19), jouée seulement à vide | `recette`, « Ce que ce plan ne prouve pas » | avec la sauvegarde hors site, avant `v0.2.0` : **dépassée** ; à replanifier avec elle |
 | Délivrabilité dans la durée : rapports DMARC à lire avant de durcir la politique | `recette` ; ADR 0014, point 3 | après quelques semaines de production |
 | Seuils des alertes à revoir | `production`, D8 ; `recette` | après les premières semaines de production |
 | Durée de HSTS à allonger | `recette` | après quelques semaines sans incident |
