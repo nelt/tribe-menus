@@ -2,7 +2,7 @@
 
 - **Nom** : `planning`
 - **Date** : 2026-11-05
-- **Statut** : en cours (lot A). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
+- **Statut** : en cours (lot B). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
 
 ## Objectif
 
@@ -65,12 +65,12 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot B : domaine et API (`feature/planning-api`)
 
-- [ ] **7. Migration `0008`** de la base de la tribu : table `served_dishes` (identifiant aléatoire, date `AAAA-MM-JJ`, moment `lunch` ou `dinner`, plat, parts de 1 à 50, rang d'ajout ; index unique sur la date, le moment et le plat, Q21 ; clé étrangère vers `dishes`) ; sans auteur ni date de modification (D18) ; collection `meal_plan` déclarée dans `storage.Collections`, avec ses trois déclencheurs (ADR 0029, point 2), que le test de schéma vérifie. Requêtes sqlc, `make generate`.
-- [ ] **8. Règles pures de `internal/mealplan`**, tests en tableaux d'abord : lecture d'une date (`AAAA-MM-JJ`, date réelle, de 2000-01-01 à 2099-12-31, D4), d'un moment, des parts (de 1 à 50, la règle des parts d'un plat) ; aucune notion d'« aujourd'hui » dans le serveur (D4).
-- [ ] **9. `mealplan.Plan`** derrière une interface `Store`, tests d'abord : liste par pages (D1), ajout d'un plat à un repas (parts absentes : taille de la tribu au moment de l'ajout, D9 ; plat inconnu ; plat déjà servi, avec les plats servis du repas à jour, D3), réglage des parts (dernier enregistrement gagnant, D3), retrait ; dans une transaction d'écriture qui ramène la version à « avant plus un » (`writeCollections`, conception de la bibliothèque) ; adaptateur `MealPlanStore` dans `internal/storage` (D15).
-- [ ] **10. API** : `GET meal-plan` par pages, servie par `internal/collection` (ETag, `304`, `412`) ; `POST meal-plan` (201 ; 400 `invalid_date`, `invalid_mealtime`, `invalid_servings`, `unknown_dish` ; 409 `dish_already_served` avec les plats servis du repas) ; `PUT meal-plan/{id}/servings` (200 ; 404 `not_found`) ; `DELETE meal-plan/{id}` (200 avec les versions ; 404 `not_found`, D19) ; réponses d'écriture avec les versions des collections ; 404 identique pour un identifiant inconnu ou d'une autre tribu ; corps limité à 4 Kio.
-- [ ] **11. Étapes godog** des scénarios « API » du tableau, retirés de `pending.txt`.
-- [ ] **12. `make seed`** : la semaine de `Doux-Main` dans la tribu `demo`, à partir du jour du seed (D16). La tribu de recette n'en reçoit pas.
+- [x] **7. Migration `0008`** de la base de la tribu : table `served_dishes` (identifiant aléatoire, date `AAAA-MM-JJ`, moment `lunch` ou `dinner`, plat, parts de 1 à 50, rang d'ajout ; index unique sur la date, le moment et le plat, Q21 ; clé étrangère vers `dishes`) ; sans auteur ni date de modification (D18) ; collection `meal_plan` déclarée dans `storage.Collections`, avec ses trois déclencheurs (ADR 0029, point 2), que le test de schéma vérifie. Requêtes sqlc, `make generate`.
+- [x] **8. Règles pures de `internal/mealplan`**, tests en tableaux d'abord : lecture d'une date (`AAAA-MM-JJ`, date réelle, de 2000-01-01 à 2099-12-31, D4), d'un moment, des parts (de 1 à 50, la règle des parts d'un plat) ; aucune notion d'« aujourd'hui » dans le serveur (D4).
+- [x] **9. `mealplan.Plan`** derrière une interface `Store`, tests d'abord : liste par pages (D1), ajout d'un plat à un repas (parts absentes : taille de la tribu au moment de l'ajout, D9 ; plat inconnu ; plat déjà servi, avec les plats servis du repas à jour, D3), réglage des parts (dernier enregistrement gagnant, D3), retrait ; dans une transaction d'écriture qui ramène la version à « avant plus un » (`writeCollections`, conception de la bibliothèque) ; adaptateur `MealPlanStore` dans `internal/storage` (D15).
+- [x] **10. API** : `GET meal-plan` par pages, servie par `internal/collection` (ETag, `304`, `412`) ; `POST meal-plan` (201 ; 400 `invalid_date`, `invalid_mealtime`, `invalid_servings`, `unknown_dish` ; 409 `dish_already_served` avec les plats servis du repas) ; `PUT meal-plan/{id}/servings` (200 ; 404 `not_found`) ; `DELETE meal-plan/{id}` (200 avec les versions ; 404 `not_found`, D19) ; réponses d'écriture avec les versions des collections ; 404 identique pour un identifiant inconnu ou d'une autre tribu ; corps limité à 4 Kio.
+- [x] **11. Étapes godog** des scénarios « API » du tableau, retirés de `pending.txt`.
+- [x] **12. `make seed`** : la semaine de `Doux-Main` dans la tribu `demo`, à partir du jour du seed (D16). La tribu de recette n'en reçoit pas.
 
 ### Lot C : planning de la semaine (`feature/planning-semaine`)
 
@@ -203,6 +203,15 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 - **Glossaire** : en plus des termes de « Contexte et contraintes », rang (*rank*, champ de l'API) et aujourd'hui (*today*, `today()` de `meal-plan.ts`).
 - **Design, interprétations** (D8) : année dans le titre d'une plage hors de l'année en cours ; « Revenir à aujourd'hui » à la place de « À partir d'aujourd'hui » ; jours et cases affichés une fois les deux copies chargées ; retrait sans confirmation ; « Tous les plats de la bibliothèque sont déjà dans ce repas. » ; bandeaux d'avertissement, comme pour la modification croisée d'un plat, pour les deux messages de Q33.
 - **« Se déconnecter »** (D5) : bouton au contour rouge tomate, comme sur l'accueil provisoire. Dans `Doux-Tribu`, « Quitter la tribu » est un texte rouge tomate dans un contour neutre `#E7E1EE`, à côté de « Mes appareils » ; à trancher à la revue si le bouton doit plutôt suivre la maquette.
+
+**Lot B** (2026-11-05, Dev Container, `feature/planning-api`), à valider à la revue :
+
+- **Interfaces du domaine** un peu différentes du diagramme de la conception, qui est mis à jour : `Tx.NextRank` donne le rang d'un ajout (le plus grand de la tribu, plus un : un rang peut resservir après le retrait du dernier plat ajouté, l'ordre d'un repas reste juste) ; `Tx.SetServings` rend le plat servi modifié (`UPDATE … RETURNING`) et `Tx.Delete` une erreur `ErrNotFound`, au lieu d'un booléen ; `Store.Version` sans nom de collection, le planning n'en a qu'une.
+- **Bornes vérifiées deux fois** : par `ParseDate` (date réelle, format exact) et par la table (`CHECK`, dont `date(date) IS date` contre un 30 février), comme les parts ; l'index unique (date, moment, plat) garde Q21 même pour une écriture qui ne passerait pas par le domaine.
+- **`POST meal-plan` accepte des parts** (1 à 50), que l'écran n'envoie pas (D9) : l'API de la conception les prévoit, les étapes godog s'en servent pour poser « servi pour 3 parts ». Un réglage des parts à la même valeur augmente quand même la version : le dernier enregistrement l'emporte (D3), sans comparaison.
+- **Revue de la PR #87, point 3** : `TestServeSetAndRemove` prouve le `404 not_found` d'un retrait et d'un réglage des parts sur un plat servi déjà retiré de la même tribu.
+- **Étapes godog** : « j'ajoute le plat "…" au repas du … » crée le plat s'il manque à la bibliothèque, pour T1 (« Ratatouille », absente du contexte) ; « nous sommes le … » règle l'horloge du scénario, que le serveur ne lit pas (D4) ; « je ne vois aucun élément de la tribu "…" » vérifie aussi le planning consulté (identifiants des plats servis et des plats de l'autre tribu). 21 titres retirés de `acceptance/pending.txt` ; restent de ce plan les quatre scénarios `@ui` (lots C et D) et ceux marqués « reste en attente ».
+- **`make seed`** : « Pizza maison » remplace « Restes » le premier jour à midi (D16) ; les dates partent du jour du seed, dans le fuseau du poste.
 
 **Revue de la PR #87**, points à reprendre plus tard :
 
