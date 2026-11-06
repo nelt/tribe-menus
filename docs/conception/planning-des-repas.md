@@ -378,6 +378,6 @@ Sans changement, le retour coûte trois `304` : planning, plats et référentiel
 
 ## Ce que ce document ne couvre pas encore
 
-- Les listes de courses : ce qu'une liste retient d'un plat servi pour savoir qu'il a changé (C8) et le calcul des quantités à partir des parts (règle de calcul) ; l'identité d'un plat servi est fixée (D2).
+- Les listes de courses : décrites dans [`listes-de-courses.md`](listes-de-courses.md) (plan `courses`) ; une liste retient de chaque plat servi ce qu'il a apporté (`courses`, D5), l'identité d'un plat servi étant fixée (D2).
 - Le delta d'une collection, si le planning devient long à recharger (plan, questions ouvertes).
 - Le hors-ligne : stockage du planning sur l'appareil, consultation hors ligne (ENF-01).
