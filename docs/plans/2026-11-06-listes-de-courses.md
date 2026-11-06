@@ -221,10 +221,15 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 
 ## Questions ouvertes
 
-- **Croissance des listes** (D4) : une liste peut garder des articles non cochés longtemps ; les provenances s'accumulent. À mesurer après quelques semaines de production ; le delta d'une collection le réglerait, au plan hors-ligne.
+- **Croissance des listes** (D4) : une liste peut garder des articles non cochés longtemps ; les provenances s'accumulent ; et `received`, que la V1 ne vide jamais, gagne de l'ordre de 25 Ko par an pour une liste servie chaque semaine (revue #92, point 4), rechargés à chaque coche sur les autres appareils. L'estimation de D4 n'en tient pas compte. À mesurer en production ; si la taille gêne, `received` peut sortir de l'élément de liste au cadrage de `courses-suite` (seul l'écran des courses des repas s'en sert), ou le delta d'une collection le régler, au plan hors-ligne.
 - **Ordre des articles par rayon** : D13 range par ordre alphabétique ; un classement par rayon demanderait une donnée de plus sur l'ingrédient. Hors V1, à rediscuter après usage.
 - **Recalcul et dépliage** (`courses-suite`) : D5 garde ce qu'il faut ; restent à décider, au cadrage de `courses-suite`, si le dépliage montre une provenance dont le plat servi a été retiré comme telle avant le recalcul, si le recalcul crée l'article d'une ligne ajoutée au plat, et si un plat servi reçu sans provenance restante reste hors de la péremption (D5).
 
 ## Notes d'exécution
 
-*(à remplir au fil des lots)*
+**Revue de la PR du plan (#92)**, 2026-11-06 :
+
+- **Point 4, à noter** : `received` grandit sans limite (environ 14 plats servis par semaine, 25 Ko par an et par liste), et avec lui le rechargement de toutes les listes à chaque coche (D4). Reporté dans « Questions ouvertes », « Croissance des listes » ; à mesurer en production, à reprendre au cadrage de `courses-suite`.
+- **Pour information, gardé pour `courses-suite`** : un ajout de courses fait à la mauvaise liste ne s'efface qu'en cochant puis en déclarant les courses faites, et ses plats servis restent reçus par cette liste (D12, Q22) ; acceptable en V1.
+
+*(à compléter au fil des lots)*
