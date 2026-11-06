@@ -91,7 +91,7 @@ Le calcul est **pur** (`internal/shopping`, D6) : il reçoit la liste, les plats
 
 Exemple de la spec : « Chili con carne », défini pour 4 parts avec 500 g de bœuf haché et 1 oignon, servi pour 3 parts le mardi soir et pour 4 parts le jeudi midi. Bœuf : 375 000 mg et 500 000 mg apportés, 875 000 mg, affichés « 875 g ». Oignon : 750 et 1 000 millièmes apportés, 1 750, arrondis à 2 000 : « 2 pièces » ; le dépliage montre « 0,75 pièce » et « 1 pièce ».
 
-L'**unité d'affichage** d'un article calculé est la plus grande unité de sa famille qui donne au moins 1 (spec) : 1 500 000 mg en kg (« 1,5 kg »), 750 ml en cl (« 75 cl »). Elle est choisie par le navigateur (`shopping.ts`) à partir de la quantité en unités de base, avec les règles d'affichage des quantités du design.
+L'**unité d'affichage** d'un article calculé est la plus grande unité de sa famille qui donne au moins 1 (spec) : 1 500 000 mg en kg (« 1,5 kg »), 750 ml en cl (« 75 cl »). Elle est choisie par le navigateur (`shopping.ts`) à partir de la quantité renvoyée par l'API dans la plus petite unité de la famille (ci-dessous), avec les règles d'affichage des quantités du design.
 
 ## Découpage du code
 
@@ -247,7 +247,9 @@ classDiagram
 | `POST shopping-lists/{id}/checkout` | `{ items: [ItemID] }`, ceux vus cochés | 200 : `{ list, removed, versions }` (D9) ; 404 |
 | `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }` ; 400 `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
 
-Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }` ; un article (`Item`) : `{ id, ingredient, amount?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, amount? }] }`, `amount` en unités de base et `unit` l'unité de la famille (pour un article calculé, l'unité de base : `g` pour une masse lue en milligrammes, comme les lignes des plats). Le nom de l'ingrédient est donné en clair, comme dans les lignes d'un plat (le référentiel n'a pas d'identifiant public, `bibliotheque`, D10).
+Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }` ; un article (`Item`) : `{ id, ingredient, quantity?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, quantity?, unit? }] }`.
+
+**Un seul format de quantité, en lecture comme en écriture**, celui des lignes des plats (`lineResponse`, `internal/server/api_dishes.go`) et de `POST …/items` : `quantity`, le texte de `Quantity.Text()` (point décimal, sans zéro inutile, relu par `ParseQuantity`), et `unit`, le code d'une unité de la liste fermée (revue #92, point 2). Un article ajouté garde l'unité saisie. Un article calculé et ses provenances sont exprimés dans la **plus petite unité de leur famille** : `g`, `ml`, `piece`, `tablespoon`, `teaspoon`, `pinch` (« 875 » `g`, « 0.75 » `piece`) ; `shopping.ts` en tire l'unité d'affichage. Aucune quantité en unités de base (milligrammes, millièmes) ne sort du serveur : elles restent dans la base et le calcul. Le nom de l'ingrédient est donné en clair, comme dans les lignes d'un plat (le référentiel n'a pas d'identifiant public, `bibliotheque`, D10).
 
 Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Control: no-store`. Corps limité à 4 Kio (`maxBodyBytes`), sauf celui de `checkout`, limité à 16 Kio (`maxCheckoutBodyBytes`, comme `maxDishBodyBytes` pour un plat) : il porte au plus 300 identifiants de 32 caractères hexadécimaux, soit environ 10,5 Kio en JSON (revue #92, point 1).
 
