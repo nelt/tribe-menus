@@ -40,6 +40,13 @@ classDiagram
     }
     class ReceivedServedDish {
         servedDish : ServedDishID
+        dish : DishID
+        servings : int
+    }
+    class ReceivedLine {
+        <<lignes du plat au calcul>>
+        ingredient : Ingredient
+        quantity : Quantity [0..1]
     }
     class Ingredient {
         name : string
@@ -69,19 +76,20 @@ classDiagram
     ItemSource ..> ServedDish : identifiant seul, sans clé étrangère (D5)
     ItemSource ..> Dish
     ReceivedServedDish ..> ServedDish : identifiant seul
+    ReceivedServedDish "1" *-- "0..40" ReceivedLine : D5
 ```
 
 - **ShoppingList** : identifiant aléatoire (D10) ; nom de 40 caractères au plus, non unique (Q17, D12) ; **rang** de création, qui ordonne les listes après la principale (C2) ; **principale** pour exactement une liste de la tribu (Q23), garantie par un index unique partiel. La liste « Courses », principale, est créée par la migration `0009` dans toute base de tribu (D14). 20 listes au plus (D12).
 - **Item** : identifiant aléatoire ; un ingrédient du référentiel ; une quantité facultative, en unités de base avec son unité d'affichage (ADR 0003, point 7) ; coché ou non ; **ajouté** (saisi à la main, sans provenance) ou **calculé** (au moins une provenance). Une liste a au plus un article calculé par ingrédient et famille d'unités, plus au plus un article calculé sans quantité par ingrédient (Q24, D3) ; les articles ajoutés ne sont jamais fusionnés (Q13). 300 articles au plus par liste (D12).
-- **ItemSource** (provenance) : ce qu'un plat servi a apporté à un article calculé, **au moment du calcul** : le plat servi, le plat, la date, le moment, les parts et la quantité apportée (absente pour un ingrédient sans quantité). Pas de clé étrangère vers `served_dishes` : un plat servi retiré du planning laisse sa provenance lisible jusqu'au recalcul (D5). C'est ce qui permettra à `courses-suite` de dire qu'une liste est périmée (C8) : recalculer ce que chaque provenance apporterait aujourd'hui et comparer.
-- **ReceivedServedDish** : les plats servis dont la liste a reçu les courses (Q22), y compris ceux sans ingrédient (« Restes ») et ceux dont les articles sont partis par les courses faites ; jamais retirés en V1. Sans clé étrangère, comme la provenance.
+- **ItemSource** (provenance) : ce qu'un plat servi a apporté à un article calculé, **au moment du calcul** : le plat servi, le plat, la date, le moment, les parts et la quantité apportée (absente pour un ingrédient sans quantité). Pas de clé étrangère vers `served_dishes` : un plat servi retiré du planning laisse sa provenance lisible (C5) jusqu'au recalcul (D5).
+- **ReceivedServedDish** : les plats servis dont la liste a reçu les courses (Q22), avec le plat, les parts et les **lignes du plat au moment du calcul** (`ReceivedLine`), y compris ceux sans ingrédient (« Restes ») et ceux dont les articles sont partis par les courses faites ; jamais retirés en V1, sans clé étrangère. C'est ce qui permettra à `courses-suite` de dire qu'une liste est périmée (C8) : un plat servi reçu qui a encore une provenance dans la liste a changé si le plat servi a été retiré, si ses parts ont changé, ou si les lignes actuelles du plat diffèrent des lignes gardées ; les lignes gardées distinguent une ligne ajoutée au plat d'une ligne dont l'article est parti, que le recalcul ne recrée pas (D5). Le nom du plat n'y est pas : un renommage ne rend pas une liste périmée. Ces données restent dans le serveur ; l'API ne donne que les identifiants (`received`).
 - **Ingredient**, **Quantity**, **Dish**, **ServedDish** : inchangés. Un article ajouté peut créer un ingrédient (Q13) et fixer son unité par défaut (Q20).
 
 ## Calcul des courses d'une période
 
 Le calcul est **pur** (`internal/shopping`, D6) : il reçoit la liste, les plats servis de la période, les plats et leurs lignes, et rend la liste nouvelle et ses comptes. Toutes les quantités sont des entiers en unités de base : milligramme pour les masses, millilitre pour les volumes, millième de pièce, de cuillère à soupe, de cuillère à café, de pincée.
 
-1. **Plats servis retenus** : ceux de la période (bornes incluses) qui ne sont pas déjà reçus par la liste ; les autres sont comptés comme ignorés (Q22). Tous les retenus deviennent des plats servis reçus, même sans ingrédient.
+1. **Plats servis retenus** : ceux de la période (bornes incluses) qui ne sont pas déjà reçus par la liste ; les autres sont comptés comme ignorés (Q22). Tous les retenus deviennent des plats servis reçus, même sans ingrédient, avec leurs parts et les lignes du plat lues dans la transaction (D5).
 2. **Quantité apportée** par chaque ligne de chaque plat retenu : `quantité du plat × parts servies ÷ parts de référence`, arrondie à l'unité de base supérieure (D7). Une ligne sans quantité apporte une provenance sans quantité (D3).
 3. **Regroupement** par ingrédient et famille d'unités (masse, volume, pièce, cuillère à soupe, cuillère à café, pincée), plus un groupe « sans quantité » par ingrédient.
 4. **Versement** dans la liste : un groupe dont l'article calculé existe déjà (même ingrédient, même famille, ou tous deux sans quantité) s'y ajoute et lui donne de nouvelles provenances ; sinon un article calculé nouveau est créé. Les articles ajoutés ne sont pas touchés.
@@ -165,6 +173,7 @@ classDiagram
             <<tables et déclencheurs>>
             shopping_lists, shopping_items
             shopping_item_sources, shopping_received
+            shopping_received_lines
             collection shopping_lists
         }
     }
@@ -227,7 +236,7 @@ classDiagram
 ```
 
 - **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles, les quantités et le nom normalisé, pas de `internal/mealplan` : le `Tx` lui rend les plats servis de la période.
-- **`internal/storage`** : migration `0009` (quatre tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. `SaveList` réécrit les articles, provenances et plats servis reçus d'une liste dans la transaction : une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`.
+- **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. `SaveList` réécrit les articles, provenances, plats servis reçus et leurs lignes d'une liste dans la transaction : une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`.
 - **`internal/collection`** : inchangé ; `GET shopping-lists` passe par `Serve`.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
 - **`web/src`** : `shopping.ts`, module pur testé par `node:test` ; `shopping-lists.ts`, copie des listes sur `CachedCollection`, vérifiée avec `planning.ts` et `library.ts` sur l'écran des courses des repas et pour le dépliage ; écrans `shopping-list-screen.ts`, `list-picker-screen.ts`, `meal-shopping-screen.ts` ; la combobox d'ingrédient de l'écran d'un plat et `warningBanner` sont repris.
@@ -293,7 +302,7 @@ sequenceDiagram
     alt plus de 300 articles
         A-->>L: 409 too_many_items, rien d'écrit
     else
-        K->>D: SaveList : articles, provenances, plats servis reçus
+        K->>D: SaveList : articles, provenances,<br/>plats servis reçus et leurs lignes (D5)
         K->>D: COMMIT, shopping_lists passe de 31 à 32
         A-->>L: 200, la liste à jour, added 4, ignored 1, versions
         L->>L: applyWrite : 32 suit 31
@@ -360,6 +369,6 @@ sequenceDiagram
 
 ## Ce que ce document ne couvre pas encore
 
-- **Le recalcul d'une liste périmée** (C8) et **la sélection d'articles** (C9, C10) : `courses-suite`. Le modèle les prévoit : provenances avec ce qu'elles ont apporté, plats servis reçus à part (D5).
+- **Le recalcul d'une liste périmée** (C8) et **la sélection d'articles** (C9, C10) : `courses-suite`. Le modèle les prévoit : provenances avec ce qu'elles ont apporté, plats servis reçus avec leurs parts et les lignes du plat au moment du calcul (D5).
 - **Le hors-ligne** des listes (C7, Q16, Q18) : stockage sur l'appareil, file des coches et des ajouts, rejeu au retour du réseau ; plan hors-ligne, qui s'ajoutera à la copie des collections sans la remplacer (ADR 0029, conséquences).
 - **Le delta d'une collection**, si les listes deviennent longues à recharger (plan, questions ouvertes).
