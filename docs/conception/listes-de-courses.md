@@ -249,7 +249,7 @@ classDiagram
 
 Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }` ; un article (`Item`) : `{ id, ingredient, amount?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, amount? }] }`, `amount` en unités de base et `unit` l'unité de la famille (pour un article calculé, l'unité de base : `g` pour une masse lue en milligrammes, comme les lignes des plats). Le nom de l'ingrédient est donné en clair, comme dans les lignes d'un plat (le référentiel n'a pas d'identifiant public, `bibliotheque`, D10).
 
-Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Control: no-store`. Corps limité à 4 Kio ; `checkout` porte au plus 300 identifiants.
+Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Control: no-store`. Corps limité à 4 Kio (`maxBodyBytes`), sauf celui de `checkout`, limité à 16 Kio (`maxCheckoutBodyBytes`, comme `maxDishBodyBytes` pour un plat) : il porte au plus 300 identifiants de 32 caractères hexadécimaux, soit environ 10,5 Kio en JSON (revue #92, point 1).
 
 - **`404` identique** pour une liste ou un article inconnu, supprimé entre-temps ou d'une autre tribu (ENF-02).
 - **Écritures sur une liste** : la réponse porte la liste entière à jour, que la copie prend ; un `409 list_not_empty` aussi.
