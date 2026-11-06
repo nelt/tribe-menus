@@ -93,7 +93,7 @@ Le calcul est **pur** (`internal/shopping`, D6) : il reçoit la liste, les plats
 2. **Quantité apportée** par chaque ligne de chaque plat retenu : `quantité du plat × parts servies ÷ parts de référence`, arrondie à l'unité de base supérieure (D7). Une ligne sans quantité apporte une provenance sans quantité (D3).
 3. **Regroupement** par ingrédient et famille d'unités (masse, volume, pièce, cuillère à soupe, cuillère à café, pincée), plus un groupe « sans quantité » par ingrédient.
 4. **Versement** dans la liste : un groupe dont l'article calculé existe déjà (même ingrédient, même famille, ou tous deux sans quantité) s'y ajoute et lui donne de nouvelles provenances ; sinon un article calculé nouveau est créé. Les articles ajoutés ne sont pas touchés.
-5. **Arrondi de l'article**, après l'addition des quantités apportées de toutes ses provenances, anciennes et nouvelles : pièces, cuillères et pincées à l'entier supérieur (Q4), masses au gramme supérieur, volumes au millilitre supérieur (D7).
+5. **Arrondi de l'article**, après l'addition des quantités apportées de toutes ses provenances, anciennes et nouvelles : pièces, cuillères et pincées à l'entier supérieur (Q4), masses au gramme supérieur (D7) ; les volumes sont déjà en millilitres entiers.
 6. **Coche** : un article coché dont la quantité arrondie augmente est décoché ; un article sans quantité garde sa coche (D3).
 7. **Limite** : si la liste dépasse 300 articles, rien n'est écrit (D12).
 
@@ -268,7 +268,7 @@ Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Con
 
 ## Données dans le navigateur
 
-Les listes vivent dans une **copie en mémoire** (`web/src/shopping-lists.ts`), une `CachedCollection` de la collection `shopping_lists`, comme les plats et le planning (ADR 0029, point 4). Elle est vérifiée à chaque visite de l'onglet Courses et à chaque retour au premier plan ; avec la copie du planning et celle de la bibliothèque sur l'écran des courses des repas (jours ayant des repas, plats servis déjà reçus) et pour le dépliage (nom et couleur des plats). Après une écriture, la copie prend la liste renvoyée et la version, ou se vérifie si un autre membre a écrit entre-temps ; après un `404`, elle retire la liste ou se vérifie. Rien n'est écrit sur l'appareil (D2) : la copie disparaît au rechargement, à la déconnexion et sur un 401.
+Les listes vivent dans une **copie en mémoire** (`web/src/shopping-lists.ts`), une `CachedCollection` de la collection `shopping_lists`, comme les plats et le planning (ADR 0029, point 4). Elle est vérifiée à chaque visite de l'onglet Courses et à chaque retour au premier plan ; avec la copie du planning et celle de la bibliothèque sur l'écran des courses des repas (jours ayant des repas, plats servis déjà reçus) et pour le dépliage (nom et couleur des plats). Après une écriture, la copie prend la liste renvoyée et la version, ou se vérifie si un autre membre a écrit entre-temps ; après un `404`, elle retire la liste ou se vérifie. `PUT shopping-lists/main` ne renvoie que les versions : la copie inverse elle-même les deux drapeaux `main` si la version suit la sienne, sinon elle se vérifie. Rien n'est écrit sur l'appareil (D2) : la copie disparaît au rechargement, à la déconnexion et sur un 401.
 
 Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses », complété au lot A.
 
