@@ -117,4 +117,3 @@ membres-et-sessions.feature: Se révoquer soi-même
 membres-et-sessions.feature: Un membre révoqué affiche l'auteur et la date de sa révocation
 membres-et-sessions.feature: Un membre révoqué est déconnecté à sa requête suivante
 membres-et-sessions.feature: Une adresse déjà membre d'une autre tribu peut être ajoutée
-planning-repas.feature: Un plat déjà servi dans un repas ne m'est pas proposé

@@ -115,3 +115,60 @@ step(/je passe à la semaine (suivante|précédente)/, async (world, which) => {
   await world.page.getByRole("button", { name: `Semaine ${which ?? ""}` }).click();
   await planningScreen(world);
 });
+
+const mealtimes: Record<string, { api: string; path: string; label: string }> = {
+  "à midi": { api: "lunch", path: "midi", label: "midi" },
+  "au soir": { api: "dinner", path: "soir", label: "soir" },
+};
+
+/** A day of the API: YYYY-MM-DD, from the local date. */
+function apiDay(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/** The meal of a scenario: « mardi 6 octobre 2026 au soir ». */
+function mealOf(day: string, mealtime: string): { date: Date; mealtime: { api: string; path: string; label: string } } {
+  const time = mealtimes[mealtime];
+  if (time === undefined) {
+    throw new Error(`unknown mealtime "${mealtime}"`);
+  }
+  return { date: dateOf(parseWritten(day)), mealtime: time };
+}
+
+async function dishId(world: World, name: string): Promise<string> {
+  const tribe = await world.tribe();
+  const page = (await tribe.apiOk("je", "GET", "dishes")) as { items: { id: string; name: string }[] };
+  const dish = page.items.find((d) => d.name === name);
+  if (dish === undefined) {
+    throw new Error(`no dish "${name}" in the library`);
+  }
+  return dish.id;
+}
+
+// R2
+step(/le plat "([^"]*)" servi pour (\d+) parts le (.+?) (à midi|au soir)/, async (world, name, servings, day, mealtime) => {
+  const meal = mealOf(day ?? "", mealtime ?? "");
+  const tribe = await world.tribe();
+  await tribe.apiOk("je", "POST", "meal-plan", { date: apiDay(meal.date), mealtime: meal.mealtime.api, dish: await dishId(world, name ?? ""), servings: Number(servings) });
+});
+
+step(/je choisis un plat à ajouter au repas du (.+?) (à midi|au soir)/, async (world, day, mealtime) => {
+  const meal = mealOf(day ?? "", mealtime ?? "");
+  // Through the planning, from today if its range holds the meal, else from the meal's day.
+  const today = world.memory.get("today") as Date | undefined;
+  const offset = today === undefined ? -1 : Math.round((meal.date.getTime() - today.getTime()) / 86_400_000);
+  await world.open("je", offset >= 0 && offset < 7 ? "" : `?du=${apiDay(meal.date)}`);
+  await planningScreen(world);
+  await world.page.getByRole("link", { name: new RegExp(`^${dayLabel(meal.date)}, ${meal.mealtime.label} : `) }).click();
+  await expect(world.page.getByRole("heading", { name: "Ajouter un plat", level: 2 })).toBeVisible();
+});
+
+step(/"([^"]*)" (ne )?m'est (pas )?proposé/, async (world, name, ne, pas) => {
+  const suggestions = world.page.getByRole("list", { name: "Plats proposés" }).getByRole("button", { name: `Ajouter ${name ?? ""}`, exact: true });
+  await expect(world.page.getByRole("heading", { name: "Plats servis", level: 2 })).toBeVisible();
+  if ((ne ?? "") !== "" && (pas ?? "") !== "") {
+    await expect(suggestions).toHaveCount(0);
+  } else {
+    await expect(suggestions).toHaveCount(1);
+  }
+});

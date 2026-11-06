@@ -259,7 +259,7 @@ Servi statiquement à la racine de `meltingtribe.codingmatters.org` (ADR 0006, A
 
 Les noms trop longs (60 caractères pour un plat, 40 pour un ingrédient, Q31) sont bornés par le champ lui-même (`maxlength`), sans message ; la quantité aussi, à 10 caractères (6 chiffres, la virgule et 3 décimales). Un nom sans caractère visible (espaces, caractères invisibles collés, D30) est traité comme un nom vide : « Donnez un nom au plat. » pour le plat ; pour une ligne, l'ingrédient tapé est ignoré comme une ligne vide, et « Créer « … » » n'est pas proposé. Aucun refus du serveur que l'écran peut provoquer ne s'affiche comme « Réseau nécessaire ».
 
-**Planning et détail d'un repas** (plan `planning`, lot A, 2026-11-05 ; à réaliser aux lots C et D)
+**Planning et détail d'un repas** (plan `planning`, lot A, 2026-11-05 ; réalisés aux lots C et D)
 
 `Doux-Main` et `Doux-Repas` font référence ; ce qu'elles ne montrent pas est interprété ici, sans nouvelle maquette (D8), à valider à la revue. Écarts à reporter dans le canevas de travail par le développeur s'il le souhaite.
 
@@ -284,6 +284,16 @@ Les noms trop longs (60 caractères pour un plat, 40 pour un ingrédient, Q31) s
 | Ajout, parts ou retrait sans réseau (D13), ou réponse imprévue du serveur | « Réseau nécessaire. Le réseau est lent ou absent : réessayez. », en rouge tomate ; les parts reviennent à la valeur enregistrée |
 
 Le bandeau d'avertissement n'a pas de bouton de fermeture : il disparaît à l'action suivante sur le repas.
+
+**Réalisation du détail d'un repas** (plan `planning`, lot D, 2026-11-05), à valider à la revue :
+
+- **En-tête** d'après `Doux-Repas` : cadre au liseré du moment (midi ou soir), jour en 14 px et moment en 40 px dans la teinte du moment, total des parts en rouge tomate ; le jour et le moment forment ensemble le titre du repas, lu « Mardi 6 octobre Soir ». Le total suit les steppers avant leur enregistrement.
+- **Croix de retrait** : lue « Retirer « Chili con carne » du repas » plutôt que « Retirer ce plat du repas », pour ne pas avoir plusieurs boutons du même nom sur l'écran ; le stepper d'un plat servi est le groupe « Parts de « Chili con carne » », ses boutons « Une part de moins » et « Une part de plus », comme la maquette.
+- **Propositions** : lues « Ajouter Chili con carne » ; une recherche dont les seuls résultats sont déjà servis dans le repas dit « Aucun plat ne correspond », la phrase sur les plats déjà servis restant au-dessus. « Créer un plat » est un bouton secondaire.
+- **Bandeau d'avertissement** : il disparaît à l'action suivante sur le repas (ajout, parts, retrait), pas à la saisie d'une recherche.
+- **Lien « Planning »** : la plage d'où l'on vient ; pour un repas ouvert par son chemin (lien gardé, rechargement), la plage d'aujourd'hui si elle contient le repas, sinon celle qui commence au jour du repas.
+- **Case de repas** : un lien, lu « Mardi 6 oct., soir : Chili con carne, 3 parts ; Chili végétarien, 1 part », ou « … : aucun plat » ; une case hors de 2000 à 2099 n'est pas un lien.
+- **Pastille de la tribu** : si la tribu n'a pas pu être lue, le Planning montre « Le réseau est lent ou absent. Réessayez. » et « Réessayer », qui la relit, comme le retour sur l'application (revue de la PR #90, point 1).
 
 ### Planches de référence de l'identité
 

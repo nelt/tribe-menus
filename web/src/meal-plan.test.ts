@@ -5,6 +5,9 @@ import {
   type ServedDish,
   addDays,
   dayRange,
+  dishSuggestions,
+  longDate,
+  mealDishes,
   mealTiles,
   nextStart,
   parseDay,
@@ -164,4 +167,52 @@ test("totalServings and servingsLabel", () => {
   assert.equal(totalServings([{ served: served("s1", "2026-10-06", "dinner", "c", 3, 1), dish: chili }, { served: served("s2", "2026-10-06", "dinner", "v", 1, 2), dish: vege }]), 4);
   assert.equal(servingsLabel(1), "1 part");
   assert.equal(servingsLabel(7), "7 parts");
+});
+
+test("mealDishes: the dishes of one meal, by rank (D11), without those the library does not hold", () => {
+  const plan = [
+    served("s3", "2026-10-06", "dinner", "v", 1, 7),
+    served("s1", "2026-10-06", "dinner", "c", 3, 2),
+    served("s2", "2026-10-06", "lunch", "p", 4, 5),
+    served("s4", "2026-10-13", "dinner", "p", 4, 9),
+    served("s5", "2026-10-06", "dinner", "unknown", 4, 1),
+  ];
+  assert.deepEqual(
+    mealDishes("2026-10-06", "dinner", plan, [chili, vege, pesto]).map((d) => [d.served.id, d.dish.name]),
+    [
+      ["s1", "Chili con carne"],
+      ["s3", "Chili végétarien"],
+    ],
+  );
+  assert.deepEqual(mealDishes("2026-10-07", "lunch", plan, [chili, vege, pesto]), []);
+});
+
+const ratatouille: Dish = { ...dish("r", "Ratatouille"), ingredients: [{ name: "Courgette" }, { name: "Aubergine" }] };
+const library = [ratatouille, pesto, vege, chili];
+
+const suggestionCases: { name: string; served: string[]; query: string; want: string[] }[] = [
+  { name: "without search, the whole library by alphabetical order (Q30, D12)", served: [], query: "", want: ["Chili con carne", "Chili végétarien", "Pâtes pesto", "Ratatouille"] },
+  { name: "without the dishes already served (Q21)", served: ["c"], query: "", want: ["Chili végétarien", "Pâtes pesto", "Ratatouille"] },
+  { name: "a search, as in the tab Plats (P3)", served: [], query: "chili", want: ["Chili con carne", "Chili végétarien"] },
+  { name: "a search finds by ingredient", served: [], query: "courg", want: ["Ratatouille"] },
+  { name: "a search, without the dishes already served", served: ["v"], query: "chili", want: ["Chili con carne"] },
+  { name: "a search without result", served: [], query: "tajine", want: [] },
+  { name: "every dish already served", served: ["c", "v", "p", "r"], query: "", want: [] },
+];
+
+for (const { name, served: ids, query, want } of suggestionCases) {
+  test(`dishSuggestions: ${name}`, () => {
+    const meal = ids.map((id, i) => ({ served: served(`s${i}`, "2026-10-06", "dinner", id, 4, i), dish: library.find((d) => d.id === id) ?? chili }));
+    assert.deepEqual(
+      dishSuggestions(library, meal, query).map((d) => d.name),
+      want,
+    );
+  });
+}
+
+test("longDate: the day of a meal, the year in another year than that of today", () => {
+  assert.equal(longDate("2026-10-06", "2026-10-05"), "Mardi 6 octobre");
+  assert.equal(longDate("2026-10-01", "2026-10-05"), "Jeudi 1er octobre");
+  assert.equal(longDate("2027-01-04", "2026-10-05"), "Lundi 4 janvier 2027");
+  assert.equal(longDate("2025-10-06", "2026-10-05"), "Lundi 6 octobre 2025");
 });

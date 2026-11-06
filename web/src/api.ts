@@ -176,6 +176,46 @@ export function saveResponseOf(response: RawResponse): Outcome<SaveResponse> {
   return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
 }
 
+/** A dish served to a meal as the screen sends it: its parts are the size of the tribe (D9). */
+export interface ServeBody {
+  date: string;
+  mealtime: string;
+  dish: string;
+}
+
+/**
+ * The answer to a write of the meal plan (plan planning, D3, D19): the dish served (absent
+ * after a removal) and the version of meal_plan after the write; a dish already served, with
+ * the dishes of the meal as they are now; or a dish served unknown, removed in between. The
+ * dishes served are read by planning.ts.
+ */
+export type MealPlanWrite =
+  | { kind: "written"; servedDish: unknown; version: number }
+  | { kind: "already-served"; meal: unknown[] }
+  | { kind: "not-found" };
+
+/**
+ * Reads the response to a write of the meal plan. A body the contract does not foresee, and
+ * a refusal the screen cannot cause (400), are network errors, as for outcomeOf.
+ */
+export function mealPlanWriteOf(response: RawResponse): Outcome<MealPlanWrite> {
+  if (response !== "network-error" && isRecord(response.body)) {
+    const { status, body } = response;
+    const versions = body["versions"];
+    if ((status === 200 || status === 201) && isRecord(versions) && typeof versions["meal_plan"] === "number") {
+      return { kind: "ok", value: { kind: "written", servedDish: body["servedDish"], version: versions["meal_plan"] } };
+    }
+    if (status === 409 && body["error"] === "dish_already_served" && Array.isArray(body["meal"])) {
+      return { kind: "ok", value: { kind: "already-served", meal: body["meal"] as unknown[] } };
+    }
+    if (status === 404 && body["error"] === "not_found") {
+      return { kind: "ok", value: { kind: "not-found" } };
+    }
+  }
+  const outcome = outcomeOf(response);
+  return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -256,6 +296,29 @@ export class Api {
         ? await this.#send("POST", "api/dishes", body)
         : await this.#send("PUT", `api/dishes/${encodeURIComponent(existing.id)}`, { ...body, revision: existing.revision });
     const outcome = saveResponseOf(raw);
+    if (outcome.kind === "unauthorized") {
+      this.#options.onUnauthorized();
+    }
+    return outcome;
+  }
+
+  /** Serves a dish in a meal (R2), for the size of the tribe (D9). */
+  serveDish(body: ServeBody): Promise<Outcome<MealPlanWrite>> {
+    return this.#writeMealPlan("POST", "api/meal-plan", body);
+  }
+
+  /** Sets the servings of a dish served (R3), from 1 to 50: the last save wins (D3). */
+  setServings(id: string, servings: number): Promise<Outcome<MealPlanWrite>> {
+    return this.#writeMealPlan("PUT", `api/meal-plan/${encodeURIComponent(id)}/servings`, { servings });
+  }
+
+  /** Removes a dish served from its meal (R4). */
+  removeServedDish(id: string): Promise<Outcome<MealPlanWrite>> {
+    return this.#writeMealPlan("DELETE", `api/meal-plan/${encodeURIComponent(id)}`);
+  }
+
+  async #writeMealPlan(method: string, url: string, body?: unknown): Promise<Outcome<MealPlanWrite>> {
+    const outcome = mealPlanWriteOf((await this.#send(method, url, body)).raw);
     if (outcome.kind === "unauthorized") {
       this.#options.onUnauthorized();
     }

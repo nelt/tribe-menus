@@ -2,7 +2,7 @@
 
 - **Nom** : `planning`
 - **Date** : 2026-11-05
-- **Statut** : en cours (lot C). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
+- **Statut** : en cours (lot D fait ; recette et release ensuite). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
 
 ## Objectif
 
@@ -75,16 +75,16 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 ### Lot C : planning de la semaine (`feature/planning-sept-jours` ; `feature/planning-semaine`, prévu, contient « main », refusé au push par `.claude/settings.json`)
 
 - [x] **13. `web/src/meal-plan.ts`**, module pur testé par `node:test` : date du jour de l'appareil (D4), plage de 7 jours et ses voisines, titre de la plage (« 5 – 11 octobre », « 28 septembre – 4 octobre », « 29 décembre 2026 – 4 janvier 2027 »), cases de repas d'une plage à partir des plats servis et de la bibliothèque, total des parts d'un repas.
-- [x] **14. Copie du planning** : `web/src/planning.ts`, une copie générique de la collection `meal_plan` (`collections.ts`, ADR 0029, point 4), vérifiée avec la bibliothèque à chaque visite du Planning ou d'un repas et à chaque retour au premier plan (D15) ; mise à jour par la réponse d'une écriture. Rien n'est écrit sur l'appareil.
+- [x] **14. Copie du planning** : `web/src/planning.ts`, une copie générique de la collection `meal_plan` (`collections.ts`, ADR 0029, point 4), vérifiée avec la bibliothèque à chaque visite du Planning ou d'un repas et à chaque retour au premier plan (D15) ; mise à jour par la réponse d'une écriture (*faite au lot D, avec les écritures, étape 19*). Rien n'est écrit sur l'appareil.
 - [x] **15. Écran Planning** d'après `Doux-Main`, à la place de l'accueil provisoire : en-tête (titre, pastille de la tribu vers l'écran Tribu), plage et ses flèches, « Revenir à aujourd'hui » (D8), « Aujourd'hui » sur le jour courant, cases de repas (liserés midi et soir, pilules des plats et leurs parts, case vide « + Ajouter »), chargement et erreur de réseau ; chemins `?du=AAAA-MM-JJ` (D14) ; changement de jour au retour au premier plan (D17). `home-screen.ts` disparaît.
 - [x] **16. « Se déconnecter »** en bas de l'écran Tribu, bouton au contour rouge tomate (D5), avec le test d'écran qui le suivait sur l'accueil.
 - [x] **17. R1 et R5 (navigation) sous Chromium et WebKit**, horloge de Playwright au lundi 5 octobre 2026, retirés de `pending.txt`.
 
 ### Lot D : détail d'un repas (`feature/planning-repas`)
 
-- [ ] **18. `meal-plan.ts`** : propositions de plats d'un repas (bibliothèque sans les plats déjà servis, Q21 ; ordre alphabétique sans recherche, résultats de `searchDishes` avec, D12), avec leurs tests.
-- [ ] **19. Écran d'un repas** d'après `Doux-Repas`, au chemin `repas/AAAA-MM-JJ/midi|soir` (D14) : jour et moment, total des parts, plats servis (initiale dans sa couleur, nom, « Défini pour N parts », stepper de parts, retrait), « Aucun plat pour ce repas », « Ajouter un plat » (recherche et propositions, phrase sur les plats déjà servis) ; parts enregistrées à chaque pas, le dernier seul envoyé après un enregistrement en cours (comme la taille de la tribu) ; messages de D3 (plat déjà servi, plat retiré entre-temps, la copie prenant le repas à jour) ; « Réseau nécessaire » (D13).
-- [ ] **20. R2 « Un plat déjà servi dans un repas ne m'est pas proposé » sous Chromium et WebKit**, retiré de `pending.txt`.
+- [x] **18. `meal-plan.ts`** : propositions de plats d'un repas (bibliothèque sans les plats déjà servis, Q21 ; ordre alphabétique sans recherche, résultats de `searchDishes` avec, D12), avec leurs tests.
+- [x] **19. Écran d'un repas** d'après `Doux-Repas`, au chemin `repas/AAAA-MM-JJ/midi|soir` (D14) : jour et moment, total des parts, plats servis (initiale dans sa couleur, nom, « Défini pour N parts », stepper de parts, retrait), « Aucun plat pour ce repas », « Ajouter un plat » (recherche et propositions, phrase sur les plats déjà servis) ; parts enregistrées à chaque pas, le dernier seul envoyé après un enregistrement en cours (comme la taille de la tribu) ; messages de D3 (plat déjà servi, plat retiré entre-temps, la copie prenant le repas à jour) ; « Réseau nécessaire » (D13). Avec, reportés des revues : la copie du planning mise à jour par la réponse d'une écriture (étape 14), sa vérification après un `409` (PR #88, point 1), le retrait d'un plat déjà retiré sans message (PR #87, point 3), la pastille de la tribu relue (PR #90, point 1).
+- [x] **20. R2 « Un plat déjà servi dans un repas ne m'est pas proposé » sous Chromium et WebKit**, retiré de `pending.txt`.
 
 ### Recette et release
 
@@ -222,6 +222,22 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 - **Lien vers le code source** (ADR 0011, point 2) : l'accueil provisoire le portait ; il passe en bas de l'écran Tribu, sous « Se déconnecter », pour rester accessible une fois connecté.
 - **Plage `?du=` égale à aujourd'hui** : affichée comme la racine (« À partir d'aujourd'hui ») ; les flèches qui y ramènent mènent à la racine, pour que le changement de jour (D17) la suive.
 - **Retour au premier plan** : l'application vérifie la copie du planning, avec la bibliothèque, dès qu'elle a été chargée, sinon la seule bibliothèque comme avant.
+
+**Lot D** (2026-11-05, Dev Container, `feature/planning-repas`), à valider à la revue :
+
+- **Écritures du planning** (étape 14, reportée du lot C) : `api.ts` lit les réponses des trois écritures (`mealPlanWriteOf`) ; `CachedCollection.applyWrite` et `put` savent retirer un élément par sa clé ; `planning.ts` prend le plat servi et la version, ou se vérifie si un autre membre a écrit entre-temps. `400 unknown_dish`, que l'écran ne peut provoquer (un plat n'est jamais supprimé), s'affiche comme une réponse imprévue : « Réseau nécessaire ».
+- **Après un `409 dish_already_served`** (revue de la PR #88, point 1) : la copie remplace les plats servis du repas par ceux de la réponse (ceux qu'elle ne contient plus en sont retirés), puis se vérifie ; un état d'écran le montre (`If-None-Match` sur l'ancienne version). Après un `404`, la copie retire le plat servi et se vérifie.
+- **Retrait d'un plat déjà retiré** (revue de la PR #87, point 3) : il disparaît sans message, état d'écran sur l'API simulée.
+- **Pastille de la tribu** (revue de la PR #90, point 1) : une lecture de la tribu impossible affiche le message de réseau et « Réessayer », qui relit la tribu avec les copies ; le retour au premier plan la relit tant qu'elle n'a pas été lue.
+- **Cases de repas** : des liens vers `repas/AAAA-MM-JJ/midi|soir`, nommés par leur jour, leur moment et leurs plats ; les étapes `@ui` ouvrent le repas par sa case.
+- **Lien « Planning » d'un repas** : la plage d'où l'on vient, gardée en mémoire par l'application ; ouvert par son chemin, la plage d'aujourd'hui si elle contient le repas, sinon celle qui commence à son jour (`planningAround`). Écarté : `?du=` dans le chemin d'un repas, que D14 ne prévoit pas.
+- **Écarts d'interprétation**, notés dans `docs/design/README.md` (« Réalisation du détail d'un repas ») : croix lue « Retirer « … » du repas », propositions lues « Ajouter … », « Aucun plat ne correspond » quand les seuls résultats d'une recherche sont déjà servis, bandeau gardé pendant la saisie d'une recherche.
+- **Chemin d'un repas illisible** (date hors de 2000 à 2099 ou inexistante, moment autre que `midi` ou `soir`) : le Planning d'aujourd'hui, comme un `?du=` illisible (D14).
+- **Commentaire d'en-tête de `tribe-screen.ts`** reformaté (revue de la PR #90, « pour information »).
+
+**Revue de la PR #91**, point à reprendre plus tard :
+
+- **Lignes des plats servis sans clé** (point 2, à vérifier à la séance de recette, étape 21) : `#served` (`meal-screen.ts`) rend les plats servis par `meal.map`, sans `repeat` sur l'identifiant du plat servi ; après un retrait, Lit réutilise les lignes par position : le focus de la croix passe au plat suivant, et un double toucher lent pourrait retirer le plat suivant une fois la première réponse arrivée. Non reproduit. À essayer au clavier et au double toucher ; si c'est confirmé, `repeat(meal, (d) => d.served.id, …)`.
 
 **Revue de la PR #87**, points à reprendre plus tard :
 

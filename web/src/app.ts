@@ -10,10 +10,11 @@ import { Library } from "./library.ts";
 import "./loading-screen.ts";
 import "./login-screen.ts";
 import type { SignedInEvent } from "./login-screen.ts";
-import type { Day } from "./meal-plan.ts";
+import "./meal-screen.ts";
+import { type Day, type Mealtime, today } from "./meal-plan.ts";
 import { Planning } from "./planning.ts";
 import "./planning-screen.ts";
-import { type Page, Router, pages, tabOf } from "./router.ts";
+import { type Page, Router, pages, planningAround, tabOf } from "./router.ts";
 import "./stepper.ts";
 import "./tab-bar.ts";
 import "./tribe-screen.ts";
@@ -42,6 +43,8 @@ export class App extends LitElement {
   readonly #library: Library;
   /** The meal plan in memory, checked with the library (plan planning, D15). */
   readonly #planning: Planning;
+  /** The range of the planning last shown, that the link back of a meal goes to (D14). */
+  #lastPlanning: Page | undefined;
 
   constructor() {
     super();
@@ -111,8 +114,20 @@ export class App extends LitElement {
           .api=${this.#api}
           .start=${page.start}
           .tribeHref=${this.#router.href(pages.tribe)}
+          .mealHref=${(date: Day, mealtime: Mealtime) => this.#router.href({ name: "meal", date, mealtime })}
           .go=${(start: Day | undefined) => this.#router.navigate(start === undefined ? pages.planning : { name: "planning", start })}
         ></mt-planning-screen>`;
+      case "meal":
+        return keyed(
+          `${page.date} ${page.mealtime}`,
+          html`<mt-meal-screen
+            .planning=${this.#planning}
+            .date=${page.date}
+            .mealtime=${page.mealtime}
+            .planningHref=${this.#router.href(this.#lastPlanning ?? planningAround(page.date, today()))}
+            .newDishHref=${this.#router.href(pages.newDish)}
+          ></mt-meal-screen>`,
+        );
       case "dishes":
         return html`<mt-dish-library
           .library=${this.#library}
@@ -176,6 +191,9 @@ export class App extends LitElement {
   /** Shows a page, or redirects: the login once signed in, the login without a session. */
   #show(page: Page) {
     this.page = page;
+    if (page.name === "planning") {
+      this.#lastPlanning = page;
+    }
     if (this.startup !== "done") {
       return;
     }
