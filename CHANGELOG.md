@@ -4,6 +4,8 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `planning` terminé (étape 23) : `v0.3.0` en production ; feuille de route (plan terminé, Safari et `304` sur `GET meal-plan` reportés), conception, `CLAUDE.md` (métier, paquet `internal/mealplan`, version en service).
+
 ## 0.3.0 — 2026-11-07
 
 - Recette de `planning` (R4, revue de la PR #91, point 2) : un double toucher lent sur la croix d'un plat servi ne retire plus aussi le plat suivant, et le retrait au clavier ne laisse plus le focus sur la croix du plat suivant : lignes des plats servis identifiées par leur plat servi, croix inactives pendant un retrait et 500 ms après.
