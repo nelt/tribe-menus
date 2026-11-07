@@ -290,7 +290,7 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 - **Copie des listes** : coche montrée aussitôt, puis la liste renvoyée ; un `409` fait vérifier la copie ; un `404` aussi, qui dit ensuite si la liste a été supprimée (D11) ou seulement l'article (D8) ; un ingrédient créé fait vérifier le référentiel, l'élément de liste ne portant pas son unité par défaut. Vérifiée à chaque visite de l'onglet et au retour au premier plan sur l'onglet Courses.
 - **CSP** : la politique de l'application (`default-src 'self'`) refuse les styles en ligne ; les barres de progression sont des `progress` natifs et les largeurs du squelette de chargement viennent de la feuille de style. Un test des écrans vérifie qu'aucun refus de la CSP n'apparaît.
 - **Laissé au lot E** : la pastille « N plats » est là, sans chevron ni dépliage ; « Ajouter les courses des repas » n'est pas encore sur l'écran d'une liste ; `courses/repas` mène pour l'instant à la liste principale (D15).
-- **Interprétations de l'écran** dans `docs/design/README.md`, « Réalisation de l'onglet Courses et du choix des listes ».
+- **Interprétations de l'écran** dans `docs/design/README.md`, « Réalisation de l'onglet Courses et du choix des listes » : les sept validées par le développeur le 2026-11-07, sur captures de l'écran réel.
 - **Preuves** : `shopping.test.ts`, `shopping-lists.test.ts` (copie et lecture des réponses), `router.test.ts` ; états des écrans sur l'API simulée (`e2e/ecrans-courses.spec.ts`) ; C1 « L'onglet Courses ouvre la liste principale » et C2 « Ordre des listes » sous Chromium et WebKit (`e2e/steps-shopping.ts`), retirés de `acceptance/pending.txt`.
 
 *(à compléter au fil des lots)*
