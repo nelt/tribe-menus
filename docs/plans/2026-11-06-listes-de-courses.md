@@ -230,6 +230,7 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 **Revue de la PR du plan (#92)**, 2026-11-06 :
 
 - **Point 4, à noter** : `received` grandit sans limite (environ 14 plats servis par semaine, 25 Ko par an et par liste), et avec lui le rechargement de toutes les listes à chaque coche (D4). Reporté dans « Questions ouvertes », « Croissance des listes » ; à mesurer en production, à reprendre au cadrage de `courses-suite`.
+- **Point 6 (vérification des corrections, 2026-11-07), à noter** : un changement sans effet sur les articles peut rendre une liste périmée, contre le scénario C8 « Un changement sans effet sur les articles ne rend pas la liste périmée » : une quantité réécrite dans une autre unité de sa famille (500 g en 0,5 kg), ou les parts changées d'un plat servi dont toutes les lignes sont sans quantité. Les données gardées (D5) suffisent pour comparer en unités de base ou comparer les quantités apportées ; règle de comparaison à fixer au cadrage de `courses-suite`, sans changer le format.
 - **Pour information, gardé pour `courses-suite`** : un ajout de courses fait à la mauvaise liste ne s'efface qu'en cochant puis en déclarant les courses faites, et ses plats servis restent reçus par cette liste (D12, Q22) ; acceptable en V1.
 
 *(à compléter au fil des lots)*
