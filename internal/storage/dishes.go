@@ -102,7 +102,7 @@ func (s *DishStore) Ingredients(ctx context.Context, after string, limit int) (i
 // increase by one each if it changed them.
 func (s *DishStore) Write(ctx context.Context, write func(dish.Tx) error) (collection.Versions, error) {
 	return writeCollections(ctx, s.db, []string{dish.DishesCollection, dish.IngredientsCollection}, func(q *tribedb.Queries) error {
-		return write(dishTx{q: q})
+		return write(dishTx{catalogTx{q: q}})
 	})
 }
 
@@ -115,6 +115,12 @@ func lineFromRow(amount sql.NullInt64, unit sql.NullString, name string, default
 }
 
 type dishTx struct {
+	catalogTx
+}
+
+// catalogTx finds and adds ingredients of the catalog, for the dishes and the shopping lists
+// (dish.Catalog).
+type catalogTx struct {
 	q *tribedb.Queries
 }
 
@@ -168,7 +174,7 @@ func (t dishTx) ColorCounts(ctx context.Context) (map[dish.Color]int, error) {
 	return counts, nil
 }
 
-func (t dishTx) Ingredient(ctx context.Context, normalized string) (dish.Ingredient, int64, bool, error) {
+func (t catalogTx) Ingredient(ctx context.Context, normalized string) (dish.Ingredient, int64, bool, error) {
 	r, err := t.q.IngredientByNormalizedName(ctx, normalized)
 	if errors.Is(err, sql.ErrNoRows) {
 		return dish.Ingredient{}, 0, false, nil
@@ -179,7 +185,7 @@ func (t dishTx) Ingredient(ctx context.Context, normalized string) (dish.Ingredi
 	return dish.Ingredient{Name: r.Name, DefaultUnit: dish.Unit(r.DefaultUnit.String)}, r.ID, true, nil
 }
 
-func (t dishTx) AddIngredient(ctx context.Context, ingredient dish.Ingredient, normalized string) (int64, error) {
+func (t catalogTx) AddIngredient(ctx context.Context, ingredient dish.Ingredient, normalized string) (int64, error) {
 	key, err := t.q.InsertIngredient(ctx, tribedb.InsertIngredientParams{
 		Name: ingredient.Name, NormalizedName: normalized, DefaultUnit: nullUnit(ingredient.DefaultUnit),
 	})
@@ -189,7 +195,7 @@ func (t dishTx) AddIngredient(ctx context.Context, ingredient dish.Ingredient, n
 	return key, nil
 }
 
-func (t dishTx) SetDefaultUnit(ctx context.Context, key int64, unit dish.Unit) error {
+func (t catalogTx) SetDefaultUnit(ctx context.Context, key int64, unit dish.Unit) error {
 	if err := t.q.SetDefaultUnit(ctx, tribedb.SetDefaultUnitParams{DefaultUnit: nullUnit(unit), ID: key}); err != nil {
 		return fmt.Errorf("set default unit: %w", err)
 	}
