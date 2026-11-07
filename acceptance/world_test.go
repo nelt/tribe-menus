@@ -71,6 +71,10 @@ type world struct {
 	kitchen  kitchenState
 	planning planningState
 	shopping shoppingState
+	// mealShopping is the state of the meal shopping scenarios; step, the number of the
+	// current step in the scenario, from 1.
+	mealShopping mealShoppingState
+	step         int
 }
 
 // loginState is what the login scenarios remember from step to step.
@@ -121,6 +125,7 @@ func (w *world) registerSteps(sc *godog.ScenarioContext) {
 	w.registerDishSteps(sc)
 	w.registerMealPlanSteps(sc)
 	w.registerShoppingSteps(sc)
+	w.registerMealShoppingSteps(sc)
 }
 
 // reset prepares the world of a new scenario.

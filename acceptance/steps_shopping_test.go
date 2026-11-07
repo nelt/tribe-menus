@@ -426,6 +426,7 @@ func (w *world) givenDishWithTable(ctx context.Context, name string, servings in
 		body.Ingredients = append(body.Ingredients, line)
 	}
 	_, err := w.ensureDish(ctx, name, body)
+	w.recordDish(name)
 	return err
 }
 
@@ -1264,8 +1265,14 @@ func (w *world) crossAccessList(ctx context.Context, action, name, slug string) 
 	if w.kitchen.foreign, err = attempt(string(target.ID)); err != nil {
 		return err
 	}
-	w.kitchen.unknown, err = attempt(strings.Repeat("0", len(target.ID)))
-	return err
+	if w.kitchen.unknown, err = attempt(strings.Repeat("0", len(target.ID))); err != nil {
+		return err
+	}
+	// Two 405 would look the same: each example must reach its route (revue #98).
+	if w.kitchen.unknown.Code == http.StatusMethodNotAllowed {
+		return fmt.Errorf("%s: no route, %s", action, w.kitchen.unknown.Body)
+	}
+	return nil
 }
 
 // crossAccessItem tries to check, then to remove, the item of another tribe by its

@@ -44,6 +44,7 @@ func TestShoppingRoutesNeedASession(t *testing.T) {
 		{"DELETE", "/api/shopping-lists/0123/items/0456", ""},
 		{"PUT", "/api/shopping-lists/0123/items/0456/checked", `{"checked":true}`},
 		{"POST", "/api/shopping-lists/0123/checkout", `{"items":[]}`},
+		{"POST", "/api/shopping-lists/0123/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`},
 	}
 	for _, slug := range []string{"martin", "dupont"} {
 		for _, r := range routes {
@@ -202,6 +203,13 @@ func TestShoppingErrors(t *testing.T) {
 		{"check without value", "PUT", lists + marche + "/items/" + pain + "/checked", `{}`, 400, `{"error":"bad_request"}`},
 		{"remove an item of another list", "DELETE", items + "/" + pain, "", 404, `{"error":"not_found"}`},
 		{"check out an unknown list", "POST", lists + unknown + "/checkout", `{"items":[]}`, 404, `{"error":"not_found"}`},
+		{"meal shopping of an unknown list", "POST", lists + unknown + "/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`, 404, `{"error":"not_found"}`},
+		{"period ending before its start", "POST", lists + courses + "/meal-shopping", `{"from":"2026-10-08","to":"2026-10-06"}`, 400, `{"error":"invalid_period"}`},
+		{"period of 32 days", "POST", lists + courses + "/meal-shopping", `{"from":"2026-10-06","to":"2026-11-06"}`, 400, `{"error":"period_too_long"}`},
+		{"period before 2000", "POST", lists + courses + "/meal-shopping", `{"from":"1999-12-31","to":"2000-01-06"}`, 400, `{"error":"invalid_date"}`},
+		{"period after 2099", "POST", lists + courses + "/meal-shopping", `{"from":"2099-12-28","to":"2100-01-01"}`, 400, `{"error":"invalid_date"}`},
+		{"period without end", "POST", lists + courses + "/meal-shopping", `{"from":"2026-10-06"}`, 400, `{"error":"invalid_date"}`},
+		{"period unreal", "POST", lists + courses + "/meal-shopping", `{"from":"2026-02-30","to":"2026-03-01"}`, 400, `{"error":"invalid_date"}`},
 		{"no reading route for a list", "GET", lists + marche, "", 404, `{"error":"not_found"}`},
 		{"no change of a list but its name", "PUT", lists + marche, `{"name":"Drive"}`, 405, ""},
 	}
@@ -223,6 +231,68 @@ func TestShoppingErrors(t *testing.T) {
 	rec = f.do("GET", "/tribes/martin/api/shopping-lists", "", alice)
 	if rec.Header().Get("ETag") != `"shopping_lists-2"` {
 		t.Errorf("lists changed by refused writes: %v %s", rec.Header(), rec.Body)
+	}
+}
+
+// TestMealShopping: the shopping of the meals of a period (C4, C5), its quantities in the
+// smallest unit of their family, the served dishes added and ignored (Q22).
+func TestMealShopping(t *testing.T) {
+	f := newAPIFixture(t)
+	alice := f.signIn(t, "martin", "alice@exemple.fr")
+	courses := f.mainList(t, "martin", alice).ID
+	rec := f.do("POST", "/tribes/martin/api/dishes", `{"name":"Chili con carne","servings":4,"ingredients":[`+
+		`{"name":"bœuf haché","quantity":"0.5","unit":"kg"},{"name":"oignon","quantity":"1","unit":"piece"},{"name":"sel"}]}`, alice)
+	wantStatus(t, rec, http.StatusCreated)
+	chili := decode[savedResponse](t, rec).Dish.ID
+	var served []string
+	for _, b := range []string{
+		`{"date":"2026-10-06","mealtime":"dinner","dish":"` + chili + `","servings":3}`,
+		`{"date":"2026-10-08","mealtime":"lunch","dish":"` + chili + `","servings":4}`,
+		`{"date":"2026-10-13","mealtime":"dinner","dish":"` + chili + `","servings":4}`,
+	} {
+		rec := f.do("POST", "/tribes/martin/api/meal-plan", b, alice)
+		wantStatus(t, rec, http.StatusCreated)
+		served = append(served, decode[struct {
+			ServedDish struct {
+				ID string `json:"id"`
+			} `json:"servedDish"`
+		}](t, rec).ServedDish.ID)
+	}
+
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`, alice)
+	wantStatus(t, rec, http.StatusOK)
+	got := decode[mealShoppingResponse](t, rec)
+	if got.Added != 2 || got.Ignored != 0 || got.Versions["shopping_lists"] != 1 || len(got.List.Received) != 2 {
+		t.Errorf("response %s", rec.Body)
+	}
+	var lines []string
+	for _, it := range got.List.Items {
+		line := fmt.Sprintf("%s %s %s manual=%v", it.Ingredient, it.Quantity, it.Unit, it.Manual)
+		for _, s := range it.Sources {
+			line += fmt.Sprintf(" | %s %s %d %s %s", s.Date, s.Mealtime, s.Servings, s.Quantity, s.Unit)
+		}
+		lines = append(lines, line)
+	}
+	want := []string{
+		"bœuf haché 875 g manual=false | 2026-10-06 dinner 3 375 g | 2026-10-08 lunch 4 500 g",
+		"oignon 2 piece manual=false | 2026-10-06 dinner 3 0.75 piece | 2026-10-08 lunch 4 1 piece",
+		"sel   manual=false | 2026-10-06 dinner 3   | 2026-10-08 lunch 4  ",
+	}
+	if strings.Join(lines, "\n") != strings.Join(want, "\n") {
+		t.Errorf("items\n%s\nwant\n%s", strings.Join(lines, "\n"), strings.Join(want, "\n"))
+	}
+	if s := got.List.Items[0].Sources[0]; s.ServedDish != served[0] || s.Dish != chili {
+		t.Errorf("source %+v", s)
+	}
+	if lists := f.lists(t, "martin", alice); fmt.Sprint(lists[0]) != fmt.Sprint(got.List) {
+		t.Errorf("read back %+v\nreturned %+v", lists[0], got.List)
+	}
+
+	// Again, with the next week: the two served dishes received are ignored.
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/meal-shopping", `{"from":"2026-10-06","to":"2026-10-13"}`, alice)
+	wantStatus(t, rec, http.StatusOK)
+	if got := decode[mealShoppingResponse](t, rec); got.Added != 1 || got.Ignored != 2 || got.List.Items[0].Quantity != "1375" {
+		t.Errorf("again %s", rec.Body)
 	}
 }
 
@@ -283,6 +353,22 @@ func TestShoppingLimits(t *testing.T) {
 		t.Errorf("checked out %d, %d left", done.Removed, len(done.List.Items))
 	}
 	over := `{"items":["` + strings.Repeat("0", maxCheckoutBodyBytes) + `"]}`
+	// 299 items, then a dish of two ingredients served: refused in full (D12).
+	for _, id := range ids[:299] {
+		if _, err := db.Exec("INSERT INTO shopping_items VALUES (?, ?, 1, NULL, NULL, 0, 1)", id, courses); err != nil {
+			t.Fatal(err)
+		}
+	}
+	chili := f.createDish(t, "martin", "Chili con carne", alice)
+	wantStatus(t, f.do("PUT", "/tribes/martin/api/dishes/"+chili, `{"revision":1,"name":"Chili con carne","servings":4,"ingredients":[{"name":"oignon"},{"name":"sel"}]}`, alice), http.StatusOK)
+	wantStatus(t, f.do("POST", "/tribes/martin/api/meal-plan", serveBody("2026-10-06", "dinner", chili), alice), http.StatusCreated)
+	before := f.lists(t, "martin", alice)
+	if rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/meal-shopping", `{"from":"2026-10-06","to":"2026-10-06"}`, alice); rec.Code != 409 || strings.TrimSpace(rec.Body.String()) != `{"error":"too_many_items"}` {
+		t.Errorf("meal shopping to 301 items: %d %s", rec.Code, rec.Body)
+	}
+	if after := f.lists(t, "martin", alice); fmt.Sprint(after) != fmt.Sprint(before) {
+		t.Errorf("lists changed by a refused meal shopping")
+	}
 	if rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/checkout", over, alice); rec.Code != 400 {
 		t.Errorf("checkout over 16 KiB: %d", rec.Code)
 	}
@@ -343,6 +429,7 @@ func TestShoppingListsOfAnotherTribe(t *testing.T) {
 		{"DELETE", "shopping-lists/%s", ""},
 		{"POST", "shopping-lists/%s/items", `{"ingredient":"pain"}`},
 		{"POST", "shopping-lists/%s/checkout", `{"items":[]}`},
+		{"POST", "shopping-lists/%s/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`},
 		{"PUT", "shopping-lists/" + courses + "/items/%s/checked", `{"checked":true}`},
 		{"DELETE", "shopping-lists/" + courses + "/items/%s", ""},
 	}

@@ -1,6 +1,6 @@
 # Conception : listes de courses
 
-- **Mise à jour** : 2026-11-07 (lot B)
+- **Mise à jour** : 2026-11-07 (lot C)
 - **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; noms du serveur des listes et des articles fixés par le lot B, ceux du calcul par le lot C ; à tenir à jour par les plans qui touchent ce domaine (`courses-suite`, hors-ligne)
 - **Stories** : C1 à C6, C11, C12 ; P2 pour le calcul ; T1 et ENF-02 pour les listes. C7 à C10 sont prévues par le modèle, pas réalisées.
 
@@ -141,19 +141,21 @@ classDiagram
             +InsertItem(ctx, ListID, Item, ingredient)
             +SetChecked(ctx, ItemID, bool)
             +DeleteItem(ctx, ItemID)
-            +ServedDishes(ctx, Period) []ServedDish, lot C
-            +Dishes(ctx, []DishID) []Dish et lignes, lot C
+            +ServedDishes(ctx, Period) []Served, avec parts de référence et lignes du plat
+            +UpdateItem(ctx, Item)
+            +InsertSource(ctx, ItemID, Source)
+            +InsertReceived(ctx, ListID, Served) et lignes du plat
         }
         class compute {
             <<functions>>
-            +AddMealShopping(List, []ServedDish, []Dish) List, added, ignored
-            +Contribution(line, servings, reference) Quantity
+            addMealShopping(List, []Served, newID) liste, changements, added, ignored
+            +Contribution(Quantity, servings, reference) Quantity
             +RoundItem(Quantity) Quantity
         }
         class rules {
             <<functions>>
             +ParseListName(string) string
-            +ParsePeriod(from, to) Period, lot C
+            +ParsePeriod(from, to) Period
             +SortItems([]Item)
             MaxListNameLength, MaxLists, MaxItems
         }
@@ -161,7 +163,7 @@ classDiagram
             <<variables>>
             ErrListNameEmpty, ErrListNameInvalid, ErrListNameTooLong
             ErrTooManyLists, ErrTooManyItems
-            ErrInvalidPeriod, ErrPeriodTooLong
+            ErrInvalidDate, ErrInvalidPeriod, ErrPeriodTooLong
             NotEmptyError, ErrMainList, ErrComputedItem, ErrNotFound
             ItemError, code de dish.ErrorCode
         }
@@ -172,6 +174,12 @@ classDiagram
             Unit, Family, Quantity, ParseQuantity
             NormalizeName (Q29), CleanName (D30)
             ParseLine, ResolveIngredient (Q13, Q20)
+        }
+    }
+    namespace internal_mealplan {
+        class mealplan_rules {
+            <<réutilisé>>
+            ParseDate (Q35)
         }
     }
     namespace internal_storage {
@@ -232,6 +240,7 @@ classDiagram
     Lists ..> errors
     compute ..> quantities
     rules ..> quantities
+    rules ..> mealplan_rules
     ShoppingStore ..|> Store
     ShoppingStore ..> tables
     ShoppingListScreen --> shopping_lists_ts
@@ -244,7 +253,7 @@ classDiagram
     CachedCollection~T~ ..> shoppingAPI : HTTP JSON, pages, ETag
 ```
 
-- **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles, les quantités, le nom normalisé, la règle des noms (`CleanName`), celle d'une ligne saisie (`ParseLine`) et la résolution d'un ingrédient dans le référentiel (`ResolveIngredient`, sur l'interface `dish.Catalog`), communes aux plats et aux articles ajoutés ; pas de `internal/mealplan` : le `Tx` lui rend les plats servis de la période. Le `Tx` écrit par opérations ciblées (une liste, un article, une coche), lues puis vérifiées par `Lists` ; le lot C y ajoute ce qu'écrit le calcul.
+- **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles et leur facteur (`Unit.Factor`), les quantités, le nom normalisé, la règle des noms (`CleanName`), celle d'une ligne saisie (`ParseLine`) et la résolution d'un ingrédient dans le référentiel (`ResolveIngredient`, sur l'interface `dish.Catalog`), communes aux plats et aux articles ajoutés ; de `internal/mealplan` pour la seule règle des dates (`ParseDate`), le `Tx` lui rendant les plats servis de la période. Le `Tx` écrit par opérations ciblées (une liste, un article, une coche, une provenance, un plat servi reçu), lues puis vérifiées par `Lists` ; le calcul pur rend la liste après, les articles créés ou changés avec les provenances qu'ils gagnent, et les plats servis reçus, que `Lists` écrit. Table de cas des quantités apportées et des arrondis : `internal/shopping/testdata/meal-shopping.json`, lue par `go test` et par `shopping.ts` (lot E).
 - **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. Une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`. Supprimer une liste supprime ses plats servis reçus et leurs lignes ; retirer un article, ses provenances.
 - **`internal/collection`** : inchangé ; `GET shopping-lists` passe par `Serve`.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
@@ -263,7 +272,7 @@ classDiagram
 | `DELETE shopping-lists/{id}/items/{item}` | | 200 : `{ list, versions }` ; 409 `computed_item` ; 404, liste supprimée entre-temps ou article inconnu (l'écran le traite comme un retrait fait, D11) |
 | `PUT shopping-lists/{id}/items/{item}/checked` | `{ checked }` | 200 : `{ list, versions }` ; 400 `bad_request` sans `checked` ; 404 |
 | `POST shopping-lists/{id}/checkout` | `{ items: [ItemID] }`, ceux vus cochés | 200 : `{ list, removed, versions }` (D9) ; 404 |
-| `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }` ; 400 `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
+| `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }`, versions inchangées sans plat servi ajouté ; 400 `invalid_date`, `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
 
 Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }`, ses articles dans l'ordre de Q40 (`SortItems` : non cochés puis cochés, nom normalisé, avec quantité avant sans quantité, calculé avant ajouté, puis identifiant pour un ordre stable) ; un article (`Item`) : `{ id, ingredient, quantity?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, quantity?, unit? }] }`.
 
@@ -273,7 +282,7 @@ Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Con
 
 - **`404` identique** pour une liste ou un article inconnu, supprimé entre-temps ou d'une autre tribu (ENF-02).
 - **Écritures sur une liste** : la réponse porte la liste entière à jour, que la copie prend ; un `409 list_not_empty` aussi.
-- **`from`, `to`** : `AAAA-MM-JJ`, dates réelles de 2000-01-01 à 2099-12-31 (Q35) ; `to` au plus tôt `from` (`invalid_period`), 31 jours au plus (`period_too_long`, D12). Le serveur ne connaît pas « aujourd'hui » : la période par défaut est calculée par l'appareil (D24).
+- **`from`, `to`** : `AAAA-MM-JJ`, dates réelles de 2000-01-01 à 2099-12-31 (Q35, `invalid_date` sinon, comme le planning) ; `to` au plus tôt `from` (`invalid_period`), 31 jours au plus (`period_too_long`, D12). Le serveur ne connaît pas « aujourd'hui » : la période par défaut est calculée par l'appareil (D24).
 
 ## Données dans le navigateur
 
@@ -311,7 +320,7 @@ sequenceDiagram
     alt plus de 300 articles
         A-->>L: 409 too_many_items, rien d'écrit
     else
-        K->>D: SaveList : articles, provenances,<br/>plats servis reçus et leurs lignes (D5)
+        K->>D: articles créés ou changés, provenances,<br/>plats servis reçus et leurs lignes (D5)
         K->>D: COMMIT, shopping_lists passe de 31 à 32
         A-->>L: 200, la liste à jour, added 4, ignored 1, versions
         L->>L: applyWrite : 32 suit 31

@@ -1,0 +1,33 @@
+{
+  "comment": "Table of cases of the meal shopping (C4, C5, Q37, D7), read by go test (internal/shopping, Contribution and RoundItem); web/src/shopping.ts reads it for the contributed quantities of the unfolded lines (plan courses, lot E). A contribution is the quantity of a line of a dish × servings ÷ servings of reference, rounded up to the base unit, in the smallest unit of its family; an item adds the contributions of its sources, then rounds up to the whole smallest unit: gram, millilitre, piece, spoon, pinch. Quantities are written as the API writes them: a dot, no useless zero.",
+  "contributions": [
+    { "quantity": "500", "unit": "g", "servings": 4, "dishServings": 4, "contributed": "500", "contributedUnit": "g" },
+    { "quantity": "500", "unit": "g", "servings": 3, "dishServings": 4, "contributed": "375", "contributedUnit": "g" },
+    { "quantity": "500", "unit": "g", "servings": 6, "dishServings": 4, "contributed": "750", "contributedUnit": "g" },
+    { "quantity": "500", "unit": "g", "servings": 1, "dishServings": 3, "contributed": "166.667", "contributedUnit": "g" },
+    { "quantity": "0.125", "unit": "kg", "servings": 1, "dishServings": 50, "contributed": "2.5", "contributedUnit": "g" },
+    { "quantity": "1.5", "unit": "kg", "servings": 2, "dishServings": 4, "contributed": "750", "contributedUnit": "g" },
+    { "quantity": "1", "unit": "piece", "servings": 3, "dishServings": 4, "contributed": "0.75", "contributedUnit": "piece" },
+    { "quantity": "1", "unit": "piece", "servings": 6, "dishServings": 4, "contributed": "1.5", "contributedUnit": "piece" },
+    { "quantity": "1", "unit": "piece", "servings": 1, "dishServings": 3, "contributed": "0.334", "contributedUnit": "piece" },
+    { "quantity": "50", "unit": "cl", "servings": 4, "dishServings": 4, "contributed": "500", "contributedUnit": "ml" },
+    { "quantity": "1", "unit": "l", "servings": 4, "dishServings": 4, "contributed": "1000", "contributedUnit": "ml" },
+    { "quantity": "1", "unit": "l", "servings": 1, "dishServings": 3, "contributed": "334", "contributedUnit": "ml" },
+    { "quantity": "1", "unit": "tablespoon", "servings": 6, "dishServings": 4, "contributed": "1.5", "contributedUnit": "tablespoon" },
+    { "quantity": "2", "unit": "teaspoon", "servings": 4, "dishServings": 4, "contributed": "2", "contributedUnit": "teaspoon" },
+    { "quantity": "1", "unit": "pinch", "servings": 1, "dishServings": 4, "contributed": "0.25", "contributedUnit": "pinch" },
+    { "quantity": "999999", "unit": "kg", "servings": 50, "dishServings": 1, "contributed": "49999950000", "contributedUnit": "g" }
+  ],
+  "items": [
+    { "contributions": ["375", "500"], "unit": "g", "quantity": "875" },
+    { "contributions": ["166.667"], "unit": "g", "quantity": "167" },
+    { "contributions": ["0.001"], "unit": "g", "quantity": "1" },
+    { "contributions": ["0.75", "1"], "unit": "piece", "quantity": "2" },
+    { "contributions": ["0.5", "0.5"], "unit": "piece", "quantity": "1" },
+    { "contributions": ["500", "1000"], "unit": "ml", "quantity": "1500" },
+    { "contributions": ["334"], "unit": "ml", "quantity": "334" },
+    { "contributions": ["1.5"], "unit": "tablespoon", "quantity": "2" },
+    { "contributions": ["2"], "unit": "teaspoon", "quantity": "2" },
+    { "contributions": ["0.25", "0.25", "0.25"], "unit": "pinch", "quantity": "1" }
+  ]
+}
