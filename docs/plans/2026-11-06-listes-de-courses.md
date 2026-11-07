@@ -293,4 +293,9 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 - **Interprétations de l'écran** dans `docs/design/README.md`, « Réalisation de l'onglet Courses et du choix des listes » : les sept validées par le développeur le 2026-11-07, sur captures de l'écran réel.
 - **Preuves** : `shopping.test.ts`, `shopping-lists.test.ts` (copie et lecture des réponses), `router.test.ts` ; états des écrans sur l'API simulée (`e2e/ecrans-courses.spec.ts`) ; C1 « L'onglet Courses ouvre la liste principale » et C2 « Ordre des listes » sous Chromium et WebKit (`e2e/steps-shopping.ts`), retirés de `acceptance/pending.txt`.
 
+**Revue de la PR #100**, 2026-11-07 :
+
+- **Point 1, corrigé** : une coche qui échoue sans réseau ne remet plus la liste entière d'avant, ce qui effaçait une coche réussie entre-temps ; seul l'article touché revient, et seulement si aucune réponse de l'API ne l'a remplacé depuis. Tests dans `shopping-lists.test.ts`.
+- **Pour information** : `versions` réduites vérifiées pour les autres clients ; « Courses faites » juste après une coche, conforme à D9 ; `npm test` sous Node 22 hors de `.nvmrc`.
+
 *(à compléter au fil des lots)*
