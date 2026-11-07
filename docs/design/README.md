@@ -324,13 +324,22 @@ Le bandeau d'avertissement n'a pas de bouton de fermeture : il disparaît à l'a
 
 **Réalisation de l'onglet Courses et du choix des listes** (plan `courses`, lot D, 2026-11-07), validée par le développeur le 2026-11-07, sur captures de l'écran réel :
 
-- **Article calculé, avant le lot E** : pastille « N plats » et quantité, sans chevron ni dépliage ; « Ajouter les courses des repas » n'est pas encore sur l'écran d'une liste. Le lot E ajoute l'un et l'autre.
+- **Article calculé, avant le lot E** : pastille « N plats » et quantité, sans chevron ni dépliage ; « Ajouter les courses des repas » n'est pas encore sur l'écran d'une liste. *Le lot E ajoute l'un et l'autre (ci-dessous).*
 - **Barres de progression** : un élément `progress` natif, masqué aux lecteurs d'écran (le texte « 3 sur 8 articles » le dit) ; la CSP de l'application refuse tout style en ligne, une largeur posée par l'écran ne s'appliquerait pas.
 - **Feuilles** : des `dialog` modaux, fermés par « Fermer » ou « Annuler », la touche Échap ou un toucher sur le voile.
 - **Formulaire d'un article** : libellé « Article » au-dessus de la combobox, propositions sous le champ, comme `Doux-ArticleMain` ; la liste des unités annonce « Choisir » une quantité saisie, l'unité par défaut de l'ingrédient (ou « — ») sans quantité ; Entrée dans la combobox choisit une proposition et n'envoie pas le formulaire, comme l'écran d'un plat.
 - **Coche** : l'article descend aussitôt, avant la réponse ; sans réseau, il revient à sa place, avec « Réseau nécessaire ».
 - **Feuille « ⋮ » sans réseau** : elle se ferme, et le bandeau « Réseau nécessaire » s'affiche en haut du choix des listes, comme la maquette ; le formulaire « Nouvelle liste », lui, garde sa saisie.
 - **Liste créée** : elle s'ouvre aussitôt, à son chemin ; « Retour à la liste » mène à la dernière liste affichée.
+
+**Réalisation des courses des repas et du dépliage** (plan `courses`, lot E, 2026-11-07), à valider à la revue :
+
+- **Écran des courses des repas** : sans barre d'onglets, comme la maquette ; « Ajouter à « … » » termine l'écran, dans le flux, au lieu d'être fixé en bas : fixé, il recouvrait la destination sur un petit écran. L'écran attend les copies des listes, du planning et de la bibliothèque, avec des cases vides lues « Chargement des repas » ; chargement impossible : « Le réseau est lent ou absent. Réessayez. » et « Réessayer ».
+- **Champs « Du » et « Au »** : jour en court, « mar. 6 oct. », sans l'année ; seul « Au » passe en erreur. Le champ actif est lu « pressé ».
+- **Calendrier** : un jour est lu « mardi 6 octobre, repas planifiés, aujourd'hui » ; les jours passés sont grisés et restent touchables ; les flèches s'éteignent en janvier 2000 et en décembre 2099.
+- **Destination** : une liste inconnue dans `?liste=` donne la liste principale ; la feuille dit « 8 articles », « 1 article » ou « vide ».
+- **Refus et réseau** : « 300 articles » et « Réseau nécessaire » en bandeau d'erreur en haut de l'écran, la période gardée ; une liste supprimée entre-temps ouvre la liste principale avec son bandeau (D11). Après l'ajout, la liste remplace l'écran des courses des repas dans l'historique : « Retour » ne le rouvre pas.
+- **Dépliage** : toute la ligne d'un article calculé, hors la case à cocher, est un bouton (`aria-expanded`), lu « bœuf haché, 875 g, 2 plats. Afficher les repas » ; les lignes dépliées forment la liste « Repas de bœuf haché », dans l'ordre des repas, puis des noms des plats. La quantité apportée est arrondie au centième **supérieur** hors masses et volumes (« 0,334 pièce » devient « 0,34 pièce »), comme les autres arrondis de Q37, puis montrée dans la plus grande unité de sa famille (« 50 cl ») ; table de cas commune à Go et TypeScript. Une provenance dont le plat manque à la copie de la bibliothèque attend la vérification suivante, comme une case du planning.
 
 **Messages des listes de courses** (Q38, Q39, D2), en rouge tomate avec l'icône d'erreur, sous le champ concerné ou en haut de l'écran ; l'écran reste en l'état :
 

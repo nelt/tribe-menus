@@ -2,7 +2,7 @@
 
 - **Nom** : `courses`
 - **Date** : 2026-11-06
-- **Statut** : en cours (lot D). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
+- **Statut** : en cours (lot E). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
 
 ## Objectif
 
@@ -298,5 +298,13 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 - **Point 1, corrigé** : une coche qui échoue sans réseau ne remet plus la liste entière d'avant, ce qui effaçait une coche réussie entre-temps ; seul l'article touché revient, et seulement si aucune réponse de l'API ne l'a remplacé depuis. Tests dans `shopping-lists.test.ts`.
 - **Pour information** : `versions` réduites vérifiées pour les autres clients ; « Courses faites » juste après une coche, conforme à D9 ; `npm test` sous Node 22 hors de `.nvmrc`.
 - **Remarqué en passant, à reprendre au plan hors-ligne** (décision du développeur, 2026-11-07) : pendant qu'une coche attend sa réponse, la réponse à une autre écriture remplace la liste entière ; l'article en attente s'affiche un instant dans son état d'avant, jusqu'à sa propre réponse. Rien n'est perdu. La file des coches du plan hors-ligne (C7) devra garder les coches en attente par-dessus les listes reçues.
+
+**Lot E** (`feature/ecran-courses-des-repas`), 2026-11-07, Dev Container, à valider à la revue :
+
+- **Table de cas** `meal-shopping.json` : chaque quantité apportée et chaque article reçoivent `shown`, leur quantité affichée, lue par `shopping.test.ts` (notes du lot C). Interprétation de D7 : « au centième » arrondit vers le haut, comme les autres arrondis de Q37 (« 0.334 » `piece` donne « 0,34 pièce ») ; la quantité arrondie est ensuite montrée dans la plus grande unité de sa famille, comme un article (« 500 » `ml` donne « 50 cl »). L'affichage lit désormais une quantité de l'API sans la borne de six chiffres d'une saisie : un article calculé peut la dépasser (Q31, 50 parts).
+- **Copie des listes vérifiée avec la bibliothèque** (étape 18) : `ShoppingLists.check()` lit les deux copies à la fois, comme `Planning.check()` ; le catalogue n'est plus vérifié à part par l'écran d'une liste. Après un refus ou un `404`, seule la copie des listes se vérifie.
+- **Écran des courses des repas** : `meal-shopping-screen.ts` ; il vérifie aussi la copie du planning, qui porte les points du calendrier, le résumé de la période et les plats servis déjà reçus. Chemin `courses/repas?liste=<id>` ; un identifiant illisible ou inconnu donne la liste principale. Après l'ajout, la liste de destination remplace l'écran dans l'historique, avec le bandeau vert.
+- **Interprétations de l'écran** dans `docs/design/README.md`, « Réalisation des courses des repas et du dépliage », dont le bouton d'ajout dans le flux de l'écran plutôt que fixé en bas.
+- **Preuves** : `shopping.test.ts`, `shopping-lists.test.ts`, `router.test.ts` ; états des écrans sur l'API simulée (`e2e/ecrans-courses-repas.spec.ts`) ; C4 « Période et liste par défaut », « La date de fin ne peut pas précéder la date de début », C5 « Déplier un article… » et « Un article ajouté ne se déplie pas » sous Chromium et WebKit (`e2e/steps-shopping.ts`), retirés de `acceptance/pending.txt`.
 
 *(à compléter au fil des lots)*
