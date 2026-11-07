@@ -87,7 +87,7 @@ Le 2026-11-05, avec le développeur, après `v0.2.0`.
 
 Le 2026-11-06, avec le développeur, pendant la recette de `planning`.
 
-- **Les listes de courses en deux plans.** `courses` d'abord (C1 à C6, C11, C12), livré seul en `v0.4.0` : on fait ses courses avec la liste. `courses-suite` ensuite (C8 à C10 : liste périmée et recalcul, sélection, déplacement, nouvelle liste à partir d'une sélection), en `v0.5.0` ; le modèle de `courses` le prévoit (`courses`, D5).
+- **Les listes de courses en deux plans.** `courses` d'abord (C1 à C6, C11, C12), livré seul en `v0.4.0` : on fait ses courses avec la liste. `courses-suite` ensuite (C8 à C10 : liste périmée et recalcul, sélection, déplacement, nouvelle liste à partir d'une sélection), en `v0.5.0` (`v0.6.0` depuis le 2026-11-07) ; le modèle de `courses` le prévoit (`courses`, D5).
 - **Le hors-ligne des listes reste au plan hors-ligne** (C7, `courses`, D2), malgré l'usage au supermarché : une liste affichée reste lisible, mais cocher demande le réseau. Le plan hors-ligne passe donc avant l'invitation de la famille.
 
 Le 2026-11-07, avec le développeur.
