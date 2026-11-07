@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-11-05
+- **Mise à jour** : 2026-11-06
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -33,6 +33,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
 | `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | terminé |
+| `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | prêt |
 
 ### `production` : application prête pour la production
 
@@ -56,6 +57,10 @@ Deuxième plan du métier, pour une application viable à montrer : le Planning 
 
 Terminé le 2026-11-07 : recette sur l'archive de la PR de release (#93), un défaut corrigé par #94 (retrait d'un plat servi au double toucher et au clavier), puis un second passage ; **`v0.3.0` en production le 2026-11-07**. Safari sur iPhone reste à vérifier, faute d'appareil.
 
+### `courses` : listes de courses
+
+Troisième plan du métier, qui complète l'application viable à montrer : onglet Courses actif sur la liste principale, « Courses », créée dans chaque tribu par la migration `0009` (C1) ; choix des listes : création, renommage, liste principale, suppression d'une liste vide (C2, C12) ; articles à la main, sur le référentiel (C3) ; courses des repas d'une période, calculées par le serveur à partir du planning et de la bibliothèque, plats servis déjà reçus ignorés, ligne dépliable vers ses plats et repas (C4, C5, P2) ; coches et courses faites sur les articles vus cochés (C6, C11). Pas de hors-ligne (D2) : la liste affichée reste lisible, mais cocher demande le réseau. Conception dans `conception/listes-de-courses.md`. Cinq lots (specs et design, listes et articles, courses des repas, onglet Courses et choix des listes, courses des repas à l'écran), puis la release `v0.4.0`. Cadré le 2026-11-06 ; rien des lots B à E n'est fusionné avant l'étiquette `v0.3.0` (D21). *`v0.3.0` posée le 2026-11-07 : le plan peut avancer.*
+
 ## Décisions d'ordonnancement
 
 Le 2026-10-04, avec le développeur.
@@ -75,13 +80,18 @@ Le 2026-11-05, avec le développeur, après `v0.2.0`.
 - **Le fonctionnel passe avant la sauvegarde hors site.** Il s'agit de pouvoir montrer une application viable (planning des repas, listes de courses) ; la sauvegarde hors site et la reconstruction du serveur avec des données suivent, au plus tard avant d'inviter la famille. D'ici là, les données de production (la tribu du développeur et ses plats) n'ont que les instantanés de PulseHeberg et ceux de `tribe-menus-deploy`, sur le même disque (ADR 0025, point 4).
 - **Le planning, puis les listes de courses, en deux plans.** `planning` d'abord, livré seul en `v0.3.0` : il est utilisable sans les listes, qui s'appuient sur lui (plats servis, parts). Les listes de courses suivent dans leur propre plan.
 
+Le 2026-11-06, avec le développeur, pendant la recette de `planning`.
+
+- **Les listes de courses en deux plans.** `courses` d'abord (C1 à C6, C11, C12), livré seul en `v0.4.0` : on fait ses courses avec la liste. `courses-suite` ensuite (C8 à C10 : liste périmée et recalcul, sélection, déplacement, nouvelle liste à partir d'une sélection), en `v0.5.0` ; le modèle de `courses` le prévoit (`courses`, D5).
+- **Le hors-ligne des listes reste au plan hors-ligne** (C7, `courses`, D2), malgré l'usage au supermarché : une liste affichée reste lisible, mais cocher demande le réseau. Le plan hors-ligne passe donc avant l'invitation de la famille.
+
 ## Ensuite, sans ordre arrêté
 
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **Métier, suite** : listes de courses, après `planning` (décision du 2026-11-05), leurs collections servies par le mécanisme générique de versions et d'ETag (`bibliotheque`, D28 ; ADR 0029) ; avec elles, les derniers scénarios de compartimentage des données métier (ENF-02), et P2 « La modification d'un plat s'applique aux repas où il est servi ».
-- **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes.
+- **`courses-suite`**, après `courses` (décision du 2026-11-06) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection` ; `v0.5.0`. Nom réservé, plan à cadrer.
+- **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes ; consultation et coches des listes de courses sans réseau, rejeu au retour du réseau (C7, Q16, Q18) ; avant d'inviter la famille (décision du 2026-11-06).
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
 - **Sauvegarde hors site** par Litestream (ADR 0007, point 3), à décider avant `v0.2.0` : jusque-là, le niveau de PulseHeberg est accepté (ADR 0025, point 4). *Révisé le 2026-11-05 par le développeur : le fonctionnel passe d'abord ; la sauvegarde hors site vient après une application viable à montrer (planning et listes de courses), au plus tard avant d'inviter la famille.*
