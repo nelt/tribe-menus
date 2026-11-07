@@ -14,7 +14,6 @@ import {
   checkDish,
   dishErrorMessage,
   hasVisible,
-  highlight,
   initialOf,
   maxQuantityLength,
   normalizeName,
@@ -24,6 +23,7 @@ import {
   unitLabel,
   units,
 } from "./dishes.ts";
+import { IngredientCombobox, type Option } from "./ingredient-combobox.ts";
 import type { Library } from "./library.ts";
 import { networkErrorMessage } from "./login.ts";
 import { alertMessage, networkNeededMessage, warningBanner } from "./templates.ts";
@@ -58,8 +58,6 @@ export class DishScreen extends LitElement {
     lines: { state: true },
     error: { state: true },
     conflict: { state: true },
-    open: { state: true },
-    active: { state: true },
   };
 
   declare library: Library;
@@ -76,9 +74,6 @@ export class DishScreen extends LitElement {
   error: DishError | "network" | undefined = undefined;
   /** The last save was refused for a crossed change: the banner of Doux-PlatConflit. */
   conflict = false;
-  /** The suggestions of the draft are shown; active, the option chosen with the keyboard. */
-  open = false;
-  active = -1;
   /** The dish as read, for the title and the revision of the next save. */
   #dish: Dish | undefined;
   /** The servings were proposed without the size of the tribe: sent only if changed. */
@@ -86,16 +81,16 @@ export class DishScreen extends LitElement {
   #nextKey = 0;
   #busy = false;
   #focusDraft = false;
-  /** A pointer is pressed: the suggestions close only once it is released (see #blur). */
-  #pointerDown = false;
-  #afterPointerUp: (() => void) | undefined;
   readonly #onChange = () => this.#libraryChanged();
-  readonly #onPointerDown = () => (this.#pointerDown = true);
-  readonly #onPointerUp = () => {
-    this.#pointerDown = false;
-    this.#afterPointerUp?.();
-    this.#afterPointerUp = undefined;
-  };
+  /** The combobox of the draft, the only line whose ingredient is typed. */
+  readonly #combobox = new IngredientCombobox(this, {
+    id: "ingredient-suggestions",
+    inputClass: "line-combobox",
+    label: "Ingrédient",
+    options: (text) => this.#options(text),
+    onType: (text) => this.#updateDraft({ text }),
+    onChoose: (option) => this.#choose(option),
+  });
 
   protected override createRenderRoot() {
     return this;
@@ -104,18 +99,12 @@ export class DishScreen extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.library.addEventListener("change", this.#onChange);
-    document.addEventListener("pointerdown", this.#onPointerDown, true);
-    document.addEventListener("pointerup", this.#onPointerUp, true);
-    document.addEventListener("pointercancel", this.#onPointerUp, true);
     void this.#start();
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.library.removeEventListener("change", this.#onChange);
-    document.removeEventListener("pointerdown", this.#onPointerDown, true);
-    document.removeEventListener("pointerup", this.#onPointerUp, true);
-    document.removeEventListener("pointercancel", this.#onPointerUp, true);
   }
 
   protected override updated(changed: PropertyValues<this>) {
@@ -179,7 +168,7 @@ export class DishScreen extends LitElement {
     this.name = dish.name;
     this.servings = dish.servings;
     this.lines = dish.ingredients.map((l) => ({ key: this.#nextKey++, name: l.name, text: "", quantity: quantityInput(l.quantity), unit: l.unit ?? "" }));
-    this.open = false;
+    this.#combobox.close();
   }
 
   override render() {
@@ -296,132 +285,45 @@ export class DishScreen extends LitElement {
             ${units.map((u) => html`<option value=${u.code} aria-label=${u.name} ?selected=${line.unit === u.code}>${u.label}</option>`)}
           </select>
         </span>
-        ${draft ? this.#combobox(line) : html`<span class="line-name">${line.name}</span>`}
+        ${draft ? this.#combobox.input(line.text) : html`<span class="line-name">${line.name}</span>`}
         ${removable
           ? html`<button class="line-remove" type="button" aria-label=${removeLabel} @click=${() => this.#removeLine(index)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
             </button>`
           : nothing}
       </div>
-      ${draft ? this.#suggestions(line) : nothing}
+      ${draft ? this.#combobox.list(line.text) : nothing}
       ${error === undefined ? nothing : alertMessage(errorId, error)}
     </li>`;
   }
 
   /** The options of the draft: the ingredients suggested, then « Créer « … » ». */
-  #options(line: FormLine): { ingredient?: Ingredient; create?: string }[] {
+  #options(text: string): Option[] {
     const inDish = this.lines.filter((l) => l.name !== "").map((l) => l.name);
-    const { ingredients, create } = suggestIngredients(this.library.catalog.items ?? [], line.text, inDish);
-    const options: { ingredient?: Ingredient; create?: string }[] = ingredients.map((ingredient) => ({ ingredient }));
+    const { ingredients, create } = suggestIngredients(this.library.catalog.items ?? [], text, inDish);
+    const options: Option[] = ingredients.map((ingredient) => ({ ingredient }));
     if (create) {
-      options.push({ create: trimSpaces(line.text) });
+      options.push({ create: trimSpaces(text) });
     }
     return options;
   }
 
-  #combobox(line: FormLine) {
-    const expanded = this.open && this.#options(line).length > 0;
-    return html`<input
-      class="line-combobox"
-      type="text"
-      role="combobox"
-      autocomplete="off"
-      maxlength="40"
-      aria-label="Ingrédient"
-      aria-autocomplete="list"
-      aria-expanded=${expanded ? "true" : "false"}
-      aria-controls="ingredient-suggestions"
-      aria-activedescendant=${expanded && this.active >= 0 ? `suggestion-${this.active}` : nothing}
-      .value=${live(line.text)}
-      @input=${(e: Event) => this.#type(line, (e.target as HTMLInputElement).value)}
-      @keydown=${(e: KeyboardEvent) => this.#key(line, e)}
-      @blur=${this.#blur}
-      @focus=${() => (this.open = true)}
-    >`;
-  }
-
-  #suggestions(line: FormLine) {
-    const options = this.open ? this.#options(line) : [];
-    // The list stays in the DOM, empty, for aria-controls.
-    return html`<ul class="suggestions" id="ingredient-suggestions" role="listbox" aria-label="Ingrédients proposés" ?hidden=${options.length === 0} @mousedown=${(e: Event) => e.preventDefault()}>
-      ${options.map((o, i) => {
-        const selected = i === this.active ? "true" : "false";
-        if (o.ingredient === undefined) {
-          return html`<li class="suggestion suggestion--create" role="option" id=${`suggestion-${i}`} aria-selected=${selected} @click=${() => this.#choose(line, o)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Créer « ${o.create} »
-          </li>`;
-        }
-        const unit = o.ingredient.defaultUnit === undefined ? "" : unitLabel(o.ingredient.defaultUnit, "");
-        return html`<li class="suggestion" role="option" id=${`suggestion-${i}`} aria-selected=${selected} @click=${() => this.#choose(line, o)}>
-          <span class="suggestion-name">${highlight(o.ingredient.name, line.text).map((s) => (s.found ? html`<strong>${s.text}</strong>` : s.text))}</span>
-          ${unit === "" ? nothing : html`<span class="suggestion-unit">${unit}</span>`}
-        </li>`;
-      })}
-    </ul>`;
-  }
-
-  /**
-   * The suggestions close when the combobox loses the focus, but after the gesture that took
-   * it: closed at once, the list would move what is below it, and the click would miss the
-   * button pressed. With a mouse, the pointer is released after the blur; with a finger,
-   * the blur, the release and the click come in the same task.
-   */
-  #blur() {
-    const close = () =>
-      setTimeout(() => {
-        if (!this.contains(document.activeElement) || !document.activeElement?.classList.contains("line-combobox")) {
-          this.open = false;
-          this.active = -1;
-        }
-      }, 0);
-    if (this.#pointerDown) {
-      this.#afterPointerUp = close;
-    } else {
-      close();
+  #updateDraft(change: Partial<FormLine>) {
+    const draft = this.lines.find((l) => l.name === "");
+    if (draft !== undefined) {
+      this.#update(draft, change);
     }
   }
 
-  #type(line: FormLine, text: string) {
-    this.#update(line, { text });
-    this.open = true;
-    this.active = -1;
-  }
-
-  #key(line: FormLine, e: KeyboardEvent) {
-    const options = this.#options(line);
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        this.open = true;
-        this.active = Math.min(this.active + 1, options.length - 1);
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        this.active = Math.max(this.active - 1, 0);
-        break;
-      case "Enter": {
-        // Enter chooses an option, and never sends the form from the combobox.
-        e.preventDefault();
-        const option = this.open ? options[this.active] : undefined;
-        if (option !== undefined) {
-          this.#choose(line, option);
-        }
-        break;
-      }
-      case "Escape":
-        this.open = false;
-        this.active = -1;
-        break;
+  /** An ingredient chosen: the draft takes it, and its default unit if a quantity is there. */
+  #choose(option: Option) {
+    const line = this.lines.find((l) => l.name === "");
+    if (line === undefined) {
+      return;
     }
-  }
-
-  /** An ingredient chosen: the line takes it, and its default unit if a quantity is there. */
-  #choose(line: FormLine, option: { ingredient?: Ingredient; create?: string }) {
     const name = option.ingredient?.name ?? option.create ?? "";
     const unit = line.unit === "" && trimSpaces(line.quantity) !== "" ? (option.ingredient?.defaultUnit ?? "") : line.unit;
     this.#update(line, { name, text: "", unit });
-    this.open = false;
-    this.active = -1;
   }
 
   /** A quantity typed takes the default unit of the ingredient; without quantity, no unit. */
