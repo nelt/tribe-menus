@@ -1,6 +1,6 @@
 # Spécifications fonctionnelles : menus de la semaine (V1)
 
-- **Date** : 2026-09-26 (listes de courses révisées le 2026-09-27, refondues le 2026-10-01 ; bibliothèque de plats précisée le 2026-11-03, plan `bibliotheque` ; planning précisé le 2026-11-05, plan `planning`)
+- **Date** : 2026-09-26 (listes de courses révisées le 2026-09-27, refondues le 2026-10-01 ; bibliothèque de plats précisée le 2026-11-03, plan `bibliotheque` ; planning précisé le 2026-11-05, plan `planning` ; listes de courses précisées le 2026-11-07, plan `courses`)
 - **Statut** : prêt
 
 ## Objectif
@@ -19,7 +19,7 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 | **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (la taille de la tribu au moment de l'ajout, de 1 à 50, Q35). Exemple : chili 3 parts et chili végétarien 1 part. Il a une **identité propre**, distincte de celle du plat : retiré puis ajouté de nouveau au même repas, c'est un nouveau plat servi (Q32). |
 | **Liste de courses** | Liste nommée, **indépendante du planning** : elle existe par elle-même et reçoit des articles ajoutés à la main (C3) ou les courses des repas d'une période (C4). Une tribu a toujours **au moins une liste**, et exactement une **liste principale**, celle que montre l'onglet Courses (C1). Plusieurs listes peuvent exister en même temps. Une liste n'est jamais close : déclarer les courses faites en retire les articles cochés (C11) ; elle n'est supprimée que vide (C12). |
 | **Liste principale** | La liste ouverte par défaut et proposée par défaut pour ajouter des courses. Créée avec la tribu ; tout membre peut désigner une autre liste comme principale ; elle ne peut pas être supprimée. |
-| **Article** | Une ligne d'une liste de courses : un ingrédient, une quantité et une unité. Un article **calculé** provient de plats servis (ses **provenances**) et reste lié à eux : on voit à quels plats il participe (C5) ; une liste a au plus un article calculé par ingrédient et famille d'unités. Un article **ajouté** a été saisi à la main, hors planning. |
+| **Article** | Une ligne d'une liste de courses : un ingrédient, avec une quantité et son unité, ou **sans quantité** (« sel », Q36). Un article **calculé** provient de plats servis (ses **provenances**) et reste lié à eux : on voit à quels plats il participe (C5) ; une liste a au plus un article calculé par ingrédient et famille d'unités, et au plus un article calculé sans quantité par ingrédient (Q36). Un article **ajouté** a été saisi à la main, hors planning, avec ou sans quantité (Q13). |
 | **Plats servis reçus** | Les plats servis dont une liste a déjà reçu les courses, par ajout (C4) ou par déplacement (C9, C10). Un plat servi reçu ne peut pas être ajouté une seconde fois à la même liste, même après que ses articles ont été achetés ou déplacés (Q22). |
 
 ### Ajout des courses d'une période
@@ -27,9 +27,12 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 L'ajout (C4) prend les plats servis des repas de la période (bornes incluses) qui ne sont pas déjà des plats servis reçus de la liste choisie, calcule leurs ingrédients (règle de calcul ci-dessous) et les **verse dans les articles calculés** de la liste :
 
 - un ingrédient déjà présent dans la liste, dans la même famille d'unités, s'additionne à l'article existant, qui gagne de nouvelles provenances ; sinon un nouvel article calculé est créé ;
+- une ligne de plat sans quantité donne un article calculé sans quantité, distinct des articles avec quantité du même ingrédient ; il gagne la provenance sans changer, et garde sa coche (Q36) ;
 - un article coché dont la quantité augmente est décoché (il faut en racheter) ;
 - les articles ajoutés à la main ne sont jamais fusionnés avec les articles calculés ;
-- si des plats servis de la période étaient déjà reçus, ils sont ignorés et un message indique combien.
+- si des plats servis de la période étaient déjà reçus, ils sont ignorés et un message indique combien ;
+- tous les plats servis retenus deviennent des plats servis reçus de la liste, y compris ceux qui n'ont aucun ingrédient (« Restes ») ;
+- si la liste devait dépasser 300 articles, rien n'est ajouté (Q38).
 
 ### Recalcul d'une liste
 
@@ -73,7 +76,7 @@ Exemple : plat « Chili » défini pour 4 parts avec 500 g de bœuf, servi pour 
   Pièce, cuillère à soupe, cuillère à café et pincée forment chacune une famille à elles seules : aucune conversion entre elles (1 cuillère à soupe et 2 cuillères à café d'huile donnent deux lignes).
 - Pour agréger un même ingrédient saisi dans des unités différentes de la même famille, on convertit (ex. 500 g + 1 kg = 1,5 kg).
 - Entre familles différentes (ex. « 2 pièces » et « 300 g » d'oignon), pas de conversion : lignes distinctes.
-- Dans la liste de courses, les quantités en pièces, cuillères et pincées sont arrondies à l'entier supérieur, après agrégation (1,5 oignon donne 2 ; 1,5 cuillère à soupe donne 2). Les masses et les volumes ne sont pas arrondis à l'entier.
+- Dans la liste de courses, les quantités en pièces, cuillères et pincées sont arrondies à l'entier supérieur, après agrégation (1,5 oignon donne 2 ; 1,5 cuillère à soupe donne 2). Les masses sont arrondies au gramme supérieur, les volumes au millilitre supérieur, après agrégation aussi (Q37) : pas de « 166,667 g ».
 - Une quantité agrégée est affichée dans la plus grande unité de sa famille qui donne une valeur d'au moins 1 (1 500 g s'affiche 1,5 kg ; 750 g reste 750 g).
 
 ## User stories
@@ -100,7 +103,7 @@ Les critères d'acceptation de chaque story sont écrits en Gherkin dans `featur
 - **C1** : La tribu a toujours une liste principale, que l'onglet Courses ouvre par défaut ; elle est créée avec la tribu, sous le nom « Courses ». Je peux désigner une autre liste comme principale ; il y en a toujours exactement une.
 - **C2** : Je crée une liste vide en lui donnant un nom ; je renomme une liste. Je passe d'une liste à l'autre depuis l'onglet Courses.
 - **C3** : J'ajoute à une liste des articles saisis à la main (ex. pain, lessive), quantité facultative ; je peux les retirer.
-- **C4** : J'ajoute à une liste les courses des repas d'une période : je choisis la date de début et la date de fin (par défaut, de demain à J+7 inclus) et la liste (par défaut, la liste principale). Les ingrédients sont agrégés avec ajustement aux parts, conversions et arrondis ; les plats servis déjà reçus par cette liste sont ignorés.
+- **C4** : J'ajoute à une liste les courses des repas d'une période : je choisis la date de début et la date de fin (par défaut, de demain à J+7 inclus, d'après la date de mon appareil, Q34 ; 31 jours au plus, Q38) et la liste (par défaut, la liste principale). Les ingrédients sont agrégés avec ajustement aux parts, conversions et arrondis ; les plats servis déjà reçus par cette liste sont ignorés.
 - **C5** : Un article calculé indique de combien de plats servis il provient ; en touchant la ligne, elle se déplie et montre les plats et repas concernés, avec la quantité apportée par chacun.
 - **C6** : Je coche les articles au fil des courses.
 - **C7** : Une liste déjà affichée reste consultable et cochable sans réseau ; les coches et les articles ajoutés se synchronisent au retour du réseau.
@@ -169,7 +172,7 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
 - **Q23** : une tribu a toujours au moins une liste et exactement une liste principale. La liste principale est créée avec la tribu (nom « Courses ») ; en désigner une autre retire ce rôle à la précédente ; la liste principale ne peut pas être supprimée (2026-10-01).
 - **Q24** : un article calculé agrège, pour un ingrédient et une famille d'unités, les quantités de tous ses plats servis : une seule ligne par liste, dépliable vers ses provenances, déplacée d'un bloc (2026-10-01).
 - **Q25** : un plat porte une **révision**, augmentée à chaque modification. Un enregistrement fait sur une révision dépassée, parce qu'un autre membre a modifié le plat entre-temps, est refusé : rien n'est écrasé ; le membre voit « Ce plat a été modifié entre-temps » et le plat à jour, qu'il modifie de nouveau. Pas de fusion automatique des deux modifications (plan `bibliotheque`, D5, 2026-10-29).
-- **Q26** : la quantité d'un ingrédient dans un plat est **facultative** (« sel », « poivre »), comme pour un article ajouté (Q13). Sans quantité, pas d'unité ; avec une quantité, une unité. L'unité par défaut d'un ingrédient est la première unité saisie avec lui ; tant qu'aucune ligne ne lui en a donné, il n'en a pas (précise Q20). Ce que devient une ligne sans quantité dans les courses (C4) sera fixé avec les listes de courses (plan `bibliotheque`, D4, 2026-10-29).
+- **Q26** : la quantité d'un ingrédient dans un plat est **facultative** (« sel », « poivre »), comme pour un article ajouté (Q13). Sans quantité, pas d'unité ; avec une quantité, une unité. L'unité par défaut d'un ingrédient est la première unité saisie avec lui ; tant qu'aucune ligne ne lui en a donné, il n'en a pas (précise Q20). Ce que devient une ligne sans quantité dans les courses (C4) est fixé par Q36 (plan `bibliotheque`, D4, 2026-10-29 ; fermée le 2026-11-06, plan `courses`, D3).
 - **Q27** : un ingrédient ne figure qu'**une fois dans un plat**, quelle que soit l'unité : « 3 pièces » et « 200 g » de courgette sont refusés dans un même plat. Un ingrédient déjà dans le plat n'est plus proposé à la saisie (plan `bibliotheque`, D6, 2026-10-29).
 - **Q28** : deux plats d'une tribu ne portent pas le **même nom**, au sens du nom normalisé (Q29) : « Soupe à l'oignon » et « soupe a l’oignon » sont le même nom ; le second est refusé avec « Un plat porte déjà ce nom ». Contrairement aux listes de courses (Q17) (plan `bibliotheque`, D7, 2026-10-29).
 - **Q29** : **nom normalisé**, une seule règle pour l'identité d'un ingrédient (Q20), l'unicité d'un nom de plat (Q28), la recherche (P3) et l'autocomplétion (P4). Deux noms sont le même s'ils ne diffèrent que par (complète Q20) :
@@ -197,3 +200,25 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
   - parts d'un plat servi de 1 à 50, comme la taille de la tribu (Q31) ;
   - repas du 1er janvier 2000 au 31 décembre 2099, passés comme futurs (Q2) ;
   - les plats d'un repas sont présentés dans l'ordre où ils ont été ajoutés, sur le planning comme dans le détail du repas ; un plat retiré puis ajouté de nouveau passe en dernier (Q32). L'ordre alphabétique est écarté : il déplacerait un plat sous le doigt.
+- **Q36** : un **ingrédient sans quantité** dans un plat (« sel », Q26) devient, dans les courses (C4), un **article calculé sans quantité** : une seule ligne par ingrédient, distincte des articles avec quantité du même ingrédient, comme une famille d'unités à part ; ses provenances se déplient (C5), sans quantité apportée ; il n'est jamais arrondi. Un article sans quantité qui gagne une provenance n'est pas décoché : sa quantité n'augmente pas, « il faut en racheter » ne s'applique pas. Il n'est ni ignoré, ce qui ferait oublier de vérifier le placard, ni rattaché à un article avec quantité du même ingrédient, ce qui mélangerait deux sens. Ferme Q26 (plan `courses`, D3, 2026-11-06).
+- **Q37** : **arrondis des courses** (plan `courses`, D7, 2026-11-06) :
+  - la quantité apportée par un plat servi (règle de calcul) est arrondie à l'unité de base supérieure : milligramme, millilitre, millième de pièce, de cuillère ou de pincée ;
+  - un article additionne les quantités apportées par toutes ses provenances, puis arrondit : pièces, cuillères et pincées à l'entier supérieur (Q4), masses au gramme supérieur, volumes au millilitre supérieur ;
+  - il s'affiche dans la plus grande unité de sa famille qui donne au moins 1 (« 1,5 kg », « 750 g », « 75 cl ») ;
+  - dans le dépliage (C5), la quantité apportée par chaque plat servi est montrée sans l'arrondi de l'article : au gramme supérieur pour une masse, au millilitre pour un volume, au centième pour les autres (« 0,75 pièce »). Le dépliage peut donc additionner à moins que l'article (« 0,75 pièce » et « 1 pièce » pour « 2 pièces »).
+- **Q38** : **limites des listes de courses** (plan `courses`, D12, 2026-11-06) :
+  - nom d'une liste de 40 caractères au plus, avec les règles des noms de plats et d'ingrédients (Q31 : espaces réduites, caractère de contrôle refusé, nom sans caractère visible refusé comme un nom vide) ; deux listes peuvent porter le même nom (Q17) ;
+  - 20 listes par tribu ;
+  - 300 articles par liste ; un ajout de courses qui la ferait dépasser est refusé en entier, rien n'est ajouté ;
+  - période de l'ajout des courses de 31 jours au plus, du 1er janvier 2000 au 31 décembre 2099 (Q35), la date de fin au plus tôt le jour de la date de début.
+
+  Un article calculé ne se retire qu'en le cochant puis en déclarant les courses faites (hors périmètre) : la limite de la période évite d'y verser une année par erreur. Limites à revoir après quelques semaines de production.
+- **Q39** : **écritures croisées sur les listes**, quand deux membres modifient la même liste en même temps. Ni les listes ni les articles n'ont de révision, comme les plats servis (Q33) (plan `courses`, D8, D9 et D11, 2026-11-06) :
+  - **coche** : le dernier enregistrement l'emporte, sans message ; la coche d'un article qui a disparu entre-temps (liste supprimée, courses faites) n'a plus d'objet et n'est pas signalée ;
+  - **courses faites** : seuls partent les articles que le membre voyait cochés en confirmant, s'ils le sont encore ; un article coché par un autre membre entre-temps reste, coché ; un article décoché entre-temps reste, non coché. La confirmation ne retire donc jamais ce qu'elle n'a pas annoncé ;
+  - **renommer une liste, désigner la liste principale** : le dernier enregistrement l'emporte ; il y a toujours exactement une liste principale (Q23) ;
+  - **supprimer une liste devenue non vide** entre-temps : refusé ; le membre voit « Cette liste n'est plus vide. » et la liste à jour ; **devenue principale** entre-temps : refusé, comme pour la liste principale (C12) ;
+  - **toute écriture sur une liste supprimée** entre-temps : refusée ; le membre voit « Cette liste a été supprimée entre-temps. » et la liste principale ;
+  - **retrait d'un article ajouté déjà retiré** par un autre membre : rien n'est signalé, le retrait est fait ;
+  - **deux ajouts de courses simultanés** à la même liste : le second ignore les plats servis reçus par le premier (Q22).
+- **Q40** : **ordre des articles** d'une liste : les articles non cochés d'abord, les cochés en bas ; dans chaque groupe, par ordre alphabétique du nom de l'ingrédient, au sens du nom normalisé (Q29), articles calculés et ajoutés mêlés, pour retrouver un article au rayon ; pour un même ingrédient, l'article avec quantité avant l'article sans quantité, l'article calculé avant l'article ajouté. L'ordre d'ajout est écarté : il disperse les ingrédients d'un même rayon. Un classement par rayon demanderait une donnée de plus sur l'ingrédient : hors V1 (plan `courses`, D13, 2026-11-06).
