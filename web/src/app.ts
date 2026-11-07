@@ -7,6 +7,7 @@ import "./dish-library-screen.ts";
 import "./dish-screen.ts";
 import type { Dish } from "./dishes.ts";
 import { Library } from "./library.ts";
+import "./list-picker-screen.ts";
 import "./loading-screen.ts";
 import "./login-screen.ts";
 import type { SignedInEvent } from "./login-screen.ts";
@@ -15,6 +16,10 @@ import { type Day, type Mealtime, today } from "./meal-plan.ts";
 import { Planning } from "./planning.ts";
 import "./planning-screen.ts";
 import { type Page, Router, pages, planningAround, tabOf } from "./router.ts";
+import type { ShoppingList } from "./shopping.ts";
+import "./shopping-list-screen.ts";
+import type { Notice } from "./shopping-list-screen.ts";
+import { ShoppingLists } from "./shopping-lists.ts";
 import "./stepper.ts";
 import "./tab-bar.ts";
 import "./tribe-screen.ts";
@@ -43,8 +48,14 @@ export class App extends LitElement {
   readonly #library: Library;
   /** The meal plan in memory, checked with the library (plan planning, D15). */
   readonly #planning: Planning;
+  /** The shopping lists in memory (plan courses, D4, D18). */
+  readonly #shopping: ShoppingLists;
   /** The range of the planning last shown, that the link back of a meal goes to (D14). */
   #lastPlanning: Page | undefined;
+  /** The shopping list last shown, that « Retour à la liste » goes back to (D15). */
+  #lastList: Page = pages.shopping;
+  /** What the shopping list shown tells: a list deleted in between (D11); cleared at each page. */
+  #notice: Notice | undefined;
 
   constructor() {
     super();
@@ -62,6 +73,7 @@ export class App extends LitElement {
     });
     this.#library = new Library(this.#api);
     this.#planning = new Planning(this.#api, this.#library);
+    this.#shopping = new ShoppingLists(this.#api, this.#library);
     this.addEventListener("click", (e) => this.#followLink(e));
     // Back in the foreground, the copies are checked: what another member changed in between
     // appears (D25, D29; plan planning, D15).
@@ -69,7 +81,9 @@ export class App extends LitElement {
       if (document.visibilityState !== "visible" || this.session === undefined) {
         return;
       }
-      if (this.#planning.loaded) {
+      if (tabOf(this.page) === "shopping") {
+        void this.#shopping.check();
+      } else if (this.#planning.loaded) {
         void this.#planning.check();
       } else if (this.#library.loaded) {
         void this.#library.check();
@@ -103,7 +117,12 @@ export class App extends LitElement {
     return html`${this.#screen(this.page)}
       ${subScreen
         ? nothing
-        : html`<mt-tab-bar active=${tabOf(this.page)} .planningHref=${this.#router.href(pages.planning)} .dishesHref=${this.#router.href(pages.dishes)}></mt-tab-bar>`}`;
+        : html`<mt-tab-bar
+            active=${tabOf(this.page)}
+            .planningHref=${this.#router.href(pages.planning)}
+            .dishesHref=${this.#router.href(pages.dishes)}
+            .shoppingHref=${this.#router.href(pages.shopping)}
+          ></mt-tab-bar>`}`;
   }
 
   #screen(page: Page) {
@@ -148,6 +167,26 @@ export class App extends LitElement {
           ></mt-dish-screen>`,
         );
       }
+      case "shopping":
+        return keyed(
+          page.list ?? "main",
+          html`<mt-shopping-list-screen
+            .lists=${this.#shopping}
+            .listId=${page.list}
+            .pickerHref=${this.#router.href(pages.listPicker)}
+            .notice=${this.#notice}
+            @unknown-list=${() => this.#router.navigate(pages.shopping, { replace: true })}
+            @list-deleted=${this.#listDeleted}
+          ></mt-shopping-list-screen>`,
+        );
+      case "list-picker":
+        return html`<mt-list-picker
+          .lists=${this.#shopping}
+          .backHref=${this.#router.href(this.#lastList)}
+          .listHref=${(list: ShoppingList) => this.#router.href(this.#listPage(list))}
+          @open-list=${(e: CustomEvent<ShoppingList>) => this.#router.navigate(this.#listPage(e.detail))}
+          @list-deleted=${this.#listDeleted}
+        ></mt-list-picker>`;
       case "tribe":
         return html`<mt-tribe-screen .api=${this.#api} .planningHref=${this.#router.href(pages.planning)} @signed-out=${this.#signedOut}></mt-tribe-screen>`;
       case "login":
@@ -191,8 +230,12 @@ export class App extends LitElement {
   /** Shows a page, or redirects: the login once signed in, the login without a session. */
   #show(page: Page) {
     this.page = page;
+    this.#notice = undefined;
     if (page.name === "planning") {
       this.#lastPlanning = page;
+    }
+    if (page.name === "shopping") {
+      this.#lastList = page;
     }
     if (this.startup !== "done") {
       return;
@@ -215,8 +258,22 @@ export class App extends LitElement {
     this.#router.navigate(pages.login, { replace: true });
   }
 
+  /** The page of a list: the main list at the path of the tab (D15). */
+  #listPage(list: ShoppingList): Page {
+    return list.main ? pages.shopping : { name: "shopping", list: list.id };
+  }
+
+  /** A write on a list deleted in between: the main list opens, and tells it (D11). */
+  readonly #listDeleted = () => {
+    this.#router.navigate(pages.shopping);
+    // After the navigation, which clears the notice of the page left.
+    this.#notice = { kind: "deleted" };
+    this.requestUpdate();
+  };
+
   /** Forgets the copies in memory: at the sign-out, or on a 401 (D25). */
   #clearCopies() {
+    this.#shopping.clear();
     this.#planning.clear();
     this.#library.clear();
   }
