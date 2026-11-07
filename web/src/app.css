@@ -2254,3 +2254,337 @@ dialog.sheet::backdrop {
 .skeleton--item:nth-of-type(6n + 4) .skeleton-line { width: 48%; }
 .skeleton--item:nth-of-type(6n + 5) .skeleton-line { width: 64%; }
 .skeleton--item:nth-of-type(6n) .skeleton-line { width: 58%; }
+
+/* « Ajouter les courses des repas » on a list (Doux-Liste; plan courses, lot E). */
+.button-meal-shopping {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-field);
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.button-meal-shopping:hover {
+  color: var(--color-text);
+}
+
+.button-meal-shopping > span {
+  flex-grow: 1;
+}
+
+.button-meal-shopping svg {
+  flex-shrink: 0;
+}
+
+.button-meal-shopping svg:last-child {
+  color: var(--color-text-secondary);
+}
+
+/* Meal shopping (Doux-CoursesRepas): no tab bar, the button at the end of the screen. */
+.meal-shopping {
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.meal-shopping .screen-title {
+  font-size: 32px;
+}
+
+.period-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.period-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 56px;
+  padding: 7px 14px;
+  border: var(--border-strong) solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.period-field--active {
+  border-color: var(--color-text);
+}
+
+.period-field--invalid {
+  border-color: var(--color-error);
+}
+
+.period-field-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.period-field-day {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 10px 12px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.calendar-nav:disabled {
+  color: var(--color-dashed);
+  cursor: default;
+}
+
+.calendar-title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.calendar-weekday {
+  padding-bottom: 4px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: var(--touch-target);
+  padding: 0;
+  border: var(--border-thin) solid transparent;
+  border-radius: 12px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-day--past {
+  color: var(--color-text-muted);
+}
+
+.calendar-day--today {
+  border-style: dashed;
+  border-color: var(--color-dashed);
+}
+
+.calendar-day--between {
+  border-style: solid;
+  border-color: var(--color-focus);
+}
+
+.calendar-day--bound {
+  border: var(--border-strong) solid var(--color-action);
+  color: var(--color-action);
+  font-weight: 800;
+}
+
+.calendar-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+}
+
+.calendar-dot--meals {
+  background: var(--color-text-secondary);
+}
+
+.calendar-day--bound .calendar-dot--meals {
+  background: var(--color-action);
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 6px 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendar-legend-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-secondary);
+}
+
+.period-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.period-summary-dishes {
+  color: var(--color-text-secondary);
+}
+
+.target-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 7px 14px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.target-field > svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.target-field-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.target-field-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.target-field-name {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.target-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 14px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.target-option--current {
+  border: var(--border-strong) solid var(--color-text);
+}
+
+.target-option-radio {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-pill);
+}
+
+.target-option--current .target-option-radio::after {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text);
+  content: "";
+}
+
+.target-option-name {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.target-option-info {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.meal-shopping-send {
+  padding-top: 8px;
+}
+
+.button-primary[aria-busy="true"] {
+  border: none;
+  background: var(--color-focus);
+  color: #ffffff;
+}
+
+.skeleton--calendar {
+  height: 330px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: none;
+}

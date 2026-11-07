@@ -219,12 +219,13 @@ export function mealPlanWriteOf(response: RawResponse): Outcome<MealPlanWrite> {
 /**
  * The answer to a write of the shopping lists (plan courses, D8, D9, D11): the list up to
  * date (absent after a change of the main list or a deletion), the versions of the
- * collections it changed, and for a checkout the number of items removed; a refusal, with
+ * collections it changed, for a checkout the number of items removed, for the meal shopping
+ * the number of served dishes added and ignored (Q22); a refusal, with
  * its error code and, for a list no longer empty, the list up to date; or a list or an item
  * unknown, deleted in between. The lists are read by shopping-lists.ts.
  */
 export type ShoppingWrite =
-  | { kind: "written"; list: unknown; versions: Record<string, number>; removed: number | undefined }
+  | { kind: "written"; list: unknown; versions: Record<string, number>; removed: number | undefined; added?: number; ignored?: number }
   | { kind: "refused"; error: string; list: unknown }
   | { kind: "not-found" };
 
@@ -235,9 +236,11 @@ export type ShoppingWrite =
 export function shoppingWriteOf(response: RawResponse): Outcome<ShoppingWrite> {
   if (response !== "network-error" && isRecord(response.body)) {
     const { status, body } = response;
-    const { versions, error, removed } = body;
-    if ((status === 200 || status === 201) && isRecord(versions) && Object.values(versions).every((v) => typeof v === "number") && (removed === undefined || typeof removed === "number")) {
-      return { kind: "ok", value: { kind: "written", list: body["list"], versions: versions as Record<string, number>, removed } };
+    const { versions, error, removed, added, ignored } = body;
+    const counts = [removed, added, ignored].every((n) => n === undefined || typeof n === "number");
+    if ((status === 200 || status === 201) && isRecord(versions) && Object.values(versions).every((v) => typeof v === "number") && counts) {
+      const meal = typeof added === "number" && typeof ignored === "number" ? { added, ignored } : {};
+      return { kind: "ok", value: { kind: "written", list: body["list"], versions: versions as Record<string, number>, removed: removed as number | undefined, ...meal } };
     }
     if (status === 404 && error === "not_found") {
       return { kind: "ok", value: { kind: "not-found" } };
@@ -404,6 +407,11 @@ export class Api {
   /** Removes the items seen checked that still are (C11, D9). */
   checkOut(list: string, items: string[]): Promise<Outcome<ShoppingWrite>> {
     return this.#writeShopping("POST", `${listURL(list)}/checkout`, { items });
+  }
+
+  /** Adds the meal shopping of a period to a list (C4): from and to, YYYY-MM-DD, both included. */
+  addMealShopping(list: string, from: string, to: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("POST", `${listURL(list)}/meal-shopping`, { from, to });
   }
 
   async #writeShopping(method: string, url: string, body?: unknown): Promise<Outcome<ShoppingWrite>> {

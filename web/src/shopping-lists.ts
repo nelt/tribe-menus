@@ -1,6 +1,7 @@
 // The shopping lists of the tribe, in memory (plan courses, D4, D18): a copy of the collection
-// shopping_lists (ADR 0029), checked at each visit of the tab Courses and each return of the
-// application to the foreground. A write of the member takes the list sent back and the
+// shopping_lists (ADR 0029), checked together with the copy of the library, whose dishes give
+// the names and colours of the unfolded lines (C5), at each visit of the tab Courses and each
+// return of the application to the foreground. A write of the member takes the list sent back and the
 // version it gives, or checks the copy if another member wrote in between; a list or an item
 // unknown (404) makes it check itself, then tells whether the list is still there (D8, D11).
 // Nothing is written on the device (D2): the copy goes with a reload, the sign-out or a 401.
@@ -8,7 +9,7 @@ import type { Api, Failure, ItemBody, Outcome, ShoppingWrite } from "./api.ts";
 import { CachedCollection } from "./collections.ts";
 import type { Library } from "./library.ts";
 import { mealtimes } from "./meal-plan.ts";
-import { type Item, type ItemSource, type ShoppingList, sortItems } from "./shopping.ts";
+import { type Item, type ItemSource, type Period, type ShoppingList, sortItems } from "./shopping.ts";
 
 /** The name of the collection, and of its version in the answers to the writes. */
 const collection = "shopping_lists";
@@ -91,6 +92,9 @@ export type WriteResult =
   | { kind: "deleted" }
   | Failure;
 
+/** The result of the meal shopping (C4): the served dishes added and ignored (Q22), or as a write. */
+export type MealShoppingResult = { kind: "done"; added: number; ignored: number } | Exclude<WriteResult, { kind: "done" }>;
+
 /** ShoppingLists holds the copy of the lists; it dispatches "change" after each check and write. */
 export class ShoppingLists extends EventTarget {
   readonly lists: CachedCollection<ShoppingList>;
@@ -120,8 +124,15 @@ export class ShoppingLists extends EventTarget {
     return this.lists.items?.find((l) => (id === undefined ? l.main : l.id === id));
   }
 
-  /** Checks the copy against the API. */
+  /** Checks the copy of the lists and that of the library against the API, at the same time. */
   async check(): Promise<Outcome<undefined>> {
+    const [lists, library] = await Promise.all([this.lists.check(), this.library.check()]);
+    this.dispatchEvent(new Event("change"));
+    return lists.kind !== "ok" ? lists : library;
+  }
+
+  /** Checks the copy of the lists alone, behind after a refusal or a list unknown. */
+  async #checkLists(): Promise<Outcome<undefined>> {
     const outcome = await this.lists.check();
     this.dispatchEvent(new Event("change"));
     return outcome;
@@ -153,7 +164,7 @@ export class ShoppingLists extends EventTarget {
     const version = write.versions[collection];
     if (version === undefined) {
       // Already the main list: the copy was behind.
-      await this.check();
+      await this.#checkLists();
     } else {
       const swapped = (this.lists.items ?? []).filter((l) => l.main !== (l.id === id)).map((l) => ({ ...l, main: l.id === id }));
       await this.lists.applyWrite(swapped, version);
@@ -174,7 +185,7 @@ export class ShoppingLists extends EventTarget {
     const write = outcome.value;
     if (write.kind === "not-found") {
       this.lists.put([], [id]);
-      await this.check();
+      await this.#checkLists();
       return { kind: "done", list: undefined, removed: 0 };
     }
     if (write.kind === "refused") {
@@ -231,6 +242,20 @@ export class ShoppingLists extends EventTarget {
     return this.#written(id, await this.#api.checkOut(id, items));
   }
 
+  /**
+   * Adds the meal shopping of a period to a list (C4, D6): computed by the server, which sends
+   * back the list and how many served dishes it added and ignored (Q22).
+   */
+  async addMealShopping(id: string, period: Period): Promise<MealShoppingResult> {
+    const outcome = await this.#api.addMealShopping(id, period.from, period.to);
+    const result = await this.#written(id, outcome);
+    if (result.kind !== "done") {
+      return result;
+    }
+    const write = outcome.kind === "ok" && outcome.value.kind === "written" ? outcome.value : undefined;
+    return { kind: "done", added: write?.added ?? 0, ignored: write?.ignored ?? 0 };
+  }
+
   /** Takes the answer to a write on a list: the list written, a refusal, or a list unknown. */
   async #written(id: string | undefined, outcome: Outcome<ShoppingWrite>): Promise<WriteResult> {
     if (outcome.kind !== "ok") {
@@ -283,11 +308,11 @@ export class ShoppingLists extends EventTarget {
       }
       // A conflict means the copy is behind: it checks itself.
       if (list !== undefined || conflicts.has(write.error)) {
-        await this.check();
+        await this.#checkLists();
       }
       return { kind: "refused", error: write.error };
     }
-    const checked = await this.check();
+    const checked = await this.#checkLists();
     if (checked.kind !== "ok") {
       return checked;
     }

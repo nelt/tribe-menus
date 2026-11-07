@@ -32,6 +32,7 @@ const emptyDraft: Draft = { ingredient: "", quantity: "", unit: "" };
 
 const checkIcon = html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>`;
 const crossIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>`;
+const calendarIcon = html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"></path></svg>`;
 const plusIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 /** The green banner of a write done, with its cross (Doux-Courses). */
@@ -55,6 +56,7 @@ export class ShoppingListScreen extends LitElement {
     lists: { attribute: false },
     listId: { attribute: false },
     pickerHref: { attribute: false },
+    mealShoppingHref: { attribute: false },
     notice: { attribute: false },
     failed: { state: true },
     revision: { state: true },
@@ -69,6 +71,8 @@ export class ShoppingListScreen extends LitElement {
   /** The list shown; undefined for the main list (C1). */
   declare listId: string | undefined;
   declare pickerHref: string;
+  /** The meal shopping, toward a list (D15). */
+  declare mealShoppingHref: (list: ShoppingList) => string;
   /** What the screen tells above the list; given by the application after a list deleted. */
   declare notice: Notice | undefined;
   /** The last check failed for lack of network, the copy never loaded. */
@@ -105,11 +109,8 @@ export class ShoppingListScreen extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.lists.addEventListener("change", this.#onChange);
+    // The lists, with the library: the catalog of the suggestions, the dishes of the unfolded lines.
     void this.#check();
-    // The catalog, for the suggestions, if the tab Plats was not visited yet.
-    if (this.lists.library.catalog.items === undefined) {
-      void this.lists.library.catalog.check();
-    }
   }
 
   override disconnectedCallback() {
@@ -145,7 +146,7 @@ export class ShoppingListScreen extends LitElement {
       return html`<main class="screen">${this.failed ? this.#failed() : this.#loading()}</main>`;
     }
     return html`<main class="screen shopping">
-      ${this.#header(list)} ${this.#notice()} ${this.#items(list)} ${this.#addItem(list)} ${this.#checkout(list)}
+      ${this.#header(list)} ${this.#notice()} ${this.#items(list)} ${this.#mealShopping(list)} ${this.#addItem(list)} ${this.#checkout(list)}
     </main>
     ${this.#sheet()}`;
   }
@@ -213,6 +214,14 @@ export class ShoppingListScreen extends LitElement {
         ? html`<button class="item-remove" type="button" aria-label=${`Retirer ${item.ingredient}`} ?disabled=${this.removalPaused} @click=${() => this.#remove(list, item)}>${crossIcon}</button>`
         : nothing}
     </li>`;
+  }
+
+  /** « Ajouter les courses des repas », under the items (Doux-Liste). */
+  #mealShopping(list: ShoppingList) {
+    return html`<a class="button-meal-shopping" href=${this.mealShoppingHref(list)}>
+      ${calendarIcon}<span>Ajouter les courses des repas</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+    </a>`;
   }
 
   #addItem(list: ShoppingList) {
