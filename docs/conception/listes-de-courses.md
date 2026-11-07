@@ -1,10 +1,10 @@
 # Conception : listes de courses
 
-- **Mise à jour** : 2026-11-06
-- **Statut** : proposé avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), à accorder aux specs, au glossaire et au design par son lot A ; à tenir à jour par les plans qui touchent ce domaine (`courses-suite`, hors-ligne)
+- **Mise à jour** : 2026-11-07
+- **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; à tenir à jour par les plans qui touchent ce domaine (`courses-suite`, hors-ligne)
 - **Stories** : C1 à C6, C11, C12 ; P2 pour le calcul ; T1 et ENF-02 pour les listes. C7 à C10 sont prévues par le modèle, pas réalisées.
 
-Ce document décrit la conception retenue pour les listes de courses : modèle, calcul, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise les quantités, les unités, le référentiel et la copie des collections, et sur le planning ([`planning-des-repas.md`](planning-des-repas.md)), dont il lit les plats servis. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (C1 à C12, « Ajout des courses d'une période », « Règle de calcul », « Unités, conversions et arrondis », Q10 à Q18, Q22 à Q24, Q36 à Q40 une fois le lot A fait), les décisions dans les ADR (0003, 0027, 0029) et dans le plan (D1 à D24).
+Ce document décrit la conception retenue pour les listes de courses : modèle, calcul, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise les quantités, les unités, le référentiel et la copie des collections, et sur le planning ([`planning-des-repas.md`](planning-des-repas.md)), dont il lit les plats servis. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (C1 à C12, « Ajout des courses d'une période », « Règle de calcul », « Unités, conversions et arrondis », Q10 à Q18, Q22 à Q24, Q36 à Q40), les décisions dans les ADR (0003, 0027, 0029) et dans le plan (D1 à D24).
 
 Noms anglais du code selon `docs/specs/glossaire.md` : liste de courses (*shopping list*), liste principale (*main list*), article (*item*), article calculé (*computed item*), article ajouté (*manual item*), article sans quantité (*unquantified item*), provenance (*item source*), quantité apportée (*contributed quantity*), plats servis reçus (*received served dishes*), ajouter les courses des repas (*add meal shopping*), période (*period*), déclarer les courses faites (*check out*), choix des listes (*list picker*), destination des courses (*target list*), copie des listes (*cached shopping lists*).
 
@@ -94,8 +94,8 @@ Le calcul est **pur** (`internal/shopping`, D6) : il reçoit la liste, les plats
 2. **Quantité apportée** par chaque ligne de chaque plat retenu : `quantité du plat × parts servies ÷ parts de référence`, arrondie à l'unité de base supérieure (D7). Une ligne sans quantité apporte une provenance sans quantité (D3).
 3. **Regroupement** par ingrédient et famille d'unités (masse, volume, pièce, cuillère à soupe, cuillère à café, pincée), plus un groupe « sans quantité » par ingrédient.
 4. **Versement** dans la liste : un groupe dont l'article calculé existe déjà (même ingrédient, même famille, ou tous deux sans quantité) s'y ajoute et lui donne de nouvelles provenances ; sinon un article calculé nouveau est créé. Les articles ajoutés ne sont pas touchés.
-5. **Arrondi de l'article**, après l'addition des quantités apportées de toutes ses provenances, anciennes et nouvelles : pièces, cuillères et pincées à l'entier supérieur (Q4), masses au gramme supérieur (D7) ; les volumes sont déjà en millilitres entiers.
-6. **Coche** : un article coché dont la quantité arrondie augmente est décoché ; un article sans quantité garde sa coche (D3).
+5. **Arrondi de l'article**, après l'addition des quantités apportées de toutes ses provenances, anciennes et nouvelles : pièces, cuillères et pincées à l'entier supérieur (Q4), masses au gramme supérieur (Q37, D7) ; les volumes sont déjà en millilitres entiers.
+6. **Coche** : un article coché dont la quantité arrondie augmente est décoché ; un article sans quantité garde sa coche (Q36, D3).
 7. **Limite** : si la liste dépasse 300 articles, rien n'est écrit (D12).
 
 Exemple de la spec : « Chili con carne », défini pour 4 parts avec 500 g de bœuf haché et 1 oignon, servi pour 3 parts le mardi soir et pour 4 parts le jeudi midi. Bœuf : 375 000 mg et 500 000 mg apportés, 875 000 mg, affichés « 875 g ». Oignon : 750 et 1 000 millièmes apportés, 1 750, arrondis à 2 000 : « 2 pièces » ; le dépliage montre « 0,75 pièce » et « 1 pièce ».
@@ -150,6 +150,7 @@ classDiagram
             +ParseListName(string) string
             +ParsePeriod(from, to) Period
             +CheckLimits(List)
+            +SortItems([]Item) []Item
         }
         class errors {
             <<variables>>
@@ -257,7 +258,7 @@ classDiagram
 | `POST shopping-lists/{id}/checkout` | `{ items: [ItemID] }`, ceux vus cochés | 200 : `{ list, removed, versions }` (D9) ; 404 |
 | `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }` ; 400 `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
 
-Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }` ; un article (`Item`) : `{ id, ingredient, quantity?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, quantity?, unit? }] }`.
+Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }`, ses articles dans l'ordre de Q40 (`SortItems` : non cochés puis cochés, nom normalisé, avec quantité avant sans quantité, calculé avant ajouté, puis identifiant pour un ordre stable) ; un article (`Item`) : `{ id, ingredient, quantity?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, quantity?, unit? }] }`.
 
 **Un seul format de quantité, en lecture comme en écriture**, celui des lignes des plats (`lineResponse`, `internal/server/api_dishes.go`) et de `POST …/items` : `quantity`, le texte de `Quantity.Text()` (point décimal, sans zéro inutile, relu par `ParseQuantity`), et `unit`, le code d'une unité de la liste fermée (revue #92, point 2). Un article ajouté garde l'unité saisie. Un article calculé et ses provenances sont exprimés dans la **plus petite unité de leur famille** : `g`, `ml`, `piece`, `tablespoon`, `teaspoon`, `pinch` (« 875 » `g`, « 0.75 » `piece`) ; `shopping.ts` en tire l'unité d'affichage. Aucune quantité en unités de base (milligrammes, millièmes) ne sort du serveur : elles restent dans la base et le calcul. Le nom de l'ingrédient est donné en clair, comme dans les lignes d'un plat (le référentiel n'a pas d'identifiant public, `bibliotheque`, D10).
 
@@ -271,7 +272,7 @@ Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Con
 
 Les listes vivent dans une **copie en mémoire** (`web/src/shopping-lists.ts`), une `CachedCollection` de la collection `shopping_lists`, comme les plats et le planning (ADR 0029, point 4). Elle est vérifiée à chaque visite de l'onglet Courses et à chaque retour au premier plan ; avec la copie du planning et celle de la bibliothèque sur l'écran des courses des repas (jours ayant des repas, plats servis déjà reçus) et pour le dépliage (nom et couleur des plats). Après une écriture, la copie prend la liste renvoyée et la version, ou se vérifie si un autre membre a écrit entre-temps ; après un `404`, elle retire la liste ou se vérifie. `PUT shopping-lists/main` ne renvoie que les versions : la copie inverse elle-même les deux drapeaux `main` si la version suit la sienne, sinon elle se vérifie. Rien n'est écrit sur l'appareil (D2) : la copie disparaît au rechargement, à la déconnexion et sur un 401.
 
-Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses », complété au lot A.
+Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses » et « Messages des listes de courses » (lot A). `shopping.ts` trie de nouveau les articles après une coche locale, avec la même règle que `SortItems`.
 
 ## Échanges
 
@@ -364,7 +365,7 @@ sequenceDiagram
 
 ## Preuves
 
-- **Contre l'API** (godog) : listes (principale à la naissance, changement de principale, création, nom, renommage, suppression et ses refus), articles ajoutés (quantité facultative, référentiel enrichi, retrait), coche, courses faites, toutes les règles de calcul de C4 et le décompte de C5, P2, ingrédient sans quantité, limites, écritures croisées, T1, ENF-02 ; tableau « Scénarios couverts » du plan.
+- **Contre l'API** (godog) : listes (principale à la naissance, changement de principale, création, nom, renommage, suppression et ses refus), articles ajoutés (quantité facultative, référentiel enrichi, retrait, deux articles du même ingrédient), ordre des articles, coche, courses faites, toutes les règles de calcul de C4 (dont la période et ses bornes, les masses au gramme) et le décompte de C5, P2, ingrédient sans quantité, limites, écritures croisées, T1, ENF-02 (listes et articles) ; tableau « Scénarios couverts » du plan.
 - **Dans le navigateur** (`@ui`, ADR 0028), horloge de Playwright au lundi 5 octobre 2026 : l'onglet Courses ouvre la liste principale (C1), ordre des listes (C2), période et liste par défaut, date de fin avant le début (C4), dépliage d'un article, article ajouté non dépliable (C5), sous Chromium et WebKit.
 - **Tests unitaires** : règles et calcul de `internal/shopping` (`go test`, table de cas `internal/shopping/testdata/` tirée des exemples de la spec) ; `shopping.ts` (`node:test`) : ordres, libellés et unités d'affichage, période par défaut, grille d'un mois, plats servis déjà reçus, lignes dépliées, résumé des courses faites.
 

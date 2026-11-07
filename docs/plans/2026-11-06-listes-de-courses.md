@@ -2,7 +2,7 @@
 
 - **Nom** : `courses`
 - **Date** : 2026-11-06
-- **Statut** : prêt, à revoir. Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, à confirmer à la revue de la PR du plan.
+- **Statut** : en cours (lot A). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
 
 ## Objectif
 
@@ -51,11 +51,12 @@ La conception (modèle, calcul, découpage du code, API, échanges) est dans [`d
 | | C6 : cocher un article | API | B |
 | | C11 : les trois scénarios (courses faites, liste utilisable ensuite, planning intact) | API | B (C pour « ne touchent pas au planning ») |
 | | C12 : les trois scénarios (liste vide supprimée, liste non vide, liste principale) | API | B |
-| | Scénarios nouveaux du lot A : ingrédient sans quantité (D3), limites (D12), écritures croisées (D9, D11), ordre des articles (D13) | API | B, C |
+| | Scénarios nouveaux du lot A : nom d'une liste (même nom, espaces, 40 caractères, refus) et 20 listes (D12), 300 articles à la main (D12), deux articles ajoutés du même ingrédient (D23), ordre des articles (D13), coche croisée et coche d'un article retiré (D8), courses faites croisées (D9), suppressions croisées et écritures sur une liste supprimée (D11), retrait d'un article déjà retiré (D11) | API | B |
+| | Scénarios nouveaux du lot A : période refusée (fin avant début, plus de 31 jours, hors de 2000 à 2099) et acceptée (un jour, 31 jours, D12), masses au gramme (D7), ingrédient sans quantité (D3), 300 articles par les courses des repas (D12) | API | C |
 | | C7, C8, C9, C10 | **restent en attente** : hors-ligne (D2), `courses-suite` (D1) | — |
 | `bibliotheque-plats.feature` | P2 : la modification d'un plat s'applique aux repas où il est servi | API | C |
 | `tribu.feature` | T1 : « Les listes de courses sont partagées entre membres » (nouveau, lot A) | API | B |
-| `compartimentage-tribus.feature` | ENF-02 : « Les listes de courses sont propres à la tribu », **tiré** au lot A de « Toutes les données sont compartimentées » (D16) ; « Une liste d'une autre tribu ne peut être ni lue, ni modifiée, ni supprimée » (nouveau) | API | B |
+| `compartimentage-tribus.feature` | ENF-02 : « Les listes de courses sont propres à la tribu », **tiré** au lot A de « Toutes les données sont compartimentées » (D16) ; « Une liste d'une autre tribu ne peut être ni lue, ni modifiée, ni supprimée », « Un article d'une autre tribu ne peut être ni coché ni retiré » (nouveaux) | API | B |
 | | ENF-02 : toutes les données sont compartimentées | **reste en attente** : ses exemples membres et sessions | — |
 | `authentification.feature` | ENF-01 : les modifications autres que les listes de courses nécessitent le réseau | **reste en attente** : plan hors-ligne | — |
 
@@ -65,12 +66,12 @@ La conception (modèle, calcul, découpage du code, API, échanges) est dans [`d
 
 Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
-- [ ] **1. `fonctionnalites.md`** : Q26 fermée et décisions nouvelles, à la suite de Q35 : Q36, ingrédient sans quantité dans les courses (D3) ; Q37, arrondis des masses et des volumes et quantité apportée (D7) ; Q38, limites (D12) ; Q39, écritures croisées sur une liste (D9, D11) ; Q40, ordre des articles (D13). Concept « Article » accordé (article sans quantité) ; C4 précisé (période de 31 jours au plus).
-- [ ] **2. Scénarios**, selon `conventions-gherkin.md` : scission de « La date de fin ne peut pas précéder la date de début » en un refus contre l'API et l'écran (`@ui`) ; tags `@ui` sur « L'onglet Courses ouvre la liste principale », « Ordre des listes », « Période et liste par défaut », « Déplier un article… », « Un article ajouté ne se déplie pas » ; scénarios nouveaux contre l'API (tableau ci-dessus) ; T1 pour les listes ; dans `compartimentage-tribus.feature`, l'exemple « les listes de courses » sorti en un scénario « Les listes de courses sont propres à la tribu », et l'accès croisé à une liste (D16). Les nouveaux titres entrent dans `acceptance/pending.txt`.
-- [ ] **3. `glossaire.md`** : les termes nouveaux de « Contexte et contraintes ».
-- [ ] **4. `docs/design/README.md`** : l'onglet Courses devient actif (« Écarts » du plan `bibliotheque` mis à jour) ; interprétations de ce que les maquettes ne montrent pas (D17) : ligne sans quantité, chargement et erreur de réseau, liste supprimée entre-temps, refus des limites, « N plats servis ignorés » après un ajout, ordre des articles ; ce que ce plan laisse de côté dans les maquettes jusqu'à `courses-suite` et au plan hors-ligne (bandeau de liste périmée, pastille « Repas modifiés », « Sélectionner » et mode sélection, bandeau hors ligne) ; chemins (D15) ; messages.
-- [ ] **5. Document de conception** : accordé aux specs, au glossaire et au design du lot.
-- [ ] **6. Feuille de route** : plan « en cours ».
+- [x] **1. `fonctionnalites.md`** : Q26 fermée et décisions nouvelles, à la suite de Q35 : Q36, ingrédient sans quantité dans les courses (D3) ; Q37, arrondis des masses et des volumes et quantité apportée (D7) ; Q38, limites (D12) ; Q39, écritures croisées sur une liste (D9, D11) ; Q40, ordre des articles (D13). Concept « Article » accordé (article sans quantité) ; C4 précisé (période de 31 jours au plus).
+- [x] **2. Scénarios**, selon `conventions-gherkin.md` : scission de « La date de fin ne peut pas précéder la date de début » en un refus contre l'API et l'écran (`@ui`) ; tags `@ui` sur « L'onglet Courses ouvre la liste principale », « Ordre des listes », « Période et liste par défaut », « Déplier un article… », « Un article ajouté ne se déplie pas » ; scénarios nouveaux contre l'API (tableau ci-dessus) ; T1 pour les listes ; dans `compartimentage-tribus.feature`, l'exemple « les listes de courses » sorti en un scénario « Les listes de courses sont propres à la tribu », et l'accès croisé à une liste (D16). Les nouveaux titres entrent dans `acceptance/pending.txt`.
+- [x] **3. `glossaire.md`** : les termes nouveaux de « Contexte et contraintes ».
+- [x] **4. `docs/design/README.md`** : l'onglet Courses devient actif (« Écarts » du plan `bibliotheque` mis à jour) ; interprétations de ce que les maquettes ne montrent pas (D17) : ligne sans quantité, chargement et erreur de réseau, liste supprimée entre-temps, refus des limites, « N plats servis ignorés » après un ajout, ordre des articles ; ce que ce plan laisse de côté dans les maquettes jusqu'à `courses-suite` et au plan hors-ligne (bandeau de liste périmée, pastille « Repas modifiés », « Sélectionner » et mode sélection, bandeau hors ligne) ; chemins (D15) ; messages.
+- [x] **5. Document de conception** : accordé aux specs, au glossaire et au design du lot.
+- [x] **6. Feuille de route** : plan « en cours ».
 
 ### Lot B : listes et articles, domaine et API (`feature/listes-api`)
 
@@ -183,7 +184,7 @@ Le 2026-11-06, au cadrage, avec le développeur.
 
 - **D1. Deux plans.** `courses` : listes, articles à la main, courses des repas, coches, courses faites, suppression (C1 à C6, C11, C12), puis `v0.4.0`. `courses-suite` ensuite : liste périmée et recalcul (C8), sélection, déplacement et nouvelle liste à partir d'une sélection (C9, C10), puis `v0.5.0`. Le modèle de ce plan prévoit le recalcul : provenances gardées avec ce qu'elles ont apporté (D5). Écartés : un plan et deux releases ; un plan et une release, plus long avant la production.
 - **D2. Pas de hors-ligne dans ce plan**, comme `bibliotheque`, D18, et `planning`, D13 : une liste affichée reste lisible tant que l'onglet reste ouvert (copie en mémoire) ; cocher, ajouter, retirer, déclarer les courses faites et toute action sur les listes affichent « Réseau nécessaire » sans réseau et ne changent rien. Les scénarios C7 restent en attente. Écartés : une file des coches en mémoire, perdue au rechargement ; C7 complet (IndexedDB, file persistante, rejeu Q18), qui empiète sur le plan hors-ligne.
-- **D3. Un ingrédient sans quantité devient un article calculé sans quantité.** Q36, ferme Q26. Une seule ligne par ingrédient sans quantité, distincte des lignes avec quantité du même ingrédient (comme une famille d'unités à part) ; ses provenances sont dépliables (C5), sans quantité apportée ; jamais arrondi. Un article sans quantité qui gagne une provenance n'est pas décoché : sa quantité n'augmente pas (« il faut en racheter » ne s'applique pas ; à confirmer). Écartés : l'ignorer, ce qui fait oublier de vérifier le placard ; le rattacher à une ligne avec quantité du même ingrédient, qui mélange deux sens.
+- **D3. Un ingrédient sans quantité devient un article calculé sans quantité.** Q36, ferme Q26. Une seule ligne par ingrédient sans quantité, distincte des lignes avec quantité du même ingrédient (comme une famille d'unités à part) ; ses provenances sont dépliables (C5), sans quantité apportée ; jamais arrondi. Un article sans quantité qui gagne une provenance n'est pas décoché : sa quantité n'augmente pas (« il faut en racheter » ne s'applique pas ; confirmé le 2026-11-07). Écartés : l'ignorer, ce qui fait oublier de vérifier le placard ; le rattacher à une ligne avec quantité du même ingrédient, qui mélange deux sens.
 
 Proposées le 2026-11-06, à confirmer à la revue du plan.
 
@@ -232,5 +233,14 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 - **Point 4, à noter** : `received` grandit sans limite (environ 14 plats servis par semaine, 25 Ko par an et par liste), et avec lui le rechargement de toutes les listes à chaque coche (D4). Reporté dans « Questions ouvertes », « Croissance des listes » ; à mesurer en production, à reprendre au cadrage de `courses-suite`.
 - **Point 6 (vérification des corrections, 2026-11-07), à noter** : un changement sans effet sur les articles peut rendre une liste périmée, contre le scénario C8 « Un changement sans effet sur les articles ne rend pas la liste périmée » : une quantité réécrite dans une autre unité de sa famille (500 g en 0,5 kg), ou les parts changées d'un plat servi dont toutes les lignes sont sans quantité. Les données gardées (D5) suffisent pour comparer en unités de base ou comparer les quantités apportées ; règle de comparaison à fixer au cadrage de `courses-suite`, sans changer le format.
 - **Pour information, gardé pour `courses-suite`** : un ajout de courses fait à la mauvaise liste ne s'efface qu'en cochant puis en déclarant les courses faites, et ses plats servis restent reçus par cette liste (D12, Q22) ; acceptable en V1.
+
+**Lot A** (`feature/specs-listes-de-courses`), 2026-11-07, depuis une session cloud :
+
+- **Décisions** : D4 à D24 tenues pour confirmées par la fusion de #92, avec l'accord du développeur ; D3 retenue telle qu'écrite (Q36).
+- **Q36 à Q40** dans `fonctionnalites.md` ; « Unités, conversions et arrondis » accordé à Q37 (masses au gramme supérieur, ce que la spec écartait jusque-là : « les masses et les volumes ne sont pas arrondis à l'entier ») ; « Ajout des courses d'une période » complété (sans quantité, plats servis reçus sans ingrédient, 300 articles).
+- **Scénarios ajoutés au-delà de la liste du plan**, à valider à la revue : « Deux articles ajoutés du même ingrédient restent distincts » (D23), « Un article d'une autre tribu ne peut être ni coché ni retiré » (ENF-02, le `404` identique pour un article), « Deux listes peuvent porter le même nom » (Q17), « Les espaces en trop sont retirées du nom d'une liste » et « Un nom de liste de 40 caractères est accepté » (D12). La coche d'un article retiré entre-temps (D8) n'affiche aucun message ; elle est prouvée à part de « Une écriture sur une liste supprimée entre-temps est refusée », qui ne porte que sur les écritures d'une liste vide (ajout d'un article, renommage, liste principale, courses des repas).
+- **Scénario scindé** : « La date de fin ne peut pas précéder la date de début » garde son titre, devient `@ui` (bouton inactif et message) ; le refus de l'API est « Une période dont la date de fin précède la date de début est refusée ». 29 titres nouveaux dans `acceptance/pending.txt` ; l'exemple « les listes de courses » quitte « Toutes les données sont compartimentées », qui reste en attente pour les membres et les sessions.
+- **Design**, interprétations à valider à la revue : navigation par mois dans le calendrier des courses des repas, bornée de 2000 à 2099 ; « Du » puis « Au » au toucher d'un jour ; bouton d'ajout actif sur une période sans repas, avec « Aucun plat servi ajouté » ensuite ; formulaire d'ajout à la main laissé ouvert après un ajout ; « Définir comme liste principale » absent de la feuille de la principale ; bandeau d'erreur « Réseau nécessaire » en haut de la liste pour toute écriture (D2) ; libellés des bandeaux après un ajout de courses et des courses faites, d'après la maquette et la conception.
+- **Conception** : statut retenu, Q36 à Q40 cités, `SortItems` (Q40) dans les règles et ordre des articles dans la réponse de l'API.
 
 *(à compléter au fil des lots)*
