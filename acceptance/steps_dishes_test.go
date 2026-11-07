@@ -980,17 +980,37 @@ func (w *world) crossAccess(ctx context.Context, action, slug string) error {
 	return err
 }
 
+// crossAccessRefused checks the answer to the attempt on another tribe or, without one, to
+// the last write on a shopping list.
 func (w *world) crossAccessRefused() error {
-	if c := w.kitchen.foreign.Code; c < 400 {
-		return fmt.Errorf("status %d, body %s", c, w.kitchen.foreign.Body)
+	rec := w.kitchen.foreign
+	if rec == nil {
+		rec = w.shopping.last
+	}
+	if rec == nil {
+		return errors.New("no request sent")
+	}
+	if c := rec.Code; c < 400 {
+		return fmt.Errorf("status %d, body %s", c, rec.Body)
 	}
 	return nil
 }
 
+// sameAsUnknownID compares the answers to each attempt on an identifier of another tribe
+// with those on an identifier that exists nowhere.
 func (w *world) sameAsUnknownID() error {
-	foreign, unknown := answer(w.kitchen.foreign), answer(w.kitchen.unknown)
-	if foreign != unknown {
-		return fmt.Errorf("%q, for an unknown identifier %q", foreign, unknown)
+	pairs := w.shopping.attempts
+	if w.kitchen.foreign != nil {
+		pairs = append(pairs, [2]*httptest.ResponseRecorder{w.kitchen.foreign, w.kitchen.unknown})
+	}
+	if len(pairs) == 0 {
+		return errors.New("no attempt made")
+	}
+	for _, p := range pairs {
+		foreign, unknown := answer(p[0]), answer(p[1])
+		if foreign != unknown {
+			return fmt.Errorf("%q, for an unknown identifier %q", foreign, unknown)
+		}
 	}
 	return nil
 }
@@ -1012,9 +1032,12 @@ func (w *world) otherDishUnchanged(ctx context.Context, slug string) error {
 }
 
 // nothingOfOtherTribe: neither the dishes nor the ingredients of the other tribe are in what
-// "je" consulted, nor its meal plan.
+// "je" consulted, nor its meal plan, nor its shopping lists.
 func (w *world) nothingOfOtherTribe(ctx context.Context, slug string) error {
 	if err := w.nothingOfOtherPlan(ctx, slug); err != nil {
+		return err
+	}
+	if err := w.nothingOfOtherLists(ctx, slug); err != nil {
 		return err
 	}
 	library, err := w.otherLibrary(ctx, slug)

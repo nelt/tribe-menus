@@ -1,7 +1,7 @@
 # Conception : listes de courses
 
-- **Mise à jour** : 2026-11-07
-- **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; à tenir à jour par les plans qui touchent ce domaine (`courses-suite`, hors-ligne)
+- **Mise à jour** : 2026-11-07 (lot B)
+- **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; noms du serveur des listes et des articles fixés par le lot B, ceux du calcul par le lot C ; à tenir à jour par les plans qui touchent ce domaine (`courses-suite`, hors-ligne)
 - **Stories** : C1 à C6, C11, C12 ; P2 pour le calcul ; T1 et ENF-02 pour les listes. C7 à C10 sont prévues par le modèle, pas réalisées.
 
 Ce document décrit la conception retenue pour les listes de courses : modèle, calcul, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise les quantités, les unités, le référentiel et la copie des collections, et sur le planning ([`planning-des-repas.md`](planning-des-repas.md)), dont il lit les plats servis. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (C1 à C12, « Ajout des courses d'une période », « Règle de calcul », « Unités, conversions et arrondis », Q10 à Q18, Q22 à Q24, Q36 à Q40), les décisions dans les ADR (0003, 0027, 0029) et dans le plan (D1 à D24).
@@ -110,13 +110,13 @@ classDiagram
 
     namespace internal_shopping {
         class Lists {
-            +ShoppingLists(ctx, after) version, Page~List~
+            +Page(ctx, after) version, Page~List~
             +Version(ctx) int
             +Create(ctx, name) List, Versions
             +Rename(ctx, ListID, name) List, Versions
             +SetMain(ctx, ListID) Versions
             +Delete(ctx, ListID) Versions
-            +AddItem(ctx, ListID, ItemInput) List, Versions
+            +AddItem(ctx, ListID, dish.LineInput) List, Versions
             +RemoveItem(ctx, ListID, ItemID) List, Versions
             +SetChecked(ctx, ListID, ItemID, bool) List, Versions
             +CheckOut(ctx, ListID, seen []ItemID) List, removed, Versions
@@ -125,19 +125,24 @@ classDiagram
         class Store {
             <<interface>>
             +Version(ctx) int
-            +ShoppingLists(ctx, after, limit) version, Page~List~
+            +Lists(ctx, after, limit) version, Page~List~
             +Write(ctx, func(Tx) error) Versions
         }
         class Tx {
             <<interface>>
-            +List(ctx, ListID) List
+            dish.Catalog : Ingredient, AddIngredient, SetDefaultUnit
+            +List(ctx, ListID) List, ErrNotFound
             +ListCount(ctx) int
-            +Ingredient(ctx, name) Ingredient, créé si absent
-            +ServedDishes(ctx, Period) []ServedDish
-            +Dishes(ctx, []DishID) []Dish et lignes
-            +SaveList(ctx, List)
-            +DeleteList(ctx, ListID)
+            +NextRank(ctx) int
+            +InsertList(ctx, List)
+            +RenameList(ctx, ListID, name)
             +SetMain(ctx, ListID)
+            +DeleteList(ctx, ListID)
+            +InsertItem(ctx, ListID, Item, ingredient)
+            +SetChecked(ctx, ItemID, bool)
+            +DeleteItem(ctx, ItemID)
+            +ServedDishes(ctx, Period) []ServedDish, lot C
+            +Dishes(ctx, []DishID) []Dish et lignes, lot C
         }
         class compute {
             <<functions>>
@@ -148,23 +153,25 @@ classDiagram
         class rules {
             <<functions>>
             +ParseListName(string) string
-            +ParsePeriod(from, to) Period
-            +CheckLimits(List)
-            +SortItems([]Item) []Item
+            +ParsePeriod(from, to) Period, lot C
+            +SortItems([]Item)
+            MaxListNameLength, MaxLists, MaxItems
         }
         class errors {
             <<variables>>
             ErrListNameEmpty, ErrListNameInvalid, ErrListNameTooLong
             ErrTooManyLists, ErrTooManyItems
             ErrInvalidPeriod, ErrPeriodTooLong
-            ErrListNotEmpty, ErrMainList, ErrComputedItem, ErrNotFound
+            NotEmptyError, ErrMainList, ErrComputedItem, ErrNotFound
+            ItemError, code de dish.ErrorCode
         }
     }
     namespace internal_dish {
         class quantities {
             <<réutilisé>>
             Unit, Family, Quantity, ParseQuantity
-            Normalize (Q29)
+            NormalizeName (Q29), CleanName (D30)
+            ParseLine, ResolveIngredient (Q13, Q20)
         }
     }
     namespace internal_storage {
@@ -237,8 +244,8 @@ classDiagram
     CachedCollection~T~ ..> shoppingAPI : HTTP JSON, pages, ETag
 ```
 
-- **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles, les quantités et le nom normalisé, pas de `internal/mealplan` : le `Tx` lui rend les plats servis de la période.
-- **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. `SaveList` réécrit les articles, provenances, plats servis reçus et leurs lignes d'une liste dans la transaction : une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`.
+- **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles, les quantités, le nom normalisé, la règle des noms (`CleanName`), celle d'une ligne saisie (`ParseLine`) et la résolution d'un ingrédient dans le référentiel (`ResolveIngredient`, sur l'interface `dish.Catalog`), communes aux plats et aux articles ajoutés ; pas de `internal/mealplan` : le `Tx` lui rend les plats servis de la période. Le `Tx` écrit par opérations ciblées (une liste, un article, une coche), lues puis vérifiées par `Lists` ; le lot C y ajoute ce qu'écrit le calcul.
+- **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. Une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`. Supprimer une liste supprime ses plats servis reçus et leurs lignes ; retirer un article, ses provenances.
 - **`internal/collection`** : inchangé ; `GET shopping-lists` passe par `Serve`.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
 - **`web/src`** : `shopping.ts`, module pur testé par `node:test` ; `shopping-lists.ts`, copie des listes sur `CachedCollection`, vérifiée avec `planning.ts` et `library.ts` sur l'écran des courses des repas et pour le dépliage ; écrans `shopping-list-screen.ts`, `list-picker-screen.ts`, `meal-shopping-screen.ts` ; la combobox d'ingrédient de l'écran d'un plat et `warningBanner` sont repris.
@@ -250,11 +257,11 @@ classDiagram
 | `GET shopping-lists?after=…` | | 200 : `{ items: [List], next? }`, 20 listes au plus par page, dans l'ordre des identifiants (D4) ; `ETag: "shopping_lists-<version>"`, `304`, `412` (ADR 0029) |
 | `POST shopping-lists` | `{ name }` | 201 : `{ list, versions }` ; 400 : `list_name_empty`, `list_name_invalid`, `list_name_too_long` ; 409 `too_many_lists` |
 | `PUT shopping-lists/{id}/name` | `{ name }` | 200 : `{ list, versions }` ; 400 comme ci-dessus ; 404 |
-| `PUT shopping-lists/main` | `{ list }` | 200 : `{ versions }` ; 404 |
+| `PUT shopping-lists/main` | `{ list }` | 200 : `{ versions }`, inchangées pour la liste déjà principale ; 404 |
 | `DELETE shopping-lists/{id}` | | 200 : `{ versions }` ; 409 `{ error: "list_not_empty", list }`, la liste à jour ; 409 `main_list` ; 404 |
-| `POST shopping-lists/{id}/items` | `{ ingredient, quantity?, unit? }` | 201 : `{ list, versions }` ; 400 : `ingredient_name_empty`, `ingredient_name_invalid`, `ingredient_name_too_long`, `invalid_quantity`, `quantity_too_precise`, `unknown_unit` ; 409 `too_many_items` ; 404 |
+| `POST shopping-lists/{id}/items` | `{ ingredient, quantity?, unit? }` | 201 : `{ list, versions }` ; 400 : les codes d'une ligne de plat, `ingredient_name_required`, `ingredient_name_invalid`, `ingredient_name_too_long`, `unit_required`, `invalid_unit`, `invalid_quantity`, `quantity_too_precise` (même règle, `dish.ParseLine`, mêmes messages) ; 409 `too_many_items` ; 404 |
 | `DELETE shopping-lists/{id}/items/{item}` | | 200 : `{ list, versions }` ; 409 `computed_item` ; 404, liste supprimée entre-temps ou article inconnu (l'écran le traite comme un retrait fait, D11) |
-| `PUT shopping-lists/{id}/items/{item}/checked` | `{ checked }` | 200 : `{ list, versions }` ; 404 |
+| `PUT shopping-lists/{id}/items/{item}/checked` | `{ checked }` | 200 : `{ list, versions }` ; 400 `bad_request` sans `checked` ; 404 |
 | `POST shopping-lists/{id}/checkout` | `{ items: [ItemID] }`, ceux vus cochés | 200 : `{ list, removed, versions }` (D9) ; 404 |
 | `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }` ; 400 `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
 

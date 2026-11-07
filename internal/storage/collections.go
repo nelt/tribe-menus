@@ -14,9 +14,10 @@ import (
 // collection, by the triggers of the migration that creates the table. A test checks that
 // each of them has its three triggers.
 var Collections = map[string][]string{
-	"dishes":      {"dishes", "dish_ingredients"},
-	"ingredients": {"ingredients"},
-	"meal_plan":   {"served_dishes"},
+	"dishes":         {"dishes", "dish_ingredients"},
+	"ingredients":    {"ingredients"},
+	"meal_plan":      {"served_dishes"},
+	"shopping_lists": {"shopping_lists", "shopping_items", "shopping_item_sources", "shopping_received", "shopping_received_lines"},
 }
 
 // readCollection runs read in a transaction of the tribe database and returns the version

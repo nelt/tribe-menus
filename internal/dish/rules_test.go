@@ -241,6 +241,27 @@ func TestDisplayName(t *testing.T) {
 	}
 }
 
+func TestCleanName(t *testing.T) {
+	cases := []struct {
+		in, want string
+		max      int
+		fault    NameFault
+	}{
+		{"  Marché   du samedi ", "Marché du samedi", 40, NameOK},
+		{"éééé", "éééé", 4, NameOK},
+		{"ééééé", "ééééé", 4, NameLong},
+		{" \u200b ", "\u200b", 4, NameEmpty},
+		{"", "", 4, NameEmpty},
+		// A control character comes first, even in a name too long.
+		{"sel\a et poivre", "sel\a et poivre", 4, NameControl},
+	}
+	for _, c := range cases {
+		if got, fault := CleanName(c.in, c.max); got != c.want || fault != c.fault {
+			t.Errorf("CleanName(%q, %d) = %q, %d; want %q, %d", c.in, c.max, got, fault, c.want, c.fault)
+		}
+	}
+}
+
 func TestValidateResult(t *testing.T) {
 	in := Input{Name: "  Pâtes  au\tbeurre ", Servings: 3, Lines: []LineInput{
 		{Name: " pâtes ", Quantity: "500", Unit: "g"},
@@ -256,10 +277,10 @@ func TestValidateResult(t *testing.T) {
 	if len(v.lines) != 2 {
 		t.Fatalf("lines %+v", v.lines)
 	}
-	if l := v.lines[0]; l.name != "pâtes" || l.normalized != "pates" || l.quantity == nil || *l.quantity != (Quantity{500_000, Gram}) {
+	if l := v.lines[0]; l.Name != "pâtes" || l.Normalized != "pates" || l.Quantity == nil || *l.Quantity != (Quantity{500_000, Gram}) {
 		t.Errorf("line 0 %+v", l)
 	}
-	if l := v.lines[1]; l.name != "sel" || l.quantity != nil {
+	if l := v.lines[1]; l.Name != "sel" || l.Quantity != nil {
 		t.Errorf("line 1 %+v", l)
 	}
 }

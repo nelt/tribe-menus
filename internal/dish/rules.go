@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
 )
@@ -93,6 +94,36 @@ func hasVisible(name string) bool {
 	return strings.IndexFunc(name, func(r rune) bool {
 		return unicode.In(r, unicode.L, unicode.N, unicode.P, unicode.S)
 	}) >= 0
+}
+
+// NameFault tells why a name entered breaks the rules of the names (D30).
+type NameFault int
+
+// Faults of a name.
+const (
+	NameOK NameFault = iota
+	// NameEmpty: no visible character.
+	NameEmpty
+	// NameControl: a control character.
+	NameControl
+	// NameLong: more characters than allowed.
+	NameLong
+)
+
+// CleanName returns a name entered with its spaces reduced, and why it breaks the rules of
+// the names (D30), if it does: the names of the dishes and of the ingredients, and of the
+// shopping lists (Q38). Max is the number of characters allowed.
+func CleanName(name string, max int) (string, NameFault) {
+	name = displayName(name)
+	switch {
+	case hasControl(name):
+		return name, NameControl
+	case !hasVisible(name):
+		return name, NameEmpty
+	case utf8.RuneCountInString(name) > max:
+		return name, NameLong
+	}
+	return name, NameOK
 }
 
 // Unit is a unit of the closed list (glossary), by its code in the API and the database.

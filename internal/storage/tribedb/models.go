@@ -103,6 +103,51 @@ type Session struct {
 	Label        sql.NullString
 }
 
+type ShoppingItem struct {
+	ID           string
+	ListID       string
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+	Checked      int64
+	Manual       int64
+}
+
+type ShoppingItemSource struct {
+	ItemID       string
+	ServedDishID string
+	DishID       string
+	Date         string
+	Mealtime     string
+	Servings     int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+}
+
+type ShoppingList struct {
+	ID   string
+	Name string
+	Rank int64
+	Main int64
+}
+
+type ShoppingReceived struct {
+	ListID       string
+	ServedDishID string
+	DishID       string
+	Servings     int64
+	DishServings int64
+}
+
+type ShoppingReceivedLine struct {
+	ListID       string
+	ServedDishID string
+	Position     int64
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+}
+
 type Tribe struct {
 	ID   int64
 	Name string

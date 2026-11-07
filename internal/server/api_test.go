@@ -23,6 +23,8 @@ type apiFixture struct {
 	login    *tribe.Login
 	outbox   *mail.Outbox
 	recorder *mail.Recorder
+	// store holds the databases, for the tests that prepare data without the API.
+	store *storage.Store
 	// opened counts the tribe databases opened by the handlers.
 	opened int
 }
@@ -69,7 +71,7 @@ func newAPIFixture(t *testing.T) *apiFixture {
 			t.Fatal(err)
 		}
 	}
-	f := &apiFixture{recorder: &mail.Recorder{}}
+	f := &apiFixture{recorder: &mail.Recorder{}, store: st}
 	logger := slog.New(slog.DiscardHandler)
 	f.outbox = mail.NewOutbox(f.recorder, tribe.LoginCodeValidity, logger)
 	f.login = &tribe.Login{

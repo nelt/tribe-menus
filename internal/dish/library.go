@@ -82,8 +82,20 @@ type Store interface {
 	Write(ctx context.Context, write func(Tx) error) (collection.Versions, error)
 }
 
+// Catalog finds and adds ingredients of the catalog in a write transaction: for the lines
+// of a dish, and for the items added by hand to a shopping list (Q13, Q20).
+type Catalog interface {
+	// Ingredient returns the ingredient with this normalized name, if any, and its key.
+	Ingredient(ctx context.Context, normalized string) (Ingredient, int64, bool, error)
+	// AddIngredient adds an ingredient to the catalog and returns its key.
+	AddIngredient(ctx context.Context, ingredient Ingredient, normalized string) (int64, error)
+	// SetDefaultUnit gives an ingredient without default unit its default unit.
+	SetDefaultUnit(ctx context.Context, key int64, unit Unit) error
+}
+
 // Tx reads and writes in a write transaction.
 type Tx interface {
+	Catalog
 	TribeSize(ctx context.Context) (int, error)
 	// Dish returns the dish, or ErrNotFound.
 	Dish(ctx context.Context, id ID) (Dish, error)
@@ -91,12 +103,6 @@ type Tx interface {
 	DishNamed(ctx context.Context, normalized string) (ID, bool, error)
 	// ColorCounts counts the dishes of each color.
 	ColorCounts(ctx context.Context) (map[Color]int, error)
-	// Ingredient returns the ingredient with this normalized name, if any, and its key.
-	Ingredient(ctx context.Context, normalized string) (Ingredient, int64, bool, error)
-	// AddIngredient adds an ingredient to the catalog and returns its key.
-	AddIngredient(ctx context.Context, ingredient Ingredient, normalized string) (int64, error)
-	// SetDefaultUnit gives an ingredient without default unit its default unit.
-	SetDefaultUnit(ctx context.Context, key int64, unit Unit) error
 	// InsertDish inserts a dish in revision 1, its lines designating their ingredients by key.
 	InsertDish(ctx context.Context, d Dish, normalized string, keys []int64) error
 	// UpdateDish saves the name, the servings and the lines of a dish, and increases its
@@ -229,35 +235,44 @@ func checkName(ctx context.Context, tx Tx, normalized string, self ID) error {
 	return nil
 }
 
-// resolve finds the ingredient of each line in the catalog by its normalized name, or adds
-// it with the unit of the line as default unit; an ingredient without default unit gets the
-// unit of the line, if it has one (Q20, D4).
-func resolve(ctx context.Context, tx Tx, valid []validLine) ([]Line, []int64, error) {
+// resolve finds or adds the ingredient of each line (ResolveIngredient).
+func resolve(ctx context.Context, tx Tx, valid []ParsedLine) ([]Line, []int64, error) {
 	lines := make([]Line, 0, len(valid))
 	keys := make([]int64, 0, len(valid))
 	for _, v := range valid {
-		var unit Unit
-		if v.quantity != nil {
-			unit = v.quantity.Unit
-		}
-		ingredient, key, found, err := tx.Ingredient(ctx, v.normalized)
+		ingredient, key, err := ResolveIngredient(ctx, tx, v)
 		if err != nil {
 			return nil, nil, err
 		}
-		switch {
-		case !found:
-			ingredient = Ingredient{Name: v.name, DefaultUnit: unit}
-			if key, err = tx.AddIngredient(ctx, ingredient, v.normalized); err != nil {
-				return nil, nil, err
-			}
-		case ingredient.DefaultUnit == "" && unit != "":
-			if err := tx.SetDefaultUnit(ctx, key, unit); err != nil {
-				return nil, nil, err
-			}
-			ingredient.DefaultUnit = unit
-		}
-		lines = append(lines, Line{Ingredient: ingredient, Quantity: v.quantity})
+		lines = append(lines, Line{Ingredient: ingredient, Quantity: v.Quantity})
 		keys = append(keys, key)
 	}
 	return lines, keys, nil
+}
+
+// ResolveIngredient finds the ingredient of a line in the catalog by its normalized name, or
+// adds it with the unit of the line as default unit; an ingredient without default unit gets
+// the unit of the line, if it has one (Q20, D4). It returns the ingredient and its key.
+func ResolveIngredient(ctx context.Context, c Catalog, line ParsedLine) (Ingredient, int64, error) {
+	var unit Unit
+	if line.Quantity != nil {
+		unit = line.Quantity.Unit
+	}
+	ingredient, key, found, err := c.Ingredient(ctx, line.Normalized)
+	if err != nil {
+		return Ingredient{}, 0, err
+	}
+	switch {
+	case !found:
+		ingredient = Ingredient{Name: line.Name, DefaultUnit: unit}
+		if key, err = c.AddIngredient(ctx, ingredient, line.Normalized); err != nil {
+			return Ingredient{}, 0, err
+		}
+	case ingredient.DefaultUnit == "" && unit != "":
+		if err := c.SetDefaultUnit(ctx, key, unit); err != nil {
+			return Ingredient{}, 0, err
+		}
+		ingredient.DefaultUnit = unit
+	}
+	return ingredient, key, nil
 }
