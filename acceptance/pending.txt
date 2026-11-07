@@ -21,8 +21,11 @@ authentification.feature: La déconnexion efface les données de la tribu sur l'
 authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 bibliotheque-plats.feature: La modification d'un plat s'applique aux repas où il est servi
+compartimentage-tribus.feature: Les listes de courses sont propres à la tribu
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
+compartimentage-tribus.feature: Un article d'une autre tribu ne peut être ni coché ni retiré
+compartimentage-tribus.feature: Une liste d'une autre tribu ne peut être ni lue, ni modifiée, ni supprimée
 liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Ajouter un article à la main
 liste-courses.feature: Changer de liste principale
@@ -31,6 +34,8 @@ liste-courses.feature: Cocher un article
 liste-courses.feature: Cocher un article sans réseau
 liste-courses.feature: Créer une liste vide
 liste-courses.feature: Créer une liste à partir d'une sélection
+liste-courses.feature: Deux articles ajoutés du même ingrédient restent distincts
+liste-courses.feature: Deux listes peuvent porter le même nom
 liste-courses.feature: Déclarer les courses faites retire les articles cochés
 liste-courses.feature: Déplacer des articles sélectionnés vers une autre liste
 liste-courses.feature: Déplier un article pour voir les plats et repas concernés
@@ -39,8 +44,10 @@ liste-courses.feature: L'arrondi s'applique après l'addition
 liste-courses.feature: L'article fusionné n'est coché que si les deux l'étaient
 liste-courses.feature: L'onglet Courses ouvre la liste principale
 liste-courses.feature: La coche d'un article déplacé entre-temps s'applique dans sa nouvelle liste
+liste-courses.feature: La coche d'un article retiré entre-temps n'a pas d'effet
 liste-courses.feature: La coche d'un article supprimé par un recalcul est ignorée
 liste-courses.feature: La date de fin ne peut pas précéder la date de début
+liste-courses.feature: La dernière coche l'emporte
 liste-courses.feature: La liste principale ne peut pas être supprimée
 liste-courses.feature: La liste reste utilisable après les courses faites
 liste-courses.feature: La quantité d'un article ajouté est facultative
@@ -52,9 +59,12 @@ liste-courses.feature: Les articles ajoutés hors ligne à une liste supprimée 
 liste-courses.feature: Les articles ajoutés à la main survivent au recalcul
 liste-courses.feature: Les changements qui rendent une liste périmée
 liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau
+liste-courses.feature: Les courses faites ne retirent que les articles vus cochés
 liste-courses.feature: Les courses faites ne touchent pas au planning
 liste-courses.feature: Les courses s'ajoutent aux articles déjà présents
 liste-courses.feature: Les cuillères à soupe et à café ne sont pas converties entre elles
+liste-courses.feature: Les espaces en trop sont retirées du nom d'une liste
+liste-courses.feature: Les masses sont arrondies au gramme supérieur
 liste-courses.feature: Les plats servis des articles déplacés restent reçus par la liste de départ
 liste-courses.feature: Les quantités d'un même ingrédient sont additionnées
 liste-courses.feature: Les quantités en cuillères sont arrondies à l'entier supérieur
@@ -62,25 +72,34 @@ liste-courses.feature: Les quantités sont ajustées au nombre de parts
 liste-courses.feature: Les quantités à la pièce sont arrondies à l'entier supérieur
 liste-courses.feature: Les unités d'une même famille sont converties
 liste-courses.feature: Les unités de familles différentes restent sur des lignes distinctes
+liste-courses.feature: Ordre des articles
 liste-courses.feature: Ordre des listes
 liste-courses.feature: Période et liste par défaut
 liste-courses.feature: Recalculer met la liste à jour et fait disparaître le bandeau
 liste-courses.feature: Renommer une liste
 liste-courses.feature: Retirer un article ajouté
+liste-courses.feature: Retirer un article déjà retiré par un autre membre
 liste-courses.feature: Seuls les repas de la période sont pris en compte
 liste-courses.feature: Supprimer une liste vide
+liste-courses.feature: Un ajout de courses qui dépasserait 300 articles est refusé en entier
 liste-courses.feature: Un article ajouté déplacé reste une ligne distincte
 liste-courses.feature: Un article ajouté n'est pas fusionné avec un article calculé
 liste-courses.feature: Un article ajouté ne se déplie pas
 liste-courses.feature: Un article calculé déplacé est fusionné avec le même ingrédient
 liste-courses.feature: Un article coché dont la quantité augmente est décoché
 liste-courses.feature: Un article dont tous les plats servis ont été retirés disparaît, même coché
+liste-courses.feature: Un article décoché entre-temps reste après les courses faites
 liste-courses.feature: Un article déplacé garde sa coche et ses provenances
 liste-courses.feature: Un article indique le nombre de plats servis dont il provient
+liste-courses.feature: Un article sans quantité coché reste coché quand il reçoit un plat servi de plus
 liste-courses.feature: Un bandeau signale que des plats servis ont changé
 liste-courses.feature: Un changement sans effet sur les articles ne rend pas la liste périmée
 liste-courses.feature: Un ingrédient créé hors ligne n'est pas dupliqué
+liste-courses.feature: Un ingrédient sans quantité devient un article sans quantité
+liste-courses.feature: Un ingrédient sans quantité reste distinct du même ingrédient avec quantité
 liste-courses.feature: Un même plat servi peut être reçu par deux listes
+liste-courses.feature: Un nom de liste de 40 caractères est accepté
+liste-courses.feature: Un nom de liste trop long, sans caractère visible ou avec un caractère de contrôle est refusé
 liste-courses.feature: Un nouvel article enrichit le référentiel d'ingrédients
 liste-courses.feature: Un plat ajouté au planning ne rend pas la liste périmée
 liste-courses.feature: Un plat sans ingrédient n'ajoute rien à la liste
@@ -89,9 +108,18 @@ liste-courses.feature: Un plat servi déjà présent dans la liste d'arrivée n'
 liste-courses.feature: Un plat servi déjà reçu par la liste n'est pas ajouté une seconde fois
 liste-courses.feature: Une coche est conservée si la quantité n'augmente pas
 liste-courses.feature: Une coche est retirée si la quantité augmente
+liste-courses.feature: Une liste a 300 articles au plus
 liste-courses.feature: Une liste créée à partir d'une sélection garde les provenances
+liste-courses.feature: Une liste devenue non vide entre-temps n'est pas supprimée
+liste-courses.feature: Une liste devenue principale entre-temps n'est pas supprimée
 liste-courses.feature: Une liste qui contient des articles ne peut pas être supprimée
+liste-courses.feature: Une période de plus de 31 jours est refusée
+liste-courses.feature: Une période dont la date de fin précède la date de début est refusée
+liste-courses.feature: Une période hors de 2000 à 2099 est refusée
+liste-courses.feature: Une période va d'un jour à 31 jours
+liste-courses.feature: Une tribu a 20 listes au plus
 liste-courses.feature: Une tribu naît avec une liste principale
+liste-courses.feature: Une écriture sur une liste supprimée entre-temps est refusée
 membres-et-sessions.feature: Ajouter un membre
 membres-et-sessions.feature: Consulter les membres de sa tribu
 membres-et-sessions.feature: Consulter ses sessions
@@ -117,3 +145,4 @@ membres-et-sessions.feature: Se révoquer soi-même
 membres-et-sessions.feature: Un membre révoqué affiche l'auteur et la date de sa révocation
 membres-et-sessions.feature: Un membre révoqué est déconnecté à sa requête suivante
 membres-et-sessions.feature: Une adresse déjà membre d'une autre tribu peut être ajoutée
+tribu.feature: Les listes de courses sont partagées entre membres

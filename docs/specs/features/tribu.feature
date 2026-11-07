@@ -17,6 +17,12 @@ Fonctionnalité: Tribu
     Quand Alice ajoute le plat "Ratatouille" au repas du mardi 6 octobre 2026 à midi
     Alors Bruno voit "Ratatouille" au repas du mardi 6 octobre 2026 à midi, après rafraîchissement
 
+  @T1
+  Scénario: Les listes de courses sont partagées entre membres
+    Quand Alice ajoute l'article "pain" à la liste "Courses"
+    Et Bruno coche "pain" dans la liste "Courses"
+    Alors Alice voit "pain" coché dans la liste "Courses", après rafraîchissement
+
   @T1 @ui
   Scénario: Le référentiel d'ingrédients est partagé entre membres
     Quand Alice ajoute le nouvel ingrédient "piment d'Espelette" au plat "Axoa"

@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Liste de courses, plan courses</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
+
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 84px; overflow-y: auto">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px 20px 28px">
+
+<sc-if value="{{loading}}" hint-placeholder-val="{{false}}">
+<div role="status" aria-label="Chargement de la liste" style="display: flex; flex-direction: column; gap: 10px">
+<div style="height: 48px; display: flex; align-items: center"><div style="width: 170px; height: 26px; border-radius: 10px; background: #F0EAF4"></div></div>
+<div style="height: 54px; box-sizing: border-box; border-radius: 16px; border: 2px solid #E7E1EE"></div>
+<div style="height: 10px; border-radius: 999px; background: #F0EAF4"></div>
+<sc-for list="{{skeleton}}" as="k" hint-placeholder-count="6">
+<div style="height: 50px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 16px; border: 1.5px solid #E7E1EE"><span style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid #E7E1EE"></span><span style="{{k.style}}"></span></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{failed}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h1 style="margin: 0; min-height: 48px; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px">Courses</h1>
+<div role="alert" style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px; border: 1.5px solid #E39A89; color: #9E2E19">
+<div style="display: flex; align-items: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg><span style="font-size: 14px; font-weight: 700; line-height: 1.35">Le réseau est lent ou absent. Réessayez.</span></div>
+<button onClick="{{retry}}" style="align-self: flex-start; height: 44px; padding: 0 18px; border: 2px solid #22193A; border-radius: 14px; background: #FFFFFF; color: #22193A; font-size: 15px; font-weight: 800; cursor: pointer">Réessayer</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ready}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px"><a href="Doux-ChoixListes.dc.html" aria-label="{{headerLabel}}" style="display: flex; align-items: center; gap: 8px; min-height: 48px; color: #22193A; text-decoration: none"><span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{listName}}</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg><sc-if value="{{isMain}}" hint-placeholder-val="{{true}}"><span style="flex-shrink: 0; padding: 3px 10px; border-radius: 999px; border: 1.5px solid #22193A; font-family: 'Figtree', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0">principale</span></sc-if></a></h1>
+
+<sc-if value="{{hasGreen}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; padding: 10px 6px 10px 14px; border-radius: 16px; border: 1.5px solid #A9D3B1; color: #2F7A3E">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+<span style="flex-grow: 1; font-size: 14px; font-weight: 700; line-height: 1.35">{{green}}</span>
+<button onClick="{{closeGreen}}" aria-label="Fermer le message" style="width: 40px; height: 40px; flex-shrink: 0; border: none; border-radius: 10px; background: transparent; color: #2F7A3E; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-if>
+
+<sc-if value="{{hasWarning}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #F2D27A; color: #8A6100">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><path d="M12 3.5L2.5 20h19z"></path><path d="M12 10v4.5M12 17.5v.5"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">{{warning}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{hasError}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #E39A89; color: #9E2E19">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Réseau nécessaire. Le réseau est lent ou absent : réessayez.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700"><span>{{progressLabel}}</span><span style="color: #5E5470">{{remainingLabel}}</span></div>
+<div style="height: 10px; box-sizing: border-box; border-radius: 999px; border: 1.5px solid #A9D3B1; overflow: hidden"><div style="{{barStyle}}"></div></div>
+</div>
+</sc-if>
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+<div style="padding: 22px 18px; border-radius: 20px; border: 2px dashed #CFC6DE; text-align: center; font-size: 15px; font-weight: 600; line-height: 1.4; color: #5E5470">La liste est vide. Ajoutez les courses des repas ou un article à la main.</div>
+</sc-if>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{items}}" as="it" hint-placeholder-count="8">
+<div style="{{it.cardStyle}}">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 6px 0 14px">
+<input type="checkbox" aria-label="{{it.checkLabel}}" checked="{{it.checked}}" onChange="{{it.toggle}}" style="width: 24px; height: 24px; margin: 0; flex-shrink: 0; accent-color: #2F7A3E; cursor: pointer">
+<sc-if value="{{it.isComputed}}" hint-placeholder-val="{{true}}">
+<button onClick="{{it.expand}}" aria-expanded="{{it.open}}" aria-label="{{it.rowLabel}}" style="flex-grow: 1; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 4px 0 0; border: none; background: transparent; color: inherit; text-align: left; cursor: pointer">
+<span style="{{it.nameStyle}}">{{it.name}}</span>
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px solid #E7E1EE; font-size: 12px; font-weight: 700; color: #5E5470">{{it.dishesLabel}}</span>
+<sc-if value="{{it.hasQty}}" hint-placeholder-val="{{true}}"><span style="{{it.qtyStyle}}">{{it.qty}}</span></sc-if>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="{{it.chevronStyle}}" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</sc-if>
+<sc-if value="{{it.isManual}}" hint-placeholder-val="{{false}}">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 8px; min-height: 48px">
+<span style="{{it.nameStyle}}">{{it.name}}</span>
+<span style="flex-shrink: 0; padding: 2px 8px; border-radius: 999px; border: 1.5px dashed #CFC6DE; font-size: 12px; font-weight: 700; color: #5E5470">ajouté</span>
+<sc-if value="{{it.hasQty}}" hint-placeholder-val="{{true}}"><span style="{{it.qtyStyle}}">{{it.qty}}</span></sc-if>
+<button onClick="{{it.remove}}" aria-label="{{it.removeLabel}}" style="width: 40px; height: 44px; flex-shrink: 0; border: none; border-radius: 10px; background: transparent; color: #6E6680; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{it.open}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; margin: 0 10px 10px; border-top: 1.5px solid #E7E1EE">
+<sc-for list="{{it.sources}}" as="s" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 10px; padding: 9px 4px 0">
+<span style="{{s.initialStyle}}" aria-hidden="true">{{s.initial}}</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; font-weight: 700">{{s.dish}} · {{s.parts}}</span>
+<span style="font-size: 12px; font-weight: 600; color: #5E5470">{{s.day}} · <span style="{{s.momentStyle}}">{{s.moment}}</span></span>
+</div>
+<span style="font-size: 14px; font-weight: 800; color: #C63D24">{{s.qty}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<a href="Doux-CoursesRepas.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 54px; box-sizing: border-box; padding: 0 14px; border-radius: 16px; border: 2px solid #22193A; color: #22193A; text-decoration: none; font-size: 16px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"></path></svg><span style="flex-grow: 1">Ajouter les courses des repas</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></a>
+
+<sc-if value="{{adding}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 1.5px solid #E39A89">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5E5470">Article
+<input type="text" value="{{draftName}}" onChange="{{typeName}}" placeholder="ex. pain, lessive" style="height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; border: 2px solid #22193A; font-size: 16px; font-weight: 700; color: #22193A"></label>
+<sc-if value="{{hasSuggestions}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; border-radius: 12px; border: 1.5px solid #F3C9BF; overflow: hidden">
+<sc-for list="{{suggestions}}" as="g" hint-placeholder-count="2">
+<button onClick="{{g.pick}}" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: none; border-bottom: 1.5px solid #F0EAF4; background: #FFFFFF; text-align: left; font-size: 15px; color: #22193A; cursor: pointer"><span><strong style="color: #C63D24">{{g.head}}</strong>{{g.tail}}</span><span style="margin-left: auto; font-size: 12px; font-weight: 600; color: #5E5470">{{g.unit}}</span></button>
+</sc-for>
+<sc-if value="{{canCreateIngredient}}" hint-placeholder-val="{{false}}">
+<button onClick="{{createIngredient}}" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: none; background: #FFFFFF; text-align: left; font-size: 15px; font-weight: 700; color: #C63D24; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{createLabel}}</button>
+</sc-if>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 6px">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5E5470">Quantité
+<input type="text" inputmode="decimal" value="{{draftQty}}" onChange="{{typeQty}}" placeholder="Qté" style="{{qtyFieldStyle}}"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5E5470">Unité
+<select disabled="{{unitDisabled}}" value="{{draftUnit}}" onChange="{{pickUnit}}" style="{{unitFieldStyle}}">
+<option value="">{{unitPlaceholder}}</option>
+<option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="cl">cl</option><option value="l">l</option><option value="piece">pièce</option><option value="tablespoon">c. à soupe</option><option value="teaspoon">c. à café</option><option value="pinch">pincée</option>
+</select></label>
+</div>
+<sc-if value="{{hasFormError}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: center; gap: 8px; color: #9E2E19; font-size: 13px; font-weight: 700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>{{formError}}</div>
+</sc-if>
+<div style="display: flex; gap: 8px">
+<button onClick="{{confirmAdd}}" style="flex-grow: 1; height: 46px; border: none; border-radius: 14px; background: #C63D24; color: #FFFFFF; font-size: 15px; font-weight: 800; cursor: pointer">Ajouter à la liste</button>
+<button onClick="{{cancelAdd}}" style="height: 46px; padding: 0 14px; border: none; border-radius: 14px; background: transparent; color: #22193A; font-size: 15px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{canStartAdd}}" hint-placeholder-val="{{true}}">
+<button onClick="{{startAdd}}" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 48px; border: 2px dashed #CFC6DE; border-radius: 16px; background: transparent; font-size: 15px; font-weight: 700; color: #22193A; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un article à la main</button>
+</sc-if>
+<sc-if value="{{full}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<button disabled="{{true}}" style="height: 48px; border: 2px dashed #CFC6DE; border-radius: 16px; background: #FFFFFF; font-size: 15px; font-weight: 700; color: #6E6680">Ajouter un article à la main</button>
+<span style="text-align: center; font-size: 13px; font-weight: 600; color: #5E5470">300 articles au plus.</span>
+</div>
+</sc-if>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px">
+<sc-if value="{{canFinish}}" hint-placeholder-val="{{true}}">
+<button onClick="{{askDone}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 54px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 16px; font-weight: 800; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Courses faites</button>
+</sc-if>
+<sc-if value="{{cannotFinish}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="height: 54px; border: 2px dashed #CFC6DE; border-radius: 18px; background: #FFFFFF; color: #6E6680; font-size: 16px; font-weight: 800">Courses faites</button>
+</sc-if>
+<p style="margin: 0; text-align: center; font-size: 13px; line-height: 1.4; color: #5E5470">{{finishHint}}</p>
+</div>
+
+</div>
+</sc-if>
+
+</div>
+</div>
+
+<nav style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 10px 16px 18px; background: #FFFFFF; border-top: 1.5px solid #E7E1EE; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<a href="Doux-Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>Planning</a>
+<a href="Doux-Bibliotheque.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #5E5470; text-decoration: none; font-size: 12px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"></path><path d="M4 21V5"></path><path d="M9 8h6"></path></svg>Plats</a>
+<a href="Doux-Liste.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 12px; font-weight: 800"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"></path><circle cx="10" cy="20" r="1.3"></circle><circle cx="17" cy="20" r="1.3"></circle></svg>Courses</a>
+</nav>
+
+<sc-if value="{{confirmingDone}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
+<div role="dialog" aria-modal="true" aria-labelledby="faites-titre" style="display: flex; flex-direction: column; gap: 12px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="faites-titre" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Courses faites ?</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.45">{{doneMessage}}</p>
+<button onClick="{{confirmDone}}" style="height: 54px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 16px; font-weight: 800; cursor: pointer">Retirer les articles cochés</button>
+<button onClick="{{closeSheet}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"etat":{"editor":"enum","options":["à jour","après les courses des repas","après les courses faites","vide","autre liste","liste supprimée entre-temps","réseau nécessaire","300 articles","chargement","erreur de réseau"],"default":"à jour"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      etat: null, checked: null, open: { boeuf: true, sel: true }, removed: {}, extra: [],
+      adding: false, draftName: '', draftQty: '', draftUnit: '', picked: null, formError: '',
+      sheet: null, green: null, error: false, retried: false
+    };
+  }
+  norm(s) {
+    return s.toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’]/g, "'").replace(/\s+/g, ' ').trim();
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var etat = this.props.etat || 'à jour';
+    if (st.etat !== etat) {
+      // un changement de réglage repart de l'état de la maquette
+      setTimeout(function () { self.setState({ etat: etat, checked: null, removed: {}, extra: [], sheet: null, green: null, error: false, retried: false, adding: false, formError: '' }); }, 0);
+    }
+    var set = function (s) { return function () { self.setState(s); }; };
+    var DISH = {
+      chili: ['Chili con carne', '#C2502E', '#E7B9AB'],
+      rata: ['Ratatouille', '#B36A0B', '#E1C39D'],
+      gratin: ['Gratin de courgettes', '#2F6FB0', '#ACC5DF'],
+      dauph: ['Gratin dauphinois', '#B0306A', '#DFACC3'],
+      beurre: ['Pâtes au beurre', '#2E8A6E', '#ABD0C5']
+    };
+    var src = function (dish, day, moment, parts, qty) { return { dish: dish, day: day, moment: moment, parts: parts, qty: qty }; };
+    var BASE = [
+      { id: 'boeuf', name: 'bœuf haché', qty: '875 g', sources: [src('chili', 'mar. 6 oct.', 'soir', 3, '375 g'), src('chili', 'jeu. 8 oct.', 'midi', 4, '500 g')] },
+      { id: 'courgette', name: 'courgette', qty: '6 pièces', sources: [src('rata', 'mer. 7 oct.', 'soir', 4, '3 pièces'), src('gratin', 'ven. 9 oct.', 'soir', 4, '3 pièces')] },
+      { id: 'creme', name: 'crème', qty: '50 cl', sources: [src('dauph', 'dim. 11 oct.', 'midi', 4, '50 cl')] },
+      { id: 'oignon', name: 'oignon', qty: '2 pièces', sources: [src('chili', 'mar. 6 oct.', 'soir', 3, '0,75 pièce'), src('chili', 'jeu. 8 oct.', 'midi', 4, '1 pièce')] },
+      { id: 'pates', name: 'pâtes', qty: '750 g', sources: [src('beurre', 'lun. 12 oct.', 'midi', 6, '750 g')] },
+      { id: 'sel', name: 'sel', qty: '', sources: [src('dauph', 'dim. 11 oct.', 'midi', 4, ''), src('beurre', 'lun. 12 oct.', 'midi', 6, '')] },
+      { id: 'pain', name: 'pain', qty: '2 pièces', manual: true },
+      { id: 'lessive', name: 'lessive', qty: '', manual: true }
+    ];
+    var MARCHE = [
+      { id: 'pommes', name: 'pommes', qty: '1,5 kg', manual: true },
+      { id: 'fromage', name: 'comté', qty: '300 g', manual: true },
+      { id: 'oeufs', name: 'œufs', qty: '12 pièces', manual: true }
+    ];
+    var loading = etat === 'chargement' && !st.retried;
+    var failed = etat === 'erreur de réseau' && !st.retried;
+    var other = etat === 'autre liste';
+    var source = (etat === 'vide' || etat === 'après les courses faites') ? [] : (other ? MARCHE : BASE);
+    if (etat === 'après les courses faites') { source = BASE.filter(function (x) { return x.id !== 'creme' && x.id !== 'lessive' && x.id !== 'pain'; }); }
+    var list = source.concat(st.extra).filter(function (x) { return !st.removed[x.id]; });
+    var c = st.checked || (etat === 'à jour' || etat === 'réseau nécessaire' || etat === 'liste supprimée entre-temps' || etat === '300 articles' ? { creme: true, lessive: true, pain: true } : (other ? { fromage: true } : {}));
+    var done = list.filter(function (x) { return c[x.id]; }).length;
+    var left = list.length - done;
+    var key = function (x) { return self.norm(x.name) + '|' + (x.qty ? 0 : 1) + '|' + (x.manual ? 1 : 0); };
+    var cmp = function (a, b) { var ka = key(a), kb = key(b); return ka < kb ? -1 : (ka > kb ? 1 : 0); };
+    var sorted = list.filter(function (x) { return !c[x.id]; }).sort(cmp).concat(list.filter(function (x) { return c[x.id]; }).sort(cmp));
+    var green = st.green !== null ? st.green : (etat === 'après les courses des repas' ? '4 plats servis ajoutés, 1 déjà reçu ignoré' : (etat === 'après les courses faites' ? '3 articles retirés' : ''));
+    var warning = etat === 'liste supprimée entre-temps' ? 'Cette liste a été supprimée entre-temps.' : '';
+    var netError = st.error || etat === 'réseau nécessaire';
+    var full = etat === '300 articles';
+    var articles = function (n) { return n + (n > 1 ? ' articles' : ' article'); };
+    var total = full ? 300 : list.length;
+    var shownDone = full ? done + 40 : done;
+    var offline = etat === 'réseau nécessaire';
+    var write = function (fn) { return function (e) { if (offline) { self.setState({ error: true, checked: Object.assign({}, c) }); return; } fn(e); }; };
+
+    // Référentiel d'ingrédients de la tribu, pour la combobox (P4, Q13)
+    var REF = [['pain', 'pièce'], ['pain de mie', 'pièce'], ['pâtes', 'g'], ['piment d’Espelette', 'pincée'], ['poivre', ''], ['pomme de terre', 'kg'], ['lessive', ''], ['lait', 'l'], ['sel', ''], ['oignon', 'pièce']];
+    var typed = st.draftName || '';
+    var nt = self.norm(typed);
+    var sugg = [];
+    if (nt && st.picked === null) {
+      REF.forEach(function (r) {
+        var words = self.norm(r[0]).split(' ');
+        var hit = words.some(function (w) { return w.indexOf(nt) === 0; }) || self.norm(r[0]).indexOf(nt) === 0;
+        if (hit && sugg.length < 6) { sugg.push(r); }
+      });
+    }
+    var exact = REF.some(function (r) { return self.norm(r[0]) === nt; });
+    var UNITS = [['g', 'g'], ['kg', 'kg'], ['ml', 'ml'], ['cl', 'cl'], ['l', 'l'], ['piece', 'pièce'], ['tablespoon', 'c. à soupe'], ['teaspoon', 'c. à café'], ['pinch', 'pincée']];
+    var unitCode = function (label) { var u = UNITS.filter(function (x) { return x[1] === label; })[0]; return u ? u[0] : ''; };
+    var unitLabel = function (code) { var u = UNITS.filter(function (x) { return x[0] === code; })[0]; return u ? u[1] : ''; };
+    var defaultUnit = st.picked ? st.picked[1] : '';
+    var qtyText = (st.draftQty || '').trim();
+    var hasQty = qtyText.length > 0;
+    var plural = function (label, n) { return (n >= 2 && (label === 'pièce' || label === 'pincée')) ? label + 's' : label; };
+
+    return {
+      loading: loading,
+      failed: failed,
+      ready: !loading && !failed,
+      retry: set({ retried: true }),
+      skeleton: [70, 55, 82, 48, 64, 58].map(function (w) { return { style: 'height: 14px; border-radius: 7px; background: #F0EAF4; width: ' + w + '%' }; }),
+      listName: other ? 'Marché' : 'Courses',
+      isMain: !other,
+      headerLabel: other ? 'Marché. Changer de liste' : 'Courses, liste principale. Changer de liste',
+      hasGreen: !!green,
+      green: green,
+      closeGreen: set({ green: '' }),
+      hasWarning: !!warning,
+      warning: warning,
+      hasError: netError,
+      hasItems: list.length > 0,
+      empty: list.length === 0,
+      progressLabel: shownDone + ' sur ' + articles(total),
+      remainingLabel: (total - shownDone) + ' à prendre',
+      barStyle: 'height: 100%; border-radius: 999px; background: #2F7A3E; width: ' + (total ? Math.round(shownDone * 100 / total) : 0) + '%',
+      items: sorted.map(function (x) {
+        var on = !!c[x.id];
+        var open = !x.manual && !!st.open[x.id];
+        var n = x.sources ? x.sources.length : 0;
+        var dishes = n + (n > 1 ? ' plats' : ' plat');
+        return {
+          name: x.name,
+          qty: x.qty,
+          hasQty: !!x.qty,
+          checked: on,
+          isComputed: !x.manual,
+          isManual: !!x.manual,
+          open: open,
+          checkLabel: 'Cocher ' + x.name,
+          removeLabel: 'Retirer ' + x.name,
+          rowLabel: x.name + (x.qty ? ', ' + x.qty : ', sans quantité') + ', ' + dishes + '. ' + (open ? 'Masquer les repas' : 'Afficher les repas'),
+          dishesLabel: dishes,
+          toggle: write(function () { var next = Object.assign({}, c); next[x.id] = !next[x.id]; self.setState({ checked: next, error: false, green: '' }); }),
+          expand: function () { var o = Object.assign({}, self.state.open); o[x.id] = !o[x.id]; self.setState({ open: o }); },
+          remove: write(function () { var r = Object.assign({}, self.state.removed); r[x.id] = true; self.setState({ removed: r, error: false, green: '' }); }),
+          cardStyle: 'display: flex; flex-direction: column; box-sizing: border-box; border-radius: 16px; background: #FFFFFF; border: 1.5px solid ' + (on ? '#A9D3B1' : (open ? '#CFC6DE' : '#E7E1EE')),
+          nameStyle: 'flex-grow: 1; min-width: 0; font-size: 16px; font-weight: 700; ' + (on ? 'text-decoration: line-through; color: #5E5470' : 'color: #22193A'),
+          qtyStyle: 'flex-shrink: 0; font-size: 15px; font-weight: 800; ' + (on ? 'color: #5E5470' : 'color: #C63D24'),
+          chevronStyle: 'flex-shrink: 0; transition: transform .15s; transform: rotate(' + (open ? 180 : 0) + 'deg)',
+          sources: (x.sources || []).map(function (s) {
+            var d = DISH[s.dish];
+            var soir = s.moment === 'soir';
+            return {
+              dish: d[0], initial: d[0].charAt(0), parts: s.parts + ' parts', day: s.day,
+              moment: soir ? 'SOIR' : 'MIDI', qty: s.qty,
+              momentStyle: 'font-size: 11px; font-weight: 800; letter-spacing: 1px; color: ' + (soir ? '#3D3A8C' : '#8A6100'),
+              initialStyle: "width: 32px; height: 32px; flex-shrink: 0; box-sizing: border-box; border-radius: 10px; border: 1.5px solid " + d[2] + "; color: " + d[1] + "; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 16px"
+            };
+          })
+        };
+      }),
+
+      adding: st.adding && !full,
+      canStartAdd: !st.adding && !full,
+      full: full,
+      startAdd: set({ adding: true, draftName: '', draftQty: '', draftUnit: '', picked: null, formError: '' }),
+      cancelAdd: set({ adding: false, draftName: '', draftQty: '', draftUnit: '', picked: null, formError: '' }),
+      draftName: st.draftName,
+      typeName: function (e) { self.setState({ draftName: e.target.value, picked: null, formError: '' }); },
+      hasSuggestions: sugg.length > 0 || (nt && st.picked === null && !exact),
+      suggestions: sugg.map(function (r) {
+        var name = r[0];
+        return {
+          head: name.slice(0, typed.trim().length), tail: name.slice(typed.trim().length), unit: r[1],
+          pick: function () { self.setState({ draftName: name, picked: r, draftUnit: self.state.draftQty ? unitCode(r[1]) : '' }); }
+        };
+      }),
+      canCreateIngredient: !!nt && !exact && st.picked === null,
+      createLabel: 'Créer « ' + typed.trim() + ' »',
+      createIngredient: function () { self.setState({ picked: [typed.trim(), ''] }); },
+      draftQty: st.draftQty,
+      typeQty: function (e) {
+        var v = e.target.value;
+        var u = self.state.draftUnit || (v.trim() ? unitCode(defaultUnit) : '');
+        self.setState({ draftQty: v, draftUnit: v.trim() ? u : '', formError: '' });
+      },
+      qtyFieldStyle: 'height: 44px; box-sizing: border-box; padding: 0 10px; border-radius: 12px; font-size: 15px; font-weight: 700; color: #22193A; border: ' + (st.formError === 'Quantité invalide.' || st.formError === 'Quantité trop précise pour cette unité.' ? '2px solid #C63D24' : '1.5px solid #E7E1EE'),
+      unitDisabled: !hasQty,
+      draftUnit: st.draftUnit,
+      pickUnit: function (e) { self.setState({ draftUnit: e.target.value, formError: '' }); },
+      unitPlaceholder: hasQty ? 'Choisir' : (defaultUnit ? defaultUnit : '—'),
+      unitFieldStyle: 'height: 44px; box-sizing: border-box; padding: 0 8px; border-radius: 12px; background: #FFFFFF; font-size: 15px; font-weight: 700; color: ' + (hasQty ? '#22193A' : '#6E6680') + '; border: ' + (st.formError === 'Choisissez une unité.' ? '2px solid #C63D24' : '1.5px solid #E7E1EE'),
+      units: UNITS.map(function (u) { return { value: u[0], label: u[1] }; }),
+      hasFormError: !!st.formError,
+      formError: st.formError,
+      confirmAdd: write(function () {
+        var name = (self.state.draftName || '').trim().replace(/\s+/g, ' ');
+        if (!name) { return; }
+        var q = (self.state.draftQty || '').trim();
+        var label = '';
+        if (q) {
+          var num = Number(q.replace(',', '.'));
+          if (!(num > 0)) { self.setState({ formError: 'Quantité invalide.' }); return; }
+          if (!self.state.draftUnit) { self.setState({ formError: 'Choisissez une unité.' }); return; }
+          var decimals = (q.replace(',', '.').split('.')[1] || '').length;
+          var maxd = self.state.draftUnit === 'ml' ? 0 : (self.state.draftUnit === 'cl' ? 1 : 3);
+          if (decimals > maxd) { self.setState({ formError: 'Quantité trop précise pour cette unité.' }); return; }
+          var ul = unitLabel(self.state.draftUnit);
+          label = q.replace('.', ',') + ' ' + plural(ul, num);
+        }
+        var item = { id: 'x' + Date.now(), name: name, qty: label, manual: true };
+        self.setState({ extra: self.state.extra.concat([item]), draftName: '', draftQty: '', draftUnit: '', picked: null, formError: '', green: '' });
+      }),
+
+      canFinish: done > 0,
+      cannotFinish: done === 0,
+      finishHint: done > 0 ? 'Retire ' + (done > 1 ? 'les ' + done + ' articles cochés' : 'l’article coché') + ' de la liste ; les autres y restent.' : 'Cochez les articles achetés pour les retirer de la liste.',
+      confirmingDone: st.sheet === 'done',
+      doneMessage: (done > 1 ? 'Les ' + done + ' articles cochés seront retirés' : 'L’article coché sera retiré') + ' de la liste. ' + (left > 0 ? (left > 1 ? 'Les ' + left + ' articles non cochés y restent.' : 'L’article non coché y reste.') : 'La liste sera vide.'),
+      askDone: write(set({ sheet: 'done' })),
+      confirmDone: function () {
+        var r = Object.assign({}, self.state.removed);
+        list.forEach(function (x) { if (c[x.id]) { r[x.id] = true; } });
+        self.setState({ removed: r, checked: {}, sheet: null, green: done > 1 ? done + ' articles retirés' : '1 article retiré' });
+      },
+      closeSheet: set({ sheet: null })
+    };
+  }
+}
+</script>
+</body>
+</html>
