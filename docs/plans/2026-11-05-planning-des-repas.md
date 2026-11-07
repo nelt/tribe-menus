@@ -237,7 +237,7 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 
 **Revue de la PR #91**, point à reprendre plus tard :
 
-- **Lignes des plats servis sans clé** (point 2, à vérifier à la séance de recette, étape 21) : `#served` (`meal-screen.ts`) rend les plats servis par `meal.map`, sans `repeat` sur l'identifiant du plat servi ; après un retrait, Lit réutilise les lignes par position : le focus de la croix passe au plat suivant, et un double toucher lent pourrait retirer le plat suivant une fois la première réponse arrivée. Non reproduit. À essayer au clavier et au double toucher ; si c'est confirmé, `repeat(meal, (d) => d.served.id, …)`.
+- **Lignes des plats servis sans clé** (point 2, à vérifier à la séance de recette, étape 21) : `#served` (`meal-screen.ts`) rend les plats servis par `meal.map`, sans `repeat` sur l'identifiant du plat servi ; après un retrait, Lit réutilise les lignes par position : le focus de la croix passe au plat suivant, et un double toucher lent pourrait retirer le plat suivant une fois la première réponse arrivée. Non reproduit. À essayer au clavier et au double toucher ; si c'est confirmé, `repeat(meal, (d) => d.served.id, …)`. *Confirmé à la séance de recette du 2026-11-07 (étape 21) : sur Android, un double toucher lent retire deux plats ; sur ordinateur, le focus passe à la croix du plat suivant, qu'Entrée retire. `repeat` ne suffit pas au toucher : la ligne suivante remonte sous le doigt une fois la réponse arrivée. Corrigé, avec l'accord du développeur, par `repeat` et des croix inactives pendant un retrait et 500 ms après ; deux tests d'écran (`ecrans-repas.spec.ts`).*
 
 **Revue de la PR #87**, points à reprendre plus tard :
 
