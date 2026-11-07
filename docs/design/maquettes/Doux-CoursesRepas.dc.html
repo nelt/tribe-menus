@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Courses des repas, plan courses</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',sans-serif;color:#22193A;background:#FFFFFF}
+a{color:#C63D24}a:hover{color:#9E2E19}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #FFFFFF; font-family: 'Figtree', sans-serif; color: #22193A">
+
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 96px; overflow-y: auto">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 16px">
+
+<a href="Doux-Liste.dc.html" style="display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 700; color: #22193A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>Retour à la liste</a>
+
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: -0.5px">Courses des repas</h1>
+
+<sc-if value="{{hasServerError}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #E39A89; color: #9E2E19">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">{{serverError}}</span>
+</div>
+</sc-if>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button onClick="{{editStart}}" aria-pressed="{{startActive}}" style="{{startFieldStyle}}"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Du</span><span style="font-size: 16px; font-weight: 800">{{startLabel}}</span></button>
+<button onClick="{{editEnd}}" aria-pressed="{{endActive}}" style="{{endFieldStyle}}"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Au</span><span style="font-size: 16px; font-weight: 800">{{endLabel}}</span></button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 12px; border-radius: 20px; border: 1.5px solid #E7E1EE">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 6px">
+<button onClick="{{prevMonth}}" aria-label="Mois précédent" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<span aria-live="polite" style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px">{{monthLabel}}</span>
+<button onClick="{{nextMonth}}" aria-label="Mois suivant" style="width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #22193A; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px">
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">L</span>
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">M</span>
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">M</span>
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">J</span>
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">V</span>
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">S</span>
+<span style="text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #5E5470; padding-bottom: 4px">D</span>
+<sc-for list="{{cells}}" as="d" hint-placeholder-count="35">
+<sc-if value="{{d.blank}}" hint-placeholder-val="{{false}}"><span></span></sc-if>
+<sc-if value="{{d.real}}" hint-placeholder-val="{{true}}">
+<button onClick="{{d.pick}}" aria-label="{{d.aria}}" aria-pressed="{{d.bound}}" style="{{d.style}}"><span>{{d.num}}</span><span style="{{d.dotStyle}}"></span></button>
+</sc-if>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 6px; padding: 4px 6px 0; font-size: 12px; font-weight: 600; color: #5E5470"><span style="width: 5px; height: 5px; border-radius: 999px; background: #5E5470"></span>jour avec des repas planifiés</div>
+</div>
+
+<sc-if value="{{invalid}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 1.5px solid #E39A89; color: #9E2E19">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">{{invalidMessage}}</span>
+</div>
+</sc-if>
+<sc-if value="{{valid}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-size: 14px; font-weight: 700"><span>{{daysLabel}}</span><span style="color: #5E5470">{{dishesLabel}}</span></div>
+</sc-if>
+
+<button onClick="{{openTargets}}" aria-haspopup="dialog" style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 7px 14px; border: 2px solid #22193A; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer">
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 700; color: #5E5470">Ajouter à la liste</span><span style="font-size: 16px; font-weight: 800; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{targetName}}</span></span>
+<sc-if value="{{targetMain}}" hint-placeholder-val="{{true}}">
+<span style="flex-shrink: 0; padding: 3px 10px; border-radius: 999px; border: 1.5px solid #22193A; font-size: 12px; font-weight: 800">principale</span>
+</sc-if>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5E5470" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+
+<sc-if value="{{hasSkipped}}" hint-placeholder-val="{{true}}">
+<p role="status" style="margin: 0; padding: 0 4px; font-size: 13px; font-weight: 600; line-height: 1.4; color: #5E5470">{{skippedLabel}}</p>
+</sc-if>
+<sc-if value="{{noDish}}" hint-placeholder-val="{{false}}">
+<p role="status" style="margin: 0; padding: 0 4px; font-size: 13px; font-weight: 600; line-height: 1.4; color: #5E5470">Aucun repas planifié sur cette période : l’ajout ne changera rien à la liste.</p>
+</sc-if>
+
+</div>
+</div>
+
+<div style="position: absolute; left: 20px; right: 20px; bottom: 24px">
+<sc-if value="{{canSend}}" hint-placeholder-val="{{true}}">
+<sc-if value="{{sendsToList}}" hint-placeholder-val="{{true}}">
+<a href="Doux-Liste.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; box-sizing: border-box; border-radius: 18px; background: #C63D24; color: #FFFFFF; text-decoration: none; font-size: 17px; font-weight: 800; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 16px">{{cta}}</a>
+</sc-if>
+<sc-if value="{{sendsWithError}}" hint-placeholder-val="{{false}}">
+<button onClick="{{send}}" style="width: 100%; height: 56px; border: none; border-radius: 18px; background: #C63D24; color: #FFFFFF; font-size: 17px; font-weight: 800; cursor: pointer">{{cta}}</button>
+</sc-if>
+</sc-if>
+<sc-if value="{{sending}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" aria-busy="true" style="width: 100%; height: 56px; border: none; border-radius: 18px; background: #E39A89; color: #FFFFFF; font-size: 17px; font-weight: 800">Ajout en cours…</button>
+</sc-if>
+<sc-if value="{{invalid}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="width: 100%; height: 56px; border: 2px dashed #CFC6DE; border-radius: 18px; background: #FFFFFF; color: #6E6680; font-size: 17px; font-weight: 800">{{cta}}</button>
+</sc-if>
+</div>
+
+<sc-if value="{{choosing}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(34, 25, 58, 0.45); display: flex; flex-direction: column; justify-content: flex-end">
+<div role="dialog" aria-modal="true" aria-labelledby="cible-titre" style="display: flex; flex-direction: column; gap: 10px; padding: 22px 20px 28px; border-radius: 26px 26px 0 0; background: #FFFFFF">
+<h2 id="cible-titre" style="margin: 0 0 2px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">Ajouter à quelle liste ?</h2>
+<sc-for list="{{targets}}" as="t" hint-placeholder-count="3">
+<button onClick="{{t.choose}}" aria-pressed="{{t.current}}" style="{{t.style}}">
+<span style="width: 22px; height: 22px; flex-shrink: 0; box-sizing: border-box; border-radius: 999px; border: 2px solid #22193A; display: flex; align-items: center; justify-content: center"><span style="{{t.dotInnerStyle}}"></span></span>
+<span style="flex-grow: 1; min-width: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{t.name}}</span>
+<sc-if value="{{t.main}}" hint-placeholder-val="{{false}}">
+<span style="flex-shrink: 0; padding: 3px 10px; border-radius: 999px; border: 1.5px solid #22193A; font-size: 12px; font-weight: 800">principale</span>
+</sc-if>
+<span style="flex-shrink: 0; font-size: 14px; font-weight: 600; color: #5E5470">{{t.info}}</span>
+</button>
+</sc-for>
+<button onClick="{{closeTargets}}" style="height: 50px; border: none; border-radius: 16px; background: transparent; color: #22193A; font-size: 16px; font-weight: 700; cursor: pointer">Annuler</button>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844},"etat":{"editor":"enum","options":["par défaut","fin avant début","plus de 31 jours","à cheval sur deux mois","choix de la destination","vers une autre liste","période sans repas","ajout en cours","300 articles","réseau nécessaire"],"default":"par défaut"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { etat: null };
+  }
+  renderVals() {
+    var self = this;
+    var DAY = 86400000;
+    var day = function (y, m, d) { return Math.round(Date.UTC(y, m - 1, d) / DAY); };
+    var parts = function (n) { var dt = new Date(n * DAY); return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate(), w: (dt.getUTCDay() + 6) % 7 }; };
+    var TODAY = day(2026, 10, 5);
+    var etat = this.props.etat || 'par défaut';
+    var st = this.state;
+    if (st.etat !== etat) {
+      var P = { etat: etat, start: TODAY + 1, end: TODAY + 7, field: 'start', target: 'courses', choosing: false, view: [2026, 10], serverError: '', sending: false };
+      if (etat === 'fin avant début') { P.start = day(2026, 10, 8); P.end = day(2026, 10, 6); P.field = 'end'; }
+      if (etat === 'plus de 31 jours') { P.end = day(2026, 11, 8); P.field = 'end'; P.view = [2026, 11]; }
+      if (etat === 'à cheval sur deux mois') { P.start = day(2026, 10, 26); P.end = day(2026, 11, 1); P.field = 'end'; P.view = [2026, 11]; }
+      if (etat === 'choix de la destination') { P.choosing = true; }
+      if (etat === 'vers une autre liste') { P.target = 'marche'; }
+      if (etat === 'période sans repas') { P.start = day(2026, 10, 19); P.end = day(2026, 10, 25); }
+      if (etat === 'ajout en cours') { P.sending = true; }
+      setTimeout(function () { self.setState(P); }, 0);
+      st = P;
+    }
+    var MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var SHORT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var WD = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    var WDL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+    // plats servis par jour (copie du planning) et plats servis déjà reçus par chaque liste (Q22)
+    var key = function (n) { var p = parts(n); return p.m + '-' + p.d; };
+    var DISHES = { '10-5': 2, '10-6': 3, '10-7': 1, '10-8': 2, '10-9': 2, '10-10': 2, '10-11': 1, '10-12': 1, '10-13': 2, '10-14': 1, '10-26': 1, '10-28': 2, '10-31': 1, '11-1': 1, '11-4': 2 };
+    var LISTS = [
+      { id: 'courses', name: 'Courses', main: true, info: '8 articles', received: { '10-6': 3, '10-7': 1 } },
+      { id: 'marche', name: 'Marché du samedi', main: false, info: '4 articles', received: { '10-10': 1 } },
+      { id: 'drive', name: 'Drive', main: false, info: 'vide', received: {} }
+    ];
+    var target = LISTS.filter(function (l) { return l.id === st.target; })[0];
+    var short = function (n) { var p = parts(n); return WD[p.w] + ' ' + (p.d === 1 ? '1er' : p.d) + ' ' + SHORT[p.m - 1]; };
+    var nbDays = st.end - st.start + 1;
+    var backwards = st.end < st.start;
+    var tooLong = !backwards && nbDays > 31;
+    var invalid = backwards || tooLong;
+    var vy = st.view[0], vm = st.view[1];
+    var first = day(vy, vm, 1);
+    var daysIn = new Date(Date.UTC(vy, vm, 0)).getUTCDate();
+    var cells = [];
+    for (var b = 0; b < parts(first).w; b++) { cells.push({ blank: true, real: false }); }
+    for (var i = 0; i < daysIn; i++) {
+      (function (n) {
+        var p = parts(n);
+        var bound = n === st.start || n === st.end;
+        var inRange = !backwards && n > st.start && n < st.end;
+        var has = !!DISHES[key(n)];
+        var border = bound ? '2px solid #C63D24' : (inRange ? '1.5px solid #E39A89' : (n === TODAY ? '1.5px dashed #CFC6DE' : '1.5px solid transparent'));
+        cells.push({
+          blank: false, real: true, num: p.d, bound: bound,
+          aria: WDL[p.w] + ' ' + (p.d === 1 ? '1er' : p.d) + ' ' + MONTHS[p.m - 1] + (has ? ', repas planifiés' : '') + (n === TODAY ? ', aujourd’hui' : ''),
+          style: 'height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 12px; border: ' + border + '; background: #FFFFFF; font-size: 15px; cursor: pointer; font-weight: ' + (bound ? 800 : 600) + '; color: ' + (bound ? '#C63D24' : (n < TODAY ? '#6E6680' : '#22193A')),
+          dotStyle: 'width: 5px; height: 5px; border-radius: 999px; background: ' + (has ? (bound ? '#C63D24' : '#5E5470') : 'transparent'),
+          pick: function () {
+            if (self.state.field === 'start') { self.setState({ start: n, field: 'end', serverError: '' }); }
+            else { self.setState({ end: n, serverError: '' }); }
+          }
+        });
+      })(first + i);
+    }
+    var nbDishes = 0, nbSkipped = 0;
+    if (!invalid) { for (var k = st.start; k <= st.end; k++) { nbDishes += DISHES[key(k)] || 0; nbSkipped += target.received[key(k)] || 0; } }
+    var field = function (active, bad) {
+      return 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: 7px 14px; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer; border: 2px solid ' + (bad ? '#C63D24' : (active ? '#22193A' : '#E7E1EE'));
+    };
+    var cta = 'Ajouter à « ' + target.name + ' »';
+    var errorState = etat === '300 articles' || etat === 'réseau nécessaire';
+    var shift = function (delta) {
+      return function () {
+        var y = self.state.view[0], m = self.state.view[1] + delta;
+        if (m < 1) { m = 12; y -= 1; } if (m > 12) { m = 1; y += 1; }
+        if (y < 2000 || y > 2099) { return; }
+        self.setState({ view: [y, m] });
+      };
+    };
+    return {
+      hasServerError: !!st.serverError,
+      serverError: st.serverError,
+      startLabel: short(st.start),
+      endLabel: short(st.end),
+      startActive: st.field === 'start',
+      endActive: st.field === 'end',
+      startFieldStyle: field(st.field === 'start', false),
+      endFieldStyle: field(st.field === 'end', invalid),
+      editStart: function () { var p = parts(self.state.start); self.setState({ field: 'start', view: [p.y, p.m] }); },
+      editEnd: function () { var p = parts(self.state.end); self.setState({ field: 'end', view: [p.y, p.m] }); },
+      monthLabel: MONTHS[vm - 1].charAt(0).toUpperCase() + MONTHS[vm - 1].slice(1) + ' ' + vy,
+      prevMonth: shift(-1),
+      nextMonth: shift(1),
+      cells: cells,
+      invalid: invalid,
+      valid: !invalid,
+      invalidMessage: backwards ? 'La date de fin doit suivre la date de début.' : 'La période ne peut pas dépasser 31 jours.',
+      daysLabel: nbDays + (nbDays > 1 ? ' jours' : ' jour'),
+      dishesLabel: nbDishes === 0 ? 'aucun plat servi' : nbDishes + (nbDishes > 1 ? ' plats servis' : ' plat servi'),
+      noDish: !invalid && nbDishes === 0,
+      targetName: target.name,
+      targetMain: target.main,
+      hasSkipped: !invalid && nbSkipped > 0,
+      skippedLabel: nbSkipped > 1 ? nbSkipped + ' plats servis sont déjà passés par cette liste : ils seront ignorés.' : '1 plat servi est déjà passé par cette liste : il sera ignoré.',
+      cta: cta,
+      canSend: !invalid && !st.sending,
+      sendsToList: !errorState,
+      sendsWithError: errorState,
+      sending: !invalid && !!st.sending,
+      send: function () {
+        self.setState({ serverError: etat === '300 articles' ? 'La liste ne peut pas dépasser 300 articles : rien n’a été ajouté.' : 'Réseau nécessaire. Le réseau est lent ou absent : réessayez.' });
+      },
+      choosing: st.choosing,
+      openTargets: function () { self.setState({ choosing: true }); },
+      closeTargets: function () { self.setState({ choosing: false }); },
+      targets: LISTS.map(function (l) {
+        var on = l.id === st.target;
+        return {
+          name: l.name, main: l.main, info: l.info, current: on,
+          choose: function () { self.setState({ target: l.id, choosing: false, serverError: '' }); },
+          style: 'display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 14px; border-radius: 16px; background: #FFFFFF; color: #22193A; text-align: left; cursor: pointer; border: ' + (on ? '2px solid #22193A' : '1.5px solid #E7E1EE'),
+          dotInnerStyle: 'width: 10px; height: 10px; border-radius: 999px; background: ' + (on ? '#22193A' : 'transparent')
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
