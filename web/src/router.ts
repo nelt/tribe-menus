@@ -17,7 +17,9 @@ export type Page =
   /** A shopping list: the main one without identifier (C1, D15). */
   | { name: "shopping"; list?: string }
   /** The list picker (C2). */
-  | { name: "list-picker" };
+  | { name: "list-picker" }
+  /** The meal shopping, toward the list we come from (?liste=, C4, D15); the main list without one. */
+  | { name: "meal-shopping"; list?: string };
 
 export const pages = {
   planning: { name: "planning" },
@@ -27,6 +29,7 @@ export const pages = {
   tribe: { name: "tribe" },
   shopping: { name: "shopping" },
   listPicker: { name: "list-picker" },
+  mealShopping: { name: "meal-shopping" },
 } as const satisfies Record<string, Page>;
 
 const fixedPaths: [string, Page][] = [
@@ -37,6 +40,7 @@ const fixedPaths: [string, Page][] = [
   ["tribu", pages.tribe],
   ["courses", pages.shopping],
   ["courses/listes", pages.listPicker],
+  ["courses/repas", pages.mealShopping],
 ];
 
 /** A dish identifier: 128 random bits in hexadecimal (plan bibliotheque, D10). */
@@ -56,6 +60,12 @@ const mealtimePaths: Record<Mealtime, string> = { lunch: "midi", dinner: "soir" 
 /** The query of the planning: the first day of the range shown (D14). */
 const startParameter = "du";
 
+/** The query of the meal shopping: the list we come from (D15). */
+const listParameter = "liste";
+
+/** A list identifier, as in a path (D10). */
+const listId = /^[0-9a-f]{32}$/;
+
 /**
  * Returns the page of a path and its query, relative to the base of the tribe (with its
  * trailing slash). An unknown path, inside the tribe or not, gives the planning; so does a
@@ -69,6 +79,10 @@ export function pageFromPath(pathname: string, base: string, search = ""): Page 
   if (rest === "") {
     const start = parseDay(new URLSearchParams(search).get(startParameter) ?? "");
     return start === undefined ? pages.planning : { name: "planning", start };
+  }
+  if (rest === "courses/repas") {
+    const list = new URLSearchParams(search).get(listParameter) ?? "";
+    return listId.test(list) ? { name: "meal-shopping", list } : pages.mealShopping;
   }
   const fixed = fixedPaths.find(([path]) => path === rest);
   if (fixed !== undefined) {
@@ -101,6 +115,9 @@ export function pathOfPage(page: Page, base: string): string {
   if (page.name === "shopping" && page.list !== undefined) {
     return `${base}courses/${page.list}`;
   }
+  if (page.name === "meal-shopping" && page.list !== undefined) {
+    return `${base}courses/repas?${listParameter}=${page.list}`;
+  }
   if (page.name === "planning" && page.start !== undefined) {
     return `${base}?${startParameter}=${page.start}`;
   }
@@ -125,6 +142,7 @@ export function tabOf(page: Page): "planning" | "dishes" | "shopping" {
       return "dishes";
     case "shopping":
     case "list-picker":
+    case "meal-shopping":
       return "shopping";
     default:
       return "planning";

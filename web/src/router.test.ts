@@ -40,6 +40,9 @@ const pageCases: { name: string; pathname: string; search?: string; want: Page }
   { name: "a shopping list, identifier too short", pathname: "/tribes/demo/courses/0123", want: pages.shopping },
   { name: "under courses, an unknown path", pathname: "/tribes/demo/courses/inconnu/x", want: pages.shopping },
   { name: "the list picker", pathname: "/tribes/demo/courses/listes", want: pages.listPicker },
+  { name: "the meal shopping, toward a list (C4, D15)", pathname: "/tribes/demo/courses/repas", search: `?liste=${id}`, want: { name: "meal-shopping", list: id } },
+  { name: "the meal shopping, toward the main list", pathname: "/tribes/demo/courses/repas", want: pages.mealShopping },
+  { name: "the meal shopping, a list unreadable", pathname: "/tribes/demo/courses/repas", search: "?liste=courses", want: pages.mealShopping },
 ];
 
 for (const { name, pathname, search, want } of pageCases) {
@@ -61,6 +64,8 @@ test("pathOfPage", () => {
   assert.equal(pathOfPage(pages.shopping, base), "/tribes/demo/courses");
   assert.equal(pathOfPage({ name: "shopping", list: id }, base), `/tribes/demo/courses/${id}`);
   assert.equal(pathOfPage(pages.listPicker, base), "/tribes/demo/courses/listes");
+  assert.equal(pathOfPage(pages.mealShopping, base), "/tribes/demo/courses/repas");
+  assert.equal(pathOfPage({ name: "meal-shopping", list: id }, base), `/tribes/demo/courses/repas?liste=${id}`);
 });
 
 test("planningAround: the range of today if it holds the day, else the range from the day", () => {
@@ -80,6 +85,7 @@ test("tabOf", () => {
   assert.equal(tabOf(pages.shopping), "shopping");
   assert.equal(tabOf({ name: "shopping", list: id }), "shopping");
   assert.equal(tabOf(pages.listPicker), "shopping");
+  assert.equal(tabOf(pages.mealShopping), "shopping");
 });
 
 function fakeWindow(from: string) {

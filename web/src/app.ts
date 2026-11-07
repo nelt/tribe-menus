@@ -12,6 +12,8 @@ import "./loading-screen.ts";
 import "./login-screen.ts";
 import type { SignedInEvent } from "./login-screen.ts";
 import "./meal-screen.ts";
+import "./meal-shopping-screen.ts";
+import type { MealShoppingAddedEvent } from "./meal-shopping-screen.ts";
 import { type Day, type Mealtime, today } from "./meal-plan.ts";
 import { Planning } from "./planning.ts";
 import "./planning-screen.ts";
@@ -81,7 +83,9 @@ export class App extends LitElement {
       if (document.visibilityState !== "visible" || this.session === undefined) {
         return;
       }
-      if (tabOf(this.page) === "shopping") {
+      if (this.page.name === "meal-shopping") {
+        void Promise.all([this.#shopping.check(), this.#planning.check()]);
+      } else if (tabOf(this.page) === "shopping") {
         void this.#shopping.check();
       } else if (this.#planning.loaded) {
         void this.#planning.check();
@@ -113,7 +117,7 @@ export class App extends LitElement {
       return html`<mt-login .api=${this.#api} @signed-in=${this.#signedIn}></mt-login>`;
     }
     // The screens opened from a tab, with their link back, have no tab bar, as their mock-ups.
-    const subScreen = this.page.name === "new-dish" || this.page.name === "dish" || this.page.name === "tribe";
+    const subScreen = this.page.name === "new-dish" || this.page.name === "dish" || this.page.name === "tribe" || this.page.name === "meal-shopping";
     return html`${this.#screen(this.page)}
       ${subScreen
         ? nothing
@@ -174,6 +178,7 @@ export class App extends LitElement {
             .lists=${this.#shopping}
             .listId=${page.list}
             .pickerHref=${this.#router.href(pages.listPicker)}
+            .mealShoppingHref=${(list: ShoppingList) => this.#router.href({ name: "meal-shopping", list: list.id })}
             .notice=${this.#notice}
             @unknown-list=${() => this.#router.navigate(pages.shopping, { replace: true })}
             @list-deleted=${this.#listDeleted}
@@ -187,6 +192,15 @@ export class App extends LitElement {
           @open-list=${(e: CustomEvent<ShoppingList>) => this.#router.navigate(this.#listPage(e.detail))}
           @list-deleted=${this.#listDeleted}
         ></mt-list-picker>`;
+      case "meal-shopping":
+        return html`<mt-meal-shopping-screen
+          .lists=${this.#shopping}
+          .planning=${this.#planning}
+          .listId=${page.list}
+          .listHref=${(id: string | undefined) => this.#router.href(this.#listPageOf(id))}
+          @meal-shopping-added=${this.#mealShoppingAdded}
+          @list-deleted=${this.#listDeleted}
+        ></mt-meal-shopping-screen>`;
       case "tribe":
         return html`<mt-tribe-screen .api=${this.#api} .planningHref=${this.#router.href(pages.planning)} @signed-out=${this.#signedOut}></mt-tribe-screen>`;
       case "login":
@@ -262,6 +276,27 @@ export class App extends LitElement {
   #listPage(list: ShoppingList): Page {
     return list.main ? pages.shopping : { name: "shopping", list: list.id };
   }
+
+  /**
+   * The page of a list known by its identifier only: the main list at the path of the tab
+   * (D15), as a list unknown once the copy is loaded. Asked again by the screen at each
+   * render, the copy loaded or changed (review of PR #101, point 2).
+   */
+  #listPageOf(id: string | undefined): Page {
+    const list = id === undefined ? undefined : this.#shopping.find(id);
+    if (id === undefined || list?.main === true || (this.#shopping.loaded && list === undefined)) {
+      return pages.shopping;
+    }
+    return { name: "shopping", list: id };
+  }
+
+  /** The meal shopping added: back to the target list, which tells what was added (C4, Q22). */
+  readonly #mealShoppingAdded = (e: MealShoppingAddedEvent) => {
+    this.#router.navigate(this.#listPage(e.list), { replace: true });
+    // After the navigation, which clears the notice of the page left.
+    this.#notice = { kind: "done", text: e.message };
+    this.requestUpdate();
+  };
 
   /** A write on a list deleted in between: the main list opens, and tells it (D11). */
   readonly #listDeleted = () => {

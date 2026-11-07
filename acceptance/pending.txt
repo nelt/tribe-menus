@@ -26,11 +26,9 @@ liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Cocher un article sans réseau
 liste-courses.feature: Créer une liste à partir d'une sélection
 liste-courses.feature: Déplacer des articles sélectionnés vers une autre liste
-liste-courses.feature: Déplier un article pour voir les plats et repas concernés
 liste-courses.feature: L'article fusionné n'est coché que si les deux l'étaient
 liste-courses.feature: La coche d'un article déplacé entre-temps s'applique dans sa nouvelle liste
 liste-courses.feature: La coche d'un article supprimé par un recalcul est ignorée
-liste-courses.feature: La date de fin ne peut pas précéder la date de début
 liste-courses.feature: La sélection est impossible sans article sélectionné
 liste-courses.feature: Le recalcul ne recrée pas les articles déjà achetés
 liste-courses.feature: Les actions sur les listes elles-mêmes nécessitent le réseau
@@ -39,10 +37,8 @@ liste-courses.feature: Les articles ajoutés à la main survivent au recalcul
 liste-courses.feature: Les changements qui rendent une liste périmée
 liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau
 liste-courses.feature: Les plats servis des articles déplacés restent reçus par la liste de départ
-liste-courses.feature: Période et liste par défaut
 liste-courses.feature: Recalculer met la liste à jour et fait disparaître le bandeau
 liste-courses.feature: Un article ajouté déplacé reste une ligne distincte
-liste-courses.feature: Un article ajouté ne se déplie pas
 liste-courses.feature: Un article calculé déplacé est fusionné avec le même ingrédient
 liste-courses.feature: Un article dont tous les plats servis ont été retirés disparaît, même coché
 liste-courses.feature: Un article déplacé garde sa coche et ses provenances

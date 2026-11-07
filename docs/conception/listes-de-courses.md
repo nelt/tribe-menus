@@ -291,6 +291,8 @@ Les listes vivent dans une **copie en mémoire** (`web/src/shopping-lists.ts`), 
 
 Réalisation (lot D) : une coche est montrée aussitôt dans la copie, triée de nouveau, puis remplacée par la liste renvoyée ; sans réseau, l'article revient à son état. Un refus `409` (`list_not_empty`, `main_list`, `too_many_lists`, `too_many_items`) dit que la copie est en retard : elle prend la liste renvoyée s'il y en a une, puis se vérifie. Un `404` fait vérifier la copie, qui dit ensuite si la liste a été supprimée entre-temps (l'écran ouvre la liste principale avec son bandeau, D11) ou seulement l'article (aucun message, D8). Une écriture dont les `versions` portent `ingredients` différente de celle de la copie du référentiel fait vérifier celle-ci : l'élément de liste ne porte pas l'unité par défaut d'un ingrédient créé (Q20). La copie des listes est vérifiée au retour au premier plan quand l'onglet Courses est affiché.
 
+Réalisation (lot E) : la copie des listes se vérifie avec celle de la bibliothèque, pour le dépliage ; l'écran des courses des repas vérifie aussi la copie du planning, à son ouverture et au retour au premier plan. Après un refus ou un `404`, seule la copie des listes se vérifie. `POST …/meal-shopping` passe par la même lecture de réponse que les autres écritures, qui en garde `added` et `ignored`.
+
 Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses » et « Messages des listes de courses » (lot A). `shopping.ts` trie de nouveau les articles après une coche locale, avec la même règle que `SortItems`.
 
 ## Échanges

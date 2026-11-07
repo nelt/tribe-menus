@@ -8,10 +8,11 @@
 import { LitElement, type PropertyValues, html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
-import { type Ingredient, hasControl, hasVisible, maxQuantityLength, normalizeName, parseQuantity, suggestIngredients, trimSpaces, unitLabel, units } from "./dishes.ts";
+import { type Ingredient, hasControl, initialOf, hasVisible, maxQuantityLength, normalizeName, parseQuantity, suggestIngredients, trimSpaces, unitLabel, units } from "./dishes.ts";
 import { IngredientCombobox, type Option } from "./ingredient-combobox.ts";
 import { networkErrorMessage } from "./login.ts";
-import { type Item, type ShoppingList, checkoutOf, dishCount, itemQuantity, maxItems, progressOf, removedMessage, shoppingErrorMessage, sortItems } from "./shopping.ts";
+import { colorClass } from "./dish-library-screen.ts";
+import { type Item, type ShoppingList, checkoutOf, dishCount, itemQuantity, itemRowLabel, maxItems, progressOf, removedMessage, shoppingErrorMessage, sortItems, sourceRows } from "./shopping.ts";
 import type { ShoppingLists, WriteResult } from "./shopping-lists.ts";
 import { alertMessage, networkNeededMessage, warningBanner } from "./templates.ts";
 
@@ -32,6 +33,7 @@ const emptyDraft: Draft = { ingredient: "", quantity: "", unit: "" };
 
 const checkIcon = html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>`;
 const crossIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>`;
+const calendarIcon = html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"></path></svg>`;
 const plusIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 /** The green banner of a write done, with its cross (Doux-Courses). */
@@ -55,6 +57,7 @@ export class ShoppingListScreen extends LitElement {
     lists: { attribute: false },
     listId: { attribute: false },
     pickerHref: { attribute: false },
+    mealShoppingHref: { attribute: false },
     notice: { attribute: false },
     failed: { state: true },
     revision: { state: true },
@@ -63,12 +66,15 @@ export class ShoppingListScreen extends LitElement {
     formError: { state: true },
     sheet: { state: true },
     removalPaused: { state: true },
+    open: { state: true },
   };
 
   declare lists: ShoppingLists;
   /** The list shown; undefined for the main list (C1). */
   declare listId: string | undefined;
   declare pickerHref: string;
+  /** The meal shopping, toward a list (D15). */
+  declare mealShoppingHref: (list: ShoppingList) => string;
   /** What the screen tells above the list; given by the application after a list deleted. */
   declare notice: Notice | undefined;
   /** The last check failed for lack of network, the copy never loaded. */
@@ -82,6 +88,8 @@ export class ShoppingListScreen extends LitElement {
   formError: string | undefined = undefined;
   /** The sheet « Courses faites ? », with the items it counted (D9). */
   sheet: { leaving: string[]; message: string } | undefined = undefined;
+  /** The computed items unfolded (C5). */
+  open: ReadonlySet<string> = new Set();
   /** A removal runs, or has just ended: the crosses wait. */
   removalPaused = false;
   #removalPause: ReturnType<typeof setTimeout> | undefined;
@@ -105,11 +113,8 @@ export class ShoppingListScreen extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.lists.addEventListener("change", this.#onChange);
+    // The lists, with the library: the catalog of the suggestions, the dishes of the unfolded lines.
     void this.#check();
-    // The catalog, for the suggestions, if the tab Plats was not visited yet.
-    if (this.lists.library.catalog.items === undefined) {
-      void this.lists.library.catalog.check();
-    }
   }
 
   override disconnectedCallback() {
@@ -145,7 +150,7 @@ export class ShoppingListScreen extends LitElement {
       return html`<main class="screen">${this.failed ? this.#failed() : this.#loading()}</main>`;
     }
     return html`<main class="screen shopping">
-      ${this.#header(list)} ${this.#notice()} ${this.#items(list)} ${this.#addItem(list)} ${this.#checkout(list)}
+      ${this.#header(list)} ${this.#notice()} ${this.#items(list)} ${this.#mealShopping(list)} ${this.#addItem(list)} ${this.#checkout(list)}
     </main>
     ${this.#sheet()}`;
   }
@@ -204,15 +209,56 @@ export class ShoppingListScreen extends LitElement {
 
   #item(list: ShoppingList, item: Item) {
     const quantity = itemQuantity(item);
-    return html`<li class="item ${item.checked ? "item--checked" : ""}">
-      <input class="item-check" type="checkbox" aria-label=${`Cocher ${item.ingredient}`} .checked=${live(item.checked)} @change=${(e: Event) => this.#setChecked(list, item, (e.target as HTMLInputElement).checked)}>
-      <span class="item-name">${item.ingredient}</span>
+    const open = !item.manual && this.open.has(item.id);
+    const shown = html`<span class="item-name">${item.ingredient}</span>
       ${item.manual ? html`<span class="pill pill--dashed">ajouté</span>` : html`<span class="pill">${dishCount(item)}</span>`}
-      ${quantity === "" ? nothing : html`<span class="item-quantity">${quantity}</span>`}
-      ${item.manual
-        ? html`<button class="item-remove" type="button" aria-label=${`Retirer ${item.ingredient}`} ?disabled=${this.removalPaused} @click=${() => this.#remove(list, item)}>${crossIcon}</button>`
-        : nothing}
+      ${quantity === "" ? nothing : html`<span class="item-quantity">${quantity}</span>`}`;
+    return html`<li class="item ${item.checked ? "item--checked" : ""} ${open ? "item--open" : ""}">
+      <div class="item-row">
+        <input class="item-check" type="checkbox" aria-label=${`Cocher ${item.ingredient}`} .checked=${live(item.checked)} @change=${(e: Event) => this.#setChecked(list, item, (e.target as HTMLInputElement).checked)}>
+        ${item.manual
+          ? html`${shown}<button class="item-remove" type="button" aria-label=${`Retirer ${item.ingredient}`} ?disabled=${this.removalPaused} @click=${() => this.#remove(list, item)}>${crossIcon}</button>`
+          : html`<button class="item-unfold" type="button" aria-expanded=${open ? "true" : "false"} aria-label=${itemRowLabel(item, open)} @click=${() => this.#toggle(item)}>
+              ${shown}
+              <svg class="item-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+            </button>`}
+      </div>
+      ${open ? this.#sources(item) : nothing}
     </li>`;
+  }
+
+  /** The lines of an item unfolded (C5): the dish and its servings, the meal, the quantity brought. */
+  #sources(item: Item) {
+    const rows = sourceRows(item, this.lists.library.dishes.items ?? []);
+    return html`<ul class="item-sources" aria-label=${`Repas de ${item.ingredient}`}>
+      ${rows.map(
+        (r) => html`<li class="item-source ${colorClass(r.dish.color)}">
+          <span class="dish-initial dish-initial--tiny" aria-hidden="true">${initialOf(r.dish.name)}</span>
+          <span class="item-source-text">
+            <span class="item-source-dish">${r.dish.name} · ${r.servings}</span>
+            <span class="item-source-meal">${r.day} · <span class="item-source-mealtime item-source-mealtime--${r.mealtime}">${r.mealtime === "lunch" ? "midi" : "soir"}</span></span>
+          </span>
+          ${r.quantity === "" ? nothing : html`<span class="item-source-quantity">${r.quantity}</span>`}
+        </li>`,
+      )}
+    </ul>`;
+  }
+
+  /** Unfolds or folds a computed item (C5). */
+  #toggle(item: Item) {
+    const open = new Set(this.open);
+    if (!open.delete(item.id)) {
+      open.add(item.id);
+    }
+    this.open = open;
+  }
+
+  /** « Ajouter les courses des repas », under the items (Doux-Liste). */
+  #mealShopping(list: ShoppingList) {
+    return html`<a class="button-meal-shopping" href=${this.mealShoppingHref(list)}>
+      ${calendarIcon}<span>Ajouter les courses des repas</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+    </a>`;
   }
 
   #addItem(list: ShoppingList) {

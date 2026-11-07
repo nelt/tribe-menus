@@ -62,6 +62,8 @@ export interface Script {
   setChecked?: Reply[];
   /** POST shopping-lists/<id>/checkout, whatever the identifier. */
   checkOut?: Reply[];
+  /** POST shopping-lists/<id>/meal-shopping, whatever the identifier. */
+  addMealShopping?: Reply[];
 }
 
 export interface Received {
@@ -101,6 +103,7 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "DELETE shopping-lists/{id}/items/{item}": [...(script.removeItem ?? [replies.networkError])],
     "PUT shopping-lists/{id}/items/{item}/checked": [...(script.setChecked ?? [replies.networkError])],
     "POST shopping-lists/{id}/checkout": [...(script.checkOut ?? [replies.networkError])],
+    "POST shopping-lists/{id}/meal-shopping": [...(script.addMealShopping ?? [replies.networkError])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
