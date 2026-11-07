@@ -29,7 +29,7 @@ async function addToCatalog(world: World, who: string, line: Line): Promise<void
 }
 
 /** The code of a unit of the scenarios, by its label (« g », « pièce »). */
-function unitCode(label: string): string {
+export function unitCode(label: string): string {
   const unit = units.find((u) => u.label === label || u.plural === label || u.name === label);
   if (unit === undefined) {
     throw new Error(`unknown unit "${label}"`);

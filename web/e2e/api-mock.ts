@@ -47,6 +47,21 @@ export interface Script {
   setServings?: Reply[];
   /** DELETE meal-plan/<id>, whatever the identifier. */
   removeServedDish?: Reply[];
+  getShoppingLists?: Reply[];
+  createList?: Reply[];
+  /** PUT shopping-lists/<id>/name, whatever the identifier. */
+  renameList?: Reply[];
+  setMainList?: Reply[];
+  /** DELETE shopping-lists/<id>, whatever the identifier. */
+  deleteList?: Reply[];
+  /** POST shopping-lists/<id>/items, whatever the identifier. */
+  addItem?: Reply[];
+  /** DELETE shopping-lists/<id>/items/<item>, whatever the identifiers. */
+  removeItem?: Reply[];
+  /** PUT shopping-lists/<id>/items/<item>/checked, whatever the identifiers. */
+  setChecked?: Reply[];
+  /** POST shopping-lists/<id>/checkout, whatever the identifier. */
+  checkOut?: Reply[];
 }
 
 export interface Received {
@@ -77,6 +92,15 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "POST meal-plan": [...(script.serveDish ?? [replies.networkError])],
     "PUT meal-plan/{id}/servings": [...(script.setServings ?? [replies.networkError])],
     "DELETE meal-plan/{id}": [...(script.removeServedDish ?? [replies.networkError])],
+    "GET shopping-lists": [...(script.getShoppingLists ?? [pageReply("shopping_lists", 1, [])])],
+    "POST shopping-lists": [...(script.createList ?? [replies.networkError])],
+    "PUT shopping-lists/{id}/name": [...(script.renameList ?? [replies.networkError])],
+    "PUT shopping-lists/main": [...(script.setMainList ?? [replies.networkError])],
+    "DELETE shopping-lists/{id}": [...(script.deleteList ?? [replies.networkError])],
+    "POST shopping-lists/{id}/items": [...(script.addItem ?? [replies.networkError])],
+    "DELETE shopping-lists/{id}/items/{item}": [...(script.removeItem ?? [replies.networkError])],
+    "PUT shopping-lists/{id}/items/{item}/checked": [...(script.setChecked ?? [replies.networkError])],
+    "POST shopping-lists/{id}/checkout": [...(script.checkOut ?? [replies.networkError])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
@@ -125,6 +149,11 @@ function routedPath(method: string, path: string): string {
   }
   if (method === "DELETE" && path.startsWith("meal-plan/")) {
     return "meal-plan/{id}";
+  }
+  const shopping = /^shopping-lists\/([^/]+)(\/.*)?$/.exec(path);
+  if (shopping !== null && !(method === "PUT" && path === "shopping-lists/main")) {
+    const rest = (shopping[2] ?? "").replace(/^\/items\/[^/]+/, "/items/{item}");
+    return `shopping-lists/{id}${rest}`;
   }
   return path;
 }

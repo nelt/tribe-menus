@@ -28,7 +28,6 @@ liste-courses.feature: Créer une liste à partir d'une sélection
 liste-courses.feature: Déplacer des articles sélectionnés vers une autre liste
 liste-courses.feature: Déplier un article pour voir les plats et repas concernés
 liste-courses.feature: L'article fusionné n'est coché que si les deux l'étaient
-liste-courses.feature: L'onglet Courses ouvre la liste principale
 liste-courses.feature: La coche d'un article déplacé entre-temps s'applique dans sa nouvelle liste
 liste-courses.feature: La coche d'un article supprimé par un recalcul est ignorée
 liste-courses.feature: La date de fin ne peut pas précéder la date de début
@@ -40,7 +39,6 @@ liste-courses.feature: Les articles ajoutés à la main survivent au recalcul
 liste-courses.feature: Les changements qui rendent une liste périmée
 liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau
 liste-courses.feature: Les plats servis des articles déplacés restent reçus par la liste de départ
-liste-courses.feature: Ordre des listes
 liste-courses.feature: Période et liste par défaut
 liste-courses.feature: Recalculer met la liste à jour et fait disparaître le bandeau
 liste-courses.feature: Un article ajouté déplacé reste une ligne distincte
