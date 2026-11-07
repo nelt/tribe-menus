@@ -148,6 +148,11 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 - Recette passée sur les trois appareils ; iPad et Safari sur Mac prouvés par WebKit seul, ajoutés au point reporté « Safari sur un vrai iPhone » de la feuille de route.
 - En compact, aucun écran ne change.
 
+## Notes d'exécution
+
+- **Revue #104, point 3 (à trancher dans l'ADR 0030, lot A, étape 4)** : D11 prévoit, si un navigateur bascule à l'ouverture du clavier virtuel, de figer le format tant qu'un champ a le focus ; or D12 fait décider la mise en page par des requêtes de média du CSS, que TypeScript ne peut pas suspendre. Option relevée par la revue : `layout.ts` pose un attribut sur la racine (`data-format="etendu"`), que le CSS lit au lieu de requêtes de média ; le format peut alors être figé, le test de concordance des seuils devient inutile, et c'est compatible avec la CSP (un attribut, pas un style).
+- **Revue #104, point 4 (lot B, étape 10)** : la nouvelle cible `make e2e-formats` entre dans la liste des cibles de `CLAUDE.md` et dans `make help` (ADR 0010).
+
 ## Questions ouvertes
 
 1. *Fermée le 2026-11-07* : le développeur recette sur une tablette Android.
