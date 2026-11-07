@@ -52,7 +52,10 @@ func collectionVersion(ctx context.Context, db *sql.DB, name string) (int64, err
 }
 
 // writeCollections runs write in a transaction of the tribe database and returns the
-// versions of the collections named, after the write.
+// versions, after the write, of the collections named that it changed (ADR 0029, point 3):
+// a collection left unchanged is absent, so that a copy behind it by a version, another
+// member having written in between, does not take it for its own (review of PR #98,
+// point 2).
 //
 // The triggers increase a version on every row written, so that a write of several rows
 // would increase it by as many. Before the commit, each collection changed is brought back
@@ -90,8 +93,8 @@ func writeCollections(ctx context.Context, db *sql.DB, names []string, write fun
 			if err := q.SetCollectionVersion(ctx, tribedb.SetCollectionVersionParams{Version: v, Name: name}); err != nil {
 				return nil, fmt.Errorf("write: version of %s: %w", name, err)
 			}
+			after[name] = v
 		}
-		after[name] = v
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("write: %w", err)

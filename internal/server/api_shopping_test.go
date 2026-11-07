@@ -77,7 +77,7 @@ func TestShoppingLists(t *testing.T) {
 	created := decode[listWrittenResponse](t, rec)
 	marche := created.List
 	if marche.Name != "Marché du samedi" || marche.Main || marche.Rank != 2 || len(marche.ID) != 32 ||
-		fmt.Sprint(created.Versions) != "map[ingredients:0 shopping_lists:1]" {
+		fmt.Sprint(created.Versions) != "map[shopping_lists:1]" {
 		t.Errorf("created %s", rec.Body)
 	}
 	rec = f.do("PUT", "/tribes/martin/api/shopping-lists/"+marche.ID+"/name", `{"name":"Marché"}`, alice)
@@ -119,7 +119,7 @@ func TestShoppingLists(t *testing.T) {
 	// Main list (C1): the versions only.
 	rec = f.do("PUT", "/tribes/martin/api/shopping-lists/main", fmt.Sprintf(`{"list":%q}`, marche.ID), alice)
 	wantStatus(t, rec, http.StatusOK)
-	if got := strings.TrimSpace(rec.Body.String()); got != `{"versions":{"ingredients":2,"shopping_lists":6}}` {
+	if got := strings.TrimSpace(rec.Body.String()); got != `{"versions":{"shopping_lists":6}}` {
 		t.Errorf("set main %s", got)
 	}
 	if f.mainList(t, "martin", alice).ID != marche.ID {
@@ -151,7 +151,7 @@ func TestShoppingLists(t *testing.T) {
 	}
 	rec = f.do("DELETE", "/tribes/martin/api/shopping-lists/"+courses.ID, "", alice)
 	wantStatus(t, rec, http.StatusOK)
-	if got := strings.TrimSpace(rec.Body.String()); got != `{"versions":{"ingredients":2,"shopping_lists":9}}` {
+	if got := strings.TrimSpace(rec.Body.String()); got != `{"versions":{"shopping_lists":9}}` {
 		t.Errorf("deleted %s", got)
 	}
 	if lists := f.lists(t, "martin", alice); len(lists) != 1 || lists[0].ID != marche.ID {
