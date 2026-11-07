@@ -2,7 +2,7 @@
 
 - **Nom** : `planning`
 - **Date** : 2026-11-05
-- **Statut** : en cours (lot D fait ; recette et release ensuite). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
+- **Statut** : terminé le 2026-11-07, `v0.3.0` en production. Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
 
 ## Objectif
 
@@ -89,8 +89,8 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 ### Recette et release
 
 - [x] **21. Recette** sur l'archive de la PR de release `release/v0.3.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous. *Faite le 2026-11-07 sur la PR #93 : un défaut trouvé (retrait d'un plat servi au double toucher et au clavier), corrigé par la PR #94, revérifié ; compte rendu dans les notes d'exécution.*
-- [ ] **22. Release `v0.3.0`** selon `RELEASING.md`, déployée en production (D7).
-- [ ] **23. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/mealplan`, version en service) ; `CHANGELOG.md`.
+- [x] **22. Release `v0.3.0`** selon `RELEASING.md`, déployée en production (D7). *Le 2026-11-07 : PR #93 fusionnée, étiquette sur `c388c1d`, release publiée par `release.yml` et vérifiée, déployée en production (`previous: v0.2.0`), sans provisionnement.*
+- [x] **23. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/mealplan`, version en service) ; `CHANGELOG.md`.
 
 ### Séance de recette (étape 21)
 
