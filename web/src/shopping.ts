@@ -1,10 +1,12 @@
 // Rules of the shopping lists computed in the browser (plan courses, D13, D18): the order of
-// the lists (C2) and of the items (Q40), the quantity shown of an item (Q37), the progress,
-// the summary of « Courses faites » (D9), why a list cannot be deleted (C12) and the messages
+// the lists (C2) and of the items (Q40), the quantity shown of an item and of what a served
+// dish brought to it (Q37), the progress, the summary of « Courses faites » (D9), why a list
+// cannot be deleted (C12), the period of the meal shopping and its calendar (C4, D24), the
+// served dishes already received (Q22), the unfolded lines of an item (C5) and the messages
 // of the screens (docs/design/README.md, « Listes de courses »). Pure functions, tested by
-// node:test; the order of the items shares its table of cases with Go.
-import { hasControl, hasVisible, normalizeName, parseQuantity, quantityInput, unitLabel } from "./dishes.ts";
-import type { Mealtime } from "./meal-plan.ts";
+// node:test; the order of the items and the quantities share their tables of cases with Go.
+import { type Dish, hasControl, hasVisible, normalizeName, quantityInput, unitLabel, units } from "./dishes.ts";
+import { type Day, type Mealtime, type ServedDish, addDays, firstDay, lastDay, mealtimes } from "./meal-plan.ts";
 
 /** What a served dish brought to a computed item, at the time of the computation (C5, D5). */
 export interface ItemSource {
@@ -93,8 +95,25 @@ const families: readonly (readonly string[])[] = [
   ["l", "cl", "ml"],
 ];
 
-/** The factors of the units, in base units (internal/dish): mg for a mass, ml for a volume. */
-const factors: Record<string, number> = { g: 1000, kg: 1_000_000, ml: 1, cl: 10, l: 1000 };
+/** The factor of a unit, in base units (internal/dish): mg for a mass, ml for a volume, thousandths otherwise. */
+function factorOf(unit: string): number | undefined {
+  return units.find((u) => u.code === unit)?.factor;
+}
+
+/**
+ * The amount in base units of a quantity of the API ("166.667" g): a dot, no useless zero.
+ * Unlike a quantity typed (parseQuantity), its integer part is not bounded: a computed item
+ * adds up to 50 servings of 999 999 kg (Q31).
+ */
+function baseAmount(quantity: string, unit: string): number | undefined {
+  const factor = factorOf(unit);
+  const m = /^([0-9]+)(?:\.([0-9]+))?$/.exec(quantity);
+  if (factor === undefined || m === null) {
+    return undefined;
+  }
+  const fraction = (m[2] ?? "").slice(0, String(factor).length - 1).padEnd(String(factor).length - 1, "0");
+  return Number(m[1]) * factor + Number(`0${fraction}`);
+}
 
 /** An amount of base units in a unit, written with a decimal comma and no useless zero. */
 function amountText(amount: number, factor: number): string {
@@ -105,6 +124,14 @@ function amountText(amount: number, factor: number): string {
   }
   const decimals = String(factor).length - 1;
   return `${whole},${String(rest).padStart(decimals, "0").replace(/0+$/, "")}`;
+}
+
+/** An amount of base units, in the largest unit of the family of unit that gives at least 1 (Q37). */
+function shownAmount(amount: number, unit: string): string {
+  const family = families.find((f) => f.includes(unit)) ?? [unit];
+  const shownUnit = family.find((u) => amount >= (factorOf(u) ?? 0)) ?? unit;
+  const shown = amountText(amount, factorOf(shownUnit) ?? 1);
+  return `${shown} ${unitLabel(shownUnit, shown)}`;
 }
 
 /**
@@ -118,15 +145,28 @@ export function itemQuantity(item: Pick<Item, "quantity" | "unit" | "manual">): 
   if (quantity === undefined || unit === undefined) {
     return "";
   }
-  const family = item.manual ? undefined : families.find((f) => f.includes(unit));
-  const reading = parseQuantity(quantity, unit);
-  if (family === undefined || "error" in reading) {
+  const amount = item.manual ? undefined : baseAmount(quantity, unit);
+  if (amount === undefined) {
     const shown = quantityInput(quantity);
-    return `${shown} ${unitLabel(unit, quantity)}`;
+    return `${shown} ${unitLabel(unit, shown)}`;
   }
-  const shownUnit = family.find((u) => reading.amount >= (factors[u] ?? 0)) ?? unit;
-  const shown = amountText(reading.amount, factors[shownUnit] ?? 1);
-  return `${shown} ${unitLabel(shownUnit, shown)}`;
+  return shownAmount(amount, unit);
+}
+
+/**
+ * The quantity a served dish brought to an item, as its unfolded line shows it (C5, Q37, D7):
+ * without the rounding of the item, but rounded up to the gram for a mass, to the millilitre
+ * for a volume (its base unit already), to the hundredth otherwise (« 0,75 pièce »); then in
+ * the largest unit of its family, as an item. Empty without quantity (Q36).
+ */
+export function contributedQuantity(source: Pick<ItemSource, "quantity" | "unit">): string {
+  const { quantity, unit } = source;
+  const amount = quantity === undefined || unit === undefined ? undefined : baseAmount(quantity, unit);
+  if (amount === undefined || unit === undefined) {
+    return "";
+  }
+  const step = families[0]?.includes(unit) ? 1000 : families[1]?.includes(unit) ? 1 : 10;
+  return shownAmount(Math.ceil(amount / step) * step, unit);
 }
 
 /** « 1 plat », « 3 plats »: the served dishes an item comes from (C5). */
@@ -241,4 +281,228 @@ export function shoppingErrorMessage(error: string): string | undefined {
     default:
       return undefined;
   }
+}
+
+/** The period of the meal shopping (C4): from one day to another, both included. */
+export interface Period {
+  from: Day;
+  to: Day;
+}
+
+/** At most this many days in a period (Q38, D12). */
+export const maxPeriodDays = 31;
+
+/** The period proposed (D24, Q2, Q34): from tomorrow to 7 days after today, by the date of the device. */
+export function defaultPeriod(todayDay: Day): Period {
+  return { from: addDays(todayDay, 1), to: addDays(todayDay, 7) };
+}
+
+const dayMs = 86_400_000;
+
+/** The number of days of a period, both bounds included; 0 or less when the end comes before the start. */
+export function periodDays(period: Period): number {
+  return Math.round((Date.parse(`${period.to}T00:00:00Z`) - Date.parse(`${period.from}T00:00:00Z`)) / dayMs) + 1;
+}
+
+/** Why a period is refused, as ParsePeriod in Go: the end before the start, or more than 31 days (C4, Q38). */
+export function periodError(period: Period): "invalid_period" | "period_too_long" | undefined {
+  if (period.to < period.from) {
+    return "invalid_period";
+  }
+  return periodDays(period) > maxPeriodDays ? "period_too_long" : undefined;
+}
+
+/** The served dishes of a period, whatever their dish. */
+export function servedInPeriod(served: Iterable<ServedDish>, period: Period): ServedDish[] {
+  return [...served].filter((s) => s.date >= period.from && s.date <= period.to);
+}
+
+/** Under the calendar: « 7 jours », and « 5 plats servis » or « aucun plat servi ». */
+export function periodSummary(period: Period, served: ServedDish[]): { days: string; dishes: string } {
+  const days = periodDays(period);
+  const n = served.length;
+  return { days: days > 1 ? `${days} jours` : `${days} jour`, dishes: n === 0 ? "aucun plat servi" : n > 1 ? `${n} plats servis` : "1 plat servi" };
+}
+
+/** How many served dishes of the period the list has already received: they will be ignored (Q22). */
+export function alreadyReceived(list: Pick<ShoppingList, "received">, served: ServedDish[]): number {
+  const received = new Set(list.received);
+  return served.filter((s) => received.has(s.id)).length;
+}
+
+/** Under the target list: the served dishes it has already received; undefined without one (Q22). */
+export function ignoredMessage(n: number): string | undefined {
+  if (n === 0) {
+    return undefined;
+  }
+  return n > 1 ? `${n} plats servis sont déjà passés par cette liste : ils seront ignorés.` : "1 plat servi est déjà passé par cette liste : il sera ignoré.";
+}
+
+/** The green banner after the meal shopping: « 4 plats servis ajoutés, 1 déjà reçu ignoré », « Aucun plat servi ajouté ». */
+export function mealShoppingMessage(added: number, ignored: number): string {
+  const done = added === 0 ? "Aucun plat servi ajouté" : added > 1 ? `${added} plats servis ajoutés` : "1 plat servi ajouté";
+  if (ignored === 0) {
+    return done;
+  }
+  return `${done}, ${ignored > 1 ? `${ignored} déjà reçus ignorés` : "1 déjà reçu ignoré"}`;
+}
+
+/** The message of a refusal of the meal shopping (docs/design/README.md, « Messages des listes de courses »). */
+export function mealShoppingErrorMessage(error: string): string | undefined {
+  switch (error) {
+    case "invalid_period":
+      return "La date de fin doit suivre la date de début.";
+    case "period_too_long":
+      return "La période ne peut pas dépasser 31 jours.";
+    case "too_many_items":
+      return "La liste ne peut pas dépasser 300 articles : rien n’a été ajouté.";
+    default:
+      return undefined;
+  }
+}
+
+/** A month of the calendar; month from 0 (January) to 11. */
+export interface Month {
+  year: number;
+  month: number;
+}
+
+const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const shortMonths = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const weekdays = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const shortWeekdays = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+
+function utcOf(day: Day): Date {
+  return new Date(`${day}T00:00:00Z`);
+}
+
+/** The month of a day. */
+export function monthOf(day: Day): Month {
+  const d = utcOf(day);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() };
+}
+
+/** The month n months after (before, if negative); undefined out of January 2000 to December 2099 (Q35). */
+export function addMonths(month: Month, n: number): Month | undefined {
+  const index = month.year * 12 + month.month + n;
+  const shifted = { year: Math.floor(index / 12), month: index % 12 };
+  const first = monthOf(firstDay);
+  const last = monthOf(lastDay);
+  return shifted.year < first.year || shifted.year > last.year ? undefined : shifted;
+}
+
+/** The title of a month: « Octobre 2026 ». */
+export function monthTitle(month: Month): string {
+  const name = months[month.month] ?? "";
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${month.year}`;
+}
+
+function dateNumber(date: number): string {
+  return date === 1 ? "1er" : String(date);
+}
+
+/** A day in short: « mar. 6 oct. », « jeu. 1er oct. », in the fields of the period and the unfolded lines. */
+export function shortDay(day: Day): string {
+  const d = utcOf(day);
+  return `${shortWeekdays[d.getUTCDay()] ?? ""} ${dateNumber(d.getUTCDate())} ${shortMonths[d.getUTCMonth()] ?? ""}`;
+}
+
+/** A day of the calendar, as the grid shows it (Doux-CoursesRepas). */
+export interface CalendarDay {
+  date: Day;
+  /** The number of the day in its month. */
+  number: number;
+  /** The start or the end of the period. */
+  bound: boolean;
+  /** Strictly between the bounds of a period in order. */
+  between: boolean;
+  today: boolean;
+  past: boolean;
+  /** At least one dish served on that day, lunch or dinner. */
+  meals: boolean;
+  /** « lundi 5 octobre, repas planifiés, aujourd’hui ». */
+  label: string;
+}
+
+/**
+ * The grid of a month (C4): a week per row, Monday first; undefined for the cells before the
+ * first day of the month. mealDays are the days with at least one dish served.
+ */
+export function monthGrid(month: Month, period: Period, todayDay: Day, mealDays: ReadonlySet<Day>): (CalendarDay | undefined)[] {
+  const first = new Date(Date.UTC(month.year, month.month, 1));
+  const length = new Date(Date.UTC(month.year, month.month + 1, 0)).getUTCDate();
+  const blanks = (first.getUTCDay() + 6) % 7;
+  const ordered = period.from <= period.to;
+  const cells: (CalendarDay | undefined)[] = Array.from({ length: blanks }, () => undefined);
+  for (let n = 1; n <= length; n++) {
+    const date = `${String(month.year).padStart(4, "0")}-${String(month.month + 1).padStart(2, "0")}-${String(n).padStart(2, "0")}`;
+    const meals = mealDays.has(date);
+    const today = date === todayDay;
+    const weekday = weekdays[utcOf(date).getUTCDay()] ?? "";
+    cells.push({
+      date,
+      number: n,
+      bound: date === period.from || date === period.to,
+      between: ordered && date > period.from && date < period.to,
+      today,
+      past: date < todayDay,
+      meals,
+      label: `${weekday} ${dateNumber(n)} ${months[month.month] ?? ""}${meals ? ", repas planifiés" : ""}${today ? ", aujourd’hui" : ""}`,
+    });
+  }
+  return cells;
+}
+
+/** The days with at least one dish served, for the points of the calendar. */
+export function mealDays(served: Iterable<ServedDish>): Set<Day> {
+  return new Set([...served].map((s) => s.date));
+}
+
+/** A line of an item unfolded (C5): the meal, the dish and its servings, the quantity brought. */
+export interface SourceRow {
+  servedDish: string;
+  dish: Dish;
+  /** « 3 parts ». */
+  servings: string;
+  /** « mar. 6 oct. ». */
+  day: string;
+  mealtime: Mealtime;
+  /** « 375 g », « 0,75 pièce »; empty without quantity (Q36). */
+  quantity: string;
+}
+
+/**
+ * The lines of an item unfolded, in the order of the meals (date, lunch before dinner), then
+ * of the names of the dishes. A source whose dish the copy of the library does not hold yet
+ * is left out until the next check, as on the planning (plan planning, D15).
+ */
+export function sourceRows(item: Pick<Item, "sources">, dishes: Iterable<Dish>): SourceRow[] {
+  const library = new Map<string, Dish>();
+  for (const d of dishes) {
+    library.set(d.id, d);
+  }
+  const rows: SourceRow[] = [];
+  for (const s of item.sources) {
+    const dish = library.get(s.dish);
+    if (dish !== undefined) {
+      rows.push({ servedDish: s.servedDish, dish, servings: s.servings > 1 ? `${s.servings} parts` : `${s.servings} part`, day: shortDay(s.date), mealtime: s.mealtime, quantity: contributedQuantity(s) });
+    }
+  }
+  const order = new Map(item.sources.map((s) => [s.servedDish, s]));
+  return rows.sort((a, b) => {
+    const x = order.get(a.servedDish);
+    const y = order.get(b.servedDish);
+    return (
+      (x?.date ?? "").localeCompare(y?.date ?? "") ||
+      mealtimes.indexOf(a.mealtime) - mealtimes.indexOf(b.mealtime) ||
+      compareCodePoints(normalizeName(a.dish.name), normalizeName(b.dish.name)) ||
+      compareCodePoints(a.servedDish, b.servedDish)
+    );
+  });
+}
+
+/** What a computed item reads, folded or not: « bœuf haché, 875 g, 2 plats. Afficher les repas ». */
+export function itemRowLabel(item: Pick<Item, "ingredient" | "quantity" | "unit" | "manual" | "sources">, open: boolean): string {
+  const quantity = itemQuantity(item);
+  return `${item.ingredient}, ${quantity === "" ? "sans quantité" : quantity}, ${dishCount(item)}. ${open ? "Masquer les repas" : "Afficher les repas"}`;
 }
