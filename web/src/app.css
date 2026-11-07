@@ -1826,16 +1826,117 @@ a.button-secondary {
 
 .item {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 50px;
-  padding: 0 6px 0 14px;
+  flex-direction: column;
   border: var(--border-thin) solid var(--color-border);
   border-radius: var(--radius-field);
 }
 
+.item--open {
+  border-color: var(--color-dashed);
+}
+
 .item--checked {
   border-color: var(--color-success-border);
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 6px 0 14px;
+}
+
+/* A computed item: the whole line, beside the box, unfolds its meals (C5). */
+.item-unfold {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 8px 0 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform 0.15s;
+}
+
+.item--open .item-chevron {
+  transform: rotate(180deg);
+}
+
+.item-sources {
+  display: flex;
+  flex-direction: column;
+  margin: 0 10px 10px;
+  padding: 0;
+  border-top: var(--border-thin) solid var(--color-border);
+  list-style: none;
+}
+
+.item-source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px 0;
+}
+
+.dish-initial--tiny {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.item-source-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 1px;
+  min-width: 0;
+}
+
+.item-source-dish {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.item-source-meal {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.item-source-mealtime {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.item-source-mealtime--lunch {
+  color: var(--color-lunch-text);
+}
+
+.item-source-mealtime--dinner {
+  color: var(--color-dinner-text);
+}
+
+.item-source-quantity {
+  flex-shrink: 0;
+  color: var(--color-action);
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .item-check {
@@ -1860,11 +1961,6 @@ a.button-secondary {
   color: var(--color-action);
   font-size: 15px;
   font-weight: 800;
-}
-
-/* A computed item has no cross: its quantity keeps a margin from the border. */
-.item > :last-child:not(.item-remove) {
-  margin-right: 8px;
 }
 
 .item--checked .item-name {

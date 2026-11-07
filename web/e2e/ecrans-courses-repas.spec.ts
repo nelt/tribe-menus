@@ -172,3 +172,29 @@ test("loading impossible: the message and « Réessayer »", async ({ page }) =>
   await page.getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByText("4 plats servis")).toBeVisible();
 });
+
+test("a computed item unfolds its meals, folds back; an item added does not (C5, Q37)", async ({ page }) => {
+  await mock(page);
+  await page.goto("/tribes/demo/courses");
+  const row = page.getByRole("button", { name: "bœuf haché, 875 g, 2 plats. Afficher les repas" });
+  await expect(row).toHaveAttribute("aria-expanded", "false");
+  await row.click();
+  const meals = page.getByRole("list", { name: "Repas de bœuf haché" });
+  const lines = await meals.getByRole("listitem").evaluateAll((all) => all.map((e) => (e.textContent ?? "").replace(/\s+/g, " ").trim()));
+  expect(lines).toEqual(["C Chili con carne · 3 parts mar. 6 oct. · soir 375 g", "C Chili con carne · 4 parts jeu. 8 oct. · midi 500 g"]);
+  await expect(page.getByRole("button", { name: "bœuf haché, 875 g, 2 plats. Masquer les repas" })).toHaveAttribute("aria-expanded", "true");
+
+  await page.getByRole("button", { name: /^oignon, 2 pièces/ }).click();
+  await expect(page.getByRole("list", { name: "Repas de oignon" })).toContainText("0,75 pièce");
+  await page.getByRole("button", { name: /^sel, sans quantité, 1 plat/ }).click();
+  const salt = page.getByRole("list", { name: "Repas de sel" });
+  await expect(salt).toContainText("Ratatouille · 4 parts");
+  await expect(salt.locator(".item-source-quantity")).toHaveCount(0);
+  await page.screenshot({ path: "test-results/courses-depliage.png", fullPage: true });
+
+  await page.getByRole("button", { name: /^bœuf haché.*Masquer les repas$/ }).click();
+  await expect(meals).toHaveCount(0);
+  // An item added: no unfolding.
+  await expect(page.getByRole("button", { name: /^pain/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retirer pain" })).toBeVisible();
+});
