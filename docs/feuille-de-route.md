@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-11-06
+- **Mise à jour** : 2026-11-07
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -59,7 +59,7 @@ Terminé le 2026-11-07 : recette sur l'archive de la PR de release (#93), un dé
 
 ### `courses` : listes de courses
 
-Troisième plan du métier, qui complète l'application viable à montrer : onglet Courses actif sur la liste principale, « Courses », créée dans chaque tribu par la migration `0009` (C1) ; choix des listes : création, renommage, liste principale, suppression d'une liste vide (C2, C12) ; articles à la main, sur le référentiel (C3) ; courses des repas d'une période, calculées par le serveur à partir du planning et de la bibliothèque, plats servis déjà reçus ignorés, ligne dépliable vers ses plats et repas (C4, C5, P2) ; coches et courses faites sur les articles vus cochés (C6, C11). Pas de hors-ligne (D2) : la liste affichée reste lisible, mais cocher demande le réseau. Conception dans `conception/listes-de-courses.md`. Cinq lots (specs et design, listes et articles, courses des repas, onglet Courses et choix des listes, courses des repas à l'écran), puis la release `v0.4.0`. Cadré le 2026-11-06 ; rien des lots B à E n'est fusionné avant l'étiquette `v0.3.0` (D21). *`v0.3.0` posée le 2026-11-07 : le plan peut avancer.* En cours depuis le 2026-11-07 : lot A (specs, design, conception).
+Troisième plan du métier, qui complète l'application viable à montrer : onglet Courses actif sur la liste principale, « Courses », créée dans chaque tribu par la migration `0009` (C1) ; choix des listes : création, renommage, liste principale, suppression d'une liste vide (C2, C12) ; articles à la main, sur le référentiel (C3) ; courses des repas d'une période, calculées par le serveur à partir du planning et de la bibliothèque, plats servis déjà reçus ignorés, ligne dépliable vers ses plats et repas (C4, C5, P2) ; coches et courses faites sur les articles vus cochés (C6, C11). Pas de hors-ligne (D2) : la liste affichée reste lisible, mais cocher demande le réseau. Conception dans `conception/listes-de-courses.md`. Cinq lots (specs et design, listes et articles, courses des repas, onglet Courses et choix des listes, courses des repas à l'écran), puis la release `v0.4.0`. Cadré le 2026-11-06 ; rien des lots B à E n'est fusionné avant l'étiquette `v0.3.0` (D21). *`v0.3.0` posée le 2026-11-07 : le plan peut avancer.* En cours depuis le 2026-11-07 : lot A (specs, design, conception), lot B (listes et articles, domaine et API, migration `0009`).
 
 ## Décisions d'ordonnancement
 
