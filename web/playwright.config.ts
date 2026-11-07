@@ -19,6 +19,8 @@ export default defineConfig({
   projects: [
     { name: "chromium", use: { ...devices["Pixel 7"] } },
     { name: "webkit", use: { ...devices["iPhone 15"] } },
+    // Smallest current iPhone width (375 px): catches layouts that overflow on a small screen.
+    { name: "webkit-small", use: { ...devices["iPhone SE (3rd gen)"] } },
   ],
   webServer: {
     command: [
