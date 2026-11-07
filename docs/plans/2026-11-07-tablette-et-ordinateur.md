@@ -140,6 +140,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 - [ ] Ordinateur, fenêtre large puis réduite jusqu'au téléphone : passage d'un format à l'autre sans perte ; survol et focus ; tout au clavier, Échap compris.
 - [ ] Tablette et ordinateur : un plat modifié non enregistré, puis un autre plat, le rail ou « Nouveau » : « Abandonner la modification ? » ; « Continuer la modification » garde la saisie, « Abandonner » la perd. Même essai sur le téléphone : pas de confirmation.
 - [ ] Connexion sur la tablette et l'ordinateur.
+- [ ] Ordinateur, fenêtre large mais de moins de 560 px de haut (fenêtre réduite en hauteur, ou portable 1366 × 768 avec des barres d'outils) : l'application passe en compact, barre d'onglets en bas (D3).
 
 ## Critères de validation
 
