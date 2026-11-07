@@ -61,12 +61,12 @@ Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D9, prise pa
 - **D6. Planning en étendu : un semainier**, 7 colonnes (les jours), 2 rangées (midi, soir), l'en-tête de la plage au-dessus ; le détail d'un repas s'ouvre **en panneau latéral à droite** par-dessus le semainier (sur un voile léger), sous le chemin `repas/…` ; le fermer revient au semainier. En moyen, la liste des jours d'aujourd'hui, élargie. *Variantes à comparer dans Design* : détail en dialogue centré ; semainier rétréci à côté d'un volet fixe.
 - **D7. Les feuilles deviennent des dialogues centrés** en moyen et en étendu (même `dialog`, même contenu, coins de 26 px sur les quatre côtés, largeur bornée vers 440 px) ; en compact, elles restent en bas de l'écran.
 - **D8. Rien ne se perd à la rotation** : passer d'un format à l'autre garde l'écran affiché, le chemin, la saisie en cours (plat, article, nom d'une liste, période des courses des repas) et la position de défilement du volet de détail. Moyen technique (ADR, D12) : le volet de détail occupe toujours la même place dans le rendu ; le volet de liste est ajouté à côté, ou masqué par le CSS, mais l'élément du détail n'est jamais recréé par un changement de format.
-- **D9. Changer d'élément dans le volet de liste** pendant une saisie (un autre plat, une autre liste) : comme sur téléphone, quand on revient par « Plats » : la saisie non enregistrée est abandonnée, sans confirmation (décision du développeur, 2026-11-07).
+- **D9. Saisie non enregistrée, en moyen et en étendu : confirmation avant de l'abandonner** (décision du développeur, 2026-11-07, qui remplace celle de la même date, « comme sur téléphone »). Quand un formulaire contient une saisie non enregistrée (un plat créé ou modifié, un article à la main, le nom d'une liste), toute navigation dans l'application qui la ferait perdre (autre élément du volet de liste, rail, lien « Plats », « Nouveau ») ouvre un dialogue de confirmation : « Abandonner la modification ? », « Ce que vous avez saisi sera perdu. », « Abandonner » en aplat, « Continuer la modification ». Une saisie identique à ce qui est enregistré n'est pas une saisie à confirmer. En compact, rien ne change : pas de confirmation. Les courses des repas n'en ont pas (une période se refait d'un geste). Le format compte au moment de la navigation : une saisie commencée sur téléphone puis tournée en paysage sur une tablette est protégée. Retour arrière du navigateur et fermeture de l'onglet : question ouverte 6.
 - **D10. Interaction à la souris et au clavier** : survol (liserés et fonds légèrement renforcés) et curseur sur ce qui se touche, seulement sous `(hover: hover) and (pointer: fine)` ; focus visible partout (`:focus-visible`) ; ordre de tabulation rail puis volet de liste puis détail ; Échap ferme un dialogue ou le panneau d'un repas. Pas de raccourcis clavier dans ce plan.
 - **D11. Clavier virtuel** : sur une tablette en paysage, il ne doit pas faire basculer la mise en page en compact. Les navigateurs visés redimensionnent la zone visible, pas la fenêtre de mise en page (comportement par défaut de Safari et de Chrome sur Android) ; on le vérifie en recette, et le bouton fixé en bas d'un formulaire (« Enregistrer le plat ») reste visible au-dessus du clavier. Si un navigateur bascule, le format est figé tant qu'un champ a le focus.
 - **D12. Un ADR « Mises en page selon la taille de la fenêtre »** (0030) : D2, D3, D7, D8 ; seuils en constantes TypeScript (`layout.ts`) et en requêtes de média du CSS, un test vérifiant qu'ils concordent (la CSP interdit tout style en ligne, les requêtes de média ne lisent pas de variables CSS) ; un composant de mise en page qui place rail, volet de liste et détail ; projets Playwright par format.
 - **D13. Les plans suivants dessinent chaque écran dans les trois formats.** Le principe 4 du design devient : « Usage principal sur téléphone ; tablette et ordinateur adaptés » ; les maquettes de l'application gardent le 390 × 844, et ajoutent un réglage `format` (compact, moyen, étendu) ou une maquette par grand format, selon ce que Design permet (lot A).
-- **D14. Preuves** : une exigence **ENF-03** et un fichier `formats-ecran.feature`, quelques scénarios `@ui` (semainier, deux volets, rotation sans perte de saisie, dialogue centré) exécutés dans les projets Playwright de la tablette et de l'ordinateur ; les scénarios `@ui` existants restent sous les téléphones (Pixel 7, iPhone 15), plus un projet « ordinateur » sous Chromium. Les tests d'écran existants (états des écrans sur une API simulée) gagnent les formats moyen et étendu. Durée de `make e2e` à mesurer (question ouverte 3).
+- **D14. Preuves** : une exigence **ENF-03** et un fichier `formats-ecran.feature`, quelques scénarios `@ui` (semainier, deux volets, rotation sans perte de saisie, dialogue centré, confirmation avant d'abandonner une saisie, D9) exécutés dans les projets Playwright de la tablette et de l'ordinateur ; les scénarios `@ui` existants restent sous les téléphones (Pixel 7, iPhone 15), plus un projet « ordinateur » sous Chromium. Les tests d'écran existants (états des écrans sur une API simulée) gagnent les formats moyen et étendu. Durée de `make e2e` à mesurer (question ouverte 3).
 
 ## Écrans concernés
 
@@ -87,7 +87,7 @@ Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D9, prise pa
 
 Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 
-- [ ] **1. Maquettes dans Design**, canevas de travail « Menus de la semaine » : rail de navigation ; Planning en semainier et détail d'un repas en panneau (D6, avec ses variantes) ; bibliothèque et plat en deux volets, dont l'état vide « Choisissez un plat » ; choix des listes et liste en deux volets ; courses des repas en moyen ; dialogue centré ; chaque fois en tablette paysage (1180 × 820), tablette portrait (820 × 1180) et ordinateur (1440 × 900). Validation par le développeur.
+- [ ] **1. Maquettes dans Design**, canevas de travail « Menus de la semaine » : rail de navigation ; dialogue « Abandonner la modification ? » (D9) ; Planning en semainier et détail d'un repas en panneau (D6, avec ses variantes) ; bibliothèque et plat en deux volets, dont l'état vide « Choisissez un plat » ; choix des listes et liste en deux volets ; courses des repas en moyen ; dialogue centré ; chaque fois en tablette paysage (1180 × 820), tablette portrait (820 × 1180) et ordinateur (1440 × 900). Validation par le développeur.
 - [ ] **2. Report dans le dépôt** : maquettes dans `docs/design/maquettes/` ; `docs/design/README.md` : principe 4 (D13), section « Formats d'écran » (formats et seuils, rail, deux volets, semainier, dialogues, survol et focus), navigation accordée ; canevas de référence refait (V4).
 - [ ] **3. ENF-03** dans `exigences-non-fonctionnelles.md` et `features/formats-ecran.feature` (D14), selon `conventions-gherkin.md` ; titres dans `acceptance/pending.txt`.
 - [ ] **4. ADR 0030** « Mises en page selon la taille de la fenêtre » (D12).
@@ -111,7 +111,8 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 
 ### Lot D : deux volets pour les plats et les courses (`feature/deux-volets`)
 
-- [ ] **14. Plats** en deux volets (D5) : bibliothèque et recherche à gauche, plat ouvert ou « Choisissez un plat ou créez-en un » à droite, carte du plat ouvert marquée ; changement de plat pendant une saisie (D9).
+- [ ] **14. Plats** en deux volets (D5) : bibliothèque et recherche à gauche, plat ouvert ou « Choisissez un plat ou créez-en un » à droite, carte du plat ouvert marquée.
+- [ ] **14 bis. Confirmation avant d'abandonner une saisie** (D9) : état « saisie non enregistrée » du plat, de l'article à la main et du nom d'une liste (comparé à ce qui est enregistré) ; garde sur les navigations de l'application en moyen et en étendu ; dialogue « Abandonner la modification ? » ; scénarios `@ui` retirés de `pending.txt`.
 - [ ] **15. Courses** en deux volets (D5) : choix des listes à gauche, liste à droite ; courses des repas dans le volet de détail ; « Nouvelle liste » ouvre la liste créée à droite.
 - [ ] **16. Rotation** : scénario « Tourner la tablette ne perd pas la saisie » sur un plat et sur un article (D8), retirés de `pending.txt`.
 
@@ -131,6 +132,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 - [ ] Rotation pendant la saisie d'un plat, d'un article et d'une période : rien n'est perdu, l'écran reste le même.
 - [ ] Clavier virtuel ouvert en paysage : la mise en page ne bascule pas, « Enregistrer le plat » reste visible (D11).
 - [ ] Ordinateur, fenêtre large puis réduite jusqu'au téléphone : passage d'un format à l'autre sans perte ; survol et focus ; tout au clavier, Échap compris.
+- [ ] Tablette et ordinateur : un plat modifié non enregistré, puis un autre plat, le rail ou « Nouveau » : « Abandonner la modification ? » ; « Continuer la modification » garde la saisie, « Abandonner » la perd. Même essai sur le téléphone : pas de confirmation.
 - [ ] Connexion sur la tablette et l'ordinateur.
 
 ## Critères de validation
@@ -142,7 +144,8 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 ## Questions ouvertes
 
 1. *Fermée le 2026-11-07* : le développeur recette sur une tablette Android.
-2. *Fermée le 2026-11-07* : saisie abandonnée sans confirmation, comme sur téléphone (D9).
+2. *Fermée le 2026-11-07* : confirmation avant d'abandonner une saisie en moyen et en étendu, pas en compact (D9).
 3. **Projets Playwright** : tous les scénarios `@ui` sous tous les formats, ou seulement ceux de `formats-ecran.feature` (D14) ? Dépend de la durée de `make e2e` en CI.
 4. **Semainier sur une tablette de 1024 px** : 7 colonnes d'environ 130 px avec le rail ; les noms de plats sont fortement tronqués. Seuil du semainier plus haut que celui de l'étendu (par exemple 1180 px), et jours sur deux rangées en dessous ?
 5. **Orientation de la PWA installée** : le manifeste (plan hors-ligne) ne fige pas l'orientation (`orientation: any`), à noter dans ce plan-là.
+6. **Retour arrière du navigateur et fermeture de l'onglet** pendant une saisie (D9) : le retour arrière ne se suspend pas, il faudrait remettre le chemin quitté puis demander ; la fermeture n'a que le message générique du navigateur (`beforeunload`). Les inclure, ou s'en tenir aux navigations de l'application ?
