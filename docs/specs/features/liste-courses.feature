@@ -18,7 +18,7 @@ Fonctionnalité: Listes de courses
     Alors elle a une seule liste de courses, "Courses", vide
     Et "Courses" est sa liste principale
 
-  @C1
+  @C1 @ui
   Scénario: L'onglet Courses ouvre la liste principale
     Étant donné les listes "Courses" et "Marché"
     Quand j'ouvre l'onglet Courses
@@ -55,6 +55,41 @@ Fonctionnalité: Listes de courses
     Alors la liste "Marché du samedi" existe
 
   @C2
+  Scénario: Deux listes peuvent porter le même nom
+    Étant donné la liste "Marché"
+    Quand je crée la liste "Marché"
+    Alors la tribu a deux listes "Marché"
+
+  @C2
+  Scénario: Les espaces en trop sont retirées du nom d'une liste
+    Quand je crée la liste "  Marché   du  samedi "
+    Alors la liste "Marché du samedi" existe
+
+  @C2
+  Plan du scénario: Un nom de liste trop long, sans caractère visible ou avec un caractère de contrôle est refusé
+    Quand je crée une liste dont le nom est <nom>
+    Alors la création de la liste est impossible
+    Et le nom de la liste est refusé comme <refus>
+
+    Exemples:
+      | nom                                           | refus     |
+      | un texte de 41 caractères                     | trop long |
+      | l'espace sans chasse U+200B                   | vide      |
+      | "Marché" suivi du caractère de contrôle U+0007 | invalide  |
+
+  @C2
+  Scénario: Un nom de liste de 40 caractères est accepté
+    Quand je crée une liste dont le nom est un texte de 40 caractères
+    Alors cette liste existe et est vide
+
+  @C2
+  Scénario: Une tribu a 20 listes au plus
+    Étant donné la tribu a 20 listes de courses
+    Quand je crée la liste "Marché"
+    Alors la création de la liste est impossible
+    Et un message m'indique que la tribu ne peut pas avoir plus de 20 listes
+
+  @C2 @ui
   Scénario: Ordre des listes
     Étant donné que j'ai créé la liste "Marché" puis la liste "Drive"
     Et la liste principale de la tribu est la liste "Drive"
@@ -84,7 +119,48 @@ Fonctionnalité: Listes de courses
     Quand je retire "pain" de la liste "Courses"
     Alors la liste "Courses" ne contient plus "pain"
 
-  @C4
+  @C3
+  Scénario: Retirer un article déjà retiré par un autre membre
+    Étant donné la liste "Courses" contenant l'article ajouté "pain"
+    Et j'ai ouvert la liste "Courses"
+    Et Bruno a retiré entre-temps "pain" de la liste "Courses"
+    Quand je retire "pain" de la liste "Courses"
+    Alors la liste "Courses" ne contient plus "pain"
+    Et aucun message ne m'est présenté
+
+  @C3
+  Scénario: Une liste a 300 articles au plus
+    Étant donné la liste "Courses" contenant 300 articles ajoutés
+    Quand j'ajoute l'article "pain" à la liste "Courses"
+    Alors l'ajout de l'article est impossible
+    Et un message m'indique que la liste ne peut pas dépasser 300 articles
+
+  @C3
+  Scénario: Deux articles ajoutés du même ingrédient restent distincts
+    Étant donné la liste "Courses" contenant l'article ajouté "pain" pour 1 pièce
+    Quand j'ajoute l'article "pain" pour 2 pièces à la liste "Courses"
+    Alors la liste "Courses" contient l'article ajouté "pain" pour 1 pièce
+    Et la liste "Courses" contient l'article ajouté "pain" pour 2 pièces
+
+  @C3 @C6
+  Scénario: Ordre des articles
+    Étant donné la liste "Courses" contenant les articles ajoutés :
+      | article  | quantité | unité |
+      | pain     | 2        | pièce |
+      | oignon   | 3        | pièce |
+      | Échalote | 4        | pièce |
+      | lessive  |          |       |
+    Et la liste "Courses" contenant 1 pièce de "oignon" provenant du "Chili con carne" du mardi 6 octobre 2026 au soir
+    Et "pain" est coché dans la liste "Courses"
+    Alors les articles de la liste "Courses" sont dans l'ordre :
+      | article  | quantité | sorte   | coché |
+      | Échalote | 4 pièces | ajouté  | non   |
+      | lessive  |          | ajouté  | non   |
+      | oignon   | 1 pièce  | calculé | non   |
+      | oignon   | 3 pièces | ajouté  | non   |
+      | pain     | 2 pièces | ajouté  | oui   |
+
+  @C4 @ui
   Scénario: Période et liste par défaut
     Quand j'ajoute les courses des repas sans modifier la période ni la liste proposées
     Alors la période retenue va du 6 au 12 octobre 2026 inclus
@@ -99,10 +175,46 @@ Fonctionnalité: Listes de courses
     Et la liste "Courses" est vide
 
   @C4
-  Scénario: La date de fin ne peut pas précéder la date de début
-    Quand je choisis une date de début au jeudi 8 octobre 2026 et une date de fin au mardi 6 octobre 2026
+  Scénario: Une période dont la date de fin précède la date de début est refusée
+    Quand j'ajoute les courses des repas du 8 au 6 octobre 2026 à la liste "Courses"
     Alors l'ajout des courses est impossible
     Et un message m'indique que la date de fin doit suivre la date de début
+
+  @C4 @ui
+  Scénario: La date de fin ne peut pas précéder la date de début
+    Quand je choisis une date de début au jeudi 8 octobre 2026 et une date de fin au mardi 6 octobre 2026
+    Alors le bouton d'ajout des courses est inactif
+    Et un message m'indique que la date de fin doit suivre la date de début
+
+  @C4
+  Plan du scénario: Une période va d'un jour à 31 jours
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Quand j'ajoute les courses des repas <période> à la liste "Courses"
+    Alors la liste "Courses" contient 500 g de "bœuf haché"
+
+    Exemples:
+      | période                         |
+      | du 6 au 6 octobre 2026          |
+      | du 6 octobre au 5 novembre 2026 |
+
+  @C4
+  Scénario: Une période de plus de 31 jours est refusée
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Quand j'ajoute les courses des repas du 6 octobre au 6 novembre 2026 à la liste "Courses"
+    Alors l'ajout des courses est impossible
+    Et un message m'indique que la période ne peut pas dépasser 31 jours
+    Et la liste "Courses" est vide
+
+  @C4
+  Plan du scénario: Une période hors de 2000 à 2099 est refusée
+    Quand j'ajoute les courses des repas <période> à la liste "Courses"
+    Alors l'ajout des courses est impossible
+    Et la liste "Courses" est vide
+
+    Exemples:
+      | période                                 |
+      | du 31 décembre 1999 au 6 janvier 2000   |
+      | du 28 décembre 2099 au 1er janvier 2100 |
 
   @C4
   Scénario: Seuls les repas de la période sont pris en compte
@@ -171,10 +283,64 @@ Fonctionnalité: Listes de courses
     Alors la liste "Courses" contient 1 pièce de "oignon"
 
   @C4
+  Scénario: Les masses sont arrondies au gramme supérieur
+    Étant donné le plat "Steak haché" défini pour 3 parts avec 500 g de "bœuf haché"
+    Et le plat "Steak haché" servi pour 1 part le mardi 6 octobre 2026 au soir
+    Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Alors la liste "Courses" contient 167 g de "bœuf haché"
+
+  @C4
   Scénario: Un plat sans ingrédient n'ajoute rien à la liste
     Étant donné le plat "Restes" sans ingrédient servi pour 4 parts dans la période
     Quand j'ajoute les courses des repas de la période à la liste "Courses"
     Alors la liste "Courses" est vide
+
+  @C4 @C5
+  Scénario: Un ingrédient sans quantité devient un article sans quantité
+    Étant donné la bibliothèque contient le plat "Pâtes au beurre" défini pour 4 parts :
+      | ingrédient | quantité | unité |
+      | pâtes      | 500      | g     |
+      | sel        |          |       |
+    Et le plat "Pâtes au beurre" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et le plat "Pâtes au beurre" servi pour 2 parts le jeudi 8 octobre 2026 à midi
+    Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Alors la liste "Courses" contient une seule ligne "sel", sans quantité
+    Et la ligne "sel" indique qu'elle provient de 2 plats servis
+
+  @C4
+  Scénario: Un ingrédient sans quantité reste distinct du même ingrédient avec quantité
+    Étant donné la bibliothèque contient le plat "Pâtes au beurre" défini pour 4 parts :
+      | ingrédient | quantité | unité |
+      | pâtes      | 500      | g     |
+      | sel        |          |       |
+    Et le plat "Pain maison" défini pour 4 parts avec 10 g de "sel"
+    Et chacun de ces plats servi pour 4 parts dans la période
+    Quand j'ajoute les courses des repas de la période à la liste "Courses"
+    Alors la liste "Courses" contient 10 g de "sel"
+    Et la liste "Courses" contient "sel" sans quantité
+
+  @C4
+  Scénario: Un article sans quantité coché reste coché quand il reçoit un plat servi de plus
+    Étant donné la bibliothèque contient le plat "Pâtes au beurre" défini pour 4 parts :
+      | ingrédient | quantité | unité |
+      | pâtes      | 500      | g     |
+      | sel        |          |       |
+    Et la liste "Courses" contenant "sel" sans quantité provenant du "Pâtes au beurre" du lundi 5 octobre 2026 au soir
+    Et "sel" est coché dans la liste "Courses"
+    Et le plat "Pâtes au beurre" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Alors "sel" apparaît comme coché dans la liste "Courses"
+    Et la ligne "sel" indique qu'elle provient de 2 plats servis
+
+  @C4
+  Scénario: Un ajout de courses qui dépasserait 300 articles est refusé en entier
+    Étant donné la liste "Courses" contenant 299 articles ajoutés
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Alors l'ajout des courses est impossible
+    Et un message m'indique que la liste ne peut pas dépasser 300 articles
+    Et la liste "Courses" ne contient pas "bœuf haché"
+    Et la liste "Courses" ne contient pas "oignon"
 
   @C4
   Scénario: Les courses s'ajoutent aux articles déjà présents
@@ -232,7 +398,7 @@ Fonctionnalité: Listes de courses
     Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Alors la ligne "bœuf haché" indique qu'elle provient de 2 plats servis
 
-  @C5
+  @C5 @ui
   Scénario: Déplier un article pour voir les plats et repas concernés
     Étant donné le plat "Chili con carne" servi pour 3 parts le mardi 6 octobre 2026 au soir
     Et le plat "Chili con carne" servi pour 4 parts le jeudi 8 octobre 2026 à midi
@@ -244,7 +410,7 @@ Fonctionnalité: Listes de courses
       | jeudi 8 oct., midi  | Chili con carne | 4     | 500 g    |
     Et je la replie en la touchant de nouveau
 
-  @C5
+  @C5 @ui
   Scénario: Un article ajouté ne se déplie pas
     Étant donné la liste "Courses" contenant l'article ajouté "pain"
     Alors la ligne "pain" est marquée comme ajoutée à la main
@@ -255,6 +421,23 @@ Fonctionnalité: Listes de courses
     Étant donné la liste "Courses" contenant l'article ajouté "pain"
     Quand je coche "pain" dans la liste "Courses"
     Alors "pain" apparaît comme coché dans la liste "Courses"
+
+  @C6
+  Scénario: La dernière coche l'emporte
+    Étant donné la liste "Courses" contenant l'article ajouté "pain"
+    Et j'ai ouvert la liste "Courses"
+    Et Bruno a coché entre-temps "pain" dans la liste "Courses"
+    Quand je décoche "pain" dans la liste "Courses"
+    Alors "pain" apparaît comme non coché dans la liste "Courses"
+
+  @C6 @C11
+  Scénario: La coche d'un article retiré entre-temps n'a pas d'effet
+    Étant donné la liste "Courses" contenant l'article ajouté "pain"
+    Et j'ai ouvert la liste "Courses"
+    Et Bruno a coché entre-temps "pain" dans la liste "Courses" et déclaré les courses faites
+    Quand je coche "pain" dans la liste "Courses"
+    Alors la liste "Courses" ne contient plus "pain"
+    Et aucun message ne m'est présenté
 
   @C7
   Scénario: Cocher un article sans réseau
@@ -535,6 +718,28 @@ Fonctionnalité: Listes de courses
     Quand je déclare les courses faites pour la liste "Courses"
     Alors le repas du mardi 6 octobre 2026 au soir contient toujours "Chili con carne" pour 4 parts
 
+  @C11
+  Scénario: Les courses faites ne retirent que les articles vus cochés
+    Étant donné la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
+    Et "pain" est coché dans la liste "Courses"
+    Et j'ai ouvert la confirmation des courses faites de la liste "Courses"
+    Et Bruno a coché entre-temps "lessive" dans la liste "Courses"
+    Quand je confirme les courses faites
+    Alors la liste "Courses" ne contient plus "pain"
+    Et "lessive" apparaît comme coché dans la liste "Courses"
+    Et un message m'indique que 1 article a été retiré
+
+  @C11
+  Scénario: Un article décoché entre-temps reste après les courses faites
+    Étant donné la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
+    Et "pain" est coché dans la liste "Courses"
+    Et "lessive" est coché dans la liste "Courses"
+    Et j'ai ouvert la confirmation des courses faites de la liste "Courses"
+    Et Bruno a décoché entre-temps "lessive" dans la liste "Courses"
+    Quand je confirme les courses faites
+    Alors la liste "Courses" ne contient plus "pain"
+    Et "lessive" apparaît comme non coché dans la liste "Courses"
+
   @C12
   Scénario: Supprimer une liste vide
     Étant donné la liste "Marché" vide
@@ -554,3 +759,39 @@ Fonctionnalité: Listes de courses
     Quand je tente de supprimer la liste "Courses"
     Alors la suppression est impossible
     Et un message m'indique qu'il faut d'abord désigner une autre liste comme principale
+
+  @C12 @C3
+  Scénario: Une liste devenue non vide entre-temps n'est pas supprimée
+    Étant donné la liste "Marché" vide
+    Et j'ai ouvert le choix des listes
+    Et Bruno a ajouté entre-temps l'article "pain" à la liste "Marché"
+    Quand je tente de supprimer la liste "Marché"
+    Alors la suppression est impossible
+    Et un message m'indique que la liste n'est plus vide
+    Et la liste "Marché" m'est présentée à jour, avec l'article ajouté "pain"
+
+  @C12 @C1
+  Scénario: Une liste devenue principale entre-temps n'est pas supprimée
+    Étant donné la liste "Marché" vide
+    Et j'ai ouvert le choix des listes
+    Et Bruno a désigné entre-temps la liste "Marché" comme principale
+    Quand je tente de supprimer la liste "Marché"
+    Alors la suppression est impossible
+    Et un message m'indique qu'il faut d'abord désigner une autre liste comme principale
+
+  @C12 @C2 @C3 @C4
+  Plan du scénario: Une écriture sur une liste supprimée entre-temps est refusée
+    Étant donné la liste "Marché" vide
+    Et j'ai ouvert la liste "Marché"
+    Et Bruno a supprimé entre-temps la liste "Marché"
+    Quand je tente de <action>
+    Alors la requête est refusée
+    Et un message m'indique que la liste a été supprimée entre-temps
+    Et la liste "Marché" n'existe plus
+
+    Exemples:
+      | action                                                                   |
+      | ajouter l'article "pain" à la liste "Marché"                              |
+      | renommer la liste "Marché" en "Marché du samedi"                          |
+      | désigner la liste "Marché" comme principale                               |
+      | ajouter les courses des repas du 6 au 12 octobre 2026 à la liste "Marché" |

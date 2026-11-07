@@ -58,7 +58,6 @@ Fonctionnalité: Compartimentage des données entre tribus
     Exemples:
       | donnée                  |
       | la bibliothèque de plats |
-      | les listes de courses   |
       | la liste des membres    |
       | mes sessions            |
 
@@ -70,6 +69,45 @@ Fonctionnalité: Compartimentage des données entre tribus
     Quand je consulte le planning
     Alors je ne vois aucun élément de la tribu "durand"
     Et le repas du mardi 6 octobre 2026 au soir ne contient aucun plat
+
+  @ENF-02 @T1
+  Scénario: Les listes de courses sont propres à la tribu
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et la liste "Courses" de la tribu "durand" contient l'article ajouté "reblochon"
+    Et la tribu "durand" a la liste "Marché" vide
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je consulte les listes de courses
+    Alors je ne vois aucun élément de la tribu "durand"
+    Et la tribu "martin" a une seule liste de courses, "Courses", vide
+
+  @ENF-02
+  Plan du scénario: Une liste d'une autre tribu ne peut être ni lue, ni modifiée, ni supprimée
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et la tribu "durand" a la liste "Marché" vide
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je tente de <action> la liste "Marché" de la tribu "durand" en utilisant son identifiant
+    Alors la requête est refusée
+    Et la réponse est la même que pour un identifiant qui n'existe pas
+    Et la liste "Marché" de la tribu "durand" est inchangée
+
+    Exemples:
+      | action                                  |
+      | renommer                                |
+      | désigner comme principale               |
+      | ajouter un article à                    |
+      | ajouter les courses des repas à         |
+      | déclarer les courses faites de          |
+      | supprimer                               |
+
+  @ENF-02
+  Scénario: Un article d'une autre tribu ne peut être ni coché ni retiré
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et la liste "Courses" de la tribu "durand" contient l'article ajouté "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je tente de cocher puis de retirer cet article de la tribu "durand" en utilisant son identifiant et celui de sa liste
+    Alors chaque requête est refusée
+    Et la réponse est la même que pour un identifiant qui n'existe pas
+    Et l'article "reblochon" de la tribu "durand" est inchangé
 
   @ENF-02
   Plan du scénario: Un plat servi d'une autre tribu ne peut être ni modifié ni retiré
