@@ -64,7 +64,7 @@ Troisième plan du métier, qui complète l'application viable à montrer : ongl
 
 ### `grands-ecrans` : tablette et ordinateur
 
-Adaptation de l'interface, dessinée pour le téléphone, à la tablette en portrait et en paysage et à l'ordinateur : trois formats décidés par la taille de la fenêtre, jamais par l'appareil (compact, moyen, étendu) ; rail de navigation à gauche hors du téléphone ; en étendu, planning en semainier avec le détail d'un repas en panneau, bibliothèque et plat, choix des listes et liste en deux volets ; feuilles en dialogues centrés ; rien de perdu à la rotation ; souris et clavier. Aucun changement du métier ni de l'API. Maquettes d'abord dans Design. Quatre lots (design, specs et ADR ; formats, rail et dialogues ; semainier ; deux volets), puis `v0.5.0`. Brouillon du 2026-11-07, place proposée (D1) : après `courses`, avant `courses-suite`, pour que la sélection d'articles, les membres et le hors-ligne se dessinent d'emblée dans les trois formats.
+Adaptation de l'interface, dessinée pour le téléphone, à la tablette en portrait et en paysage et à l'ordinateur : trois formats décidés par la taille de la fenêtre, jamais par l'appareil (compact, moyen, étendu) ; rail de navigation à gauche hors du téléphone ; en étendu, planning en semainier avec le détail d'un repas en panneau, bibliothèque et plat, choix des listes et liste en deux volets ; feuilles en dialogues centrés ; rien de perdu à la rotation ; souris et clavier. Aucun changement du métier ni de l'API. Maquettes d'abord dans Design. Quatre lots (design, specs et ADR ; formats, rail et dialogues ; semainier ; deux volets), puis `v0.5.0`. Brouillon du 2026-11-07, placé (D1, décision du développeur) après `courses`, avant `courses-suite`, pour que la sélection d'articles, les membres et le hors-ligne se dessinent d'emblée dans les trois formats.
 
 ## Décisions d'ordonnancement
 
@@ -90,12 +90,16 @@ Le 2026-11-06, avec le développeur, pendant la recette de `planning`.
 - **Les listes de courses en deux plans.** `courses` d'abord (C1 à C6, C11, C12), livré seul en `v0.4.0` : on fait ses courses avec la liste. `courses-suite` ensuite (C8 à C10 : liste périmée et recalcul, sélection, déplacement, nouvelle liste à partir d'une sélection), en `v0.5.0` ; le modèle de `courses` le prévoit (`courses`, D5).
 - **Le hors-ligne des listes reste au plan hors-ligne** (C7, `courses`, D2), malgré l'usage au supermarché : une liste affichée reste lisible, mais cocher demande le réseau. Le plan hors-ligne passe donc avant l'invitation de la famille.
 
+Le 2026-11-07, avec le développeur.
+
+- **Tablette et ordinateur avant `courses-suite`.** `grands-ecrans` suit `courses` et passe en `v0.5.0` : la sélection d'articles de `courses-suite`, les membres et le hors-ligne se dessinent ensuite d'emblée dans les trois formats, au lieu d'être repris ; l'invitation de la famille recule d'un plan.
+
 ## Ensuite, sans ordre arrêté
 
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **`courses-suite`**, après `courses` (décision du 2026-11-06), et après `grands-ecrans` si sa place est confirmée (D1) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection`, dans les trois formats ; `v0.6.0` (`v0.5.0` si `grands-ecrans` passe après). Nom réservé, plan à cadrer.
+- **`courses-suite`**, après `courses` (décision du 2026-11-06), puis après `grands-ecrans` (décision du 2026-11-07) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection`, dans les trois formats ; `v0.6.0`. Nom réservé, plan à cadrer.
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes ; consultation et coches des listes de courses sans réseau, rejeu au retour du réseau (C7, Q16, Q18) ; avant d'inviter la famille (décision du 2026-11-06).
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).

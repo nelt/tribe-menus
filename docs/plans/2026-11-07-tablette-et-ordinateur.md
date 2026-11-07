@@ -2,7 +2,7 @@
 
 - **Nom** : `grands-ecrans`
 - **Date** : 2026-11-07
-- **Statut** : brouillon. Demandé par le développeur le 2026-11-07 ; D9 prise par le développeur le 2026-11-07 ; D1 à D8 et D10 à D14 proposées, à confirmer à la revue de ce plan. Place dans la feuille de route proposée (D1) : après `courses`, avant `courses-suite`.
+- **Statut** : brouillon. Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions proposées, à confirmer à la revue de ce plan. Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
 
 ## Objectif
 
@@ -37,9 +37,9 @@ Aucun changement du métier, des données ni de l'API.
 
 ## Décisions
 
-Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D9, prise par le développeur le 2026-11-07.
+Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D1, D6, D9 et D14, prises par le développeur le 2026-11-07.
 
-- **D1. Place dans la feuille de route** : après `courses` (`v0.4.0`), avant `courses-suite`, qui passe en `v0.6.0`.
+- **D1. Place dans la feuille de route** : après `courses` (`v0.4.0`), avant `courses-suite`, qui passe en `v0.6.0` (décision du développeur, 2026-11-07).
   - *Pour* : chaque écran construit avant ce plan sera repris ; `courses-suite` remplace la barre d'onglets par les actions de sélection (`Doux-CoursesSelection`), précisément ce que ce plan déplace ; les membres et appareils n'existent pas encore à l'écran ; l'application « viable à montrer » se montre aussi sur un ordinateur ; les écrans des courses sont frais.
   - *Contre* : retarde `courses-suite` et le hors-ligne, donc l'invitation de la famille, d'un plan. Ce plan ne bloque pas l'invitation.
   - *Autres places possibles* : après `courses-suite` (la sélection serait reprise ici, petite reprise) ; ou juste avant l'invitation de la famille (le plus de reprises, membres compris).
@@ -58,15 +58,18 @@ Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D9, prise pa
   - `plats` : la bibliothèque à gauche, à droite « Choisissez un plat ou créez-en un » ; `plats/<id>` et `plats/nouveau` : la bibliothèque à gauche, le plat ouvert à droite, sa carte marquée dans la bibliothèque ;
   - `courses` et `courses/<id>` : le choix des listes à gauche, la liste à droite ; `courses/listes` n'a plus d'écran propre en étendu (il montre la liste principale) ;
   - en compact et en moyen, un seul volet, comme aujourd'hui.
-- **D6. Planning en étendu : un semainier**, 7 colonnes (les jours), 2 rangées (midi, soir), l'en-tête de la plage au-dessus ; le détail d'un repas s'ouvre **en panneau latéral à droite** par-dessus le semainier (sur un voile léger), sous le chemin `repas/…` ; le fermer revient au semainier. En moyen, la liste des jours d'aujourd'hui, élargie. *Variantes à comparer dans Design* : détail en dialogue centré ; semainier rétréci à côté d'un volet fixe.
+- **D6. Planning en étendu : un semainier**, 7 colonnes (les jours), 2 rangées (midi, soir), l'en-tête de la plage au-dessus. **Chaque colonne fait au moins 160 px** environ ; quand les 7 ne tiennent pas (tablette de 1024 px : environ 5 jours visibles), le semainier **défile sur le côté**, et se cale sur un jour quand on le lâche (`scroll-snap`), l'en-tête et les flèches de semaine restant fixes (décision du développeur, 2026-11-07, plutôt qu'un seuil du semainier à 1180 px). À la souris, le défilement horizontal doit rester possible sans pavé tactile (boutons ou molette, à voir dans Design) ; le détail d'un repas s'ouvre **en panneau latéral à droite** par-dessus le semainier (sur un voile léger), sous le chemin `repas/…` ; le fermer revient au semainier. En moyen, la liste des jours d'aujourd'hui, élargie. *Variantes à comparer dans Design* : détail en dialogue centré ; semainier rétréci à côté d'un volet fixe.
 - **D7. Les feuilles deviennent des dialogues centrés** en moyen et en étendu (même `dialog`, même contenu, coins de 26 px sur les quatre côtés, largeur bornée vers 440 px) ; en compact, elles restent en bas de l'écran.
 - **D8. Rien ne se perd à la rotation** : passer d'un format à l'autre garde l'écran affiché, le chemin, la saisie en cours (plat, article, nom d'une liste, période des courses des repas) et la position de défilement du volet de détail. Moyen technique (ADR, D12) : le volet de détail occupe toujours la même place dans le rendu ; le volet de liste est ajouté à côté, ou masqué par le CSS, mais l'élément du détail n'est jamais recréé par un changement de format.
-- **D9. Saisie non enregistrée, en moyen et en étendu : confirmation avant de l'abandonner** (décision du développeur, 2026-11-07, qui remplace celle de la même date, « comme sur téléphone »). Quand un formulaire contient une saisie non enregistrée (un plat créé ou modifié, un article à la main, le nom d'une liste), toute navigation dans l'application qui la ferait perdre (autre élément du volet de liste, rail, lien « Plats », « Nouveau ») ouvre un dialogue de confirmation : « Abandonner la modification ? », « Ce que vous avez saisi sera perdu. », « Abandonner » en aplat, « Continuer la modification ». Une saisie identique à ce qui est enregistré n'est pas une saisie à confirmer. En compact, rien ne change : pas de confirmation. Les courses des repas n'en ont pas (une période se refait d'un geste). Le format compte au moment de la navigation : une saisie commencée sur téléphone puis tournée en paysage sur une tablette est protégée. Retour arrière du navigateur et fermeture de l'onglet : question ouverte 6.
+- **D9. Saisie non enregistrée, en moyen et en étendu : confirmation avant de l'abandonner** (décision du développeur, 2026-11-07, qui remplace celle de la même date, « comme sur téléphone »). Quand un formulaire contient une saisie non enregistrée (un plat créé ou modifié, un article à la main, le nom d'une liste), toute navigation dans l'application qui la ferait perdre (autre élément du volet de liste, rail, lien « Plats », « Nouveau ») ouvre un dialogue de confirmation : « Abandonner la modification ? », « Ce que vous avez saisi sera perdu. », « Abandonner » en aplat, « Continuer la modification ». Une saisie identique à ce qui est enregistré n'est pas une saisie à confirmer. En compact, rien ne change : pas de confirmation. Les courses des repas n'en ont pas (une période se refait d'un geste). Le format compte au moment de la navigation : une saisie commencée sur téléphone puis tournée en paysage sur une tablette est protégée. Seules les navigations dans l'application sont gardées : ni le retour arrière du navigateur ni la fermeture de l'onglet ne demandent de confirmation (décision du développeur, 2026-11-07).
 - **D10. Interaction à la souris et au clavier** : survol (liserés et fonds légèrement renforcés) et curseur sur ce qui se touche, seulement sous `(hover: hover) and (pointer: fine)` ; focus visible partout (`:focus-visible`) ; ordre de tabulation rail puis volet de liste puis détail ; Échap ferme un dialogue ou le panneau d'un repas. Pas de raccourcis clavier dans ce plan.
 - **D11. Clavier virtuel** : sur une tablette en paysage, il ne doit pas faire basculer la mise en page en compact. Les navigateurs visés redimensionnent la zone visible, pas la fenêtre de mise en page (comportement par défaut de Safari et de Chrome sur Android) ; on le vérifie en recette, et le bouton fixé en bas d'un formulaire (« Enregistrer le plat ») reste visible au-dessus du clavier. Si un navigateur bascule, le format est figé tant qu'un champ a le focus.
 - **D12. Un ADR « Mises en page selon la taille de la fenêtre »** (0030) : D2, D3, D7, D8 ; seuils en constantes TypeScript (`layout.ts`) et en requêtes de média du CSS, un test vérifiant qu'ils concordent (la CSP interdit tout style en ligne, les requêtes de média ne lisent pas de variables CSS) ; un composant de mise en page qui place rail, volet de liste et détail ; projets Playwright par format.
 - **D13. Les plans suivants dessinent chaque écran dans les trois formats.** Le principe 4 du design devient : « Usage principal sur téléphone ; tablette et ordinateur adaptés » ; les maquettes de l'application gardent le 390 × 844, et ajoutent un réglage `format` (compact, moyen, étendu) ou une maquette par grand format, selon ce que Design permet (lot A).
-- **D14. Preuves** : une exigence **ENF-03** et un fichier `formats-ecran.feature`, quelques scénarios `@ui` (semainier, deux volets, rotation sans perte de saisie, dialogue centré, confirmation avant d'abandonner une saisie, D9) exécutés dans les projets Playwright de la tablette et de l'ordinateur ; les scénarios `@ui` existants restent sous les téléphones (Pixel 7, iPhone 15), plus un projet « ordinateur » sous Chromium. Les tests d'écran existants (états des écrans sur une API simulée) gagnent les formats moyen et étendu. Durée de `make e2e` à mesurer (question ouverte 3).
+- **D14. Preuves** : une exigence **ENF-03** et un fichier `formats-ecran.feature`, quelques scénarios `@ui` (semainier et son défilement, deux volets, rotation sans perte de saisie, dialogue centré, confirmation avant d'abandonner une saisie, D9). Exécution en deux niveaux, pour garder la CI d'une PR courte (décision du développeur, 2026-11-07) :
+  - **sur chaque PR** (`make e2e`, job `ci`) : tous les scénarios `@ui` et tests d'écran sous les téléphones (Pixel 7, iPhone 15), comme aujourd'hui, plus les seuls scénarios de `formats-ecran.feature` sous la tablette (portrait et paysage) et l'ordinateur ; quelques minutes de plus ;
+  - **sur la PR de release et chaque nuit** (`make e2e-formats`, nouvelle cible) : tous les scénarios `@ui` et tests d'écran sous tous les formats, avant la recette. Le changement de `.github/workflows/` se pousse depuis l'hôte (ADR 0018).
+  - Répartir les tests sur plusieurs machines de la CI reste possible plus tard, si la durée l'exige. Durées mesurées au lot B et notées dans l'ADR.
 
 ## Écrans concernés
 
@@ -101,11 +104,11 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 - [ ] **7. Composant de mise en page** : rail ou barre d'onglets selon le format (D4), pastille de la tribu dans le rail, emplacement fixe du détail (D8) ; colonne des écrans élargie en moyen.
 - [ ] **8. Dialogues centrés** en moyen et en étendu (D7).
 - [ ] **9. Souris et clavier** : survol, curseur, `:focus-visible`, ordre de tabulation, Échap (D10).
-- [ ] **10. Playwright** : projets « tablette portrait », « tablette paysage » (Chromium et WebKit) et « ordinateur » (Chromium) ; tests d'écran existants dans les nouveaux formats ; scénarios `@ui` du rail et des dialogues retirés de `pending.txt`.
+- [ ] **10. Playwright** : projets « tablette portrait », « tablette paysage » (Chromium et WebKit) et « ordinateur » (Chromium) ; `make e2e` les limite aux scénarios de `formats-ecran.feature`, `make e2e-formats` y passe tout (D14) ; job de la PR de release et job de nuit, poussés depuis l'hôte ; durées mesurées ; scénarios `@ui` du rail et des dialogues retirés de `pending.txt`.
 
 ### Lot C : planning en semainier (`feature/semainier`)
 
-- [ ] **11. Semainier** en étendu (D6) : 7 colonnes, midi et soir, cases et pilules d'après les maquettes, en-tête de la plage et flèches ; bornes de 2000 à 2099 comme aujourd'hui ; jours élargis en moyen.
+- [ ] **11. Semainier** en étendu (D6) : 7 colonnes de 160 px au moins, midi et soir, cases et pilules d'après les maquettes, défilement horizontal calé sur un jour quand elles ne tiennent pas, en-tête de la plage et flèches fixes ; bornes de 2000 à 2099 comme aujourd'hui ; jours élargis en moyen.
 - [ ] **12. Détail d'un repas en panneau** (D6), sous le même chemin ; fermeture par la croix, Échap ou le voile, retour à la même plage ; rien de perdu à la rotation (D8).
 - [ ] **13. Scénarios `@ui`** du semainier, retirés de `pending.txt`.
 
@@ -128,7 +131,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 
 - [ ] Téléphone : rien n'a changé, en portrait ni en paysage (le paysage reste en compact).
 - [ ] Tablette en portrait : rail, colonnes élargies, dialogues centrés.
-- [ ] Tablette en paysage : semainier, détail d'un repas en panneau ; deux volets des plats et des courses ; cibles confortables au doigt.
+- [ ] Tablette en paysage : semainier, son défilement au doigt calé sur un jour, détail d'un repas en panneau ; deux volets des plats et des courses ; cibles confortables au doigt.
 - [ ] Rotation pendant la saisie d'un plat, d'un article et d'une période : rien n'est perdu, l'écran reste le même.
 - [ ] Clavier virtuel ouvert en paysage : la mise en page ne bascule pas, « Enregistrer le plat » reste visible (D11).
 - [ ] Ordinateur, fenêtre large puis réduite jusqu'au téléphone : passage d'un format à l'autre sans perte ; survol et focus ; tout au clavier, Échap compris.
@@ -145,7 +148,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 
 1. *Fermée le 2026-11-07* : le développeur recette sur une tablette Android.
 2. *Fermée le 2026-11-07* : confirmation avant d'abandonner une saisie en moyen et en étendu, pas en compact (D9).
-3. **Projets Playwright** : tous les scénarios `@ui` sous tous les formats, ou seulement ceux de `formats-ecran.feature` (D14) ? Dépend de la durée de `make e2e` en CI.
-4. **Semainier sur une tablette de 1024 px** : 7 colonnes d'environ 130 px avec le rail ; les noms de plats sont fortement tronqués. Seuil du semainier plus haut que celui de l'étendu (par exemple 1180 px), et jours sur deux rangées en dessous ?
+3. *Fermée le 2026-11-07* : deux niveaux d'exécution, chaque PR et release ou nuit (D14).
+4. *Fermée le 2026-11-07* : semainier qui défile sur le côté, colonnes de 160 px au moins (D6).
 5. **Orientation de la PWA installée** : le manifeste (plan hors-ligne) ne fige pas l'orientation (`orientation: any`), à noter dans ce plan-là.
-6. **Retour arrière du navigateur et fermeture de l'onglet** pendant une saisie (D9) : le retour arrière ne se suspend pas, il faudrait remettre le chemin quitté puis demander ; la fermeture n'a que le message générique du navigateur (`beforeunload`). Les inclure, ou s'en tenir aux navigations de l'application ?
+6. *Fermée le 2026-11-07* : navigations de l'application seulement, ni retour arrière du navigateur ni fermeture de l'onglet (D9).
