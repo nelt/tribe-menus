@@ -1,0 +1,50 @@
+{
+  "comment": "Table of cases of the order of the items (Q40, D13), read by go test (internal/shopping, SortItems) and by web/src/shopping.ts (sortItems), which sorts the list again after a check (review of PR #98, point 3). Unchecked items first, checked at the bottom; in each group, the normalized name of the ingredient, compared code point by code point; at equal ingredient, with quantity before without, computed before manual; then the identifier. The items are given shuffled, order lists their identifiers as expected. Quantities are written as the API writes them.",
+  "cases": [
+    {
+      "name": "the example of « Ordre des articles », with one more of each kind",
+      "items": [
+        { "id": "p", "ingredient": "pain", "quantity": "2", "unit": "piece", "checked": true, "manual": true },
+        { "id": "o4", "ingredient": "oignon" },
+        { "id": "o1", "ingredient": "oignon", "quantity": "3", "unit": "piece", "manual": true },
+        { "id": "a", "ingredient": "ail", "quantity": "1", "unit": "piece", "checked": true, "manual": true },
+        { "id": "e", "ingredient": "Échalote", "quantity": "4", "unit": "piece", "manual": true },
+        { "id": "o5", "ingredient": "oignon", "manual": true },
+        { "id": "o3", "ingredient": "Oignon", "quantity": "2", "unit": "piece" },
+        { "id": "l", "ingredient": "lessive", "manual": true },
+        { "id": "o2", "ingredient": "oignon", "quantity": "1", "unit": "piece" }
+      ],
+      "order": ["e", "l", "o2", "o3", "o1", "o4", "o5", "a", "p"]
+    },
+    {
+      "name": "names compared once normalized: case, accents, ligatures, apostrophes",
+      "items": [
+        { "id": "4", "ingredient": "Œuf", "quantity": "6", "unit": "piece" },
+        { "id": "3", "ingredient": "oignon rouge", "quantity": "1", "unit": "piece" },
+        { "id": "2", "ingredient": "crème fraîche", "quantity": "20", "unit": "cl" },
+        { "id": "1", "ingredient": "Cresson", "manual": true },
+        { "id": "5", "ingredient": "huile d’olive", "quantity": "3", "unit": "tablespoon" },
+        { "id": "6", "ingredient": "huile d'arachide", "manual": true }
+      ],
+      "order": ["2", "1", "6", "5", "4", "3"]
+    },
+    {
+      "name": "two items alike: the identifier",
+      "items": [
+        { "id": "b", "ingredient": "pain", "quantity": "1", "unit": "piece", "manual": true },
+        { "id": "a", "ingredient": "pain", "quantity": "2", "unit": "piece", "manual": true }
+      ],
+      "order": ["a", "b"]
+    },
+    {
+      "name": "code points, not the collation of the locale",
+      "items": [
+        { "id": "z", "ingredient": "zeste" },
+        { "id": "s", "ingredient": "ß" },
+        { "id": "y", "ingredient": "yaourt" },
+        { "id": "m", "ingredient": "🍋 citron" }
+      ],
+      "order": ["y", "z", "s", "m"]
+    }
+  ]
+}
