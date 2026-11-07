@@ -57,7 +57,7 @@ export class MealShoppingScreen extends LitElement {
     lists: { attribute: false },
     planning: { attribute: false },
     listId: { attribute: false },
-    backHref: { attribute: false },
+    listHref: { attribute: false },
     failed: { state: true },
     revision: { state: true },
     period: { state: true },
@@ -73,7 +73,8 @@ export class MealShoppingScreen extends LitElement {
   declare planning: Planning;
   /** The list we come from, preselected; the main list without one, or if it is unknown (D15). */
   declare listId: string | undefined;
-  declare backHref: string;
+  /** The path of a list, by its identifier: resolved at each render, once the copy is loaded (D15). */
+  declare listHref: (id: string | undefined) => string;
   /** The last check failed for lack of network, the copies never loaded. */
   failed = false;
   /** Increases at each change of the copies, to render again. */
@@ -138,7 +139,7 @@ export class MealShoppingScreen extends LitElement {
 
   override render() {
     return html`<main class="screen meal-shopping">
-        <a class="back-link" href=${this.backHref}>${chevron("M15 18l-6-6 6-6")}Retour à la liste</a>
+        <a class="back-link" href=${this.listHref(this.listId)}>${chevron("M15 18l-6-6 6-6")}Retour à la liste</a>
         <h1 class="screen-title">Courses des repas</h1>
         ${this.#body()}
       </main>

@@ -197,7 +197,7 @@ export class App extends LitElement {
           .lists=${this.#shopping}
           .planning=${this.#planning}
           .listId=${page.list}
-          .backHref=${this.#router.href(this.#listPageOf(page.list))}
+          .listHref=${(id: string | undefined) => this.#router.href(this.#listPageOf(id))}
           @meal-shopping-added=${this.#mealShoppingAdded}
           @list-deleted=${this.#listDeleted}
         ></mt-meal-shopping-screen>`;
@@ -277,10 +277,17 @@ export class App extends LitElement {
     return list.main ? pages.shopping : { name: "shopping", list: list.id };
   }
 
-  /** The page of a list known by its identifier only: the main list at the path of the tab (D15). */
+  /**
+   * The page of a list known by its identifier only: the main list at the path of the tab
+   * (D15), as a list unknown once the copy is loaded. Asked again by the screen at each
+   * render, the copy loaded or changed (review of PR #101, point 2).
+   */
   #listPageOf(id: string | undefined): Page {
     const list = id === undefined ? undefined : this.#shopping.find(id);
-    return id === undefined || list?.main === true ? pages.shopping : { name: "shopping", list: id };
+    if (id === undefined || list?.main === true || (this.#shopping.loaded && list === undefined)) {
+      return pages.shopping;
+    }
+    return { name: "shopping", list: id };
   }
 
   /** The meal shopping added: back to the target list, which tells what was added (C4, Q22). */

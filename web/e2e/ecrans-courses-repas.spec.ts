@@ -198,3 +198,15 @@ test("a computed item unfolds its meals, folds back; an item added does not (C5,
   await expect(page.getByRole("button", { name: /^pain/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Retirer pain" })).toBeVisible();
 });
+
+test("« Retour à la liste » toward the main list opened by its identifier: the path of the tab (D15; review of PR #101, point 2)", async ({ page }) => {
+  await mock(page, { getShoppingLists: [{ ...pageReply("shopping_lists", 7, [courses, marche, drive]), delayMs: 300 }] });
+  await page.goto(`/tribes/demo/courses/repas?liste=${courses.id}`);
+  await expect(page.getByRole("button", { name: "Ajouter à « Courses »" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Retour à la liste" })).toHaveAttribute("href", "/tribes/demo/courses");
+  await page.goto(`/tribes/demo/courses/repas?liste=${marche.id}`);
+  await expect(page.getByRole("link", { name: "Retour à la liste" })).toHaveAttribute("href", `/tribes/demo/courses/${marche.id}`);
+  await page.goto(`/tribes/demo/courses/repas?liste=${id(99)}`);
+  await expect(page.getByRole("button", { name: "Ajouter à « Courses »" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Retour à la liste" })).toHaveAttribute("href", "/tribes/demo/courses");
+});
