@@ -42,6 +42,7 @@ classDiagram
         servedDish : ServedDishID
         dish : DishID
         servings : int
+        dishServings : int
     }
     class ReceivedLine {
         <<lignes du plat au calcul>>
@@ -82,14 +83,14 @@ classDiagram
 - **ShoppingList** : identifiant aléatoire (D10) ; nom de 40 caractères au plus, non unique (Q17, D12) ; **rang** de création, qui ordonne les listes après la principale (C2) ; **principale** pour exactement une liste de la tribu (Q23), garantie par un index unique partiel. La liste « Courses », principale, est créée par la migration `0009` dans toute base de tribu (D14). 20 listes au plus (D12).
 - **Item** : identifiant aléatoire ; un ingrédient du référentiel ; une quantité facultative, en unités de base avec son unité d'affichage (ADR 0003, point 7) ; coché ou non ; **ajouté** (saisi à la main, sans provenance) ou **calculé** (au moins une provenance). Une liste a au plus un article calculé par ingrédient et famille d'unités, plus au plus un article calculé sans quantité par ingrédient (Q24, D3) ; les articles ajoutés ne sont jamais fusionnés (Q13). 300 articles au plus par liste (D12).
 - **ItemSource** (provenance) : ce qu'un plat servi a apporté à un article calculé, **au moment du calcul** : le plat servi, le plat, la date, le moment, les parts et la quantité apportée (absente pour un ingrédient sans quantité). Pas de clé étrangère vers `served_dishes` : un plat servi retiré du planning laisse sa provenance lisible (C5) jusqu'au recalcul (D5).
-- **ReceivedServedDish** : les plats servis dont la liste a reçu les courses (Q22), avec le plat, les parts et les **lignes du plat au moment du calcul** (`ReceivedLine`), y compris ceux sans ingrédient (« Restes ») et ceux dont les articles sont partis par les courses faites ; jamais retirés en V1, sans clé étrangère. C'est ce qui permettra à `courses-suite` de dire qu'une liste est périmée (C8) : un plat servi reçu qui a encore une provenance dans la liste a changé si le plat servi a été retiré, si ses parts ont changé, ou si les lignes actuelles du plat diffèrent des lignes gardées ; les lignes gardées distinguent une ligne ajoutée au plat d'une ligne dont l'article est parti, que le recalcul ne recrée pas (D5). Le nom du plat n'y est pas : un renommage ne rend pas une liste périmée. Ces données restent dans le serveur ; l'API ne donne que les identifiants (`received`).
+- **ReceivedServedDish** : les plats servis dont la liste a reçu les courses (Q22), avec le plat, les parts servies, les **parts de référence du plat** (`dishServings`) et les **lignes du plat au moment du calcul** (`ReceivedLine`), y compris ceux sans ingrédient (« Restes ») et ceux dont les articles sont partis par les courses faites ; jamais retirés en V1, sans clé étrangère. C'est ce qui permettra à `courses-suite` de dire qu'une liste est périmée (C8) : un plat servi reçu qui a encore une provenance dans la liste a changé si le plat servi a été retiré, si ses parts ont changé, si les parts de référence du plat ont changé (la quantité apportée en dépend), ou si les lignes actuelles du plat diffèrent des lignes gardées ; les lignes gardées distinguent une ligne ajoutée au plat d'une ligne dont l'article est parti, que le recalcul ne recrée pas (D5). Le nom du plat n'y est pas : un renommage ne rend pas une liste périmée. Ces données restent dans le serveur ; l'API ne donne que les identifiants (`received`).
 - **Ingredient**, **Quantity**, **Dish**, **ServedDish** : inchangés. Un article ajouté peut créer un ingrédient (Q13) et fixer son unité par défaut (Q20).
 
 ## Calcul des courses d'une période
 
 Le calcul est **pur** (`internal/shopping`, D6) : il reçoit la liste, les plats servis de la période, les plats et leurs lignes, et rend la liste nouvelle et ses comptes. Toutes les quantités sont des entiers en unités de base : milligramme pour les masses, millilitre pour les volumes, millième de pièce, de cuillère à soupe, de cuillère à café, de pincée.
 
-1. **Plats servis retenus** : ceux de la période (bornes incluses) qui ne sont pas déjà reçus par la liste ; les autres sont comptés comme ignorés (Q22). Tous les retenus deviennent des plats servis reçus, même sans ingrédient, avec leurs parts et les lignes du plat lues dans la transaction (D5).
+1. **Plats servis retenus** : ceux de la période (bornes incluses) qui ne sont pas déjà reçus par la liste ; les autres sont comptés comme ignorés (Q22). Tous les retenus deviennent des plats servis reçus, même sans ingrédient, avec leurs parts, les parts de référence du plat et ses lignes, lues dans la transaction (D5).
 2. **Quantité apportée** par chaque ligne de chaque plat retenu : `quantité du plat × parts servies ÷ parts de référence`, arrondie à l'unité de base supérieure (D7). Une ligne sans quantité apporte une provenance sans quantité (D3).
 3. **Regroupement** par ingrédient et famille d'unités (masse, volume, pièce, cuillère à soupe, cuillère à café, pincée), plus un groupe « sans quantité » par ingrédient.
 4. **Versement** dans la liste : un groupe dont l'article calculé existe déjà (même ingrédient, même famille, ou tous deux sans quantité) s'y ajoute et lui donne de nouvelles provenances ; sinon un article calculé nouveau est créé. Les articles ajoutés ne sont pas touchés.
@@ -369,6 +370,6 @@ sequenceDiagram
 
 ## Ce que ce document ne couvre pas encore
 
-- **Le recalcul d'une liste périmée** (C8) et **la sélection d'articles** (C9, C10) : `courses-suite`. Le modèle les prévoit : provenances avec ce qu'elles ont apporté, plats servis reçus avec leurs parts et les lignes du plat au moment du calcul (D5).
+- **Le recalcul d'une liste périmée** (C8) et **la sélection d'articles** (C9, C10) : `courses-suite`. Le modèle les prévoit : provenances avec ce qu'elles ont apporté, plats servis reçus avec leurs parts, les parts de référence du plat et ses lignes au moment du calcul (D5).
 - **Le hors-ligne** des listes (C7, Q16, Q18) : stockage sur l'appareil, file des coches et des ajouts, rejeu au retour du réseau ; plan hors-ligne, qui s'ajoutera à la copie des collections sans la remplacer (ADR 0029, conséquences).
 - **Le delta d'une collection**, si les listes deviennent longues à recharger (plan, questions ouvertes).
