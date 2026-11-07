@@ -145,7 +145,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 
 - `make ci` et `make e2e` verts, scénarios de `formats-ecran.feature` sortis de `pending.txt`.
 - Recette passée sur les trois appareils ; iPad et Safari sur Mac prouvés par WebKit seul, ajoutés au point reporté « Safari sur un vrai iPhone » de la feuille de route.
-- Aucun écran du téléphone modifié, hors le pied de page et la pastille de la tribu s'ils bougent en moyen et en étendu.
+- En compact, aucun écran ne change.
 
 ## Questions ouvertes
 
