@@ -4,7 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
-## 0.3.0 — 2026-11-06
+## 0.3.0 — 2026-11-07
 
 - Recette de `planning` (R4, revue de la PR #91, point 2) : un double toucher lent sur la croix d'un plat servi ne retire plus aussi le plat suivant, et le retrait au clavier ne laisse plus le focus sur la croix du plat suivant : lignes des plats servis identifiées par leur plat servi, croix inactives pendant un retrait et 500 ms après.
 - `planning/D` (R2 à R4, Q21) : détail d'un repas d'après `Doux-Repas`, ouvert par sa case du Planning (`repas/AAAA-MM-JJ/midi|soir`) : plats servis dans l'ordre d'ajout, parts réglées par le stepper (le dernier pas seul envoyé après un enregistrement en cours), retrait sans confirmation, propositions de la bibliothèque sans les plats déjà servis, par ordre alphabétique ou par la recherche de l'onglet Plats, ajout d'un geste à la taille de la tribu ; bandeaux des écritures croisées (plat servi entre-temps, plat retiré entre-temps), « Réseau nécessaire » sans réseau ; la copie du planning prend les écritures et se vérifie après un refus ; la pastille de la tribu se relit avec « Réessayer » ; R2 « ne m'est pas proposé » passe sous Chromium et WebKit.
