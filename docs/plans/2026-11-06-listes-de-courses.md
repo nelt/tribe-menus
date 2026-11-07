@@ -307,4 +307,12 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 - **Interprétations de l'écran** dans `docs/design/README.md`, « Réalisation des courses des repas et du dépliage », dont le bouton d'ajout dans le flux de l'écran plutôt que fixé en bas.
 - **Preuves** : `shopping.test.ts`, `shopping-lists.test.ts`, `router.test.ts` ; états des écrans sur l'API simulée (`e2e/ecrans-courses-repas.spec.ts`) ; C4 « Période et liste par défaut », « La date de fin ne peut pas précéder la date de début », C5 « Déplier un article… » et « Un article ajouté ne se déplie pas » sous Chromium et WebKit (`e2e/steps-shopping.ts`), retirés de `acceptance/pending.txt`.
 
+**Revue de la PR #101**, 2026-11-07 :
+
+- **Point 1, corrigé** : Q37 et D7 précisent l'arrondi du dépliage (centième supérieur, puis la plus grande unité de la famille qui donne au moins 1), jusque-là écrit dans le seul design ; interprétation validée à la revue.
+- **Point 2, corrigé** : « Retour à la liste » est résolu par l'écran à chaque rendu, une fois la copie des listes chargée ; ouvert sur l'identifiant de la liste principale, il mène à `courses`, comme une liste inconnue. Test d'état d'écran sur l'API simulée.
+- **Point 3, à reprendre au cadrage de `courses-suite`, ou à vérifier à la recette (étape 26, « Deux appareils »)** : une provenance dont le plat manque à la copie de la bibliothèque est écartée du dépliage sans relancer de vérification ; la pastille dit « 2 plats », le dépliage n'en montre qu'un jusqu'au prochain retour sur l'onglet ou au premier plan. Rare : plat créé et servi par un autre membre depuis la dernière vérification ; aucun plat ne se supprime en V1 (Q5b).
+- **Point 4, à trancher au cadrage de `courses-suite`** : la période par défaut est fixée à l'ouverture de l'écran des courses des repas et ne suit pas le changement de date de l'appareil, contrairement au planning (Q34). Sans effet tant que l'écran ne reste pas ouvert d'une nuit à l'autre.
+- **Pour information, à voir à la recette** : le résumé de la période est fait de deux `span` sans espace (« 7 jours5 plats servis » en texte) ; ce qu'en lit un lecteur d'écran reste à vérifier.
+
 *(à compléter au fil des lots)*
