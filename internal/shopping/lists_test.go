@@ -24,6 +24,10 @@ type memStore struct {
 type memState struct {
 	lists       map[ListID]List
 	ingredients map[string]memIngredient // by normalized name
+	// served is the meal plan, read by the meal shopping; received, the served dishes
+	// received by each list, as recorded (D5).
+	served   []Served
+	received map[ListID][]Served
 }
 
 type memIngredient struct {
@@ -32,10 +36,17 @@ type memIngredient struct {
 }
 
 func (s memState) clone() memState {
-	c := memState{lists: map[ListID]List{}, ingredients: maps.Clone(s.ingredients)}
+	c := memState{lists: map[ListID]List{}, ingredients: maps.Clone(s.ingredients), served: s.served, received: map[ListID][]Served{}}
 	for id, l := range s.lists {
 		l.Items = slices.Clone(l.Items)
+		for i := range l.Items {
+			l.Items[i].Sources = slices.Clone(l.Items[i].Sources)
+		}
+		l.Received = slices.Clone(l.Received)
 		c.lists[id] = l
+	}
+	for id, r := range s.received {
+		c.received[id] = slices.Clone(r)
 	}
 	return c
 }
@@ -46,6 +57,7 @@ func newMemStore() *memStore {
 		state: memState{
 			lists:       map[ListID]List{"courses": {ID: "courses", Name: "Courses", Main: true, Rank: 1}},
 			ingredients: map[string]memIngredient{},
+			received:    map[ListID][]Served{},
 		},
 		versions: collection.Versions{Collection: 0, dish.IngredientsCollection: 0},
 	}
@@ -74,7 +86,7 @@ func (s *memStore) Write(_ context.Context, write func(Tx) error) (collection.Ve
 		s.state = saved
 		return nil, err
 	}
-	if !reflect.DeepEqual(saved.lists, s.state.lists) {
+	if !reflect.DeepEqual(saved.lists, s.state.lists) || !reflect.DeepEqual(saved.received, s.state.received) {
 		s.versions[Collection]++
 	}
 	if !maps.Equal(saved.ingredients, s.state.ingredients) {
@@ -147,6 +159,7 @@ func (t memTx) SetMain(_ context.Context, id ListID) error {
 
 func (t memTx) DeleteList(_ context.Context, id ListID) error {
 	delete(t.s.state.lists, id)
+	delete(t.s.state.received, id)
 	return nil
 }
 
@@ -177,6 +190,52 @@ func (t memTx) DeleteItem(_ context.Context, id ItemID) error {
 		l.Items = slices.DeleteFunc(l.Items, func(it Item) bool { return it.ID == id })
 		t.s.state.lists[lid] = l
 	}
+	return nil
+}
+
+func (t memTx) ServedDishes(_ context.Context, p Period) ([]Served, error) {
+	var out []Served
+	for _, s := range t.s.state.served {
+		if s.Date >= string(p.From) && s.Date <= string(p.To) {
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}
+
+// item applies change to the item of this identifier.
+func (t memTx) item(id ItemID, change func(*Item)) {
+	for lid, l := range t.s.state.lists {
+		for i := range l.Items {
+			if l.Items[i].ID == id {
+				change(&l.Items[i])
+				SortItems(l.Items)
+				t.s.state.lists[lid] = l
+				return
+			}
+		}
+	}
+}
+
+func (t memTx) UpdateItem(_ context.Context, item Item) error {
+	t.item(item.ID, func(it *Item) { it.Quantity, it.Checked = item.Quantity, item.Checked })
+	return nil
+}
+
+func (t memTx) InsertSource(_ context.Context, id ItemID, s Source) error {
+	t.item(id, func(it *Item) {
+		it.Sources = append(it.Sources, s)
+		sortSources(it.Sources)
+	})
+	return nil
+}
+
+func (t memTx) InsertReceived(_ context.Context, list ListID, s Served) error {
+	l := t.s.state.lists[list]
+	l.Received = append(l.Received, s.ID)
+	slices.Sort(l.Received)
+	t.s.state.lists[list] = l
+	t.s.state.received[list] = append(t.s.state.received[list], s)
 	return nil
 }
 
@@ -497,5 +556,85 @@ func TestSetCheckedAndCheckOut(t *testing.T) {
 	}
 	if _, _, _, err := lists.CheckOut(ctx, "id9", nil); !errors.Is(err, ErrNotFound) {
 		t.Errorf("check out an unknown list: %v", err)
+	}
+}
+
+func TestListsAddMealShopping(t *testing.T) {
+	ctx := context.Background()
+	store := newMemStore()
+	lists := newLists(store)
+	marche := mustCreate(t, lists, "Marché")
+	tue := served("s1", "chili", "2026-10-06", "dinner", 4, 4, chiliLines)
+	thu := served("s2", "chili", "2026-10-08", "lunch", 4, 4, chiliLines)
+	next := served("s3", "chili", "2026-10-13", "dinner", 4, 4, chiliLines)
+	restes := served("s4", "restes", "2026-10-07", "lunch", 4, 4, nil)
+	store.state.served = []Served{tue, restes, thu, next}
+
+	// The period is read before anything.
+	for _, c := range []struct {
+		from, to string
+		err      error
+	}{
+		{"2026-10-08", "2026-10-06", ErrInvalidPeriod},
+		{"2026-10-06", "2026-11-06", ErrPeriodTooLong},
+		{"1999-12-31", "2000-01-06", ErrInvalidDate},
+	} {
+		if _, _, _, _, err := lists.AddMealShopping(ctx, "courses", c.from, c.to); !errors.Is(err, c.err) {
+			t.Errorf("%s to %s: %v, want %v", c.from, c.to, err, c.err)
+		}
+	}
+	if _, _, _, _, err := lists.AddMealShopping(ctx, "unknown", "2026-10-06", "2026-10-12"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown list: %v", err)
+	}
+	if store.versions[Collection] != 1 {
+		t.Fatalf("versions %v after refusals", store.versions)
+	}
+
+	// The list chosen only, the meals of the period only (C4).
+	l, added, ignored, versions, err := lists.AddMealShopping(ctx, marche.ID, "2026-10-06", "2026-10-12")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 3 || ignored != 0 || versions[Collection] != 2 {
+		t.Errorf("added %d, ignored %d, versions %v", added, ignored, versions)
+	}
+	beef, ok := itemNamed(l, "bœuf haché")
+	if !ok || *beef.Quantity != (dish.Quantity{Amount: 1_000_000, Unit: dish.Gram}) || len(beef.Sources) != 2 || beef.Manual {
+		t.Errorf("bœuf haché %+v in %+v", beef, l)
+	}
+	if !reflect.DeepEqual(l.Received, []ServedDishID{"s1", "s2", "s4"}) {
+		t.Errorf("received %v", l.Received)
+	}
+	if !reflect.DeepEqual(store.state.lists[marche.ID], l) {
+		t.Errorf("stored\n%+v\nreturned\n%+v", store.state.lists[marche.ID], l)
+	}
+	if got := store.state.received[marche.ID]; !reflect.DeepEqual(got, []Served{tue, restes, thu}) {
+		t.Errorf("received recorded %+v", got)
+	}
+	if len(store.state.lists["courses"].Items) != 0 {
+		t.Errorf("Courses %+v", store.state.lists["courses"])
+	}
+
+	// Again: every served dish ignored, nothing written (Q22).
+	_, added, ignored, versions, err = lists.AddMealShopping(ctx, marche.ID, "2026-10-06", "2026-10-12")
+	if err != nil || added != 0 || ignored != 3 || versions[Collection] != 2 {
+		t.Errorf("again: added %d, ignored %d, versions %v, %v", added, ignored, versions, err)
+	}
+	// The same served dishes on another list (C4).
+	if l, added, _, _, err := lists.AddMealShopping(ctx, "courses", "2026-10-06", "2026-10-06"); err != nil || added != 1 || len(l.Items) != 2 {
+		t.Errorf("Courses: added %d, %+v, %v", added, l, err)
+	}
+
+	// Beyond 300 items, nothing is written (D12).
+	full := mustCreate(t, lists, "Pleine")
+	for i := range MaxItems - 1 {
+		mustAdd(t, lists, full.ID, dish.LineInput{Name: fmt.Sprint("article ", i)})
+	}
+	before := store.state.clone()
+	if _, _, _, _, err := lists.AddMealShopping(ctx, full.ID, "2026-10-06", "2026-10-12"); !errors.Is(err, ErrTooManyItems) {
+		t.Errorf("301 items: %v", err)
+	}
+	if !reflect.DeepEqual(store.state, before) {
+		t.Error("301 items: store changed")
 	}
 }

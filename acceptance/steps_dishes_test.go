@@ -645,6 +645,7 @@ func (w *world) givenDishWith(ctx context.Context, name string, servings int, qu
 	_, err = w.mustSave(ctx, "je", http.MethodPost, "dishes", dishBody{
 		Name: name, Servings: servings, Ingredients: []apiLine{{Name: ingredient, Quantity: q, Unit: unit}},
 	})
+	w.recordDish(name)
 	return err
 }
 
@@ -658,14 +659,20 @@ func (w *world) openDish(ctx context.Context, name string) error {
 }
 
 func (w *world) changedInBetween(ctx context.Context, ingredient, name, quantity string) error {
-	d, err := w.findDish(ctx, "Bruno", name)
+	return w.changeLine(ctx, "Bruno", ingredient, name, quantity)
+}
+
+// changeLine sets the quantity of the line of the ingredient in the dish, as the person reads
+// it now.
+func (w *world) changeLine(ctx context.Context, who, ingredient, name, quantity string) error {
+	d, err := w.findDish(ctx, who, name)
 	if err != nil {
 		return err
 	}
 	if err := setLine(&d, ingredient, quantity); err != nil {
 		return err
 	}
-	_, err = w.mustSave(ctx, "Bruno", http.MethodPut, "dishes/"+d.ID, d.body())
+	_, err = w.mustSave(ctx, who, http.MethodPut, "dishes/"+d.ID, d.body())
 	return err
 }
 

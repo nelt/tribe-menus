@@ -12,6 +12,7 @@ import (
 
 	"github.com/nelt/tribe-menus/internal/dish"
 	"github.com/nelt/tribe-menus/internal/mealplan"
+	"github.com/nelt/tribe-menus/internal/shopping"
 	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
@@ -89,6 +90,13 @@ var demoWeek = []demoServed{
 	{3, mealplan.Dinner, "Gratin de courgettes", 4},
 }
 
+// demoItems are the items added by hand to the main list « Courses », after the shopping of
+// the week; demoMarket, the item of the list « Marché » (plan courses, D20).
+var (
+	demoItems  = []dish.LineInput{{Name: "pain"}, {Name: "lessive"}}
+	demoMarket = dish.LineInput{Name: "fraises", Quantity: "500", Unit: "g"}
+)
+
 var demoMembers = []SeedMember{
 	{"alice@exemple.fr", "Alice"},
 	{"bruno@exemple.fr", "Bruno"},
@@ -137,7 +145,8 @@ func ParseMembers(r io.Reader) ([]SeedMember, error) {
 func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 	var dishes []dish.Input
 	var week []demoServed
-	if len(members) == 0 {
+	demo := len(members) == 0
+	if demo {
 		members, dishes, week = demoMembers, demoDishes, demoWeek
 	}
 	taken, err := c.Store.SlugTaken(ctx, string(demoSlug))
@@ -184,11 +193,45 @@ func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 				return err
 			}
 		}
-		return nil
+		if !demo {
+			return nil
+		}
+		return seedShopping(ctx, shopping.NewLists(storage.NewShoppingStore(db)), now)
 	})
 	if err != nil {
 		return fmt.Errorf("create the demonstration tribe: %w", err)
 	}
 	fmt.Fprintf(c.Out, "Tribu de démonstration « %s » créée : %s\n", demoName, c.TribeURL(demoSlug))
 	return nil
+}
+
+// seedShopping fills the lists of the demonstration tribe (plan courses, D20): the shopping
+// of the week of the seed and the items added by hand in « Courses », the main list, and a
+// list « Marché » with one item.
+func seedShopping(ctx context.Context, lists *shopping.Lists, now time.Time) error {
+	_, page, err := lists.Page(ctx, "")
+	if err != nil {
+		return err
+	}
+	var main shopping.ListID
+	for _, l := range page.Items {
+		if l.Main {
+			main = l.ID
+		}
+	}
+	from, to := now.Format(time.DateOnly), now.AddDate(0, 0, 6).Format(time.DateOnly)
+	if _, _, _, _, err := lists.AddMealShopping(ctx, main, from, to); err != nil {
+		return err
+	}
+	for _, in := range demoItems {
+		if _, _, err := lists.AddItem(ctx, main, in); err != nil {
+			return err
+		}
+	}
+	market, _, err := lists.Create(ctx, "Marché")
+	if err != nil {
+		return err
+	}
+	_, _, err = lists.AddItem(ctx, market.ID, demoMarket)
+	return err
 }

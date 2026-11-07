@@ -82,6 +82,16 @@ type Tx interface {
 	SetChecked(ctx context.Context, id ItemID, checked bool) error
 	// DeleteItem deletes an item and its sources.
 	DeleteItem(ctx context.Context, id ItemID) error
+	// ServedDishes returns the served dishes of the period, ordered by meal, lunch before
+	// dinner, then by rank, each with its dish as it is now (P2).
+	ServedDishes(ctx context.Context, p Period) ([]Served, error)
+	// UpdateItem writes the quantity and the check of a computed item.
+	UpdateItem(ctx context.Context, item Item) error
+	// InsertSource adds a source to a computed item.
+	InsertSource(ctx context.Context, item ItemID, s Source) error
+	// InsertReceived records a served dish received by a list, with the servings of
+	// reference and the lines of its dish at the time of the computation (D5).
+	InsertReceived(ctx context.Context, list ListID, s Served) error
 }
 
 // Lists are the shopping lists of a tribe.
@@ -288,6 +298,59 @@ func (l *Lists) SetChecked(ctx context.Context, id ListID, itemID ItemID, checke
 	}
 	SortItems(list.Items)
 	return list, versions, nil
+}
+
+// AddMealShopping adds the shopping of the meals of a period to a list (C4, P2): the served
+// dishes of the period, with their dishes as they are now, read in the write transaction, so
+// that two members adding at the same time do not pour the same served dishes twice (Q22,
+// D6). It returns the list, and the number of served dishes added and ignored, already
+// received by the list. ErrTooManyItems beyond 300 items, and nothing is written (D12).
+func (l *Lists) AddMealShopping(ctx context.Context, id ListID, from, to string) (List, int, int, collection.Versions, error) {
+	period, err := ParsePeriod(from, to)
+	if err != nil {
+		return List{}, 0, 0, nil, err
+	}
+	var m mealShopping
+	versions, err := l.Store.Write(ctx, func(tx Tx) error {
+		list, err := tx.List(ctx, id)
+		if err != nil {
+			return err
+		}
+		served, err := tx.ServedDishes(ctx, period)
+		if err != nil {
+			return err
+		}
+		if m, err = addMealShopping(list, served, l.NewID); err != nil {
+			return err
+		}
+		for _, c := range m.items {
+			if c.isNew {
+				item := c.item
+				item.Sources = nil
+				err = tx.InsertItem(ctx, id, item, c.key)
+			} else {
+				err = tx.UpdateItem(ctx, c.item)
+			}
+			if err != nil {
+				return err
+			}
+			for _, s := range c.sources {
+				if err := tx.InsertSource(ctx, c.item.ID, s); err != nil {
+					return err
+				}
+			}
+		}
+		for _, s := range m.received {
+			if err := tx.InsertReceived(ctx, id, s); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return List{}, 0, 0, nil, fmt.Errorf("add meal shopping to list %s: %w", id, err)
+	}
+	return m.list, m.added, m.ignored, versions, nil
 }
 
 // CheckOut declares the shopping done (C11): the items the member saw checked leave the

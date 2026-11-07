@@ -61,3 +61,32 @@ DELETE FROM shopping_item_sources WHERE item_id = ?;
 
 -- name: DeleteShoppingItem :exec
 DELETE FROM shopping_items WHERE id = ?;
+
+-- name: ServedDishesBetween :many
+SELECT s.id, s.date, s.mealtime, s.dish_id, s.servings, d.servings AS dish_servings
+FROM served_dishes s JOIN dishes d ON d.id = s.dish_id
+WHERE s.date >= sqlc.arg(first) AND s.date <= sqlc.arg(last)
+ORDER BY s.date, CASE s.mealtime WHEN 'lunch' THEN 0 ELSE 1 END, s.rank;
+
+-- name: DishLinesServedBetween :many
+SELECT l.dish_id, l.position, l.ingredient_id, l.amount, l.unit, i.name
+FROM dish_ingredients l JOIN ingredients i ON i.id = l.ingredient_id
+WHERE l.dish_id IN (
+    SELECT dish_id FROM served_dishes WHERE date >= sqlc.arg(first) AND date <= sqlc.arg(last)
+)
+ORDER BY l.dish_id, l.position;
+
+-- name: UpdateShoppingItem :exec
+UPDATE shopping_items SET amount = ?, unit = ?, checked = ? WHERE id = ?;
+
+-- name: InsertShoppingItemSource :exec
+INSERT INTO shopping_item_sources (item_id, served_dish_id, dish_id, date, mealtime, servings, amount, unit)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: InsertShoppingReceived :exec
+INSERT INTO shopping_received (list_id, served_dish_id, dish_id, servings, dish_servings)
+VALUES (?, ?, ?, ?, ?);
+
+-- name: InsertShoppingReceivedLine :exec
+INSERT INTO shopping_received_lines (list_id, served_dish_id, position, ingredient_id, amount, unit)
+VALUES (?, ?, ?, ?, ?, ?);

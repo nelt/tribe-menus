@@ -26,6 +26,8 @@ const (
 	errListNotEmpty    = "list_not_empty"
 	errMainList        = "main_list"
 	errComputedItem    = "computed_item"
+	errInvalidPeriod   = "invalid_period"
+	errPeriodTooLong   = "period_too_long"
 )
 
 // listResponse is a shopping list of the API: its items in the order of Q40, and the
@@ -74,6 +76,15 @@ type checkedOutResponse struct {
 	Versions collection.Versions `json:"versions"`
 }
 
+// mealShoppingResponse answers the meal shopping (C4): the list, and the number of served
+// dishes added and ignored, already received by the list (Q22).
+type mealShoppingResponse struct {
+	List     listResponse        `json:"list"`
+	Added    int                 `json:"added"`
+	Ignored  int                 `json:"ignored"`
+	Versions collection.Versions `json:"versions"`
+}
+
 // listNotEmptyResponse refuses to delete a list that holds items, with the list up to date
 // (D11).
 type listNotEmptyResponse struct {
@@ -118,6 +129,7 @@ func (a *api) shoppingRoutes(handle func(pattern string, h http.Handler)) {
 	handle("DELETE /tribes/{tribe}/api/shopping-lists/{id}/items/{item}", a.withMember(a.removeItem))
 	handle("PUT /tribes/{tribe}/api/shopping-lists/{id}/items/{item}/checked", a.withMember(a.setChecked))
 	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/checkout", a.withMember(a.checkOut))
+	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/meal-shopping", a.withMember(a.addMealShopping))
 }
 
 // listsOf is the shopping lists of the tribe of the request: its own database only (ENF-02).
@@ -282,6 +294,24 @@ func (a *api) checkOut(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, checkedOutResponse{List: newListResponse(l), Removed: removed, Versions: versions})
 }
 
+// addMealShopping: POST shopping-lists/{id}/meal-shopping {from, to}, the shopping of the
+// meals of the period, bounds included (C4, P2).
+func (a *api) addMealShopping(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	}
+	if !readJSON(w, r, &body) {
+		return
+	}
+	l, added, ignored, versions, err := listsOf(r).AddMealShopping(r.Context(), listID(r), body.From, body.To)
+	if err != nil {
+		a.writeShoppingError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, mealShoppingResponse{List: newListResponse(l), Added: added, Ignored: ignored, Versions: versions})
+}
+
 func (a *api) writeShoppingError(w http.ResponseWriter, err error) {
 	var itemErr *shopping.ItemError
 	var notEmpty *shopping.NotEmptyError
@@ -294,6 +324,12 @@ func (a *api) writeShoppingError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errListNameTooLong})
 	case errors.As(err, &itemErr):
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: string(itemErr.Code)})
+	case errors.Is(err, shopping.ErrInvalidDate):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errInvalidDate})
+	case errors.Is(err, shopping.ErrInvalidPeriod):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errInvalidPeriod})
+	case errors.Is(err, shopping.ErrPeriodTooLong):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errPeriodTooLong})
 	case errors.Is(err, shopping.ErrTooManyLists):
 		writeJSON(w, http.StatusConflict, errorResponse{Error: errTooManyLists})
 	case errors.Is(err, shopping.ErrTooManyItems):

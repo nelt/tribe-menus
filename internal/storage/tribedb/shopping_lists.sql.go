@@ -64,6 +64,59 @@ func (q *Queries) DeleteShoppingReceivedOfList(ctx context.Context, listID strin
 	return err
 }
 
+const dishLinesServedBetween = `-- name: DishLinesServedBetween :many
+SELECT l.dish_id, l.position, l.ingredient_id, l.amount, l.unit, i.name
+FROM dish_ingredients l JOIN ingredients i ON i.id = l.ingredient_id
+WHERE l.dish_id IN (
+    SELECT dish_id FROM served_dishes WHERE date >= ?1 AND date <= ?2
+)
+ORDER BY l.dish_id, l.position
+`
+
+type DishLinesServedBetweenParams struct {
+	First string
+	Last  string
+}
+
+type DishLinesServedBetweenRow struct {
+	DishID       string
+	Position     int64
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+	Name         string
+}
+
+func (q *Queries) DishLinesServedBetween(ctx context.Context, arg DishLinesServedBetweenParams) ([]DishLinesServedBetweenRow, error) {
+	rows, err := q.db.QueryContext(ctx, dishLinesServedBetween, arg.First, arg.Last)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DishLinesServedBetweenRow
+	for rows.Next() {
+		var i DishLinesServedBetweenRow
+		if err := rows.Scan(
+			&i.DishID,
+			&i.Position,
+			&i.IngredientID,
+			&i.Amount,
+			&i.Unit,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertShoppingItem = `-- name: InsertShoppingItem :exec
 INSERT INTO shopping_items (id, list_id, ingredient_id, amount, unit, checked, manual)
 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -92,6 +145,36 @@ func (q *Queries) InsertShoppingItem(ctx context.Context, arg InsertShoppingItem
 	return err
 }
 
+const insertShoppingItemSource = `-- name: InsertShoppingItemSource :exec
+INSERT INTO shopping_item_sources (item_id, served_dish_id, dish_id, date, mealtime, servings, amount, unit)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type InsertShoppingItemSourceParams struct {
+	ItemID       string
+	ServedDishID string
+	DishID       string
+	Date         string
+	Mealtime     string
+	Servings     int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+}
+
+func (q *Queries) InsertShoppingItemSource(ctx context.Context, arg InsertShoppingItemSourceParams) error {
+	_, err := q.db.ExecContext(ctx, insertShoppingItemSource,
+		arg.ItemID,
+		arg.ServedDishID,
+		arg.DishID,
+		arg.Date,
+		arg.Mealtime,
+		arg.Servings,
+		arg.Amount,
+		arg.Unit,
+	)
+	return err
+}
+
 const insertShoppingList = `-- name: InsertShoppingList :exec
 INSERT INTO shopping_lists (id, name, rank, main) VALUES (?, ?, ?, 0)
 `
@@ -104,6 +187,56 @@ type InsertShoppingListParams struct {
 
 func (q *Queries) InsertShoppingList(ctx context.Context, arg InsertShoppingListParams) error {
 	_, err := q.db.ExecContext(ctx, insertShoppingList, arg.ID, arg.Name, arg.Rank)
+	return err
+}
+
+const insertShoppingReceived = `-- name: InsertShoppingReceived :exec
+INSERT INTO shopping_received (list_id, served_dish_id, dish_id, servings, dish_servings)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type InsertShoppingReceivedParams struct {
+	ListID       string
+	ServedDishID string
+	DishID       string
+	Servings     int64
+	DishServings int64
+}
+
+func (q *Queries) InsertShoppingReceived(ctx context.Context, arg InsertShoppingReceivedParams) error {
+	_, err := q.db.ExecContext(ctx, insertShoppingReceived,
+		arg.ListID,
+		arg.ServedDishID,
+		arg.DishID,
+		arg.Servings,
+		arg.DishServings,
+	)
+	return err
+}
+
+const insertShoppingReceivedLine = `-- name: InsertShoppingReceivedLine :exec
+INSERT INTO shopping_received_lines (list_id, served_dish_id, position, ingredient_id, amount, unit)
+VALUES (?, ?, ?, ?, ?, ?)
+`
+
+type InsertShoppingReceivedLineParams struct {
+	ListID       string
+	ServedDishID string
+	Position     int64
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+}
+
+func (q *Queries) InsertShoppingReceivedLine(ctx context.Context, arg InsertShoppingReceivedLineParams) error {
+	_, err := q.db.ExecContext(ctx, insertShoppingReceivedLine,
+		arg.ListID,
+		arg.ServedDishID,
+		arg.Position,
+		arg.IngredientID,
+		arg.Amount,
+		arg.Unit,
+	)
 	return err
 }
 
@@ -130,6 +263,57 @@ type RenameShoppingListParams struct {
 func (q *Queries) RenameShoppingList(ctx context.Context, arg RenameShoppingListParams) error {
 	_, err := q.db.ExecContext(ctx, renameShoppingList, arg.Name, arg.ID)
 	return err
+}
+
+const servedDishesBetween = `-- name: ServedDishesBetween :many
+SELECT s.id, s.date, s.mealtime, s.dish_id, s.servings, d.servings AS dish_servings
+FROM served_dishes s JOIN dishes d ON d.id = s.dish_id
+WHERE s.date >= ?1 AND s.date <= ?2
+ORDER BY s.date, CASE s.mealtime WHEN 'lunch' THEN 0 ELSE 1 END, s.rank
+`
+
+type ServedDishesBetweenParams struct {
+	First string
+	Last  string
+}
+
+type ServedDishesBetweenRow struct {
+	ID           string
+	Date         string
+	Mealtime     string
+	DishID       string
+	Servings     int64
+	DishServings int64
+}
+
+func (q *Queries) ServedDishesBetween(ctx context.Context, arg ServedDishesBetweenParams) ([]ServedDishesBetweenRow, error) {
+	rows, err := q.db.QueryContext(ctx, servedDishesBetween, arg.First, arg.Last)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ServedDishesBetweenRow
+	for rows.Next() {
+		var i ServedDishesBetweenRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Mealtime,
+			&i.DishID,
+			&i.Servings,
+			&i.DishServings,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const setMainShoppingList = `-- name: SetMainShoppingList :exec
@@ -354,4 +538,25 @@ func (q *Queries) ShoppingReceivedOfLists(ctx context.Context, arg ShoppingRecei
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateShoppingItem = `-- name: UpdateShoppingItem :exec
+UPDATE shopping_items SET amount = ?, unit = ?, checked = ? WHERE id = ?
+`
+
+type UpdateShoppingItemParams struct {
+	Amount  sql.NullInt64
+	Unit    sql.NullString
+	Checked int64
+	ID      string
+}
+
+func (q *Queries) UpdateShoppingItem(ctx context.Context, arg UpdateShoppingItemParams) error {
+	_, err := q.db.ExecContext(ctx, updateShoppingItem,
+		arg.Amount,
+		arg.Unit,
+		arg.Checked,
+		arg.ID,
+	)
+	return err
 }

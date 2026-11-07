@@ -192,6 +192,12 @@ func (u Unit) Family() Family {
 	return units[u].family
 }
 
+// Factor returns the number of base units in one unit (ADR 0003, point 7): 1 000 for the
+// gram, 1 for the millilitre, 1 000 for the piece.
+func (u Unit) Factor() int64 {
+	return units[u].factor
+}
+
 // Quantity is an amount in the base unit of the family of its unit, and the unit chosen for
 // the line, in which it is displayed.
 type Quantity struct {
