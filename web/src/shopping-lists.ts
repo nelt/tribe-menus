@@ -96,6 +96,12 @@ export class ShoppingLists extends EventTarget {
   readonly lists: CachedCollection<ShoppingList>;
   readonly library: Library;
   readonly #api: Api;
+  /**
+   * The checks shown before their answer, by item: the mark of the last one. A list taken
+   * from the API replaces them; a check that fails gives back its item only if its mark is
+   * still there (review of PR #100, point 1).
+   */
+  readonly #shownChecks = new Map<string, symbol>();
 
   constructor(api: Api, library: Library) {
     super();
@@ -190,20 +196,34 @@ export class ShoppingLists extends EventTarget {
 
   /**
    * Checks or unchecks an item (C6, D8). The copy shows it at once, sorted again (Q40), and
-   * comes back to the list sent back, or to what it was without network.
+   * comes back to the list sent back. Without network, the item alone comes back to what it
+   * was, in the list as the copy holds it now, unless an answer of the API replaced it in
+   * between: the other writes taken meanwhile stay (review of PR #100, point 1).
    */
   async setChecked(id: string, item: string, checked: boolean): Promise<WriteResult> {
-    const before = this.find(id);
-    if (before !== undefined) {
-      this.lists.put([{ ...before, items: sortItems(before.items.map((i) => (i.id === item ? { ...i, checked } : i))) }]);
-      this.dispatchEvent(new Event("change"));
+    const mark = Symbol(item);
+    if (this.#setItemChecked(id, item, checked)) {
+      this.#shownChecks.set(item, mark);
     }
     const done = await this.#written(id, await this.#api.setChecked(id, item, checked));
-    if (done.kind !== "done" && done.kind !== "deleted" && before !== undefined && this.find(id) !== undefined) {
-      this.lists.put([before]);
-      this.dispatchEvent(new Event("change"));
+    if (this.#shownChecks.get(item) === mark) {
+      this.#shownChecks.delete(item);
+      if (done.kind !== "done" && done.kind !== "deleted") {
+        this.#setItemChecked(id, item, !checked);
+      }
     }
     return done;
+  }
+
+  /** Shows an item of the copy checked or not, without version; false if the copy has no such item. */
+  #setItemChecked(id: string, item: string, checked: boolean): boolean {
+    const list = this.find(id);
+    if (list === undefined || !list.items.some((i) => i.id === item)) {
+      return false;
+    }
+    this.lists.put([{ ...list, items: sortItems(list.items.map((i) => (i.id === item ? { ...i, checked } : i))) }]);
+    this.dispatchEvent(new Event("change"));
+    return true;
   }
 
   /** Removes the items seen checked that still are (C11, D9). */
@@ -230,6 +250,11 @@ export class ShoppingLists extends EventTarget {
 
   /** Takes lists written and the versions after the write: the catalog reloads if it changed. */
   async #apply(lists: ShoppingList[], versions: Record<string, number>, removed: string[] = []): Promise<void> {
+    for (const list of lists) {
+      for (const item of list.items) {
+        this.#shownChecks.delete(item.id);
+      }
+    }
     const version = versions[collection];
     const writes: Promise<unknown>[] = [];
     if (version === undefined) {
@@ -274,6 +299,7 @@ export class ShoppingLists extends EventTarget {
 
   /** Forgets the copy (D2). */
   clear(): void {
+    this.#shownChecks.clear();
     this.lists.clear();
     this.dispatchEvent(new Event("change"));
   }

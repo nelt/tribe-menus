@@ -268,3 +268,35 @@ test("ShoppingLists.clear: the copy is forgotten", async () => {
   assert.equal(lists.loaded, false);
   assert.equal(lists.lists.version, undefined);
 });
+
+// Review of PR #100, point 1: a check that fails gives back its own item only.
+const lait = { id: "a5", ingredient: "lait", quantity: "1", unit: "l", checked: false, manual: true, sources: [] };
+
+/** Two checks: the first answers once released, the second at once. */
+async function twoChecks(painAnswer: Outcome<ShoppingWrite>, laitList: unknown) {
+  let release: (o: Outcome<ShoppingWrite>) => void = () => {};
+  const first = new Promise<Outcome<ShoppingWrite>>((resolve) => (release = resolve));
+  const answers = [first, Promise.resolve(written(laitList, { shopping_lists: 6 }))];
+  const api = {
+    getPage: async (): Promise<Outcome<CollectionPage>> => ({ kind: "ok", value: { kind: "page", items: [{ ...courses, items: [pain, lait] }], next: undefined, etag: '"shopping_lists-5"' } }),
+    setChecked: () => answers.shift(),
+  } as unknown as Api;
+  const lists = new ShoppingLists(api, new Library(api));
+  await lists.lists.check();
+  const painChecked = lists.setChecked("c", "a1", true);
+  assert.deepEqual(await lists.setChecked("c", "a5", true), { kind: "done", list: listOf(laitList), removed: 0 });
+  release(painAnswer);
+  await painChecked;
+  return Object.fromEntries((lists.find("c")?.items ?? []).map((i) => [i.ingredient, i.checked]));
+}
+
+test("ShoppingLists.setChecked: a check that fails after another one done leaves it checked", async () => {
+  const server = { ...courses, items: [pain, { ...lait, checked: true }] };
+  assert.deepEqual(await twoChecks({ kind: "network-error" }, server), { pain: false, lait: true });
+});
+
+test("ShoppingLists.setChecked: a check that fails while the server has it already keeps the server's state", async () => {
+  // The answer to « pain » was lost, but the server took it: the answer to « lait » says so.
+  const server = { ...courses, items: [{ ...pain, checked: true }, { ...lait, checked: true }] };
+  assert.deepEqual(await twoChecks({ kind: "network-error" }, server), { pain: true, lait: true });
+});
