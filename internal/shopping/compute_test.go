@@ -129,7 +129,7 @@ func src(servedID, dishID, date, mealtime string, servings int, quantity *dish.Q
 	return Source{ServedDish: ServedDishID(servedID), Dish: dish.ID(dishID), Date: date, Mealtime: mealtime, Servings: servings, Quantity: quantity}
 }
 
-func TestAddMealShopping(t *testing.T) {
+func TestPourMealShopping(t *testing.T) {
 	tue := func(servings int) Source { return src("s1", "chili", "2026-10-06", "dinner", servings, nil) }
 	thu := func(servings int) Source { return src("s2", "chili", "2026-10-08", "lunch", servings, nil) }
 	with := func(s Source, quantity *dish.Quantity) Source { s.Quantity = quantity; return s }

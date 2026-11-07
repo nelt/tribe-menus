@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/nelt/tribe-menus/internal/collection"
 	"github.com/nelt/tribe-menus/internal/dish"
+	"github.com/nelt/tribe-menus/internal/mealplan"
 	"github.com/nelt/tribe-menus/internal/shopping"
 )
 
@@ -231,5 +233,111 @@ func TestShoppingStorePages(t *testing.T) {
 		if !l.Main && (len(l.Items) != 1 || l.Items[0].Ingredient != "article "+strings.TrimPrefix(l.Name, "Liste ")) {
 			t.Errorf("list %+v", l)
 		}
+	}
+}
+
+// TestShoppingStoreMealShopping: the meal shopping reads the meal plan and the dishes as they
+// are now (P2), writes items, sources, received served dishes and their lines (D5) in one
+// write, and reads back what it returned.
+func TestShoppingStoreMealShopping(t *testing.T) {
+	ctx := context.Background()
+	db := newTribeDB(t)
+	library := dish.NewLibrary(NewDishStore(db))
+	plan := mealplan.NewPlan(NewMealPlanStore(db))
+	lists := shopping.NewLists(NewShoppingStore(db))
+	chili, _, err := library.Create(ctx, dish.Input{Name: "Chili con carne", Servings: 4, Lines: []dish.LineInput{
+		{Name: "bœuf haché", Quantity: "500", Unit: "g"}, {Name: "oignon", Quantity: "1", Unit: "piece"}, {Name: "sel"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	restes, _, err := library.Create(ctx, dish.Input{Name: "Restes", Servings: 4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	serve := func(date, mealtime string, d dish.ID, servings int) mealplan.ServedDish {
+		t.Helper()
+		s, _, err := plan.Serve(ctx, mealplan.ServeInput{Date: date, Mealtime: mealtime, Dish: d, Servings: &servings})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	thu := serve("2026-10-08", "lunch", chili.ID, 4)
+	tue := serve("2026-10-06", "dinner", chili.ID, 3)
+	serve("2026-10-07", "lunch", restes.ID, 4)
+	serve("2026-10-13", "dinner", chili.ID, 4)
+	// P2: the dish as it is now, 600 g of beef.
+	chili.Lines[0].Quantity = &dish.Quantity{Amount: 600_000, Unit: dish.Gram}
+	if _, _, err := library.Update(ctx, chili.ID, chili.Revision, dish.Input{Name: chili.Name, Servings: 4, Lines: []dish.LineInput{
+		{Name: "bœuf haché", Quantity: "600", Unit: "g"}, {Name: "oignon", Quantity: "1", Unit: "piece"}, {Name: "sel"},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	version, page, err := lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	courses := page.Items[0]
+
+	l, added, ignored, versions, err := lists.AddMealShopping(ctx, courses.ID, "2026-10-06", "2026-10-12")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 3 || ignored != 0 || !maps.Equal(versions, collection.Versions{"shopping_lists": version + 1, "ingredients": 1}) {
+		t.Errorf("added %d, ignored %d, versions %v", added, ignored, versions)
+	}
+	var got []string
+	for _, it := range l.Items {
+		got = append(got, itemText(it))
+	}
+	if want := []string{"bœuf haché 1050 g", "oignon 2 piece", "sel -"}; !slices.Equal(got, want) {
+		t.Errorf("items %v, want %v", got, want)
+	}
+	beef := l.Items[0]
+	wantSources := []shopping.Source{
+		{ServedDish: shopping.ServedDishID(tue.ID), Dish: chili.ID, Date: "2026-10-06", Mealtime: "dinner", Servings: 3, Quantity: &dish.Quantity{Amount: 450_000, Unit: dish.Gram}},
+		{ServedDish: shopping.ServedDishID(thu.ID), Dish: chili.ID, Date: "2026-10-08", Mealtime: "lunch", Servings: 4, Quantity: &dish.Quantity{Amount: 600_000, Unit: dish.Gram}},
+	}
+	if !reflect.DeepEqual(beef.Sources, wantSources) || len(l.Received) != 3 {
+		t.Errorf("sources %v, want %v; received %v", beef.Sources, wantSources, l.Received)
+	}
+	_, page, err = lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(page.Items[0], l) {
+		t.Errorf("read back\n%+v\nreturned\n%+v", page.Items[0], l)
+	}
+
+	// The received served dishes keep the servings, the reference servings and the lines of
+	// the dish (D5), "Restes" without lines.
+	var received, lines int
+	if err := db.QueryRow("SELECT count(*) FROM shopping_received WHERE list_id = ? AND dish_servings = 4", courses.ID).Scan(&received); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.QueryRow("SELECT count(*) FROM shopping_received_lines WHERE list_id = ? AND served_dish_id = ?", courses.ID, tue.ID).Scan(&lines); err != nil {
+		t.Fatal(err)
+	}
+	var amount int64
+	if err := db.QueryRow("SELECT amount FROM shopping_received_lines WHERE served_dish_id = ? AND position = 0", tue.ID).Scan(&amount); err != nil {
+		t.Fatal(err)
+	}
+	if received != 3 || lines != 3 || amount != 600_000 {
+		t.Errorf("received %d, lines %d, amount %d", received, lines, amount)
+	}
+
+	// A check, then one served dish more: poured in the items present, unchecked as the
+	// quantity increases; the others ignored.
+	if _, _, err := lists.SetChecked(ctx, courses.ID, beef.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	serve("2026-10-09", "dinner", chili.ID, 4)
+	l, added, ignored, _, err = lists.AddMealShopping(ctx, courses.ID, "2026-10-06", "2026-10-12")
+	if err != nil || added != 1 || ignored != 3 {
+		t.Fatalf("again: added %d, ignored %d, %v", added, ignored, err)
+	}
+	if it := l.Items[0]; itemText(it) != "bœuf haché 1650 g" || len(it.Sources) != 3 || it.ID != beef.ID {
+		t.Errorf("beef %s %+v", itemText(it), it)
 	}
 }
