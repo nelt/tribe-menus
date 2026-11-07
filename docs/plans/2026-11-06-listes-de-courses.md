@@ -297,5 +297,6 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 
 - **Point 1, corrigé** : une coche qui échoue sans réseau ne remet plus la liste entière d'avant, ce qui effaçait une coche réussie entre-temps ; seul l'article touché revient, et seulement si aucune réponse de l'API ne l'a remplacé depuis. Tests dans `shopping-lists.test.ts`.
 - **Pour information** : `versions` réduites vérifiées pour les autres clients ; « Courses faites » juste après une coche, conforme à D9 ; `npm test` sous Node 22 hors de `.nvmrc`.
+- **Remarqué en passant, à reprendre au plan hors-ligne** (décision du développeur, 2026-11-07) : pendant qu'une coche attend sa réponse, la réponse à une autre écriture remplace la liste entière ; l'article en attente s'affiche un instant dans son état d'avant, jusqu'à sa propre réponse. Rien n'est perdu. La file des coches du plan hors-ligne (C7) devra garder les coches en attente par-dessus les listes reçues.
 
 *(à compléter au fil des lots)*

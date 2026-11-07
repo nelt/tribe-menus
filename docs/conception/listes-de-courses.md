@@ -391,5 +391,5 @@ sequenceDiagram
 ## Ce que ce document ne couvre pas encore
 
 - **Le recalcul d'une liste périmée** (C8) et **la sélection d'articles** (C9, C10) : `courses-suite`. Le modèle les prévoit : provenances avec ce qu'elles ont apporté, plats servis reçus avec leurs parts, les parts de référence du plat et ses lignes au moment du calcul (D5).
-- **Le hors-ligne** des listes (C7, Q16, Q18) : stockage sur l'appareil, file des coches et des ajouts, rejeu au retour du réseau ; plan hors-ligne, qui s'ajoutera à la copie des collections sans la remplacer (ADR 0029, conséquences).
+- **Le hors-ligne** des listes (C7, Q16, Q18) : stockage sur l'appareil, file des coches et des ajouts, rejeu au retour du réseau ; plan hors-ligne, qui s'ajoutera à la copie des collections sans la remplacer (ADR 0029, conséquences). Ce plan reprendra aussi un défaut d'affichage noté à la revue de la PR #100 : pendant qu'une coche attend sa réponse, la réponse à une autre écriture remplace la liste entière, et l'article en attente s'affiche un instant dans son état d'avant ; la file des coches devra garder les coches en attente par-dessus les listes reçues.
 - **Le delta d'une collection**, si les listes deviennent longues à recharger (plan, questions ouvertes).
