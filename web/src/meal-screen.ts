@@ -3,9 +3,12 @@
 // (Q21, D12). The meal waits for the copies of the meal plan and of the library, checked at
 // each visit (D15). The servings are saved at each step; while a save runs, the next steps
 // are shown and the last one only is sent after it, as the size of the tribe. Crossed writes
-// (D3) and writes without network (D13) are told above the meal, which stays shown.
+// (D3) and writes without network (D13) are told above the meal, which stays shown. The rows
+// of the dishes served are keyed by dish served, and the removal buttons wait while a removal
+// runs and a moment after, the next dish taking the place of the one removed under the finger.
 import { LitElement, html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
+import { repeat } from "lit/directives/repeat.js";
 import { colorClass } from "./dish-library-screen.ts";
 import { type Dish, initialOf } from "./dishes.ts";
 import { networkErrorMessage } from "./login.ts";
@@ -14,6 +17,9 @@ import type { Planning } from "./planning.ts";
 import { alertMessage, networkNeededMessage, warningBanner } from "./templates.ts";
 
 const mealtimeLabels = { lunch: "Midi", dinner: "Soir" } as const;
+
+/** How long the removal buttons wait after a removal: a slow double touch goes to the first only. */
+const removalPauseMs = 500;
 
 /** What the last write on the meal tells (docs/design/README.md, « Messages du planning »). */
 type Message = { kind: "already-served"; name: string } | { kind: "removed" } | { kind: "network" };
@@ -29,6 +35,7 @@ export class MealScreen extends LitElement {
     failed: { state: true },
     message: { state: true },
     revision: { state: true },
+    removalPaused: { state: true },
   };
 
   declare planning: Planning;
@@ -43,6 +50,9 @@ export class MealScreen extends LitElement {
   message: Message | undefined = undefined;
   /** Increases at each change of the copies or of a write running, to render again. */
   revision = 0;
+  /** A removal runs, or has just ended: the removal buttons wait. */
+  removalPaused = false;
+  #removalPause: ReturnType<typeof setTimeout> | undefined;
   /** The servings shown by a stepper and not saved yet, by dish served. */
   readonly #shown = new Map<string, number>();
   /** The dishes served whose servings are being saved. */
@@ -67,6 +77,7 @@ export class MealScreen extends LitElement {
     super.disconnectedCallback();
     this.planning.removeEventListener("change", this.#onChange);
     this.planning.library.removeEventListener("change", this.#onChange);
+    clearTimeout(this.#removalPause);
   }
 
   async #check() {
@@ -123,7 +134,9 @@ export class MealScreen extends LitElement {
       ${meal.length === 0
         ? html`<p class="meal-empty">Aucun plat pour ce repas</p>`
         : html`<ul class="served-dishes">
-            ${meal.map(
+            ${repeat(
+              meal,
+              (d) => d.served.id,
               (d) => html`<li class="served-dish ${colorClass(d.dish.color)}">
                 <span class="dish-initial dish-initial--small" aria-hidden="true">${initialOf(d.dish.name)}</span>
                 <span class="served-dish-text">
@@ -139,7 +152,7 @@ export class MealScreen extends LitElement {
                   .value=${live(this.#servings(d))}
                   @change=${(e: Event) => this.#servingsChanged(d.served.id, (e.target as HTMLElement & { value: number }).value)}
                 ></mt-stepper>
-                <button class="served-dish-remove" type="button" aria-label=${`Retirer « ${d.dish.name} » du repas`} @click=${() => this.#remove(d.served.id)}>
+                <button class="served-dish-remove" type="button" aria-label=${`Retirer « ${d.dish.name} » du repas`} ?disabled=${this.removalPaused} @click=${() => this.#remove(d.served.id)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
                 </button>
               </li>`,
@@ -251,6 +264,8 @@ export class MealScreen extends LitElement {
       return;
     }
     this.#removing.add(id);
+    clearTimeout(this.#removalPause);
+    this.removalPaused = true;
     this.message = undefined;
     try {
       const outcome = await this.planning.remove(id);
@@ -260,6 +275,9 @@ export class MealScreen extends LitElement {
       }
     } finally {
       this.#removing.delete(id);
+      if (this.#removing.size === 0) {
+        this.#removalPause = setTimeout(() => (this.removalPaused = false), removalPauseMs);
+      }
     }
   }
 }

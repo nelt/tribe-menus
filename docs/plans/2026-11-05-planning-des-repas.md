@@ -2,7 +2,7 @@
 
 - **Nom** : `planning`
 - **Date** : 2026-11-05
-- **Statut** : en cours (lot D fait ; recette et release ensuite). Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
+- **Statut** : terminé le 2026-11-07, `v0.3.0` en production. Décisions D1 à D8 prises par le développeur le 2026-11-05 au cadrage ; D9 à D20 proposées : la PR du plan (#86) a été fusionnée sans commentaire, le lot A les applique, à confirmer à sa revue.
 
 ## Objectif
 
@@ -88,9 +88,9 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Recette et release
 
-- [ ] **21. Recette** sur l'archive de la PR de release `release/v0.3.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous.
-- [ ] **22. Release `v0.3.0`** selon `RELEASING.md`, déployée en production (D7).
-- [ ] **23. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/mealplan`, version en service) ; `CHANGELOG.md`.
+- [x] **21. Recette** sur l'archive de la PR de release `release/v0.3.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous. *Faite le 2026-11-07 sur la PR #93 : un défaut trouvé (retrait d'un plat servi au double toucher et au clavier), corrigé par la PR #94, revérifié ; compte rendu dans les notes d'exécution.*
+- [x] **22. Release `v0.3.0`** selon `RELEASING.md`, déployée en production (D7). *Le 2026-11-07 : PR #93 fusionnée, étiquette sur `c388c1d`, release publiée par `release.yml` et vérifiée, déployée en production (`previous: v0.2.0`), sans provisionnement.*
+- [x] **23. Clôture** : statut « terminé » ; feuille de route (plan terminé, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/mealplan`, version en service) ; `CHANGELOG.md`.
 
 ### Séance de recette (étape 21)
 
@@ -98,49 +98,49 @@ Par le développeur, sur l'archive de la PR `release/v0.3.0`, CI verte (artefact
 
 Déploiement :
 
-- [ ] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0008` s'applique à la tribu de recette ; connexion depuis les deux appareils ; trois plats créés (« Chili con carne », « Chili végétarien », « Ratatouille »).
+- [x] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0008` s'applique à la tribu de recette ; connexion depuis les deux appareils ; trois plats créés (« Chili con carne », « Chili végétarien », « Ratatouille »).
 
 Planning de la semaine (R1, R5, D4, D8, D17) :
 
-- [ ] L'onglet Planning ouvre les 7 jours à partir d'aujourd'hui, « Aujourd'hui » sur le jour courant, midi et soir pour chaque jour, cases vides en pointillé.
-- [ ] Semaine suivante, puis précédente deux fois : titres des plages justes (à cheval sur deux mois si la date s'y prête) ; « Revenir à aujourd'hui » ramène à la plage du jour.
-- [ ] Pastille de l'en-tête → écran Tribu ; « Se déconnecter » y est, et ramène à la connexion (D5) ; reconnexion.
+- [x] L'onglet Planning ouvre les 7 jours à partir d'aujourd'hui, « Aujourd'hui » sur le jour courant, midi et soir pour chaque jour, cases vides en pointillé.
+- [x] Semaine suivante, puis précédente deux fois : titres des plages justes (à cheval sur deux mois si la date s'y prête) ; « Revenir à aujourd'hui » ramène à la plage du jour.
+- [x] Pastille de l'en-tête → écran Tribu ; « Se déconnecter » y est, et ramène à la connexion (D5) ; reconnexion.
 
 Détail d'un repas (R2, R3, R4, Q21, D9, D12) :
 
-- [ ] Toucher le repas de demain soir : « Aucun plat pour ce repas », propositions par ordre alphabétique ; « chili » ne garde que les deux chilis.
-- [ ] Ajouter « Chili con carne » : il est servi pour la taille de la tribu, et n'est plus proposé (« Les plats déjà servis dans ce repas ne sont pas proposés… ») ; ajouter « Chili végétarien » : deux plats servis, total des parts juste.
-- [ ] Parts réglées à 3 et 1 par le stepper, à petits pas rapides : retour au Planning, les pilules montrent 3 et 1 ; rouvrir : gardé.
-- [ ] Retirer « Chili con carne » : il disparaît du repas, reste dans la bibliothèque ; l'ajouter de nouveau : taille de la tribu (R4).
-- [ ] Un repas de la semaine précédente : ajout et parts fonctionnent (R5).
+- [x] Toucher le repas de demain soir : « Aucun plat pour ce repas », propositions par ordre alphabétique ; « chili » ne garde que les deux chilis.
+- [x] Ajouter « Chili con carne » : il est servi pour la taille de la tribu, et n'est plus proposé (« Les plats déjà servis dans ce repas ne sont pas proposés… ») ; ajouter « Chili végétarien » : deux plats servis, total des parts juste.
+- [x] Parts réglées à 3 et 1 par le stepper, à petits pas rapides : retour au Planning, les pilules montrent 3 et 1 ; rouvrir : gardé.
+- [x] Retirer « Chili con carne » : il disparaît du repas, reste dans la bibliothèque ; l'ajouter de nouveau : taille de la tribu (R4).
+- [x] Un repas de la semaine précédente : ajout et parts fonctionnent (R5).
 
 Taille de la tribu (T3) :
 
-- [ ] Taille passée à 6 ; un plat ajouté ensuite est servi pour 6, ceux déjà servis gardent leurs parts.
+- [x] Taille passée à 6 ; un plat ajouté ensuite est servi pour 6, ceux déjà servis gardent leurs parts.
 
 Deux appareils (T1, D3, D15) :
 
-- [ ] A ajoute un plat à un repas ; B, laissé en arrière-plan sur le Planning, revient au premier plan : le plat apparaît sans recharger la page.
-- [ ] Le même repas ouvert sur les deux appareils : A ajoute « Ratatouille », puis B la choisit dans ses propositions encore périmées : message « « Ratatouille » est déjà servi dans ce repas. », et le repas à jour.
-- [ ] A retire un plat ; B, sur le même repas sans l'avoir quitté, en change les parts : message « Ce plat a été retiré du repas entre-temps. », et le repas à jour.
+- [x] A ajoute un plat à un repas ; B, laissé en arrière-plan sur le Planning, revient au premier plan : le plat apparaît sans recharger la page.
+- [x] Le même repas ouvert sur les deux appareils : A ajoute « Ratatouille », puis B la choisit dans ses propositions encore périmées : message « « Ratatouille » est déjà servi dans ce repas. », et le repas à jour.
+- [x] A retire un plat ; B, sur le même repas sans l'avoir quitté, en change les parts : message « Ce plat a été retiré du repas entre-temps. », et le repas à jour.
 
 Sans réseau (D13) :
 
-- [ ] Mode avion, puis ajout d'un plat, réglage des parts, retrait : « Réseau nécessaire », rien n'est changé une fois le réseau revenu.
+- [x] Mode avion, puis ajout d'un plat, réglage des parts, retrait : « Réseau nécessaire », rien n'est changé une fois le réseau revenu.
 
 iPhone, s'il y en a un :
 
-- [ ] Les étapes ci-dessus sous Safari, au moins la navigation, l'ajout et les parts ; si possible, les points reportés de Safari (connexion, bibliothèque, `304` sur `GET dishes` et `GET meal-plan`).
+- [ ] *(Reporté : pas d'appareil Apple à la séance ; WebKit couvert par Playwright.)* Les étapes ci-dessus sous Safari, au moins la navigation, l'ajout et les parts ; si possible, les points reportés de Safari (connexion, bibliothèque, `304` sur `GET dishes` et `GET meal-plan`).
 
 Retour arrière avec restauration (migration `0008`, ADR 0016, point 2) :
 
-- [ ] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
-- [ ] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : `v0.2.0` revient, avec l'accueil provisoire ; les plats créés avant l'instantané sont là, le planning a disparu.
-- [ ] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, le planning est vide, un plat s'ajoute à un repas.
+- [x] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
+- [x] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : `v0.2.0` revient, avec l'accueil provisoire ; les plats créés avant l'instantané sont là, le planning a disparu.
+- [x] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, le planning est vide, un plat s'ajoute à un repas.
 
 Fin de séance :
 
-- [ ] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
+- [x] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
 
 ## Critères de validation
 
@@ -235,9 +235,17 @@ Proposées le 2026-11-05, à confirmer à la revue du plan.
 - **Chemin d'un repas illisible** (date hors de 2000 à 2099 ou inexistante, moment autre que `midi` ou `soir`) : le Planning d'aujourd'hui, comme un `?du=` illisible (D14).
 - **Commentaire d'en-tête de `tribe-screen.ts`** reformaté (revue de la PR #90, « pour information »).
 
+**Séance de recette** (2026-11-07, étape 21, PR #93), par le développeur :
+
+- **Appareils** : Android (Chrome) et un ordinateur sous Ubuntu 24.04 (Chrome) ; pas d'appareil Apple, Safari reporté comme aux versions précédentes (WebKit couvert par Playwright).
+- **Check-list** : tout conforme, du déploiement (migration `0008`) au retour arrière avec restauration (`--rollback` refusé avec la date de l'instantané et le schéma 8 contre 7, `--rollback --restore-data` vers `v0.2.0` avec les données d'avant la séance, redéploiement de la PR).
+- **Scénario `@manuel`** « La session survit au redémarrage du navigateur » : conforme sous Chrome, sur Android et sur l'ordinateur ; celui de l'app installée attend le plan du hors-ligne.
+- **Défaut** : revue de la PR #91, point 2, confirmé (ci-dessous), corrigé par la PR #94 ; PR #93 mise à jour avec `main`, redéployée en recette (`pr-93-315e5b0918e2`) et revérifiée : un seul plat retiré au double toucher lent, focus hors des croix au clavier, deux retraits de suite possibles.
+- **`tribe-menus-check report`** : rien à signaler (ni alerte, ni erreur, ni échec d'envoi ; démarrages et déploiements de la séance).
+
 **Revue de la PR #91**, point à reprendre plus tard :
 
-- **Lignes des plats servis sans clé** (point 2, à vérifier à la séance de recette, étape 21) : `#served` (`meal-screen.ts`) rend les plats servis par `meal.map`, sans `repeat` sur l'identifiant du plat servi ; après un retrait, Lit réutilise les lignes par position : le focus de la croix passe au plat suivant, et un double toucher lent pourrait retirer le plat suivant une fois la première réponse arrivée. Non reproduit. À essayer au clavier et au double toucher ; si c'est confirmé, `repeat(meal, (d) => d.served.id, …)`.
+- **Lignes des plats servis sans clé** (point 2, à vérifier à la séance de recette, étape 21) : `#served` (`meal-screen.ts`) rend les plats servis par `meal.map`, sans `repeat` sur l'identifiant du plat servi ; après un retrait, Lit réutilise les lignes par position : le focus de la croix passe au plat suivant, et un double toucher lent pourrait retirer le plat suivant une fois la première réponse arrivée. Non reproduit. À essayer au clavier et au double toucher ; si c'est confirmé, `repeat(meal, (d) => d.served.id, …)`. *Confirmé à la séance de recette du 2026-11-07 (étape 21) : sur Android, un double toucher lent retire deux plats ; sur ordinateur, le focus passe à la croix du plat suivant, qu'Entrée retire. `repeat` ne suffit pas au toucher : la ligne suivante remonte sous le doigt une fois la réponse arrivée. Corrigé, avec l'accord du développeur, par `repeat` et des croix inactives pendant un retrait et 500 ms après ; deux tests d'écran (`ecrans-repas.spec.ts`).*
 
 **Revue de la PR #87**, points à reprendre plus tard :
 

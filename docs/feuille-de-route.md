@@ -32,7 +32,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `production` | Application prête pour la production | [`2026-10-06-application-prete-pour-la-production.md`](plans/2026-10-06-application-prete-pour-la-production.md) | terminé |
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
-| `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | en cours |
+| `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | terminé |
 | `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | prêt |
 
 ### `production` : application prête pour la production
@@ -54,6 +54,8 @@ Terminé le 2026-11-05 : recette sur l'archive de la PR de release (#83), un dé
 ### `planning` : planning des repas
 
 Deuxième plan du métier, pour une application viable à montrer : le Planning de `Doux-Main` remplace l'accueil provisoire, 7 jours à partir d'aujourd'hui, midi et soir, semaines précédentes et suivantes (R1, R5) ; détail d'un repas d'après `Doux-Repas`, ajout de plats de la bibliothèque à la taille de la tribu, parts, retrait (R2 à R4) ; planning partagé et compartimenté (T1, T3, ENF-02) ; « Se déconnecter » passe sur l'écran Tribu. Planning chargé en entier comme collection (ADR 0029), « aujourd'hui » pris sur l'appareil. Conception dans `conception/planning-des-repas.md`. Quatre lots (specs et design, domaine et API, planning de la semaine, détail d'un repas), puis la release `v0.3.0` en production. Cadré le 2026-11-05. En cours depuis le 2026-11-05 : lot A (specs, design, conception), lot B (domaine et API, migration `0008`), lot C (planning de la semaine, « Se déconnecter » sur l'écran Tribu), lot D (détail d'un repas : ajout, parts, retrait).
+
+Terminé le 2026-11-07 : recette sur l'archive de la PR de release (#93), un défaut corrigé par #94 (retrait d'un plat servi au double toucher et au clavier), puis un second passage ; **`v0.3.0` en production le 2026-11-07**. Safari sur iPhone reste à vérifier, faute d'appareil.
 
 ### `courses` : listes de courses
 
@@ -99,7 +101,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Point | Origine | À reprendre |
 | --- | --- | --- |
 | Réception du code sur Outlook et iCloud non vérifiée | `recette`, S3 | avant d'inviter un membre qui utilise l'une de ces messageries |
-| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque et le `304` sur `GET dishes` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) | avant d'inviter la famille |
+| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque, le planning et le `304` sur `GET dishes` et `GET meal-plan` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) ; `planning`, recette | avant d'inviter la famille |
 | Sauvegarde hors du VPS | ADR 0025, point 4 | après une application viable à montrer (planning et listes de courses), au plus tard avant d'inviter la famille (décision du 2026-11-05) |
 | Un démarrage en échec envoie un e-mail de panne à chaque relance de systemd, dont le texte dit qu'il a cessé de le relancer | `recette`, S4 | prochaine PR touchant `deploy/` |
 | `make probe -timing` : le membre passe toujours en premier, sur une connexion à rétablir après l'heure d'attente | `recette`, mesure du 2026-11-01 | avant la prochaine mesure |
