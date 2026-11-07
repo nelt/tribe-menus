@@ -2,7 +2,7 @@
 
 - **Nom** : `courses`
 - **Date** : 2026-11-06
-- **Statut** : en cours (lot C). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
+- **Statut** : en cours (lot D). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
 
 ## Objectif
 
@@ -91,11 +91,11 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot D : onglet Courses et choix des listes (`feature/onglet-courses`)
 
-- [ ] **17. `web/src/shopping.ts`**, module pur testé par `node:test` : ordre des listes et des articles (D13), libellé d'un article (quantité affichée dans la plus grande unité de sa famille qui donne au moins 1, règles d'affichage des quantités du design), compte « N plats », état de « Courses faites » (combien partent, combien restent), raisons d'une suppression impossible.
-- [ ] **18. Copie des listes** : `web/src/shopping-lists.ts`, une copie générique de la collection `shopping_lists` (`collections.ts`), vérifiée à chaque visite de l'onglet Courses et à chaque retour au premier plan, mise à jour par la réponse d'une écriture ; vérifiée avec la bibliothèque pour les noms et couleurs des plats des provenances (lot E). Rien n'est écrit sur l'appareil.
-- [ ] **19. Écran d'une liste** d'après `Doux-Liste` et `Doux-ArticleMain` : en-tête (nom de la liste, pastille « principale », ouverture du choix des listes), articles (case à cocher, nom, quantité, pastille « ajouté » et croix de retrait), cochés en bas et barrés, « Ajouter un article à la main » (ingrédient en combobox sur le référentiel, comme l'écran d'un plat ; quantité et unité facultatives), « Courses faites » et sa feuille de confirmation, bandeau vert ensuite ; liste vide ; chargement et erreur de réseau ; « Réseau nécessaire » pour toute écriture (D2) ; liste supprimée entre-temps (D11). L'onglet Courses devient actif.
-- [ ] **20. Choix des listes** d'après `Doux-ChoixListes` : listes dans l'ordre de C2, nombre d'articles et part cochée, « Nouvelle liste », feuille « ⋮ » (renommer, définir comme principale, supprimer, inactif avec sa raison) ; refus des limites (D12).
-- [ ] **21. C1 et C2 sous Chromium et WebKit** (onglet Courses, ordre des listes), retirés de `pending.txt`.
+- [x] **17. `web/src/shopping.ts`**, module pur testé par `node:test` : ordre des listes et des articles (D13), libellé d'un article (quantité affichée dans la plus grande unité de sa famille qui donne au moins 1, règles d'affichage des quantités du design), compte « N plats », état de « Courses faites » (combien partent, combien restent), raisons d'une suppression impossible.
+- [x] **18. Copie des listes** : `web/src/shopping-lists.ts`, une copie générique de la collection `shopping_lists` (`collections.ts`), vérifiée à chaque visite de l'onglet Courses et à chaque retour au premier plan, mise à jour par la réponse d'une écriture ; vérifiée avec la bibliothèque pour les noms et couleurs des plats des provenances (lot E). Rien n'est écrit sur l'appareil.
+- [x] **19. Écran d'une liste** d'après `Doux-Liste` et `Doux-ArticleMain` : en-tête (nom de la liste, pastille « principale », ouverture du choix des listes), articles (case à cocher, nom, quantité, pastille « ajouté » et croix de retrait), cochés en bas et barrés, « Ajouter un article à la main » (ingrédient en combobox sur le référentiel, comme l'écran d'un plat ; quantité et unité facultatives), « Courses faites » et sa feuille de confirmation, bandeau vert ensuite ; liste vide ; chargement et erreur de réseau ; « Réseau nécessaire » pour toute écriture (D2) ; liste supprimée entre-temps (D11). L'onglet Courses devient actif.
+- [x] **20. Choix des listes** d'après `Doux-ChoixListes` : listes dans l'ordre de C2, nombre d'articles et part cochée, « Nouvelle liste », feuille « ⋮ » (renommer, définir comme principale, supprimer, inactif avec sa raison) ; refus des limites (D12).
+- [x] **21. C1 et C2 sous Chromium et WebKit** (onglet Courses, ordre des listes), retirés de `pending.txt`.
 
 ### Lot E : courses des repas à l'écran (`feature/ecran-courses-des-repas`)
 
@@ -281,5 +281,16 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
   - « chacun de ces plats » sert les plats définis par les étapes qui précèdent immédiatement ; le « Chili con carne » du Contexte, défini juste avant le scénario, en fait partie, sans effet sur les lignes que ces scénarios vérifient (godog ne dit pas qu'une étape vient du Contexte).
   - L'accès croisé à une liste échoue si l'identifiant inconnu reçoit un `405` : chaque exemple compare bien deux `404` (revue #98, pour information).
 - **`make seed`** : « Courses » reçoit les courses du jour du seed à J+6, la semaine de `Doux-Main`, puis « pain » (à côté du « pain » calculé de la soupe à l'oignon, D23) et « lessive » ; « Marché » reçoit 500 g de fraises.
+
+**Lot D** (`feature/onglet-courses`), 2026-11-07, Dev Container, à valider à la revue :
+
+- **Revue #98, point 2, traité** : `writeCollections` ne renvoie plus que les versions des collections que l'écriture a changées (ADR 0029, point 3) ; `PUT shopping-lists/main` sur la liste déjà principale et un ajout de courses sans plat servi renvoient des `versions` vides. Effet aussi pour la bibliothèque : un plat enregistré sans ingrédient nouveau ne renvoie plus `ingredients`, ce que `library.ts` gérait déjà. Conceptions de la bibliothèque et des listes accordées.
+- **Revue #98, point 3, traité** : table de cas `internal/shopping/testdata/sort-items.json`, lue par `TestSortItems` et par `shopping.test.ts` ; les noms normalisés sont comparés point de code par point de code, comme Go compare les octets UTF-8, et non selon l'ordre de la langue. L'écran trie de nouveau les articles reçus.
+- **Combobox d'ingrédient** : sortie de l'écran d'un plat en un contrôleur Lit, `ingredient-combobox.ts` (champ, propositions, clavier, fermeture après le geste), que l'écran d'un plat et le formulaire d'un article utilisent ; l'écran d'un plat ne change pas, ses tests le prouvent. Un article ajouté ne retire aucune proposition (D23).
+- **Copie des listes** : coche montrée aussitôt, puis la liste renvoyée ; un `409` fait vérifier la copie ; un `404` aussi, qui dit ensuite si la liste a été supprimée (D11) ou seulement l'article (D8) ; un ingrédient créé fait vérifier le référentiel, l'élément de liste ne portant pas son unité par défaut. Vérifiée à chaque visite de l'onglet et au retour au premier plan sur l'onglet Courses.
+- **CSP** : la politique de l'application (`default-src 'self'`) refuse les styles en ligne ; les barres de progression sont des `progress` natifs et les largeurs du squelette de chargement viennent de la feuille de style. Un test des écrans vérifie qu'aucun refus de la CSP n'apparaît.
+- **Laissé au lot E** : la pastille « N plats » est là, sans chevron ni dépliage ; « Ajouter les courses des repas » n'est pas encore sur l'écran d'une liste ; `courses/repas` mène pour l'instant à la liste principale (D15).
+- **Interprétations de l'écran** dans `docs/design/README.md`, « Réalisation de l'onglet Courses et du choix des listes ».
+- **Preuves** : `shopping.test.ts`, `shopping-lists.test.ts` (copie et lecture des réponses), `router.test.ts` ; états des écrans sur l'API simulée (`e2e/ecrans-courses.spec.ts`) ; C1 « L'onglet Courses ouvre la liste principale » et C2 « Ordre des listes » sous Chromium et WebKit (`e2e/steps-shopping.ts`), retirés de `acceptance/pending.txt`.
 
 *(à compléter au fil des lots)*
