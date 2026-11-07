@@ -3,7 +3,6 @@ package dish
 import (
 	"errors"
 	"fmt"
-	"unicode/utf8"
 )
 
 // Limits (Q31).
@@ -70,33 +69,38 @@ func (e *InputError) Error() string {
 
 func dishError(code ErrorCode) *InputError { return &InputError{Code: code, Line: -1} }
 
+// Error codes of the faults of a name of a dish and of an ingredient.
+var (
+	dishNameErrors       = map[NameFault]ErrorCode{NameControl: NameInvalid, NameEmpty: NameRequired, NameLong: NameTooLong}
+	ingredientNameErrors = map[NameFault]ErrorCode{NameControl: IngredientNameInvalid, NameEmpty: IngredientNameRequired, NameLong: IngredientNameTooLong}
+)
+
 // validInput is an input that follows the rules of a dish.
 type validInput struct {
 	name, normalized string
 	// servings is 0 when the input leaves them to the tribe size.
 	servings int
-	lines    []validLine
+	lines    []ParsedLine
 }
 
-type validLine struct {
-	name, normalized string
-	quantity         *Quantity
+// ParsedLine is a line as entered, checked alone: the name of its ingredient with its spaces
+// reduced (D30), its normalized name (Q29), and its quantity, if any.
+type ParsedLine struct {
+	Name, Normalized string
+	Quantity         *Quantity
 }
 
 // validate checks the rules that depend on the input alone (P1, Q26, Q27, Q31); the name
 // taken (Q28) is checked against the library. Names are kept with their spaces reduced
-// (D30). A unit without quantity is dropped: without
-// quantity, no unit (Q26).
+// (D30).
 func (in Input) validate() (validInput, error) {
-	v := validInput{name: displayName(in.Name), servings: in.Servings}
+	v := validInput{servings: in.Servings}
+	var fault NameFault
+	v.name, fault = CleanName(in.Name, MaxNameLength)
 	v.normalized = NormalizeName(v.name)
 	switch {
-	case hasControl(v.name):
-		return v, dishError(NameInvalid)
-	case !hasVisible(v.name):
-		return v, dishError(NameRequired)
-	case utf8.RuneCountInString(v.name) > MaxNameLength:
-		return v, dishError(NameTooLong)
+	case fault != NameOK:
+		return v, dishError(dishNameErrors[fault])
 	case in.Servings != 0 && (in.Servings < MinServings || in.Servings > MaxServings):
 		return v, dishError(InvalidServings)
 	case len(in.Lines) > MaxLines:
@@ -104,29 +108,30 @@ func (in Input) validate() (validInput, error) {
 	}
 	seen := map[string]string{} // display name by normalized name
 	for i, l := range in.Lines {
-		line, code := validateLine(l)
+		line, code := ParseLine(l)
 		if code != "" {
 			return v, &InputError{Code: code, Line: i}
 		}
-		if first, ok := seen[line.normalized]; ok {
+		if first, ok := seen[line.Normalized]; ok {
 			return v, &InputError{Code: DuplicateIngredient, Line: i, Ingredient: first}
 		}
-		seen[line.normalized] = line.name
+		seen[line.Normalized] = line.Name
 		v.lines = append(v.lines, line)
 	}
 	return v, nil
 }
 
-func validateLine(l LineInput) (validLine, ErrorCode) {
-	line := validLine{name: displayName(l.Name)}
-	line.normalized = NormalizeName(line.name)
+// ParseLine checks a line alone (Q26, Q31): a line of a dish, or an item added by hand to a
+// shopping list, which follows the same rules (Q13). A unit without quantity is dropped:
+// without quantity, no unit (Q26).
+func ParseLine(l LineInput) (ParsedLine, ErrorCode) {
+	var line ParsedLine
+	var fault NameFault
+	line.Name, fault = CleanName(l.Name, MaxIngredientNameLength)
+	line.Normalized = NormalizeName(line.Name)
 	switch {
-	case hasControl(line.name):
-		return line, IngredientNameInvalid
-	case !hasVisible(line.name):
-		return line, IngredientNameRequired
-	case utf8.RuneCountInString(line.name) > MaxIngredientNameLength:
-		return line, IngredientNameTooLong
+	case fault != NameOK:
+		return line, ingredientNameErrors[fault]
 	case trimName(l.Quantity) == "":
 		return line, ""
 	case l.Unit == "":
@@ -143,6 +148,6 @@ func validateLine(l LineInput) (validLine, ErrorCode) {
 	case err != nil:
 		return line, InvalidQuantity
 	}
-	line.quantity = &q
+	line.Quantity = &q
 	return line, ""
 }
