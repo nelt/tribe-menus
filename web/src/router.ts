@@ -1,6 +1,6 @@
 // Client-side router (ADR 0004, point 6), on the History API, under the tribe prefix
 // /tribes/<identifier>/ given by the <base> of the page. Paths in French (plan bibliotheque,
-// D11; plan planning, D14; docs/design/README.md).
+// D11; plan planning, D14; plan courses, D15; docs/design/README.md).
 import { type Day, type Mealtime, addDays, parseDay, rangeLength } from "./meal-plan.ts";
 
 /** The pages of the application. */
@@ -13,7 +13,11 @@ export type Page =
   | { name: "dishes" }
   | { name: "new-dish" }
   | { name: "dish"; id: string }
-  | { name: "tribe" };
+  | { name: "tribe" }
+  /** A shopping list: the main one without identifier (C1, D15). */
+  | { name: "shopping"; list?: string }
+  /** The list picker (C2). */
+  | { name: "list-picker" };
 
 export const pages = {
   planning: { name: "planning" },
@@ -21,6 +25,8 @@ export const pages = {
   dishes: { name: "dishes" },
   newDish: { name: "new-dish" },
   tribe: { name: "tribe" },
+  shopping: { name: "shopping" },
+  listPicker: { name: "list-picker" },
 } as const satisfies Record<string, Page>;
 
 const fixedPaths: [string, Page][] = [
@@ -29,10 +35,18 @@ const fixedPaths: [string, Page][] = [
   ["plats", pages.dishes],
   ["plats/nouveau", pages.newDish],
   ["tribu", pages.tribe],
+  ["courses", pages.shopping],
+  ["courses/listes", pages.listPicker],
 ];
 
 /** A dish identifier: 128 random bits in hexadecimal (plan bibliotheque, D10). */
 const dishPath = /^plats\/([0-9a-f]{32})$/;
+
+/** A shopping list other than the main one: its identifier, as a dish (plan courses, D10, D15). */
+const listPath = /^courses\/([0-9a-f]{32})$/;
+
+/** Under courses/, a path that is no list: the main list (D15). */
+const shoppingPath = /^courses\//;
 
 /** A meal: repas/YYYY-MM-DD/midi or soir (D14). */
 const mealPath = /^repas\/([^/]+)\/(midi|soir)$/;
@@ -65,6 +79,13 @@ export function pageFromPath(pathname: string, base: string, search = ""): Page 
     const date = parseDay(meal[1] ?? "");
     return date === undefined ? pages.planning : { name: "meal", date, mealtime: meal[2] === "midi" ? "lunch" : "dinner" };
   }
+  const list = listPath.exec(rest)?.[1];
+  if (list !== undefined) {
+    return { name: "shopping", list };
+  }
+  if (shoppingPath.test(rest)) {
+    return pages.shopping;
+  }
   const id = dishPath.exec(rest)?.[1];
   return id === undefined ? pages.planning : { name: "dish", id };
 }
@@ -76,6 +97,9 @@ export function pathOfPage(page: Page, base: string): string {
   }
   if (page.name === "meal") {
     return `${base}repas/${page.date}/${mealtimePaths[page.mealtime]}`;
+  }
+  if (page.name === "shopping" && page.list !== undefined) {
+    return `${base}courses/${page.list}`;
   }
   if (page.name === "planning" && page.start !== undefined) {
     return `${base}?${startParameter}=${page.start}`;
@@ -92,9 +116,19 @@ export function planningAround(day: Day, today: Day): Page {
   return day >= today && day < addDays(today, rangeLength) ? pages.planning : { name: "planning", start: day };
 }
 
-/** The tab of a page: the dish pages are under Plats, the others under Planning. */
-export function tabOf(page: Page): "planning" | "dishes" {
-  return page.name === "dishes" || page.name === "new-dish" || page.name === "dish" ? "dishes" : "planning";
+/** The tab of a page: the dish pages are under Plats, the shopping lists under Courses, the others under Planning. */
+export function tabOf(page: Page): "planning" | "dishes" | "shopping" {
+  switch (page.name) {
+    case "dishes":
+    case "new-dish":
+    case "dish":
+      return "dishes";
+    case "shopping":
+    case "list-picker":
+      return "shopping";
+    default:
+      return "planning";
+  }
 }
 
 /** What the router needs from the browser, so that the tests can provide it. */

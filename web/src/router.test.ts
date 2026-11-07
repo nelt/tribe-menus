@@ -34,6 +34,12 @@ const pageCases: { name: string; pathname: string; search?: string; want: Page }
   { name: "a meal without mealtime", pathname: "/tribes/demo/repas/2026-10-06", want: pages.planning },
   { name: "login of another tribe", pathname: "/tribes/autre/connexion", want: pages.planning },
   { name: "prefix of the login", pathname: "/tribes/demo/connexionx", want: pages.planning },
+  { name: "the main shopping list (D15)", pathname: "/tribes/demo/courses", want: pages.shopping },
+  { name: "the main shopping list, trailing slash", pathname: "/tribes/demo/courses/", want: pages.shopping },
+  { name: "another shopping list", pathname: `/tribes/demo/courses/${id}`, want: { name: "shopping", list: id } },
+  { name: "a shopping list, identifier too short", pathname: "/tribes/demo/courses/0123", want: pages.shopping },
+  { name: "under courses, an unknown path", pathname: "/tribes/demo/courses/inconnu/x", want: pages.shopping },
+  { name: "the list picker", pathname: "/tribes/demo/courses/listes", want: pages.listPicker },
 ];
 
 for (const { name, pathname, search, want } of pageCases) {
@@ -52,6 +58,9 @@ test("pathOfPage", () => {
   assert.equal(pathOfPage(pages.tribe, base), "/tribes/demo/tribu");
   assert.equal(pathOfPage({ name: "meal", date: "2026-10-06", mealtime: "lunch" }, base), "/tribes/demo/repas/2026-10-06/midi");
   assert.equal(pathOfPage({ name: "meal", date: "2026-10-06", mealtime: "dinner" }, base), "/tribes/demo/repas/2026-10-06/soir");
+  assert.equal(pathOfPage(pages.shopping, base), "/tribes/demo/courses");
+  assert.equal(pathOfPage({ name: "shopping", list: id }, base), `/tribes/demo/courses/${id}`);
+  assert.equal(pathOfPage(pages.listPicker, base), "/tribes/demo/courses/listes");
 });
 
 test("planningAround: the range of today if it holds the day, else the range from the day", () => {
@@ -68,6 +77,9 @@ test("tabOf", () => {
   assert.equal(tabOf(pages.dishes), "dishes");
   assert.equal(tabOf(pages.newDish), "dishes");
   assert.equal(tabOf({ name: "dish", id }), "dishes");
+  assert.equal(tabOf(pages.shopping), "shopping");
+  assert.equal(tabOf({ name: "shopping", list: id }), "shopping");
+  assert.equal(tabOf(pages.listPicker), "shopping");
 });
 
 function fakeWindow(from: string) {

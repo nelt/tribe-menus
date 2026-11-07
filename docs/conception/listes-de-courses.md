@@ -1,6 +1,6 @@
 # Conception : listes de courses
 
-- **Mise à jour** : 2026-11-07 (lot C)
+- **Mise à jour** : 2026-11-07 (lot D)
 - **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; noms du serveur des listes et des articles fixés par le lot B, ceux du calcul par le lot C ; à tenir à jour par les plans qui touchent ce domaine (`courses-suite`, hors-ligne)
 - **Stories** : C1 à C6, C11, C12 ; P2 pour le calcul ; T1 et ENF-02 pour les listes. C7 à C10 sont prévues par le modèle, pas réalisées.
 
@@ -257,7 +257,7 @@ classDiagram
 - **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. Une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`. Supprimer une liste supprime ses plats servis reçus et leurs lignes ; retirer un article, ses provenances.
 - **`internal/collection`** : inchangé ; `GET shopping-lists` passe par `Serve`.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
-- **`web/src`** : `shopping.ts`, module pur testé par `node:test` ; `shopping-lists.ts`, copie des listes sur `CachedCollection`, vérifiée avec `planning.ts` et `library.ts` sur l'écran des courses des repas et pour le dépliage ; écrans `shopping-list-screen.ts`, `list-picker-screen.ts`, `meal-shopping-screen.ts` ; la combobox d'ingrédient de l'écran d'un plat et `warningBanner` sont repris.
+- **`web/src`** : `shopping.ts`, module pur testé par `node:test`, dont l'ordre des articles partage sa table de cas avec `SortItems` (`internal/shopping/testdata/sort-items.json`, revue de la PR #98, point 3) ; `shopping-lists.ts`, copie des listes sur `CachedCollection`, vérifiée avec `planning.ts` et `library.ts` sur l'écran des courses des repas et pour le dépliage (lot E) ; écrans `shopping-list-screen.ts`, `list-picker-screen.ts` (lot D), `meal-shopping-screen.ts` (lot E) ; la combobox d'ingrédient de l'écran d'un plat devient un contrôleur Lit, `ingredient-combobox.ts`, partagé par l'écran d'un plat et le formulaire d'un article ajouté ; `warningBanner` est repris.
 
 ## API
 
@@ -266,13 +266,13 @@ classDiagram
 | `GET shopping-lists?after=…` | | 200 : `{ items: [List], next? }`, 20 listes au plus par page, dans l'ordre des identifiants (D4) ; `ETag: "shopping_lists-<version>"`, `304`, `412` (ADR 0029) |
 | `POST shopping-lists` | `{ name }` | 201 : `{ list, versions }` ; 400 : `list_name_empty`, `list_name_invalid`, `list_name_too_long` ; 409 `too_many_lists` |
 | `PUT shopping-lists/{id}/name` | `{ name }` | 200 : `{ list, versions }` ; 400 comme ci-dessus ; 404 |
-| `PUT shopping-lists/main` | `{ list }` | 200 : `{ versions }`, inchangées pour la liste déjà principale ; 404 |
+| `PUT shopping-lists/main` | `{ list }` | 200 : `{ versions }`, vide pour la liste déjà principale ; 404 |
 | `DELETE shopping-lists/{id}` | | 200 : `{ versions }` ; 409 `{ error: "list_not_empty", list }`, la liste à jour ; 409 `main_list` ; 404 |
 | `POST shopping-lists/{id}/items` | `{ ingredient, quantity?, unit? }` | 201 : `{ list, versions }` ; 400 : les codes d'une ligne de plat, `ingredient_name_required`, `ingredient_name_invalid`, `ingredient_name_too_long`, `unit_required`, `invalid_unit`, `invalid_quantity`, `quantity_too_precise` (même règle, `dish.ParseLine`, mêmes messages) ; 409 `too_many_items` ; 404 |
 | `DELETE shopping-lists/{id}/items/{item}` | | 200 : `{ list, versions }` ; 409 `computed_item` ; 404, liste supprimée entre-temps ou article inconnu (l'écran le traite comme un retrait fait, D11) |
 | `PUT shopping-lists/{id}/items/{item}/checked` | `{ checked }` | 200 : `{ list, versions }` ; 400 `bad_request` sans `checked` ; 404 |
 | `POST shopping-lists/{id}/checkout` | `{ items: [ItemID] }`, ceux vus cochés | 200 : `{ list, removed, versions }` (D9) ; 404 |
-| `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }`, versions inchangées sans plat servi ajouté ; 400 `invalid_date`, `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
+| `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }`, `versions` vide sans plat servi ajouté ; 400 `invalid_date`, `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
 
 Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }`, ses articles dans l'ordre de Q40 (`SortItems` : non cochés puis cochés, nom normalisé, avec quantité avant sans quantité, calculé avant ajouté, puis identifiant pour un ordre stable) ; un article (`Item`) : `{ id, ingredient, quantity?, unit?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, quantity?, unit? }] }`.
 
@@ -282,11 +282,14 @@ Toutes ces routes répondent 401 `no_session` sans session et gardent `Cache-Con
 
 - **`404` identique** pour une liste ou un article inconnu, supprimé entre-temps ou d'une autre tribu (ENF-02).
 - **Écritures sur une liste** : la réponse porte la liste entière à jour, que la copie prend ; un `409 list_not_empty` aussi.
+- **`versions`** : celles des seules collections que l'écriture a changées (`shopping_lists`, et `ingredients` quand un article ajouté crée son ingrédient) ; une écriture qui ne change rien les laisse vides (lot D ; revue de la PR #98, point 2).
 - **`from`, `to`** : `AAAA-MM-JJ`, dates réelles de 2000-01-01 à 2099-12-31 (Q35, `invalid_date` sinon, comme le planning) ; `to` au plus tôt `from` (`invalid_period`), 31 jours au plus (`period_too_long`, D12). Le serveur ne connaît pas « aujourd'hui » : la période par défaut est calculée par l'appareil (D24).
 
 ## Données dans le navigateur
 
 Les listes vivent dans une **copie en mémoire** (`web/src/shopping-lists.ts`), une `CachedCollection` de la collection `shopping_lists`, comme les plats et le planning (ADR 0029, point 4). Elle est vérifiée à chaque visite de l'onglet Courses et à chaque retour au premier plan ; avec la copie du planning et celle de la bibliothèque sur l'écran des courses des repas (jours ayant des repas, plats servis déjà reçus) et pour le dépliage (nom et couleur des plats). Après une écriture, la copie prend la liste renvoyée et la version, ou se vérifie si un autre membre a écrit entre-temps ; après un `404`, elle retire la liste ou se vérifie. `PUT shopping-lists/main` ne renvoie que les versions : la copie inverse elle-même les deux drapeaux `main` si la version suit la sienne, sinon elle se vérifie. Rien n'est écrit sur l'appareil (D2) : la copie disparaît au rechargement, à la déconnexion et sur un 401.
+
+Réalisation (lot D) : une coche est montrée aussitôt dans la copie, triée de nouveau, puis remplacée par la liste renvoyée ; sans réseau, l'article revient à son état. Un refus `409` (`list_not_empty`, `main_list`, `too_many_lists`, `too_many_items`) dit que la copie est en retard : elle prend la liste renvoyée s'il y en a une, puis se vérifie. Un `404` fait vérifier la copie, qui dit ensuite si la liste a été supprimée entre-temps (l'écran ouvre la liste principale avec son bandeau, D11) ou seulement l'article (aucun message, D8). Une écriture dont les `versions` portent `ingredients` différente de celle de la copie du référentiel fait vérifier celle-ci : l'élément de liste ne porte pas l'unité par défaut d'un ingrédient créé (Q20). La copie des listes est vérifiée au retour au premier plan quand l'onglet Courses est affiché.
 
 Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses » et « Messages des listes de courses » (lot A). `shopping.ts` trie de nouveau les articles après une coche locale, avec la même règle que `SortItems`.
 
@@ -388,5 +391,5 @@ sequenceDiagram
 ## Ce que ce document ne couvre pas encore
 
 - **Le recalcul d'une liste périmée** (C8) et **la sélection d'articles** (C9, C10) : `courses-suite`. Le modèle les prévoit : provenances avec ce qu'elles ont apporté, plats servis reçus avec leurs parts, les parts de référence du plat et ses lignes au moment du calcul (D5).
-- **Le hors-ligne** des listes (C7, Q16, Q18) : stockage sur l'appareil, file des coches et des ajouts, rejeu au retour du réseau ; plan hors-ligne, qui s'ajoutera à la copie des collections sans la remplacer (ADR 0029, conséquences).
+- **Le hors-ligne** des listes (C7, Q16, Q18) : stockage sur l'appareil, file des coches et des ajouts, rejeu au retour du réseau ; plan hors-ligne, qui s'ajoutera à la copie des collections sans la remplacer (ADR 0029, conséquences). Ce plan reprendra aussi un défaut d'affichage noté à la revue de la PR #100 : pendant qu'une coche attend sa réponse, la réponse à une autre écriture remplace la liste entière, et l'article en attente s'affiche un instant dans son état d'avant ; la file des coches devra garder les coches en attente par-dessus les listes reçues.
 - **Le delta d'une collection**, si les listes deviennent longues à recharger (plan, questions ouvertes).

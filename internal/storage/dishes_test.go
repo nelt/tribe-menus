@@ -78,12 +78,12 @@ func TestWriteCollections(t *testing.T) {
 		t.Errorf("stored version of dishes %d", got)
 	}
 
-	// No ingredient written: the catalog keeps its version.
+	// No ingredient written: the catalog keeps its version, absent from the versions.
 	_, versions, err = library.Create(ctx, dish.Input{Name: "Restes"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := (collection.Versions{"dishes": 2, "ingredients": 1}); !maps.Equal(versions, want) {
+	if want := (collection.Versions{"dishes": 2}); !maps.Equal(versions, want) {
 		t.Errorf("versions %v, want %v", versions, want)
 	}
 

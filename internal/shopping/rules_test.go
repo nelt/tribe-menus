@@ -1,7 +1,9 @@
 package shopping
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -34,29 +36,52 @@ func TestParseListName(t *testing.T) {
 	}
 }
 
-// TestSortItems: the example of « Ordre des articles » (Q40, D13), shuffled.
+// TestSortItems: testdata/sort-items.json, shared with web/src/shopping.ts (Q40, D13; review
+// of PR #98, point 3).
 func TestSortItems(t *testing.T) {
-	q := func(n int64) *dish.Quantity { return &dish.Quantity{Amount: n * 1000, Unit: dish.Piece} }
-	want := []Item{
-		{ID: "e", Ingredient: "Échalote", Quantity: q(4), Manual: true},
-		{ID: "l", Ingredient: "lessive", Manual: true},
-		{ID: "o2", Ingredient: "oignon", Quantity: q(1)},
-		{ID: "o3", Ingredient: "Oignon", Quantity: q(2)},
-		{ID: "o1", Ingredient: "oignon", Quantity: q(3), Manual: true},
-		{ID: "o4", Ingredient: "oignon"},
-		{ID: "o5", Ingredient: "oignon", Manual: true},
-		{ID: "a", Ingredient: "ail", Quantity: q(1), Checked: true, Manual: true},
-		{ID: "p", Ingredient: "pain", Quantity: q(2), Checked: true, Manual: true},
+	data, err := os.ReadFile("testdata/sort-items.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	items := slices.Clone(want)
-	slices.Reverse(items)
-	items[0], items[4] = items[4], items[0]
-	SortItems(items)
-	if !slices.EqualFunc(items, want, func(a, b Item) bool { return a.ID == b.ID }) {
-		var ids []ItemID
-		for _, it := range items {
-			ids = append(ids, it.ID)
-		}
-		t.Errorf("order %v", ids)
+	var table struct {
+		Cases []struct {
+			Name  string `json:"name"`
+			Items []struct {
+				ID         ItemID    `json:"id"`
+				Ingredient string    `json:"ingredient"`
+				Quantity   string    `json:"quantity"`
+				Unit       dish.Unit `json:"unit"`
+				Checked    bool      `json:"checked"`
+				Manual     bool      `json:"manual"`
+			} `json:"items"`
+			Order []ItemID `json:"order"`
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(data, &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Cases) == 0 {
+		t.Fatal("no case")
+	}
+	for _, c := range table.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var items []Item
+			for _, it := range c.Items {
+				item := Item{ID: it.ID, Ingredient: it.Ingredient, Checked: it.Checked, Manual: it.Manual}
+				if it.Quantity != "" {
+					q := mustQuantity(t, it.Quantity, it.Unit)
+					item.Quantity = &q
+				}
+				items = append(items, item)
+			}
+			SortItems(items)
+			var ids []ItemID
+			for _, it := range items {
+				ids = append(ids, it.ID)
+			}
+			if !slices.Equal(ids, c.Order) {
+				t.Errorf("order %v, want %v", ids, c.Order)
+			}
+		})
 	}
 }

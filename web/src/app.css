@@ -124,6 +124,7 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   width: 100%;
   height: 56px;
   border: none;
@@ -641,20 +642,6 @@ input {
   background: var(--color-action);
   color: #ffffff;
   font-weight: 800;
-}
-
-/* Inactive: icon and label as pale as an inactive button, « À venir » readable. */
-.tab--inactive {
-  color: var(--color-dashed);
-}
-
-.tab-soon {
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.tab--inactive .tab-soon {
-  color: var(--color-text-muted);
 }
 
 /* A screen above the tab bar. */
@@ -1668,3 +1655,602 @@ a.button-secondary {
   background: var(--color-action);
   color: #ffffff;
 }
+
+/* Shopping lists (Doux-Liste, Doux-ArticleMain, Doux-ChoixListes; plan courses, lot D). */
+.shopping-title {
+  font-size: 32px;
+}
+
+.shopping-title-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.shopping-title-link:hover {
+  color: var(--color-text);
+}
+
+.shopping-title-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shopping-title-link svg {
+  flex-shrink: 0;
+}
+
+.pill {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.pill--main {
+  padding: 3px 10px;
+  border-color: var(--color-text);
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.pill--dashed {
+  border-style: dashed;
+  border-color: var(--color-dashed);
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.progress-remaining {
+  color: var(--color-text-secondary);
+}
+
+/* A native progress bar: the screen sets no inline style, which the CSP refuses. */
+.progress-bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border: var(--border-thin) solid var(--color-success-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-background);
+  appearance: none;
+}
+
+.progress-bar::-webkit-progress-bar {
+  background: var(--color-background);
+}
+
+.progress-bar::-webkit-progress-value {
+  border-radius: var(--radius-pill);
+  background: var(--color-success-text);
+}
+
+.progress-bar::-moz-progress-bar {
+  border-radius: var(--radius-pill);
+  background: var(--color-success-text);
+}
+
+.progress-bar--small {
+  flex-grow: 1;
+  width: auto;
+  height: 8px;
+}
+
+.banner-done,
+.banner-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: var(--border-thin) solid var(--color-success-border);
+  border-radius: var(--radius-field);
+  color: var(--color-success-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.banner-done {
+  padding-right: 6px;
+}
+
+.banner-done > span {
+  flex-grow: 1;
+}
+
+.banner-error {
+  border-color: var(--color-focus);
+  color: var(--color-action-hover);
+}
+
+.banner-done svg,
+.banner-error svg {
+  flex-shrink: 0;
+}
+
+.banner-close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.shopping-empty {
+  margin: 0;
+  padding: 22px 18px;
+  border: var(--border-strong) dashed var(--color-dashed);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 6px 0 14px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-field);
+}
+
+.item--checked {
+  border-color: var(--color-success-border);
+}
+
+.item-check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--color-success-text);
+  cursor: pointer;
+}
+
+.item-name {
+  flex-grow: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.item-quantity {
+  flex-shrink: 0;
+  color: var(--color-action);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* A computed item has no cross: its quantity keeps a margin from the border. */
+.item > :last-child:not(.item-remove) {
+  margin-right: 8px;
+}
+
+.item--checked .item-name {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+}
+
+.item--checked .item-quantity {
+  color: var(--color-text-secondary);
+}
+
+.item-remove {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: var(--touch-target);
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.hint--left {
+  text-align: left;
+}
+
+.button-with-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: var(--border-thin) solid var(--color-focus);
+  border-radius: var(--radius-field);
+}
+
+.item-form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.item-form-ingredient {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: 12px;
+}
+
+.item-form-ingredient:focus-within {
+  border-color: var(--color-focus);
+}
+
+.item-combobox {
+  height: 40px;
+  padding: 0 10px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.item-combobox[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--color-error);
+}
+
+.item-form-quantity {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.item-form-input {
+  height: var(--touch-target);
+  padding: 0 10px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.item-form-input:focus {
+  border-color: var(--color-focus);
+  outline: none;
+}
+
+.item-form-input:disabled {
+  color: var(--color-text-muted);
+}
+
+.item-form-input[aria-invalid="true"] {
+  border: var(--border-strong) solid var(--color-error);
+}
+
+.item-form .field-input {
+  height: 48px;
+  font-size: 16px;
+}
+
+.item-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.button-primary--small {
+  flex-grow: 1;
+  height: 46px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+.checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.checkout .button-primary {
+  gap: 8px;
+  height: 54px;
+  font-size: 16px;
+}
+
+.button-text--wide {
+  width: 100%;
+  min-height: 50px;
+  font-size: 16px;
+}
+
+/* A sheet: a white panel at the bottom of the screen, over a veil (docs/design, « Feuille »). */
+dialog.sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  margin: auto auto 0;
+  padding: 22px 20px 28px;
+  overflow-y: auto;
+  border: none;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+dialog.sheet[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+dialog.sheet::backdrop {
+  background: var(--color-overlay);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-title {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.sheet-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.sheet-form,
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheet-actions {
+  gap: 8px;
+}
+
+.sheet-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 14px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-action svg {
+  flex-shrink: 0;
+}
+
+.sheet-action--danger {
+  border-color: var(--color-action);
+  color: var(--color-action);
+  font-weight: 800;
+}
+
+.sheet-action--inactive {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  border: var(--border-strong) dashed var(--color-dashed);
+  color: var(--color-text-muted);
+  font-weight: 800;
+  cursor: default;
+}
+
+.sheet-action-reason {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.list-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-card {
+  display: flex;
+  align-items: stretch;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: 22px;
+}
+
+.list-card--main {
+  border-color: var(--color-text);
+}
+
+.list-card-link {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 0 14px 16px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.list-card-link:hover {
+  color: var(--color-text);
+}
+
+.list-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-card-name {
+  overflow-wrap: anywhere;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.list-card-summary {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.list-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.list-card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-height: 56px;
+  border: none;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+/* Loading of a list: empty boxes in the place of the name, of a button and of six items. */
+.shopping-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton {
+  border-radius: 10px;
+  background: #f0eaf4;
+}
+
+.skeleton--title {
+  width: 170px;
+  height: 26px;
+  margin: 11px 0;
+}
+
+.skeleton--button {
+  height: 54px;
+  border: var(--border-strong) solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: none;
+}
+
+.skeleton--item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 14px;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: none;
+}
+
+.skeleton-box {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: var(--border-strong) solid var(--color-border);
+  border-radius: 6px;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 7px;
+  background: #f0eaf4;
+}
+
+.skeleton--item:nth-of-type(6n + 1) .skeleton-line { width: 70%; }
+.skeleton--item:nth-of-type(6n + 2) .skeleton-line { width: 55%; }
+.skeleton--item:nth-of-type(6n + 3) .skeleton-line { width: 82%; }
+.skeleton--item:nth-of-type(6n + 4) .skeleton-line { width: 48%; }
+.skeleton--item:nth-of-type(6n + 5) .skeleton-line { width: 64%; }
+.skeleton--item:nth-of-type(6n) .skeleton-line { width: 58%; }

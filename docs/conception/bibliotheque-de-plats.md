@@ -276,11 +276,11 @@ Mécanisme générique, pour toutes les collections de l'API (plan, D28 ; ADR 00
 | Premier chargement | `GET dishes` | 200, première page, `ETag: "dishes-42"` |
 | Pages suivantes | `GET dishes?after=…`, `If-Match: "dishes-42"` | 200, page suivante ; `412 collection_changed` si la version a changé entre-temps |
 | Vérification | `GET dishes`, `If-None-Match: "dishes-42"` | `304` sans corps si rien n'a changé ; sinon 200, première page, nouvel ETag |
-| Écriture | `POST dishes`, `PUT dishes/{id}` | le plat, et `versions` : `{ "dishes": 43, "ingredients": 18 }` |
+| Écriture | `POST dishes`, `PUT dishes/{id}` | le plat, et `versions` : `{ "dishes": 43, "ingredients": 18 }`, sans `ingredients` si le référentiel n'a pas changé |
 
 La version d'une collection est un entier de la table `collection_versions`, augmenté par des déclencheurs SQLite sur chacune de ses tables : `dishes` pour les tables `dishes` et `dish_ingredients`, `ingredients` pour la table `ingredients`. Aucune écriture ne peut oublier de l'augmenter.
 
-SQLite n'a que des déclencheurs par ligne : un plat de cinq lignes augmenterait la version de six. Une écriture passée par `storage` (`writeCollections`) ramène donc, avant de valider sa transaction, chaque collection qu'elle a changée à sa version d'avant plus un : une écriture augmente une version d'une unité exactement, ce qui permet au navigateur de savoir si un autre membre a écrit entre-temps (ADR 0029, point 4). La transaction est immédiate : personne n'écrit entre la lecture et l'écriture, et une version validée n'est jamais diminuée. Une écriture qui ne passerait pas par là augmenterait la version de plus d'une unité : les copies se rechargeraient, ce qui reste correct (lot B).
+SQLite n'a que des déclencheurs par ligne : un plat de cinq lignes augmenterait la version de six. Une écriture passée par `storage` (`writeCollections`) ramène donc, avant de valider sa transaction, chaque collection qu'elle a changée à sa version d'avant plus un : une écriture augmente une version d'une unité exactement, ce qui permet au navigateur de savoir si un autre membre a écrit entre-temps (ADR 0029, point 4). La transaction est immédiate : personne n'écrit entre la lecture et l'écriture, et une version validée n'est jamais diminuée. Une écriture qui ne passerait pas par là augmenterait la version de plus d'une unité : les copies se rechargeraient, ce qui reste correct (lot B). `writeCollections` ne renvoie que les versions des collections que l'écriture a changées (ADR 0029, point 3) : une copie en retard d'une version, un autre membre ayant écrit entre-temps, ne prend pas pour la sienne la version d'une collection inchangée (plan `courses`, lot D ; revue de la PR #98, point 2).
 
 ## Données dans le navigateur
 

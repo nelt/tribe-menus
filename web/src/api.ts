@@ -216,6 +216,47 @@ export function mealPlanWriteOf(response: RawResponse): Outcome<MealPlanWrite> {
   return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
 }
 
+/**
+ * The answer to a write of the shopping lists (plan courses, D8, D9, D11): the list up to
+ * date (absent after a change of the main list or a deletion), the versions of the
+ * collections it changed, and for a checkout the number of items removed; a refusal, with
+ * its error code and, for a list no longer empty, the list up to date; or a list or an item
+ * unknown, deleted in between. The lists are read by shopping-lists.ts.
+ */
+export type ShoppingWrite =
+  | { kind: "written"; list: unknown; versions: Record<string, number>; removed: number | undefined }
+  | { kind: "refused"; error: string; list: unknown }
+  | { kind: "not-found" };
+
+/**
+ * Reads the response to a write of the shopping lists. A body the contract does not foresee,
+ * and a refusal of the form of the request (bad_request), are network errors, as for outcomeOf.
+ */
+export function shoppingWriteOf(response: RawResponse): Outcome<ShoppingWrite> {
+  if (response !== "network-error" && isRecord(response.body)) {
+    const { status, body } = response;
+    const { versions, error, removed } = body;
+    if ((status === 200 || status === 201) && isRecord(versions) && Object.values(versions).every((v) => typeof v === "number") && (removed === undefined || typeof removed === "number")) {
+      return { kind: "ok", value: { kind: "written", list: body["list"], versions: versions as Record<string, number>, removed } };
+    }
+    if (status === 404 && error === "not_found") {
+      return { kind: "ok", value: { kind: "not-found" } };
+    }
+    if ((status === 400 || status === 409) && typeof error === "string" && error !== "bad_request") {
+      return { kind: "ok", value: { kind: "refused", error, list: body["list"] } };
+    }
+  }
+  const outcome = outcomeOf(response);
+  return outcome.kind === "ok" ? { kind: "network-error" } : outcome;
+}
+
+/** An item added by hand, as the screen sends it (C3): the quantity as typed, optional. */
+export interface ItemBody {
+  ingredient: string;
+  quantity?: string;
+  unit?: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -325,6 +366,54 @@ export class Api {
     return outcome;
   }
 
+  /** Creates a shopping list, empty (C2). */
+  createList(name: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("POST", "api/shopping-lists", { name });
+  }
+
+  /** Renames a list (C2): the last save wins (D11). */
+  renameList(list: string, name: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("PUT", `${listURL(list)}/name`, { name });
+  }
+
+  /** Makes a list the main one (C1). */
+  setMainList(list: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("PUT", "api/shopping-lists/main", { list });
+  }
+
+  /** Deletes a list, empty and not the main one (C12). */
+  deleteList(list: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("DELETE", listURL(list));
+  }
+
+  /** Adds an item by hand (C3). */
+  addItem(list: string, body: ItemBody): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("POST", `${listURL(list)}/items`, body);
+  }
+
+  /** Removes an item added by hand (C3). */
+  removeItem(list: string, item: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("DELETE", `${listURL(list)}/items/${encodeURIComponent(item)}`);
+  }
+
+  /** Checks or unchecks an item (C6): the last save wins (D8). */
+  setChecked(list: string, item: string, checked: boolean): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("PUT", `${listURL(list)}/items/${encodeURIComponent(item)}/checked`, { checked });
+  }
+
+  /** Removes the items seen checked that still are (C11, D9). */
+  checkOut(list: string, items: string[]): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("POST", `${listURL(list)}/checkout`, { items });
+  }
+
+  async #writeShopping(method: string, url: string, body?: unknown): Promise<Outcome<ShoppingWrite>> {
+    const outcome = shoppingWriteOf((await this.#send(method, url, body)).raw);
+    if (outcome.kind === "unauthorized") {
+      this.#options.onUnauthorized();
+    }
+    return outcome;
+  }
+
   /** A page of a collection of the API (ADR 0029), after the cursor given. */
   async getPage(collection: string, after: string | undefined, condition: PageCondition = {}): Promise<Outcome<CollectionPage>> {
     const headers: Record<string, string> = {};
@@ -375,6 +464,10 @@ export class Api {
       return { raw: "network-error", etag: null };
     }
   }
+}
+
+function listURL(list: string): string {
+  return `api/shopping-lists/${encodeURIComponent(list)}`;
 }
 
 async function jsonBody(response: Response): Promise<unknown> {

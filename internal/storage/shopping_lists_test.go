@@ -38,7 +38,7 @@ func TestShoppingStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if marche.Rank != 2 || marche.Main || len(marche.ID) != 32 || !maps.Equal(versions, collection.Versions{"shopping_lists": 1, "ingredients": 0}) {
+	if marche.Rank != 2 || marche.Main || len(marche.ID) != 32 || !maps.Equal(versions, collection.Versions{"shopping_lists": 1}) {
 		t.Errorf("created %+v, versions %v", marche, versions)
 	}
 	if _, versions, err = lists.Rename(ctx, marche.ID, "Marché du samedi"); err != nil || versions["shopping_lists"] != 2 {
@@ -125,6 +125,10 @@ func TestShoppingStore(t *testing.T) {
 	// The main list changes; the received served dishes of a list leave with it.
 	if versions, err = lists.SetMain(ctx, marche.ID); err != nil || versions["shopping_lists"] != before+1 {
 		t.Errorf("set main: %v, %v", versions, err)
+	}
+	// The list already main: nothing written, no version (review of PR #98, point 2).
+	if versions, err = lists.SetMain(ctx, marche.ID); err != nil || len(versions) != 0 {
+		t.Errorf("set main again: %v, %v", versions, err)
 	}
 	for _, s := range []string{
 		fmt.Sprintf("INSERT INTO shopping_lists VALUES ('%s', 'Drive', 9, 0)", strings.Repeat("f", 32)),
@@ -284,7 +288,7 @@ func TestShoppingStoreMealShopping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if added != 3 || ignored != 0 || !maps.Equal(versions, collection.Versions{"shopping_lists": version + 1, "ingredients": 1}) {
+	if added != 3 || ignored != 0 || !maps.Equal(versions, collection.Versions{"shopping_lists": version + 1}) {
 		t.Errorf("added %d, ignored %d, versions %v", added, ignored, versions)
 	}
 	var got []string

@@ -1,9 +1,9 @@
-// Tab bar of the application (plan bibliotheque, D11): Planning, Plats, and Courses inactive
-// until the shopping lists, "À venir" (docs/design/README.md).
+// Tab bar of the application (plan bibliotheque, D11): Planning, Plats and Courses, which opens
+// the main shopping list (plan courses, C1; docs/design/README.md).
 import { LitElement, html } from "lit";
 
 /** The active tab. */
-export type Tab = "planning" | "dishes";
+export type Tab = "planning" | "dishes" | "shopping";
 
 const icons = {
   planning: html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>`,
@@ -16,11 +16,13 @@ export class TabBar extends LitElement {
     active: {},
     planningHref: { attribute: false },
     dishesHref: { attribute: false },
+    shoppingHref: { attribute: false },
   };
 
   declare active: Tab;
   declare planningHref: string;
   declare dishesHref: string;
+  declare shoppingHref: string;
 
   protected override createRenderRoot() {
     return this;
@@ -31,7 +33,7 @@ export class TabBar extends LitElement {
     return html`<nav class="tab-bar" aria-label="Onglets">
       <a class="tab" href=${this.planningHref} aria-current=${current("planning") ?? "false"}>${icons.planning}Planning</a>
       <a class="tab" href=${this.dishesHref} aria-current=${current("dishes") ?? "false"}>${icons.dishes}Plats</a>
-      <span class="tab tab--inactive" aria-disabled="true">${icons.shopping}Courses<span class="tab-soon">À venir</span></span>
+      <a class="tab" href=${this.shoppingHref} aria-current=${current("shopping") ?? "false"}>${icons.shopping}Courses</a>
     </nav>`;
   }
 }
