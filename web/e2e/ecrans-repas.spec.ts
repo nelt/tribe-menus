@@ -33,6 +33,9 @@ const serve = (d: { id: string }, servings: number, rank: number, date = "2026-1
 const chiliServed = serve(chili, 3, 3);
 const vegeServed = serve(vege, 1, 4);
 const tuesday = [chiliServed, vegeServed, serve(pesto, 4, 2, "2026-10-06", "lunch")];
+const pestoServed = serve(pesto, 2, 5);
+const threeDishes = [chiliServed, vegeServed, pestoServed];
+const removed = (version: number) => ({ status: 200, body: { versions: { meal_plan: version } } });
 
 const written = (servedDish: unknown, version: number, status = 200) => ({ status, body: { servedDish, versions: { meal_plan: version } } });
 const notFound = { status: 404, body: { error: "not_found" } };
@@ -207,6 +210,44 @@ test("a dish removed, without confirmation; one already removed goes without mes
   await expect(page.getByText("Aucun plat pour ce repas")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(writes(received)).toEqual([`DELETE meal-plan/${chiliServed.id} null`, `DELETE meal-plan/${vegeServed.id} null`]);
+});
+
+test("a slow double touch on a removal button removes one dish only, the next one coming under the finger (R4, recette de v0.3.0)", async ({ page }) => {
+  await mondayMorning(page);
+  const received = await mockMeal(page, { getMealPlan: [pageReply("meal_plan", 7, threeDishes)], removeServedDish: [removed(8), removed(9)] });
+  await page.goto(tuesdayDinner);
+  const middle = page.getByRole("button", { name: "Retirer « Chili végétarien » du repas" });
+  const box = await middle.boundingBox();
+  if (box === null) {
+    throw new Error("no box for the removal button");
+  }
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.click(x, y);
+  await expect(servedNames(page)).toHaveText(["Chili con carne", "Pâtes pesto"]);
+  await expect(page.getByRole("button", { name: "Retirer « Pâtes pesto » du repas" })).toBeDisabled();
+  await page.mouse.click(x, y);
+  await expect(page.getByRole("button", { name: "Retirer « Pâtes pesto » du repas" })).toBeEnabled();
+  await expect(servedNames(page)).toHaveText(["Chili con carne", "Pâtes pesto"]);
+  expect(writes(received)).toEqual([`DELETE meal-plan/${vegeServed.id} null`]);
+  await page.getByRole("button", { name: "Retirer « Pâtes pesto » du repas" }).click();
+  await expect(servedNames(page)).toHaveText(["Chili con carne"]);
+  expect(writes(received)).toEqual([`DELETE meal-plan/${vegeServed.id} null`, `DELETE meal-plan/${pestoServed.id} null`]);
+});
+
+test("a dish removed from the keyboard: the focus does not go to the removal button of the next one (R4, recette de v0.3.0)", async ({ page }) => {
+  await mondayMorning(page);
+  const received = await mockMeal(page, { getMealPlan: [pageReply("meal_plan", 7, threeDishes)], removeServedDish: [removed(8), removed(9)] });
+  await page.goto(tuesdayDinner);
+  await page.getByRole("button", { name: "Retirer « Chili con carne » du repas" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(servedNames(page)).toHaveText(["Chili végétarien", "Pâtes pesto"]);
+  await expect(page.locator(".served-dish-remove:focus")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retirer « Chili végétarien » du repas" })).toBeEnabled();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Retirer « Pâtes pesto » du repas" }).click();
+  await expect(servedNames(page)).toHaveText(["Chili végétarien"]);
+  expect(writes(received)).toEqual([`DELETE meal-plan/${chiliServed.id} null`, `DELETE meal-plan/${pestoServed.id} null`]);
 });
 
 test("without network, nothing changes: « Réseau nécessaire », the servings come back (D13)", async ({ page }) => {
