@@ -124,11 +124,13 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | liste principale | main list | une seule par tribu, C1 |
 | nom (d'une liste) | name | |
 | ajouter les courses des repas | add meal shopping | C4 |
-| période (début, fin) | period (start, end) | bornes incluses, celle de l'ajout des courses |
+| période (début, fin) | period (start, end) | bornes incluses, celle de l'ajout des courses ; 31 jours au plus, Q38 |
+| destination des courses | target list | liste qui reçoit les courses des repas, la liste principale par défaut, C4 |
 | plats servis reçus | received served dishes | plats servis dont une liste a reçu les courses, Q22 |
 | article | item | |
 | article calculé | computed item | |
 | article ajouté | manual item | saisi à la main, hors planning |
+| article sans quantité | unquantified item | calculé d'un ingrédient sans quantité (Q36), ou ajouté sans quantité (C3) |
 | cocher / coché | check / checked | |
 | déclarer les courses faites | check out | retire les articles cochés, C11 |
 | supprimer (une liste) | delete | liste vide et non principale, C12 |
@@ -139,6 +141,8 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | provenance (d'un article calculé) | item source | un plat servi, C5 |
 | quantité apportée | contributed quantity | part d'une provenance, C5 |
 | nombre de plats servis (d'un article) | source count | C5 |
+| choix des listes | list picker | écran des listes de la tribu, d'après `Doux-ListesCourses`, C2 |
+| copie des listes | cached shopping lists | copie de la collection `shopping_lists` dans le navigateur, en mémoire seulement, `shopping-lists.ts` |
 
 ## Quantités
 
