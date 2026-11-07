@@ -34,6 +34,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
 | `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | terminé |
 | `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | en cours |
+| `grands-ecrans` | Tablette (portrait et paysage) et ordinateur : formats, rail de navigation, semainier, deux volets | [`2026-11-07-tablette-et-ordinateur.md`](plans/2026-11-07-tablette-et-ordinateur.md) | brouillon |
 
 ### `production` : application prête pour la production
 
@@ -60,6 +61,10 @@ Terminé le 2026-11-07 : recette sur l'archive de la PR de release (#93), un dé
 ### `courses` : listes de courses
 
 Troisième plan du métier, qui complète l'application viable à montrer : onglet Courses actif sur la liste principale, « Courses », créée dans chaque tribu par la migration `0009` (C1) ; choix des listes : création, renommage, liste principale, suppression d'une liste vide (C2, C12) ; articles à la main, sur le référentiel (C3) ; courses des repas d'une période, calculées par le serveur à partir du planning et de la bibliothèque, plats servis déjà reçus ignorés, ligne dépliable vers ses plats et repas (C4, C5, P2) ; coches et courses faites sur les articles vus cochés (C6, C11). Pas de hors-ligne (D2) : la liste affichée reste lisible, mais cocher demande le réseau. Conception dans `conception/listes-de-courses.md`. Cinq lots (specs et design, listes et articles, courses des repas, onglet Courses et choix des listes, courses des repas à l'écran), puis la release `v0.4.0`. Cadré le 2026-11-06 ; rien des lots B à E n'est fusionné avant l'étiquette `v0.3.0` (D21). *`v0.3.0` posée le 2026-11-07 : le plan peut avancer.* En cours depuis le 2026-11-07 : lot A (specs, design, conception), lot B (listes et articles, domaine et API, migration `0009`), lot C (courses des repas, calcul et API), lot D (onglet Courses et choix des listes), lot E (courses des repas à l'écran, dépliage d'un article).
+
+### `grands-ecrans` : tablette et ordinateur
+
+Adaptation de l'interface, dessinée pour le téléphone, à la tablette en portrait et en paysage et à l'ordinateur : trois formats décidés par la taille de la fenêtre, jamais par l'appareil (compact, moyen, étendu) ; rail de navigation à gauche hors du téléphone ; en étendu, planning en semainier avec le détail d'un repas en panneau, bibliothèque et plat, choix des listes et liste en deux volets ; feuilles en dialogues centrés ; rien de perdu à la rotation ; souris et clavier. Aucun changement du métier ni de l'API. Maquettes d'abord dans Design. Quatre lots (design, specs et ADR ; formats, rail et dialogues ; semainier ; deux volets), puis `v0.5.0`. Brouillon du 2026-11-07, place proposée (D1) : après `courses`, avant `courses-suite`, pour que la sélection d'articles, les membres et le hors-ligne se dessinent d'emblée dans les trois formats.
 
 ## Décisions d'ordonnancement
 
@@ -90,7 +95,7 @@ Le 2026-11-06, avec le développeur, pendant la recette de `planning`.
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **`courses-suite`**, après `courses` (décision du 2026-11-06) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection` ; `v0.5.0`. Nom réservé, plan à cadrer.
+- **`courses-suite`**, après `courses` (décision du 2026-11-06), et après `grands-ecrans` si sa place est confirmée (D1) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection`, dans les trois formats ; `v0.6.0` (`v0.5.0` si `grands-ecrans` passe après). Nom réservé, plan à cadrer.
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes ; consultation et coches des listes de courses sans réseau, rejeu au retour du réseau (C7, Q16, Q18) ; avant d'inviter la famille (décision du 2026-11-06).
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
@@ -112,7 +117,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Durée de HSTS à allonger | `recette` | après quelques semaines sans incident |
 | Avis de sécurité GitHub publié après une version corrective, en plus de l'analyse et de `CHANGELOG.md` | `canal-prive` et `recette`, questions ouvertes | à la première vraie vulnérabilité, ou s'il existe d'autres instances |
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
-| Mise en page d'ordinateur de l'application (navigation latérale, bibliothèque et plat côte à côte) : les écrans restent une colonne de téléphone | recette de `bibliotheque` (2026-11-04) | à maquetter dans Design, puis un plan |
+| Mise en page d'ordinateur de l'application (navigation latérale, bibliothèque et plat côte à côte) : les écrans restent une colonne de téléphone | recette de `bibliotheque` (2026-11-04) | plan `grands-ecrans` (brouillon du 2026-11-07) |
 | Mise à jour automatique de l'application : après un déploiement, un onglet resté ouvert garde l'ancienne version sans prévenir, jusqu'à ce qu'on le recharge | recette de `bibliotheque` (2026-11-05) | avec le service worker (ADR 0004), au plus tard avant d'inviter la famille |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
