@@ -15,12 +15,12 @@ func TestParseListName(t *testing.T) {
 		err            error
 	}{
 		{"kept", "Marché", "Marché", nil},
-		{"spaces reduced", "  Marché   du  samedi ", "Marché du samedi", nil},
+		{"spaces reduced", "  Marché \u00a0 du  samedi ", "Marché du samedi", nil},
 		{"40 characters", strings.Repeat("é", 40), strings.Repeat("é", 40), nil},
 		{"41 characters", strings.Repeat("é", 41), "", ErrListNameTooLong},
 		{"empty", "", "", ErrListNameEmpty},
 		{"spaces only", "   ", "", ErrListNameEmpty},
-		{"zero width space", "​", "", ErrListNameEmpty},
+		{"zero width space", "\u200b", "", ErrListNameEmpty},
 		{"control character", "Marché\a", "", ErrListNameInvalid},
 		{"emoji with joiner", "🧑‍🍳 Drive", "🧑‍🍳 Drive", nil},
 	}

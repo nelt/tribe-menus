@@ -250,7 +250,7 @@ func TestCleanName(t *testing.T) {
 		{"  Marché   du samedi ", "Marché du samedi", 40, NameOK},
 		{"éééé", "éééé", 4, NameOK},
 		{"ééééé", "ééééé", 4, NameLong},
-		{" ​ ", "​", 4, NameEmpty},
+		{" \u200b ", "\u200b", 4, NameEmpty},
 		{"", "", 4, NameEmpty},
 		// A control character comes first, even in a name too long.
 		{"sel\a et poivre", "sel\a et poivre", 4, NameControl},

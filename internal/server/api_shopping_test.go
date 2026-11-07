@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -180,7 +181,7 @@ func TestShoppingErrors(t *testing.T) {
 		{"list name missing", "POST", "shopping-lists", `{}`, 400, `{"error":"list_name_empty"}`},
 		{"list name with a control character", "POST", "shopping-lists", `{"name":"Marché\u0007"}`, 400, `{"error":"list_name_invalid"}`},
 		{"list name of 41 characters", "POST", "shopping-lists", `{"name":"` + strings.Repeat("é", 41) + `"}`, 400, `{"error":"list_name_too_long"}`},
-		{"rename without name", "PUT", lists + marche + "/name", `{"name":"​"}`, 400, `{"error":"list_name_empty"}`},
+		{"rename without name", "PUT", lists + marche + "/name", `{"name":"\u200b"}`, 400, `{"error":"list_name_empty"}`},
 		{"rename an unknown list", "PUT", lists + unknown + "/name", `{"name":"Drive"}`, 404, `{"error":"not_found"}`},
 		{"main list unknown", "PUT", lists + "main", `{"list":"` + unknown + `"}`, 404, `{"error":"not_found"}`},
 		{"main list missing", "PUT", lists + "main", `{}`, 404, `{"error":"not_found"}`},
@@ -241,15 +242,29 @@ func TestShoppingLimits(t *testing.T) {
 		t.Errorf("%d lists on the first page (D4)", len(lists))
 	}
 
+	// 299 items checked, written in the database; the 300th by the API.
+	db, err := f.store.Tribe(context.Background(), "martin")
+	if err != nil {
+		t.Fatal(err)
+	}
 	var ids []string
-	for i := range 300 {
-		rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/items", fmt.Sprintf(`{"ingredient":"article %d"}`, i), alice)
-		wantStatus(t, rec, http.StatusCreated)
-		for _, it := range decode[listWrittenResponse](t, rec).List.Items {
-			if it.Ingredient == fmt.Sprintf("article %d", i) {
-				ids = append(ids, it.ID)
-				wantStatus(t, f.do("PUT", "/tribes/martin/api/shopping-lists/"+courses+"/items/"+it.ID+"/checked", `{"checked":true}`, alice), http.StatusOK)
+	for i := range 299 {
+		ids = append(ids, fmt.Sprintf("%032x", i+1))
+		for _, s := range []string{
+			fmt.Sprintf("INSERT INTO ingredients (id, name, normalized_name) VALUES (%d, 'article %d', 'article %d')", i+1, i, i),
+			fmt.Sprintf("INSERT INTO shopping_items VALUES ('%s', '%s', %d, NULL, NULL, 1, 1)", ids[i], courses, i+1),
+		} {
+			if _, err := db.Exec(s); err != nil {
+				t.Fatalf("%s: %v", s, err)
 			}
+		}
+	}
+	rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/items", `{"ingredient":"article 299"}`, alice)
+	wantStatus(t, rec, http.StatusCreated)
+	for _, it := range decode[listWrittenResponse](t, rec).List.Items {
+		if !it.Checked {
+			ids = append(ids, it.ID)
+			wantStatus(t, f.do("PUT", "/tribes/martin/api/shopping-lists/"+courses+"/items/"+it.ID+"/checked", `{"checked":true}`, alice), http.StatusOK)
 		}
 	}
 	if rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/items", `{"ingredient":"pain"}`, alice); rec.Code != 409 || strings.TrimSpace(rec.Body.String()) != `{"error":"too_many_items"}` {
@@ -262,7 +277,7 @@ func TestShoppingLimits(t *testing.T) {
 	if len(body) <= maxBodyBytes {
 		t.Fatalf("checkout of %d bytes, within the 4 KiB", len(body))
 	}
-	rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/checkout", string(body), alice)
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/checkout", string(body), alice)
 	wantStatus(t, rec, http.StatusOK)
 	if done := decode[checkedOutResponse](t, rec); done.Removed != 300 || len(done.List.Items) != 0 {
 		t.Errorf("checked out %d, %d left", done.Removed, len(done.List.Items))
