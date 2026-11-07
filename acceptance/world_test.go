@@ -70,6 +70,7 @@ type world struct {
 	alerts   alertState
 	kitchen  kitchenState
 	planning planningState
+	shopping shoppingState
 }
 
 // loginState is what the login scenarios remember from step to step.
@@ -119,6 +120,7 @@ func (w *world) registerSteps(sc *godog.ScenarioContext) {
 	w.registerAlertSteps(sc)
 	w.registerDishSteps(sc)
 	w.registerMealPlanSteps(sc)
+	w.registerShoppingSteps(sc)
 }
 
 // reset prepares the world of a new scenario.
