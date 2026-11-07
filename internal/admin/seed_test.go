@@ -11,6 +11,7 @@ import (
 
 	"github.com/nelt/tribe-menus/internal/dish"
 	"github.com/nelt/tribe-menus/internal/mealplan"
+	"github.com/nelt/tribe-menus/internal/shopping"
 	"github.com/nelt/tribe-menus/internal/storage"
 	"github.com/nelt/tribe-menus/internal/tribe"
 )
@@ -95,6 +96,42 @@ func TestSeed(t *testing.T) {
 	if !slices.Equal(got, want) {
 		t.Errorf("week %q, want %q", got, want)
 	}
+
+	// The shopping of the week in « Courses », « pain » and « lessive » added by hand, a list
+	// « Marché » (plan courses, D20).
+	_, lists, err := shopping.NewLists(storage.NewShoppingStore(db)).Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.SortFunc(lists.Items, func(a, b shopping.List) int { return int(a.Rank - b.Rank) })
+	if len(lists.Items) != 2 || !lists.Items[0].Main || lists.Items[0].Name != "Courses" || lists.Items[1].Name != "Marché" {
+		t.Fatalf("lists %+v", lists.Items)
+	}
+	courses, market := lists.Items[0], lists.Items[1]
+	if len(courses.Received) != len(demoWeek) {
+		t.Errorf("%d served dishes received, want the %d of the week", len(courses.Received), len(demoWeek))
+	}
+	items := map[string]string{}
+	for _, it := range courses.Items {
+		q := "-"
+		if it.Quantity != nil {
+			q = it.Quantity.Text() + " " + string(it.Quantity.Unit)
+		}
+		if it.Manual {
+			q += " manual"
+		}
+		items[it.Ingredient] += q + ";"
+	}
+	// Chili con carne for 3 then 4 servings of 4: 875 g of beef; onions 1.5 and 2 of it, 0.5
+	// of the vegetarian chili, 1 of the ratatouille, 6 of the soup.
+	for ingredient, want := range map[string]string{"bœuf haché": "875 g;", "oignon": "11 piece;", "pain": "4 piece;- manual;", "lessive": "- manual;"} {
+		if items[ingredient] != want {
+			t.Errorf("%s: %q, want %q; items %v", ingredient, items[ingredient], want, items)
+		}
+	}
+	if len(market.Items) != 1 || market.Items[0].Ingredient != "fraises" {
+		t.Errorf("Marché %+v", market)
+	}
 }
 
 func TestSeedWithMembers(t *testing.T) {
@@ -127,6 +164,9 @@ func TestSeedWithMembers(t *testing.T) {
 	}
 	if _, page, err := mealplan.NewPlan(storage.NewMealPlanStore(db)).ServedDishes(ctx, ""); err != nil || len(page.Items) != 0 {
 		t.Errorf("meal plan %+v, %v; want none in the tribe of a members file", page.Items, err)
+	}
+	if _, page, err := shopping.NewLists(storage.NewShoppingStore(db)).Page(ctx, ""); err != nil || len(page.Items) != 1 || len(page.Items[0].Items) != 0 {
+		t.Errorf("lists %+v, %v; want « Courses » alone and empty in the tribe of a members file", page.Items, err)
 	}
 	entries, err := s.AuditLog(ctx)
 	if err != nil || len(entries) != 2 || entries[0].Operation != tribe.TribeInitialized || entries[1].Operation != tribe.MemberAdded {
