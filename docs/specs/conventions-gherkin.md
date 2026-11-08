@@ -50,6 +50,7 @@ Les scénarios de `features/` sont exécutés tels quels (ADR 0005). Pour que ch
 - Le format vient du projet Playwright (tags de format ci-dessus) ; un scénario qui dépend d'une taille précise la fixe : `une fenêtre de 1366 px de large sur 520 px de haut`.
 - Rotation : `je tourne la tablette` (largeur et hauteur échangées) ; `une tablette tenue en paysage` dans un scénario `@manuel`.
 - Ce qui se vérifie à l'écran se nomme par ce qu'on voit, sans valeur de mise en page : `les onglets sont en bas de l'écran`, `les onglets sont sur le côté gauche de l'écran`, `la confirmation s'affiche au milieu de l'écran`, `le plat "Chili con carne" s'affiche à côté de la bibliothèque`.
+- La pastille de la tribu n'est pas un onglet : `la pastille de la tribu, à côté des onglets, ouvre la tribu`. La navigation « Onglets » a les mêmes trois liens dans la barre et dans le rail (plan `grands-ecrans`, D4).
 
 ## Quantités
 

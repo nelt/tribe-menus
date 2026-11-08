@@ -21,7 +21,7 @@ Fonctionnalité: Formats d'écran
   Scénario: Sur tablette et ordinateur, les onglets sont sur le côté
     Quand j'ouvre le planning
     Alors les onglets sont sur le côté gauche de l'écran
-    Et la tribu s'ouvre depuis les onglets
+    Et la pastille de la tribu, à côté des onglets, ouvre la tribu
 
   @ENF-03 @ui @etendu
   Scénario: Une fenêtre large mais basse garde la mise en page du téléphone
