@@ -6,7 +6,7 @@
 // places it after data-format (ADR 0030).
 import { LitElement, html, nothing } from "lit";
 import { type Api, type TribeInfo, tribeEvent } from "./api.ts";
-import { symbolURL } from "./identity.ts";
+import { reducedSymbolURL } from "./identity.ts";
 import { type Format, currentFormat, onFormatChange } from "./layout.ts";
 import { tribeChipLabel } from "./templates.ts";
 
@@ -84,7 +84,7 @@ export class TabBar extends LitElement {
   override render() {
     const current = (tab: Tab) => (this.active === tab ? "page" : "false");
     return html`<div class="rail-head">
-        <img class="rail-symbol" src=${symbolURL} alt="" width="44" height="44">
+        <img class="rail-symbol" src=${reducedSymbolURL} alt="" width="44" height="44">
         ${this.tribe === undefined ? nothing : this.#chip(this.tribe)}
       </div>
       <nav class="tab-bar" aria-label="Onglets">

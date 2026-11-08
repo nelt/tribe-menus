@@ -47,3 +47,14 @@ for (const { width, format } of widths) {
     }
   });
 }
+
+test("the rail shows the reduced symbol, made for 48 px and less (docs/design/README.md)", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await mockApi(page, { getSession: [replies.session] });
+  await page.goto("/tribes/demo/");
+  const symbol = page.locator("img.rail-symbol");
+  await expect(symbol).toBeVisible();
+  await expect(symbol).toHaveAttribute("src", /(^|\/)symbole-reduit(-[A-Z0-9]+)?\.svg$/);
+  // The file served, not only its name.
+  await expect.poll(() => symbol.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+});
