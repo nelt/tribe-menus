@@ -2127,6 +2127,10 @@ a.button-secondary {
   padding-right: 6px;
 }
 
+.banner-done--plain {
+  padding-right: 14px;
+}
+
 .banner-done > span {
   flex-grow: 1;
 }

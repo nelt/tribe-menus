@@ -87,7 +87,8 @@ test("a new dish: the size of the tribe, an ingredient chosen, another created, 
   await expect(page.locator(".line-name")).toHaveText(["tomate", "gingembre"]);
 
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
-  await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
+  // In etendu, the dish created opens beside the library (GE-Plats-*).
+  await expect(page).toHaveURL(twoPanes() ? `/tribes/demo/plats/${curry.id}` : /\/tribes\/demo\/plats$/);
   await expect(page.locator(".dish-name")).toHaveText(["Chili con carne", "Curry"]);
   const created = received.filter((r) => r.method === "POST" && r.path === "dishes");
   expect(created.map((r) => r.body)).toEqual([
@@ -170,7 +171,11 @@ test("a draft refused as a duplicate can be removed, an empty one has nothing to
   await expect(page.locator(".line")).toHaveCount(3);
   await expect(page.getByRole("alert")).toHaveCount(0);
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
-  await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
+  // In etendu, the dish stays open beside the library (GE-Plats-*).
+  await expect(page).toHaveURL(twoPanes() ? `/tribes/demo/plats/${chili.id}` : /\/tribes\/demo\/plats$/);
+  if (twoPanes()) {
+    await expect(page.getByRole("status").filter({ hasText: "Plat enregistré." })).toBeVisible();
+  }
   const updates = received.filter((r) => r.method === "PUT");
   expect(updates.map((r) => (r.body as { ingredients: unknown[] }).ingredients.length)).toEqual([3]);
 });
@@ -246,7 +251,8 @@ test("a draft without visible character: nothing to create, and dropped as an em
   await combobox.fill("\u200b");
   await expect(page.getByRole("listbox", { name: "Ingrédients proposés" }).getByRole("option")).toHaveCount(0);
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
-  await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
+  // In etendu, the dish saved stays open beside the library (GE-Plats-*).
+  await expect(page).toHaveURL(twoPanes() ? /\/tribes\/demo\/plats\/[^/]+$/ : /\/tribes\/demo\/plats$/);
   const created = received.filter((r) => r.method === "POST" && r.path === "dishes");
   // The tribe size of the mock (4) is read: the servings are sent (D16).
   expect(created.map((r) => r.body)).toEqual([{ name: "Soupe", servings: 4, ingredients: [] }]);
@@ -277,7 +283,8 @@ test("changing a dish: its form, then the change sent on its revision", async ({
   await page.getByLabel("Quantité de sel").fill("1");
   await page.getByLabel("Unité de sel").selectOption("pinch");
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
-  await expect(page).toHaveURL(/\/tribes\/demo\/plats$/);
+  // In etendu, the dish saved stays open beside the library (GE-Plats-*).
+  await expect(page).toHaveURL(twoPanes() ? /\/tribes\/demo\/plats\/[^/]+$/ : /\/tribes\/demo\/plats$/);
   await expect(page.getByRole("link", { name: /Chili con carne/ })).toContainText("pour 5");
   const updates = received.filter((r) => r.method === "PUT");
   expect(updates).toEqual([

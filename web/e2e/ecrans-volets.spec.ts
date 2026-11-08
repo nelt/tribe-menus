@@ -4,7 +4,7 @@
 // browsers, in the projects of the phones; the scenarios of formats-ecran.feature prove the
 // rest against the real server.
 import { expect, type Page, test } from "@playwright/test";
-import { type Received, mockApi, pageReply, replies } from "./api-mock.ts";
+import { type Received, mockApi, notModified, pageReply, replies } from "./api-mock.ts";
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 const lines = Array.from({ length: 24 }, (_, i) => ({ name: `ingrédient ${i + 1}`, quantity: "1", unit: "piece" }));
@@ -161,16 +161,53 @@ test("turning the tablet keeps the dish, its input and its scroll; the library c
   await expect(line).toBeInViewport();
 });
 
-test("a dish saved in etendu: back to the invitation, the library beside", async ({ page }) => {
+test("a dish saved in etendu stays open, with « Plat enregistré. », until it changes again (GE-Plats-*)", async ({ page }) => {
+  const created = { id: id(3), name: "Curry", color: "#B0306A", servings: 4, revision: 1, ingredients: [] };
+  await mockApi(page, {
+    getSession: [replies.session],
+    getTribe: [replies.tribe],
+    // Then unchanged: the copy keeps what was saved.
+    getDishes: [pageReply("dishes", 3, [chili, vege]), notModified("dishes", 5)],
+    updateDish: [{ status: 200, body: { dish: { ...vege, name: "Chili vert", revision: 2 }, versions: { dishes: 4 } } }],
+    createDish: [{ status: 201, body: { dish: created, versions: { dishes: 5 } } }],
+  });
+  const saved = page.getByRole("status").filter({ hasText: "Plat enregistré." });
+  await page.goto(`/tribes/demo/plats/${vege.id}`);
+  await dishName(page).fill("Chili vert");
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  await expect(saved).toBeVisible();
+  await expect(page).toHaveURL(`/tribes/demo/plats/${vege.id}`);
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Chili vert");
+  await expect(card(page, "Chili vert")).toHaveAttribute("aria-current", "page");
+  await page.screenshot({ path: "test-results/volets-plat-enregistre.png" });
+  // Saved, the dish holds no input to lose.
+  await card(page, "Chili con carne").click();
+  await expect(abandon(page)).toHaveCount(0);
+  await card(page, "Chili vert").click();
+  await expect(saved).toHaveCount(0);
+
+  // A dish created opens at its path; the message goes at the first change.
+  await library(page).getByRole("link", { name: "Nouveau", exact: true }).click();
+  await dishName(page).fill("Curry");
+  await page.getByRole("button", { name: "Enregistrer le plat" }).click();
+  await expect(page).toHaveURL(`/tribes/demo/plats/${created.id}`);
+  await expect(saved).toBeVisible();
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Curry");
+  await expect(card(page, "Curry")).toHaveAttribute("aria-current", "page");
+  await dishName(page).fill("Curry vert");
+  await expect(saved).toHaveCount(0);
+});
+
+test("a dish saved on a phone: back to the library", async ({ page }) => {
+  await page.setViewportSize(phone);
   await mockApi(page, {
     getSession: [replies.session],
     getDishes: [pageReply("dishes", 3, [chili, vege])],
-    updateDish: [{ status: 200, body: { dish: { ...vege, name: "Chili vert", revision: 2 }, versions: { dishes: 4, ingredients: 3 } } }],
+    updateDish: [{ status: 200, body: { dish: { ...vege, name: "Chili vert", revision: 2 }, versions: { dishes: 4 } } }],
   });
   await page.goto(`/tribes/demo/plats/${vege.id}`);
   await dishName(page).fill("Chili vert");
   await page.getByRole("button", { name: "Enregistrer le plat" }).click();
   await expect(page).toHaveURL("/tribes/demo/plats");
-  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Choisissez un plat ou créez-en un");
-  await expect(abandon(page)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Plats", level: 1 })).toBeVisible();
 });

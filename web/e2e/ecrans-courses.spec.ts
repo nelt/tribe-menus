@@ -71,7 +71,7 @@ test("no inline style: the CSP of the application refuses them", async ({ page }
   page.on("console", (m) => {
     if (m.text().includes("Content Security Policy")) refused.push(m.text());
   });
-  await mockLists(page, [courses, marche], { getShoppingLists: [{ ...pageReply("shopping_lists", 7, [courses, marche]), delayMs: 300 }] });
+  await mockLists(page, [courses, marche], { getShoppingLists: [{ ...pageReply("shopping_lists", 7, [courses, marche]), delayMs: 1000 }] });
   await page.goto("/tribes/demo/courses");
   await expect(page.getByRole("status", { name: "Chargement de la liste" })).toBeVisible();
   await expect(page.getByText("2 sur 5 articles")).toBeVisible();

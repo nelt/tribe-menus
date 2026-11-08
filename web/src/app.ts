@@ -69,6 +69,8 @@ export class App extends LitElement {
   #lastList: Page = pages.shopping;
   /** What the shopping list shown tells: a list deleted in between (D11); cleared at each page. */
   #notice: Notice | undefined;
+  /** The dish created beside the library, opened with « Plat enregistré. »; cleared at each page. */
+  #created: string | undefined;
 
   constructor() {
     super();
@@ -335,7 +337,8 @@ export class App extends LitElement {
             .dishId=${detail.id}
             .libraryHref=${this.#router.href(pages.dishes)}
             .beside=${beside}
-            @saved=${() => this.#router.navigate(pages.dishes, { replace: true })}
+            .created=${detail.id !== undefined && detail.id === this.#created}
+            @saved=${this.#dishSaved}
           ></mt-dish-screen>`,
         );
       case "list":
@@ -454,6 +457,7 @@ export class App extends LitElement {
   #show(page: Page) {
     this.page = page;
     this.#notice = undefined;
+    this.#created = undefined;
     if (page.name === "planning") {
       this.#lastPlanning = page;
     }
@@ -498,6 +502,23 @@ export class App extends LitElement {
     }
     return { name: "shopping", list: id };
   }
+
+  /**
+   * A dish saved: back to the library; beside it, in etendu, the dish stays open (GE-Plats-*),
+   * a dish created opening at its own path with « Plat enregistré. ».
+   */
+  readonly #dishSaved = (e: CustomEvent<Dish>) => {
+    if (this.format !== "etendu") {
+      this.#router.navigate(pages.dishes, { replace: true });
+      return;
+    }
+    if (this.page.name === "new-dish") {
+      this.#router.navigate({ name: "dish", id: e.detail.id }, { replace: true });
+      // After the navigation, which clears it.
+      this.#created = e.detail.id;
+      this.requestUpdate();
+    }
+  };
 
   /** The meal shopping added: back to the target list, which tells what was added (C4, Q22). */
   readonly #mealShoppingAdded = (e: MealShoppingAddedEvent) => {

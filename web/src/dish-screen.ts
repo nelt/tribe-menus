@@ -55,6 +55,8 @@ export class DishScreen extends LitElement {
     dishId: { attribute: false },
     libraryHref: { attribute: false },
     beside: { attribute: false },
+    created: { attribute: false },
+    saved: { state: true },
     load: { state: true },
     name: { state: true },
     servings: { state: true },
@@ -70,6 +72,10 @@ export class DishScreen extends LitElement {
   declare libraryHref: string;
   /** Beside the library, in etendu: no link back to it (plan grands-ecrans, D5). */
   beside = false;
+  /** The dish has just been created beside the library: it opens with « Plat enregistré. ». */
+  created = false;
+  /** The dish has just been saved beside the library: « Plat enregistré. » (GE-Plats-*). */
+  saved = false;
   load: Load = "loading";
   name = "";
   /** Undefined until the size of the tribe is read, for a creation (D16). */
@@ -112,6 +118,16 @@ export class DishScreen extends LitElement {
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.library.removeEventListener("change", this.#onChange);
+  }
+
+  protected override willUpdate(changed: PropertyValues<this>) {
+    if (changed.has("created") && this.created) {
+      this.saved = true;
+    }
+    // « Plat enregistré. » goes at the first change of the form.
+    if (this.saved && (changed.has("name") || changed.has("servings") || changed.has("lines")) && this.unsaved) {
+      this.saved = false;
+    }
   }
 
   protected override updated(changed: PropertyValues<this>) {
@@ -233,6 +249,11 @@ export class DishScreen extends LitElement {
   #form() {
     const nameError = this.#errorOf(undefined);
     return html`${this.conflict ? conflictBanner() : nothing}
+      ${this.saved
+        ? html`<div class="banner-done banner-done--plain" role="status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span>Plat enregistré.</span>
+          </div>`
+        : nothing}
       ${this.error === "network" ? alertMessage("dish-error", networkNeededMessage) : nothing}
       <form class="dish-form" novalidate @submit=${this.#submit}>
         <label class="field">Nom du plat
@@ -425,6 +446,7 @@ export class DishScreen extends LitElement {
     const lines = sent.map((l) => ({ name: l.sentName, quantity: l.quantity, unit: trimSpaces(l.quantity) === "" ? "" : l.unit }));
     // The banner of a crossed change goes at the next save (docs/design/README.md).
     this.conflict = false;
+    this.saved = false;
     const refused = checkDish({ name: this.name, lines });
     if (refused !== undefined) {
       this.error = refused;
@@ -441,7 +463,12 @@ export class DishScreen extends LitElement {
       switch (result.kind) {
         case "saved":
           this.error = undefined;
-          this.dispatchEvent(new Event("saved", { bubbles: true, composed: true }));
+          // Beside the library, the dish stays open (GE-Plats-*): the form shows it as saved.
+          if (this.beside && this.#dish !== undefined) {
+            this.#fill(result.dish);
+            this.saved = true;
+          }
+          this.dispatchEvent(new CustomEvent<Dish>("saved", { detail: result.dish, bubbles: true, composed: true }));
           return;
         case "changed":
           this.error = undefined;
