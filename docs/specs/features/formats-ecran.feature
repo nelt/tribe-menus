@@ -37,12 +37,13 @@ Fonctionnalité: Formats d'écran
 
   @ENF-03 @ui @etendu
   Scénario: Le semainier défile vers les jours qui ne tiennent pas
-    Étant donné une fenêtre de 1180 px de large sur 820 px de haut
+    Étant donné une fenêtre de 1024 px de large sur 768 px de haut
     Quand j'ouvre le planning
-    Alors le dimanche 11 octobre 2026 n'est pas visible
-    Quand je fais défiler le semainier vers les jours suivants
-    Alors le dimanche 11 octobre 2026 est visible
-    Et le semainier est calé sur le début d'un jour
+    Alors le dimanche 11 octobre 2026 n'est pas entièrement visible
+    Quand je fais défiler le semainier d'un jour vers les jours suivants
+    Alors le mardi 6 octobre 2026 est le premier jour visible, entièrement
+    Quand je fais défiler le semainier jusqu'au dernier jour
+    Alors le dimanche 11 octobre 2026 est entièrement visible
 
   @ENF-03 @ui @etendu
   Scénario: Sur un grand écran, les 7 jours tiennent sans défilement
