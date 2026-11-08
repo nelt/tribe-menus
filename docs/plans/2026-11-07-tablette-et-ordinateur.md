@@ -152,6 +152,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 
 - **Revue #104, point 3, tranché le 2026-11-08** (D12, reporté dans l'ADR 0030, points 2 et 3) : D11 prévoit, si un navigateur bascule à l'ouverture du clavier virtuel, de figer le format tant qu'un champ a le focus ; or D12 faisait décider la mise en page par des requêtes de média du CSS, que TypeScript ne peut pas suspendre. Option relevée par la revue, retenue : `layout.ts` pose un attribut sur la racine (`data-format="etendu"`), que le CSS lit au lieu de requêtes de média ; le format peut alors être figé, le test de concordance des seuils devient inutile, et c'est compatible avec la CSP (un attribut, pas un style).
 - **Revue #104, point 4 (lot B, étape 10)** : la nouvelle cible `make e2e-formats` entre dans la liste des cibles de `CLAUDE.md` et dans `make help` (ADR 0010).
+- **Revue #106, point 6 (lot B, étape 10)** : rien ne prouve encore l'absence de défilement horizontal de 320 à 2560 px (ENF-03) : aucun projet ne descend sous 390 px ni ne dépasse 1440 px. Un test d'écran parcourt quelques largeurs (320, 720, 1023, 1024, 2560) et vérifie `scrollWidth <= clientWidth` sur chaque écran.
 
 ## Questions ouvertes
 
