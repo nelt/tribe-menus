@@ -2277,6 +2277,16 @@ dialog.sheet::backdrop {
   background: var(--color-overlay);
 }
 
+/* Moyen and etendu (plan grands-ecrans, D7): the same dialog, centred, rounded on its four
+   corners, 440 px wide at most. */
+:root:is([data-format="moyen"], [data-format="etendu"]) dialog.sheet {
+  width: calc(100% - 32px);
+  max-width: 440px;
+  max-height: 85vh;
+  margin: auto;
+  border-radius: var(--radius-sheet);
+}
+
 .sheet-head {
   display: flex;
   align-items: center;
