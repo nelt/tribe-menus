@@ -116,17 +116,21 @@ export class App extends LitElement {
     if (this.session === undefined || this.page.name === "login") {
       return html`<mt-login .api=${this.#api} @signed-in=${this.#signedIn}></mt-login>`;
     }
-    // The screens opened from a tab, with their link back, have no tab bar, as their mock-ups.
+    // The screens opened from a tab, with their link back, have no tab bar in compact, as their
+    // mock-ups; the rail stays in moyen and etendu (plan grands-ecrans, D4). The navigation
+    // comes first, for the order of tabulation (D10), and the screen always keeps the same
+    // place, never created again by a change of format (D8; ADR 0030, point 4).
     const subScreen = this.page.name === "new-dish" || this.page.name === "dish" || this.page.name === "tribe" || this.page.name === "meal-shopping";
-    return html`${this.#screen(this.page)}
-      ${subScreen
-        ? nothing
-        : html`<mt-tab-bar
-            active=${tabOf(this.page)}
-            .planningHref=${this.#router.href(pages.planning)}
-            .dishesHref=${this.#router.href(pages.dishes)}
-            .shoppingHref=${this.#router.href(pages.shopping)}
-          ></mt-tab-bar>`}`;
+    return html`<mt-tab-bar
+        .active=${this.page.name === "tribe" ? undefined : tabOf(this.page)}
+        ?sub=${subScreen}
+        .api=${this.#api}
+        .planningHref=${this.#router.href(pages.planning)}
+        .dishesHref=${this.#router.href(pages.dishes)}
+        .shoppingHref=${this.#router.href(pages.shopping)}
+        .tribeHref=${this.#router.href(pages.tribe)}
+      ></mt-tab-bar>
+      <div class="app-content">${this.#screen(this.page)}</div>`;
   }
 
   #screen(page: Page) {

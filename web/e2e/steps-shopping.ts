@@ -9,6 +9,7 @@ interface ApiList {
   id: string;
   name: string;
   main: boolean;
+  items: { id: string; ingredient: string }[];
 }
 
 async function lists(world: World): Promise<ApiList[]> {
@@ -112,6 +113,21 @@ step(/la liste "([^"]*)" contenant l'article ajouté "([^"]*)"/, async (world, n
   const list = await ensureList(world, name ?? "");
   const tribe = await world.tribe();
   await tribe.apiOk("je", "POST", `shopping-lists/${list.id}/items`, { ingredient });
+});
+
+// C6, C11
+step(/"([^"]*)" est coché dans la liste "([^"]*)"/, async (world, ingredient, name) => {
+  const list = (await lists(world)).find((l) => l.name === name);
+  const item = list?.items.find((i) => i.ingredient === ingredient);
+  if (list === undefined || item === undefined) {
+    throw new Error(`no item "${ingredient}" in the list "${name}"`);
+  }
+  const tribe = await world.tribe();
+  await tribe.apiOk("je", "PUT", `shopping-lists/${list.id}/items/${item.id}/checked`, { checked: true });
+});
+
+step(/je demande à terminer les courses/, async (world) => {
+  await world.page.getByRole("button", { name: "Courses faites" }).click();
 });
 
 // C4

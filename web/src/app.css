@@ -36,6 +36,7 @@
   --color-success-border: #a9d3b1;
   --color-success-text: #2f7a3e;
   --color-overlay: rgba(34, 25, 58, 0.45);
+  --color-hover: #f6f3f9;
 
   /* Dish colours: strong hue (text), and the same lightened by 60 % towards white (border) */
   --color-dish-1: #c2502e;
@@ -253,6 +254,39 @@ input {
   color: var(--color-text-muted);
 }
 
+/* With a mouse (plan grands-ecrans, D10), in every format: what is touched shows a pointer,
+   and its border or its background is slightly strengthened under it. Never on a touch screen,
+   where a hover would stay after the tap. */
+@media (hover: hover) and (pointer: fine) {
+  .tab,
+  .rail-tribe,
+  .tribe-chip,
+  .dish-card,
+  a.meal-tile,
+  .list-card-link,
+  .range-arrow:enabled {
+    cursor: pointer;
+  }
+
+  .tab:not([aria-current="page"]):hover,
+  .range-arrow:enabled:hover,
+  a.meal-tile:hover {
+    background: var(--color-hover);
+  }
+
+  .dish-card:hover,
+  .list-card:not(.list-card--main):has(.list-card-link:hover) {
+    border-color: var(--color-dashed);
+    background: var(--color-hover);
+  }
+
+  .list-card--main:has(.list-card-link:hover),
+  .rail-tribe:hover,
+  .tribe-chip:hover {
+    background: var(--color-hover);
+  }
+}
+
 /* Login (maquettes identite/Connexion, ConnexionBureau, Code) */
 .login {
   display: flex;
@@ -438,53 +472,52 @@ input {
   opacity: 1;
 }
 
-/* Desktop: the brand on the left, the form on the right */
-@media (min-width: 960px) {
-  .login {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 40px 0;
-    max-width: none;
-    padding: 0;
-  }
+/* Format etendu (ConnexionBureau; ADR 0030, point 3): the brand on the left, the form on
+   the right. */
+:root[data-format="etendu"] .login {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 40px 0;
+  max-width: none;
+  padding: 0;
+}
 
-  .login-brand {
-    grid-row: 1 / 3;
-    justify-content: center;
-    gap: 18px;
-    border-right: var(--border-thin) solid var(--color-border);
-  }
+:root[data-format="etendu"] .login-brand {
+  grid-row: 1 / 3;
+  justify-content: center;
+  gap: 18px;
+  border-right: var(--border-thin) solid var(--color-border);
+}
 
-  .login-symbol,
-  .login--code .login-symbol {
-    width: 360px;
-    height: 360px;
-  }
+:root[data-format="etendu"] .login-symbol,
+:root[data-format="etendu"] .login--code .login-symbol {
+  width: 360px;
+  height: 360px;
+}
 
-  .login-logotype img,
-  .login--code .login-logotype img {
-    width: 420px;
-  }
+:root[data-format="etendu"] .login-logotype img,
+:root[data-format="etendu"] .login--code .login-logotype img {
+  width: 420px;
+}
 
-  .login-tagline {
-    font-size: 18px;
-  }
+:root[data-format="etendu"] .login-tagline {
+  font-size: 18px;
+}
 
-  .login-main,
-  .login .app-footer {
-    grid-column: 2;
-    padding: 0 clamp(40px, 9vw, 120px);
-  }
+:root[data-format="etendu"] .login-main,
+:root[data-format="etendu"] .login .app-footer {
+  grid-column: 2;
+  padding: 0 clamp(40px, 9vw, 120px);
+}
 
-  .login-form {
-    max-width: 400px;
-  }
+:root[data-format="etendu"] .login-form {
+  max-width: 400px;
+}
 
-  .login .app-footer {
-    align-self: start;
-    justify-content: flex-start;
-  }
+:root[data-format="etendu"] .login .app-footer {
+  align-self: start;
+  justify-content: flex-start;
 }
 
 /* Loading (maquette identite/Chargement) */
@@ -604,9 +637,10 @@ input {
   text-overflow: ellipsis;
 }
 
-/* Tab bar (plan bibliotheque, D11). */
+/* Tab bar (plan bibliotheque, D11), a rail in moyen and etendu (plan grands-ecrans, D4). */
 :root {
   --tab-bar-height: 84px;
+  --rail-width: 0px;
 }
 
 .tab-bar {
@@ -644,6 +678,128 @@ input {
   font-weight: 800;
 }
 
+/* In compact, the symbol and the chip of the tribe stay in the planning (Doux-Main), and the
+   screens opened from a tab have no bar. */
+.rail-head,
+:root[data-format="compact"] mt-tab-bar[sub] {
+  display: none;
+}
+
+/* Formats moyen and etendu (docs/design/README.md, « Formats d'écran »): a rail of 96 px on
+   the left, full height; the screens to its right, without bar at the bottom. */
+:root:is([data-format="moyen"], [data-format="etendu"]) {
+  --tab-bar-height: 0px;
+  --rail-width: 96px;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) mt-tab-bar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: var(--rail-width);
+  box-sizing: border-box;
+  padding: 18px 10px;
+  overflow-y: auto;
+  border-right: var(--border-thin) solid var(--color-border);
+  background: var(--color-background);
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .rail-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The separator between the chip and the tabs. */
+:root:is([data-format="moyen"], [data-format="etendu"]) .rail-head::after {
+  content: "";
+  width: 44px;
+  height: var(--border-thin);
+  margin: 6px 0;
+  background: var(--color-border);
+}
+
+.rail-symbol {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.rail-tribe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 76px;
+  min-height: 56px;
+  box-sizing: border-box;
+  padding: 6px 2px;
+  border: var(--border-thin) solid var(--color-lunch-border);
+  border-radius: var(--radius-field);
+  color: var(--color-lunch-text);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.rail-tribe:hover {
+  color: var(--color-lunch-text);
+}
+
+.rail-tribe-members {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.rail-tribe-name {
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .tab-bar {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .tab {
+  gap: 4px;
+  width: 76px;
+  height: 64px;
+}
+
+/* The chip of the tribe is in the rail. */
+:root:is([data-format="moyen"], [data-format="etendu"]) .planning .tribe-chip {
+  display: none;
+}
+
+/* The screens, to the right of the rail; in etendu, the content keeps to 1440 px and is
+   centred in the room left by the rail. */
+:root:is([data-format="moyen"], [data-format="etendu"]) .app-content {
+  margin-left: var(--rail-width);
+}
+
+:root[data-format="etendu"] .app-content {
+  max-width: 1440px;
+  margin-left: calc(var(--rail-width) + max(0px, (100% - var(--rail-width) - 1440px) / 2));
+}
+
 /* A screen above the tab bar. */
 .screen {
   display: flex;
@@ -653,6 +809,14 @@ input {
   box-sizing: border-box;
   margin: 0 auto;
   padding: 24px 20px calc(var(--tab-bar-height) + 16px);
+}
+
+/* Moyen and etendu, until the two panes and the planning by week (lots C and D of the plan
+   grands-ecrans): a column of 680 px at most, centred to the right of the rail. */
+:root:is([data-format="moyen"], [data-format="etendu"]) .screen {
+  max-width: 680px;
+  padding-right: 32px;
+  padding-left: 32px;
 }
 
 .screen-title {
@@ -1184,6 +1348,11 @@ input {
 .save-bar .button-primary {
   max-width: 440px;
   margin: 0 auto;
+}
+
+/* To the right of the rail, at the bottom of the column of the dish. */
+:root:is([data-format="moyen"], [data-format="etendu"]) .save-bar {
+  left: var(--rail-width);
 }
 
 /* Screen Tribu (Doux-Tribu), reduced to the size of the tribe (plan bibliotheque, D3). */
@@ -2140,6 +2309,16 @@ dialog.sheet[open] {
 
 dialog.sheet::backdrop {
   background: var(--color-overlay);
+}
+
+/* Moyen and etendu (plan grands-ecrans, D7): the same dialog, centred, rounded on its four
+   corners, 440 px wide at most. */
+:root:is([data-format="moyen"], [data-format="etendu"]) dialog.sheet {
+  width: calc(100% - 32px);
+  max-width: 440px;
+  max-height: 85vh;
+  margin: auto;
+  border-radius: var(--radius-sheet);
 }
 
 .sheet-head {

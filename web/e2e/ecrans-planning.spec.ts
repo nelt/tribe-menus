@@ -218,7 +218,7 @@ test("a meal tile opens its meal; « Planning » goes back to the same range (D1
   await tile(page, "Mardi 13 oct., soir").click();
   await expect(page).toHaveURL(/\/tribes\/demo\/repas\/2026-10-13\/soir$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Mardi 13 octobre\s*Soir/);
-  await page.getByRole("link", { name: "Planning", exact: true }).first().click();
+  await page.getByRole("main").getByRole("link", { name: "Planning", exact: true }).click();
   await expect(page).toHaveURL(/\?du=2026-10-12$/);
   await expect(title(page)).toHaveText("12 – 18 octobre");
 });

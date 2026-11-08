@@ -1,8 +1,9 @@
 # Scénarios pas encore implémentés (plan du 2026-10-03, D2), un par ligne :
 # « <fichier>: <titre du scénario> ». make acceptance échoue si un scénario hors
 # de cette liste échoue, et si un scénario de la liste passe : elle ne peut que se vider.
-# Les scénarios @ui sont jugés par make e2e (Playwright), les autres par make acceptance
-# (godog), selon la même règle (ADR 0028, point 4).
+# Les scénarios @ui sont jugés par make e2e et make e2e-formats (Playwright), d'après tous
+# les projets de leurs formats (ADR 0030, point 8), les autres par make acceptance (godog),
+# selon la même règle (ADR 0028, point 4).
 
 administration.feature: Anonymiser un membre révoqué
 administration.feature: Débloquer une tribu sans membre actif
@@ -30,15 +31,10 @@ formats-ecran.feature: Le planning montre la semaine en semainier
 formats-ecran.feature: Le semainier défile vers les jours qui ne tiennent pas
 formats-ecran.feature: Ouvrir un autre plat pendant une modification demande confirmation
 formats-ecran.feature: Quitter une modification non enregistrée demande confirmation
-formats-ecran.feature: Sur tablette et ordinateur, les onglets sont sur le côté
-formats-ecran.feature: Sur tablette et ordinateur, une confirmation s'affiche au milieu de l'écran
-formats-ecran.feature: Sur téléphone, les onglets sont en bas de l'écran
 formats-ecran.feature: Sur téléphone, quitter une modification ne demande pas de confirmation
-formats-ecran.feature: Sur téléphone, une confirmation s'affiche en bas de l'écran
 formats-ecran.feature: Sur un grand écran, les 7 jours tiennent sans défilement
 formats-ecran.feature: Tourner la tablette ne perd pas la saisie d'un article
 formats-ecran.feature: Tourner la tablette ne perd pas la saisie d'un plat
-formats-ecran.feature: Une fenêtre large mais basse garde la mise en page du téléphone
 formats-ecran.feature: Une saisie revenue à ce qui est enregistré ne demande pas de confirmation
 formats-ecran.feature: Échap ferme le panneau d'un repas
 liste-courses.feature: Ajouter un article sans réseau

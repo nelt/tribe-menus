@@ -8,7 +8,8 @@
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"src/**/*.test.ts\" \"e2e/**/*.test.ts\" \"scripts/**/*.test.mjs\"",
-    "e2e": "go run ../internal/tools/uiexport -features ../docs/specs/features -out .e2e-tools/scenarios.json && go build -o .e2e-tools/e2efixture ../internal/tools/e2efixture && playwright test"
+    "e2e": "go run ../internal/tools/uiexport -features ../docs/specs/features -out .e2e-tools/scenarios.json && go build -o .e2e-tools/e2efixture ../internal/tools/e2efixture && playwright test",
+    "e2e-formats": "E2E_ALL_FORMATS=1 npm run e2e"
   },
   "dependencies": {
     "lit": "3.3.3"

@@ -3,6 +3,12 @@
 import { expect, test } from "@playwright/test";
 import { mockApi, replies } from "./api-mock.ts";
 
+// The bar at the bottom, and the chip in the planning: the format compact only (ADR 0030,
+// point 6); the rail is proved by formats-ecran.feature.
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.metadata["format"] !== "compact", "the tab bar of the format compact");
+});
+
 test("the tab bar: Planning, Plats and Courses", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session] });
   await page.goto("/tribes/demo/");
@@ -24,9 +30,10 @@ test("the tab bar: Planning, Plats and Courses", async ({ page }) => {
   await expect(tabs.getByRole("link", { name: "Planning" })).toHaveAttribute("aria-current", "page");
 });
 
-test("wide, the tabs keep to the column (recette du plan bibliotheque)", async ({ page }) => {
+test("wide but low, the tabs keep to the column (recette du plan bibliotheque)", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session] });
-  await page.setViewportSize({ width: 1600, height: 900 });
+  // Wide, but too low for the rail (plan grands-ecrans, D3).
+  await page.setViewportSize({ width: 1600, height: 520 });
   await page.goto("/tribes/demo/");
   const tabs = page.getByRole("navigation", { name: "Onglets" });
   const planning = await tabs.getByRole("link", { name: "Planning" }).boundingBox();

@@ -23,7 +23,7 @@ import {
   weekdayName,
 } from "./meal-plan.ts";
 import type { Planning } from "./planning.ts";
-import { alertMessage } from "./templates.ts";
+import { alertMessage, tribeChipLabel } from "./templates.ts";
 
 const mealtimeLabels = { lunch: "Midi", dinner: "Soir" } as const;
 
@@ -187,8 +187,7 @@ export class PlanningScreen extends LitElement {
 
 /** The chip of the tribe (Doux-Main): its name and its number of active members. */
 function tribeChip(tribe: TribeInfo, href: string) {
-  const members = tribe.activeMembers > 1 ? `${tribe.activeMembers} membres` : `${tribe.activeMembers} membre`;
-  return html`<a class="tribe-chip" href=${href} aria-label=${`Tribu ${tribe.name}, ${members}`}>
+  return html`<a class="tribe-chip" href=${href} aria-label=${tribeChipLabel(tribe)}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 20a6 6 0 0 1 12 0"></path><circle cx="17" cy="9" r="2.6"></circle><path d="M16 14.2a5 5 0 0 1 5.5 5.8"></path></svg>
     <span class="tribe-chip-name">${tribe.name}</span> · ${tribe.activeMembers}
   </a>`;

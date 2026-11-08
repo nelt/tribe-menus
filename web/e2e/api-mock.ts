@@ -1,6 +1,6 @@
 // Simulated responses of the API (D15), defined once, after the contract of the notes of
 // lot B in docs/plans/2026-10-03-socle-donnees-et-connexion.md.
-import type { Page, Route } from "@playwright/test";
+import { type Page, type Route, test } from "@playwright/test";
 
 /** A simulated response, or a network failure, possibly after a delay. */
 export interface Reply {
@@ -169,4 +169,12 @@ export function pageReply(collection: string, version: number, items: unknown[],
 /** The version of a collection has not changed. */
 export function notModified(collection: string, version: number): Reply {
   return { status: 304, headers: { ETag: `"${collection}-${version}"` } };
+}
+
+/**
+ * The number of navigations « Onglets » on a screen opened from a tab, with its link back:
+ * none in compact, as its mock-up; the rail stays in moyen and etendu (plan grands-ecrans, D4).
+ */
+export function tabsOnSubScreen(): number {
+  return test.info().project.metadata["format"] === "compact" ? 0 : 1;
 }

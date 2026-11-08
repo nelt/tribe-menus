@@ -136,7 +136,7 @@ test("a suggestion touched is served at once, for the size of the tribe, and no 
   await expect(page.getByRole("alert")).toHaveCount(0);
 
   // Back on the planning: the tile shows it; the copy took the version written.
-  await page.getByRole("link", { name: "Planning", exact: true }).first().click();
+  await page.getByRole("main").getByRole("link", { name: "Planning", exact: true }).click();
   await expect(page.getByRole("link", { name: /^Mardi 6 oct\., soir : / }).locator(".dish-pill-name")).toHaveText(["Chili con carne", "Chili végétarien", "Ratatouille"]);
   await expect.poll(() => received.filter((r) => r.method === "GET" && r.path === "meal-plan").map((r) => r.ifNoneMatch ?? "")).toEqual(["", '"meal_plan-8"']);
 });
