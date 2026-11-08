@@ -463,6 +463,9 @@ export class App extends LitElement {
     this.page = page;
     this.#notice = undefined;
     this.#created = undefined;
+    // A navigation not guarded, the browser back (D9): the confirmation waiting is for another page.
+    this.querySelector<HTMLDialogElement>("dialog.abandon")?.close();
+    this.abandoning = undefined;
     if (page.name === "planning") {
       this.#lastPlanning = page;
     }

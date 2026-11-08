@@ -149,6 +149,19 @@ test("an item typed, then a new list created: « Abandonner la modification ? »
   await expect(picker(page).locator('[aria-current="page"] .list-card-name')).toHaveText("Courses");
 });
 
+test("the browser back while « Abandonner la modification ? » is open closes it (review of PR #109, point 2)", async ({ page }) => {
+  await mock(page);
+  await page.goto("/tribes/demo/plats");
+  await card(page, "Chili con carne").click();
+  await dishName(page).fill("Chili du dimanche");
+  await card(page, "Chili végétarien").click();
+  await expect(abandon(page)).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL("/tribes/demo/plats");
+  await expect(abandon(page)).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Choisissez un plat ou créez-en un");
+});
+
 test("on a phone, an input is left without confirmation (D9)", async ({ page }) => {
   await page.setViewportSize(phone);
   await mock(page);
