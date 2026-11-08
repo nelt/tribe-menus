@@ -128,10 +128,6 @@ export class App extends LitElement {
   }
 
   /**
-   * In etendu, the focus goes to the panel of a meal opened from the planning, and back to the
-   * tile of the meal once it is closed (D10).
-   */
-  /**
    * How far the detail is scrolled, just before a change of format, kept for the new one (D8):
    * the window scrolls with one pane, the detail on its own beside the pane of a list.
    */
@@ -145,6 +141,12 @@ export class App extends LitElement {
     return this.querySelector<HTMLElement>(`.app-content > [${paneAttribute}="detail"]`);
   }
 
+  /**
+   * After a render: the detail scrolled back where it was before a change of format (D8); the
+   * dialog « Abandonner la modification ? » opened when a navigation waits for it (D9); in
+   * etendu, the focus to the panel of a meal opened from the planning, and back to the tile of
+   * the meal once it is closed (D10).
+   */
   protected override updated(changed: PropertyValues<this>) {
     // The detail scrolls on its own beside the pane of a list, with the window otherwise.
     const scroll = this.#detailScroll;
