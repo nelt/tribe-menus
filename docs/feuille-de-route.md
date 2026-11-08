@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-11-07
+- **Mise à jour** : 2026-11-08
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -34,7 +34,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
 | `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | terminé |
 | `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | terminé |
-| `grands-ecrans` | Tablette (portrait et paysage) et ordinateur : formats, rail de navigation, semainier, deux volets | [`2026-11-07-tablette-et-ordinateur.md`](plans/2026-11-07-tablette-et-ordinateur.md) | brouillon |
+| `grands-ecrans` | Tablette (portrait et paysage) et ordinateur : formats, rail de navigation, semainier, deux volets | [`2026-11-07-tablette-et-ordinateur.md`](plans/2026-11-07-tablette-et-ordinateur.md) | en cours |
 
 ### `production` : application prête pour la production
 
@@ -66,7 +66,7 @@ Terminé le 2026-11-08 : recette sur l'archive de la PR de release (#102), sans 
 
 ### `grands-ecrans` : tablette et ordinateur
 
-Adaptation de l'interface, dessinée pour le téléphone, à la tablette en portrait et en paysage et à l'ordinateur : trois formats décidés par la taille de la fenêtre, jamais par l'appareil (compact, moyen, étendu) ; rail de navigation à gauche hors du téléphone ; en étendu, planning en semainier avec le détail d'un repas en panneau, bibliothèque et plat, choix des listes et liste en deux volets ; feuilles en dialogues centrés ; rien de perdu à la rotation ; souris et clavier. Aucun changement du métier ni de l'API. Maquettes d'abord dans Design. Quatre lots (design, specs et ADR ; formats, rail et dialogues ; semainier ; deux volets), puis `v0.5.0`. Brouillon du 2026-11-07, placé (D1, décision du développeur) après `courses`, avant `courses-suite`, pour que la sélection d'articles, les membres et le hors-ligne se dessinent d'emblée dans les trois formats.
+Adaptation de l'interface, dessinée pour le téléphone, à la tablette en portrait et en paysage et à l'ordinateur : trois formats décidés par la taille de la fenêtre, jamais par l'appareil (compact, moyen, étendu) ; rail de navigation à gauche hors du téléphone ; en étendu, planning en semainier avec le détail d'un repas en panneau, bibliothèque et plat, choix des listes et liste en deux volets ; feuilles en dialogues centrés ; rien de perdu à la rotation ; souris et clavier. Aucun changement du métier ni de l'API. Maquettes d'abord dans Design. Quatre lots (design, specs et ADR ; formats, rail et dialogues ; semainier ; deux volets), puis `v0.5.0`. Brouillon du 2026-11-07, en cours depuis le 2026-11-08 (décisions confirmées), placé (D1, décision du développeur) après `courses`, avant `courses-suite`, pour que la sélection d'articles, les membres et le hors-ligne se dessinent d'emblée dans les trois formats.
 
 ## Décisions d'ordonnancement
 
@@ -123,7 +123,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Durée de HSTS à allonger | `recette` | après quelques semaines sans incident |
 | Avis de sécurité GitHub publié après une version corrective, en plus de l'analyse et de `CHANGELOG.md` | `canal-prive` et `recette`, questions ouvertes | à la première vraie vulnérabilité, ou s'il existe d'autres instances |
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
-| Mise en page d'ordinateur de l'application (navigation latérale, bibliothèque et plat côte à côte) : les écrans restent une colonne de téléphone | recette de `bibliotheque` (2026-11-04) | plan `grands-ecrans` (brouillon du 2026-11-07) |
+| Mise en page d'ordinateur de l'application (navigation latérale, bibliothèque et plat côte à côte) : les écrans restent une colonne de téléphone | recette de `bibliotheque` (2026-11-04) | plan `grands-ecrans` (en cours) |
 | Mise à jour automatique de l'application : après un déploiement, un onglet resté ouvert garde l'ancienne version sans prévenir, jusqu'à ce qu'on le recharge | recette de `bibliotheque` (2026-11-05) | avec le service worker (ADR 0004), au plus tard avant d'inviter la famille |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |

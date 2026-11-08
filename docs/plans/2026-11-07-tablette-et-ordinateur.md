@@ -2,7 +2,7 @@
 
 - **Nom** : `grands-ecrans`
 - **Date** : 2026-11-07
-- **Statut** : brouillon. Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions proposées, à confirmer à la revue de ce plan. Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
+- **Statut** : en cours (lot A). Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
 
 ## Objectif
 
@@ -30,14 +30,14 @@ Aucun changement du métier, des données ni de l'API.
 - **Après `courses`** : rien des lots B à D n'est fusionné avant l'étiquette `v0.4.0` (comme `courses`, D21) ; la PR de ce plan et le lot A, documentation seule, peuvent l'être avant. Les archives de PR de ce plan ne vont en recette qu'une fois la recette de `courses` close.
 - **Où se fait le travail** : le lot A (maquettes dans Design, specs, ADR) depuis une session cloud ; les lots B à D dans le Dev Container.
 - **Git** : une branche `feature/…` et une PR par lot ; un commit par étape, `git commit -s` ; une ligne de `CHANGELOG.md` par PR, citant le lot (`grands-ecrans/B`) ; `make ci` avant de pousser.
-- **Aucune dépendance nouvelle**, ni en Go ni en npm : CSS (grilles, requêtes de média) et `matchMedia`.
+- **Aucune dépendance nouvelle**, ni en Go ni en npm : CSS (grilles, sélecteurs d'attribut) et `matchMedia`.
 - **Pas de détection de l'appareil** : l'iPad se présente comme un Mac (point reporté « iPad vu comme un ordinateur », EF-04), une fenêtre d'ordinateur peut être étroite, une tablette Android peut avoir une souris. La mise en page suit la fenêtre (D2).
 - **Les écrans à venir** (sélection d'articles de `courses-suite`, membres et appareils, bandeau hors ligne) se dessinent ensuite dans les trois formats (D13) : c'est la raison de placer ce plan avant eux (D1).
 - **Recette** : le développeur recette sur Android (Chrome) et sur un ordinateur Ubuntu (Chrome), sans appareil Apple. Le développeur a une tablette Android (2026-11-07), pour le paysage tactile, la rotation et le clavier virtuel ; l'iPad n'est prouvé que par WebKit sous Playwright, comme l'iPhone.
 
 ## Décisions
 
-Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D1, D6, D9 et D14, prises par le développeur le 2026-11-07.
+Proposées le 2026-11-07 et confirmées par le développeur le 2026-11-08, sauf D1, D6, D9 et D14, prises par le développeur le 2026-11-07 ; D12 modifiée le 2026-11-08.
 
 - **D1. Place dans la feuille de route** : après `courses` (`v0.4.0`), avant `courses-suite`, qui passe en `v0.6.0` (décision du développeur, 2026-11-07).
   - *Pour* : chaque écran construit avant ce plan sera repris ; `courses-suite` remplace la barre d'onglets par les actions de sélection (`Doux-CoursesSelection`), précisément ce que ce plan déplace ; les membres et appareils n'existent pas encore à l'écran ; l'application « viable à montrer » se montre aussi sur un ordinateur ; les écrans des courses sont frais.
@@ -63,8 +63,8 @@ Proposées le 2026-11-07, à confirmer à la revue de ce plan, sauf D1, D6, D9 e
 - **D8. Rien ne se perd à la rotation** : passer d'un format à l'autre garde l'écran affiché, le chemin, la saisie en cours (plat, article, nom d'une liste, période des courses des repas) et la position de défilement du volet de détail. Moyen technique (ADR, D12) : le volet de détail occupe toujours la même place dans le rendu ; le volet de liste est ajouté à côté, ou masqué par le CSS, mais l'élément du détail n'est jamais recréé par un changement de format.
 - **D9. Saisie non enregistrée, en moyen et en étendu : confirmation avant de l'abandonner** (décision du développeur, 2026-11-07, qui remplace celle de la même date, « comme sur téléphone »). Quand un formulaire contient une saisie non enregistrée (un plat créé ou modifié, un article à la main, le nom d'une liste), toute navigation dans l'application qui la ferait perdre (autre élément du volet de liste, rail, lien « Plats », « Nouveau ») ouvre un dialogue de confirmation : « Abandonner la modification ? », « Ce que vous avez saisi sera perdu. », « Abandonner » en aplat, « Continuer la modification ». Une saisie identique à ce qui est enregistré n'est pas une saisie à confirmer. En compact, rien ne change : pas de confirmation. Les courses des repas n'en ont pas (une période se refait d'un geste). Le format compte au moment de la navigation : une saisie commencée sur téléphone puis tournée en paysage sur une tablette est protégée. Seules les navigations dans l'application sont gardées : ni le retour arrière du navigateur ni la fermeture de l'onglet ne demandent de confirmation (décision du développeur, 2026-11-07).
 - **D10. Interaction à la souris et au clavier** : survol (liserés et fonds légèrement renforcés) et curseur sur ce qui se touche, seulement sous `(hover: hover) and (pointer: fine)` ; focus visible partout (`:focus-visible`) ; ordre de tabulation rail puis volet de liste puis détail ; Échap ferme un dialogue ou le panneau d'un repas. Pas de raccourcis clavier dans ce plan.
-- **D11. Clavier virtuel** : sur une tablette en paysage, il ne doit pas faire basculer la mise en page en compact. Les navigateurs visés redimensionnent la zone visible, pas la fenêtre de mise en page (comportement par défaut de Safari et de Chrome sur Android) ; on le vérifie en recette, et le bouton fixé en bas d'un formulaire (« Enregistrer le plat ») reste visible au-dessus du clavier. Si un navigateur bascule, le format est figé tant qu'un champ a le focus.
-- **D12. Un ADR « Mises en page selon la taille de la fenêtre »** (0030) : D2, D3, D7, D8 ; seuils en constantes TypeScript (`layout.ts`) et en requêtes de média du CSS, un test vérifiant qu'ils concordent (la CSP interdit tout style en ligne, les requêtes de média ne lisent pas de variables CSS) ; un composant de mise en page qui place rail, volet de liste et détail ; projets Playwright par format.
+- **D11. Clavier virtuel** : sur une tablette en paysage, il ne doit pas faire basculer la mise en page en compact. Les navigateurs visés redimensionnent la zone visible, pas la fenêtre de mise en page (comportement par défaut de Safari et de Chrome sur Android) ; on le vérifie en recette, et le bouton fixé en bas d'un formulaire (« Enregistrer le plat ») reste visible au-dessus du clavier. Si un navigateur bascule, le format est figé tant qu'un champ a le focus (possible parce que le format est un attribut posé par `layout.ts`, D12).
+- **D12. Un ADR « Mises en page selon la taille de la fenêtre »** (0030) : D2, D3, D7, D8 ; **le format est calculé par `layout.ts`** (seuils en constantes TypeScript, suivi par `matchMedia`) **et posé en attribut sur la racine** (`data-format="compact|moyen|etendu"`), que le CSS de l'application lit par des sélecteurs d'attribut au lieu de requêtes de média : une seule source des seuils, un format qu'on peut figer (D11), compatible avec la CSP (un attribut, pas un style en ligne) ; l'attribut est posé avant le premier rendu ; la connexion et le site public gardent leurs requêtes de média (décision du développeur, 2026-11-08, revue #104, point 3, qui remplace des requêtes de média dans le CSS et un test de concordance des seuils) ; un composant de mise en page qui place rail, volet de liste et détail ; projets Playwright par format.
 - **D13. Les plans suivants dessinent chaque écran dans les trois formats.** Le principe 4 du design devient : « Usage principal sur téléphone ; tablette et ordinateur adaptés » ; les maquettes de l'application gardent le 390 × 844, et ajoutent un réglage `format` (compact, moyen, étendu) ou une maquette par grand format, selon ce que Design permet (lot A).
 - **D14. Preuves** : une exigence **ENF-03** et un fichier `formats-ecran.feature`, quelques scénarios `@ui` (semainier et son défilement, deux volets, rotation sans perte de saisie, dialogue centré, confirmation avant d'abandonner une saisie, D9). Exécution en deux niveaux, pour garder la CI d'une PR courte (décision du développeur, 2026-11-07) :
   - **sur chaque PR** (`make e2e`, job `ci`) : tous les scénarios `@ui` et tests d'écran sous les téléphones (Pixel 7, iPhone 15), comme aujourd'hui, plus les seuls scénarios de `formats-ecran.feature` sous la tablette (portrait et paysage) et l'ordinateur ; quelques minutes de plus ;
@@ -97,13 +97,13 @@ Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 - [ ] **2. Report dans le dépôt** : maquettes dans `docs/design/maquettes/` ; `docs/design/README.md` : principe 4 (D13), section « Formats d'écran » (formats et seuils, rail, deux volets, semainier, dialogues, survol et focus), navigation accordée ; canevas de référence refait (V4).
 - [ ] **3. ENF-03** dans `exigences-non-fonctionnelles.md` et `features/formats-ecran.feature` (D14), selon `conventions-gherkin.md` ; tags de format `@compact`, `@moyen`, `@etendu` ajoutés à `conventions-gherkin.md` (sans tag, tous les formats ; à poser quand le plan d'une story fixe le niveau de preuve, comme `@ui`) et posés sur les scénarios de `formats-ecran.feature` ; titres dans `acceptance/pending.txt`.
 - [ ] **4. ADR 0030** « Mises en page selon la taille de la fenêtre » (D12).
-- [ ] **5. Feuille de route** : plan « en cours ».
+- [x] **5. Feuille de route** : plan « en cours » (2026-11-08).
 
 ### Lot B : formats, navigation et dialogues (`feature/formats-et-rail`)
 
 Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas encore de deux volets ni de semainier.
 
-- [ ] **6. `web/src/layout.ts`**, module pur testé par `node:test` : formats et seuils (D3), avec le test de concordance avec `app.css` (D12) ; suivi du format par `matchMedia`.
+- [ ] **6. `web/src/layout.ts`**, module pur testé par `node:test` : formats et seuils (D3) ; suivi du format par `matchMedia` et attribut `data-format` sur la racine, figé tant qu'un champ a le focus si le clavier virtuel fait basculer (D11, D12).
 - [ ] **7. Composant de mise en page** : rail ou barre d'onglets selon le format (D4), pastille de la tribu dans le rail, emplacement fixe du détail (D8) ; colonne des écrans élargie en moyen.
 - [ ] **8. Dialogues centrés** en moyen et en étendu (D7).
 - [ ] **9. Souris et clavier** : survol, curseur, `:focus-visible`, ordre de tabulation, Échap (D10).
@@ -150,7 +150,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
 
 ## Notes d'exécution
 
-- **Revue #104, point 3 (à trancher dans l'ADR 0030, lot A, étape 4)** : D11 prévoit, si un navigateur bascule à l'ouverture du clavier virtuel, de figer le format tant qu'un champ a le focus ; or D12 fait décider la mise en page par des requêtes de média du CSS, que TypeScript ne peut pas suspendre. Option relevée par la revue : `layout.ts` pose un attribut sur la racine (`data-format="etendu"`), que le CSS lit au lieu de requêtes de média ; le format peut alors être figé, le test de concordance des seuils devient inutile, et c'est compatible avec la CSP (un attribut, pas un style).
+- **Revue #104, point 3, tranché le 2026-11-08** (D12, à reporter dans l'ADR 0030) : D11 prévoit, si un navigateur bascule à l'ouverture du clavier virtuel, de figer le format tant qu'un champ a le focus ; or D12 faisait décider la mise en page par des requêtes de média du CSS, que TypeScript ne peut pas suspendre. Option relevée par la revue, retenue : `layout.ts` pose un attribut sur la racine (`data-format="etendu"`), que le CSS lit au lieu de requêtes de média ; le format peut alors être figé, le test de concordance des seuils devient inutile, et c'est compatible avec la CSP (un attribut, pas un style).
 - **Revue #104, point 4 (lot B, étape 10)** : la nouvelle cible `make e2e-formats` entre dans la liste des cibles de `CLAUDE.md` et dans `make help` (ADR 0010).
 
 ## Questions ouvertes
