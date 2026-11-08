@@ -57,18 +57,38 @@ test("the panel closed by its cross: the days kept where they were scrolled, the
 
 test("the veil and Échap close the panel; uncovered, the planning checks the copies (D6, D15)", async ({ page }) => {
   const received = await mockWeek(page);
+  const checks = () => received.filter((r) => r.method === "GET" && r.path === "meal-plan").length;
+  let answered = 0;
+  page.on("requestfinished", (r) => {
+    if (r.method() === "GET" && new URL(r.url()).pathname.endsWith("/meal-plan")) {
+      answered++;
+    }
+  });
+  // Each screen checks the copies once shown, and a check still running is shared, without a
+  // request of its own (collections.ts): each check ends before the next screen.
+  const settled = async () => {
+    await expect.poll(() => answered).toBe(checks());
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  };
   await page.goto("/tribes/demo/repas/2026-10-06/soir");
   await expect(page.getByRole("heading", { name: "Plats servis" })).toBeVisible();
+  await settled();
+  let before = checks();
   await page.locator(".meal-overlay").click({ position: { x: 20, y: 20 } });
   await expect(page).toHaveURL(/\/tribes\/demo\/$/);
   await expect(page.locator("mt-meal-screen")).toHaveCount(0);
+  await expect.poll(checks).toBeGreaterThan(before);
 
+  await settled();
+  before = checks();
   await page.getByRole("link", { name: /^Mardi 6 oct\., soir : / }).click();
   await expect(page.getByRole("heading", { name: "Plats servis" })).toBeVisible();
-  const checks = received.filter((r) => r.method === "GET" && r.path === "meal-plan").length;
+  await expect.poll(checks).toBeGreaterThan(before);
+  await settled();
+  before = checks();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/tribes\/demo\/$/);
-  await expect.poll(() => received.filter((r) => r.method === "GET" && r.path === "meal-plan").length).toBeGreaterThan(checks);
+  await expect.poll(checks).toBeGreaterThan(before);
 });
 
 test("the button that disappears with the last day hands the focus to the other one (D10, review of PR #108, point 1)", async ({ page }) => {
