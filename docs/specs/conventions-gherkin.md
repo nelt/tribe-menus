@@ -13,6 +13,7 @@ Les scénarios de `features/` sont exécutés tels quels (ADR 0005). Pour que ch
 - Chaque scénario porte l'identifiant de sa story ou de son exigence (`@C2`, `@ENF-01`, `@EF-10`) ; plusieurs si besoin.
 - `@ui` : prouvé dans le navigateur par Playwright, à partir du `.feature` (ADR 0028), et ignoré par godog ; posé quand le plan d'une story fixe le niveau de preuve de ses scénarios (ADR 0005, point 2).
 - `@manuel` : vérifié à la main en recette avant chaque release, exclu de `make ci` (ADR 0005, point 4).
+- `@compact`, `@moyen`, `@etendu` : formats d'écran dans lesquels un scénario `@ui` vaut (ENF-03, plan `grands-ecrans`, D14) ; un scénario en porte un ou plusieurs, et **sans tag de format, il vaut pour tous les formats**. Le scénario n'est lancé que dans les projets Playwright de ses formats. Posés, comme `@ui`, quand le plan d'une story fixe le niveau de preuve de ses scénarios.
 
 ## Personnes
 
@@ -43,6 +44,12 @@ Les scénarios de `features/` sont exécutés tels quels (ADR 0005). Pour que ch
 - Ajout des courses : `j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"`.
 - Article calculé posé directement : `la liste "Courses" contenant 500 g de "bœuf haché" provenant du "Chili con carne" du mardi 6 octobre 2026 au soir`.
 - Coche : `"pain" est coché dans la liste "Courses"` (état), `je coche "pain" dans la liste "Courses"` (action), `"pain" apparaît comme coché dans la liste "Courses"` (vérification).
+
+## Formats d'écran
+
+- Le format vient du projet Playwright (tags de format ci-dessus) ; un scénario qui dépend d'une taille précise la fixe : `une fenêtre de 1366 px de large sur 520 px de haut`.
+- Rotation : `je tourne la tablette` (largeur et hauteur échangées) ; `une tablette tenue en paysage` dans un scénario `@manuel`.
+- Ce qui se vérifie à l'écran se nomme par ce qu'on voit, sans valeur de mise en page : `les onglets sont en bas de l'écran`, `les onglets sont sur le côté gauche de l'écran`, `la confirmation s'affiche au milieu de l'écran`, `le plat "Chili con carne" s'affiche à côté de la bibliothèque`.
 
 ## Quantités
 

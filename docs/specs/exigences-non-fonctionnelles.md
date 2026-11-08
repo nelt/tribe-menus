@@ -67,3 +67,29 @@ Les données d'une tribu ne sont jamais accessibles depuis une autre tribu, ni e
 ### Hors périmètre
 
 - Consultation ou administration transverse des tribus depuis l'interface : l'administration passe par les scripts serveur.
+
+## ENF-03. Utilisable sur téléphone, tablette et ordinateur
+
+- **Statut** : retenue (2026-11-08, plan `grands-ecrans`)
+- **Décision d'architecture** : [ADR 0030](../adr/0030-mises-en-page-selon-la-taille-de-la-fenetre.md)
+- **Critères d'acceptation** : `features/formats-ecran.feature`
+
+### Exigence
+
+L'application, connexion comprise, s'utilise sur un téléphone, une tablette (en portrait comme en paysage) et un ordinateur, au doigt, à la souris et au clavier, sans défilement horizontal de la page ni zone vide démesurée, de 320 px à 2560 px de large.
+
+### Modalités retenues
+
+- **La fenêtre décide, jamais l'appareil** : trois formats, d'après la largeur et la hauteur de la fenêtre. **Compact** : moins de 720 px de large, ou moins de 560 px de haut (téléphone, en portrait et en paysage). **Moyen** : de 720 à 1023 px de large, 560 px de haut au moins (tablette en portrait, fenêtre étroite). **Étendu** : 1024 px de large et 560 px de haut au moins (tablette en paysage, ordinateur). Aucune détection de l'appareil : un iPad se présente comme un Mac.
+- **Ce que montre chaque format** (`docs/design/README.md`, « Formats d'écran ») : en compact, la mise en page du téléphone, inchangée ; en moyen et en étendu, un rail de navigation à gauche et des dialogues centrés à la place des feuilles ; en étendu, le planning en semainier avec le détail d'un repas en panneau, la bibliothèque et le plat, le choix des listes et la liste en deux volets.
+- **Rien ne se perd en changeant de format** (rotation d'une tablette, fenêtre redimensionnée) : l'écran, son chemin, la saisie en cours et la position du volet de détail restent.
+- **Confirmation avant d'abandonner une saisie**, en moyen et en étendu : une navigation dans l'application qui ferait perdre une saisie non enregistrée (plat, article à la main, nom d'une liste) demande « Abandonner la modification ? ». Ni le retour arrière du navigateur ni la fermeture de l'onglet ne la demandent ; en compact, aucune confirmation.
+- **Clavier virtuel** : il ne fait pas basculer une tablette en paysage dans le format compact.
+- **Interaction** : cibles de 44 px dans tous les formats ; survol et curseur seulement avec une souris (`(hover: hover) and (pointer: fine)`) ; focus visible ; Échap ferme un dialogue ou le panneau d'un repas.
+- **Vérification** : les scénarios `@ui` de `formats-ecran.feature`, avec leurs tags de format, sur chaque PR dans les projets Playwright de la tablette (portrait et paysage) et de l'ordinateur ; tous les scénarios `@ui` dans tous les formats sur la PR de release et chaque nuit (plan `grands-ecrans`, D14) ; le clavier virtuel en recette, sur une tablette Android.
+
+### Hors périmètre
+
+- Raccourcis clavier.
+- Mise en page propre à l'impression.
+- iPad et Safari sur Mac ne sont prouvés que par WebKit sous Playwright, faute d'appareil Apple en recette.
