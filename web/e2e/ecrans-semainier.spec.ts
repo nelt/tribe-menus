@@ -5,7 +5,7 @@
 // prove the rest against the real server.
 import { expect, type Page, test } from "@playwright/test";
 import { type Received, mockApi, pageReply, replies } from "./api-mock.ts";
-import { scrollEnded } from "./scroll.ts";
+import { scrolledBy } from "./scroll.ts";
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 const chili = { id: id(1), name: "Chili con carne", color: "#C2502E", servings: 4, revision: 1, ingredients: [] };
@@ -98,14 +98,12 @@ test("the button that disappears with the last day hands the focus to the other 
   const previous = page.getByRole("button", { name: "Jours précédents" });
   await next.focus();
   for (let i = 0; i < 7 && (await next.count()) > 0; i++) {
-    await page.keyboard.press("Enter");
-    await scrollEnded(days(page));
+    await scrolledBy(days(page), () => page.keyboard.press("Enter"));
   }
   await expect(next).toHaveCount(0);
   await expect(previous).toBeFocused();
   for (let i = 0; i < 7 && (await previous.count()) > 0; i++) {
-    await page.keyboard.press("Enter");
-    await scrollEnded(days(page));
+    await scrolledBy(days(page), () => page.keyboard.press("Enter"));
   }
   await expect(previous).toHaveCount(0);
   await expect(next).toBeFocused();
