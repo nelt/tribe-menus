@@ -1,11 +1,15 @@
 // The real login journey, against the server with the demonstration tribe (D14, D15):
 // Chromium only, WebKit refusing the Secure cookies on http://localhost, prefixed __Host- or
-// not (ADR 0024). Two code requests
-// per run, under the limit of 10 per hour for an IP address.
+// not (ADR 0024); and under the phone only, the screens of the login being proved in every
+// format by ecrans-connexion.spec.ts (plan grands-ecrans, D14). Two code requests per run,
+// under the limit of 10 per hour for an IP address.
 import { readFile } from "node:fs/promises";
 import { type Page, expect, test } from "@playwright/test";
 
 test.skip(({ browserName }) => browserName !== "chromium", "WebKit refuses the Secure cookie on http://localhost (D14)");
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.metadata["format"] !== "compact", "the code requests of the hour are counted: one project");
+});
 
 // Written by the server of the tests (playwright.config.ts), one JSON object per line (D6).
 const mailFile = ".e2e-data/mails.jsonl";

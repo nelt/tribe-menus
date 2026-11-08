@@ -75,6 +75,20 @@ test("Api.openSession sends the code and whether the app is installed", async ()
   assert.deepEqual(requests, [{ url: "api/sessions", method: "POST", body: { email: "alice@exemple.fr", code: "12345678", installedApp: true } }]);
 });
 
+test("Api.getTribe: asked twice meanwhile, a single request; once answered, a new one", async () => {
+  const tribe = { name: "Les Démo", size: 4, activeMembers: 2 };
+  const { api, requests } = apiWith(async () => jsonResponse(200, tribe));
+  const told: unknown[] = [];
+  api.addEventListener("tribe", (e) => told.push((e as CustomEvent).detail));
+  const [a, b] = await Promise.all([api.getTribe(), api.getTribe()]);
+  assert.deepEqual(a, { kind: "ok", value: tribe });
+  assert.deepEqual(b, a);
+  assert.equal(requests.length, 1);
+  await api.getTribe();
+  assert.equal(requests.length, 2);
+  assert.deepEqual(told, [tribe, tribe], "each tribe read is told once");
+});
+
 test("Api.getSession: a body that is not a session is a network error", async () => {
   const { api } = apiWith(async () => jsonResponse(200, { tribe: {} }));
   assert.deepEqual(await api.getSession(), { kind: "network-error" });

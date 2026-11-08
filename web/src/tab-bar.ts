@@ -5,8 +5,9 @@
 // which opens the screen Tribu (docs/design/README.md, « Formats d'écran »). The stylesheet
 // places it after data-format (ADR 0030).
 import { LitElement, html, nothing } from "lit";
-import type { Api, TribeInfo } from "./api.ts";
+import { type Api, type TribeInfo, tribeEvent } from "./api.ts";
 import { symbolURL } from "./identity.ts";
+import { type Format, currentFormat, onFormatChange } from "./layout.ts";
 import { tribeChipLabel } from "./templates.ts";
 
 /** The active tab. */
@@ -42,9 +43,14 @@ export class TabBar extends LitElement {
   declare tribeHref: string;
   /** The tribe, for the chip of the rail; undefined until read, or if it cannot be. */
   tribe: TribeInfo | undefined = undefined;
+  readonly #onTribe = (e: Event) => {
+    this.tribe = (e as CustomEvent<TribeInfo>).detail;
+  };
+  /** Stops following the format. */
+  #unfollow: (() => void) | undefined;
   readonly #onVisibility = () => {
-    if (document.visibilityState === "visible" && this.tribe === undefined) {
-      void this.#readTribe();
+    if (document.visibilityState === "visible") {
+      this.#readTribeForRail(currentFormat());
     }
   };
 
@@ -55,18 +61,23 @@ export class TabBar extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     document.addEventListener("visibilitychange", this.#onVisibility);
-    void this.#readTribe();
+    this.api.addEventListener(tribeEvent, this.#onTribe);
+    this.#unfollow = onFormatChange((format) => this.#readTribeForRail(format));
+    this.#readTribeForRail(currentFormat());
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     document.removeEventListener("visibilitychange", this.#onVisibility);
+    this.api.removeEventListener(tribeEvent, this.#onTribe);
+    this.#unfollow?.();
   }
 
-  async #readTribe() {
-    const outcome = await this.api.getTribe();
-    if (outcome.kind === "ok") {
-      this.tribe = outcome.value;
+  /** Reads the tribe once the rail shows its chip: not in compact, where the planning has it. */
+  #readTribeForRail(format: Format) {
+    if (format !== "compact" && this.tribe === undefined) {
+      // What is read comes back by tribeEvent.
+      void this.api.getTribe();
     }
   }
 

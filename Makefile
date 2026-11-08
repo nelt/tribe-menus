@@ -6,10 +6,10 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev seed generate lint test acceptance e2e vuln build dist probe ci
+.PHONY: help tools dev seed generate lint test acceptance e2e e2e-formats vuln build dist probe ci
 
 help: ## List the targets
-	@grep -E '^[a-z0-9]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
+	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-12s %s\n", $$1, $$2}'
 
 tools: ## Install dependencies, Playwright browsers and their system libraries, shellcheck if missing (idempotent)
 	go mod download
@@ -43,8 +43,11 @@ test: ## Go and TypeScript unit tests
 acceptance: ## Gherkin scenarios against the API (godog), compared with acceptance/pending.txt
 	go test ./acceptance -count=1 -acceptance
 
-e2e: ## Playwright scenarios
+e2e: ## Playwright: all under the phones, formats-ecran.feature under the tablets and the computer
 	cd web && npm run e2e
+
+e2e-formats: ## Playwright: everything in every format (pull request of a release, every night)
+	cd web && npm run e2e-formats
 
 vuln: ## Known vulnerabilities in Go and npm dependencies
 	go tool govulncheck ./...

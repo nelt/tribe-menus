@@ -3,7 +3,7 @@
 // Playwright on Monday 5 October 2026. The computation and its refusals are proved against
 // the real server by godog; C4 and C5 on screen by their scenarios @ui (scenarios.spec.ts).
 import { expect, type Page, test } from "@playwright/test";
-import { type Received, mockApi, pageReply, replies } from "./api-mock.ts";
+import { type Received, mockApi, pageReply, replies, tabsOnSubScreen } from "./api-mock.ts";
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 
@@ -53,7 +53,7 @@ test("from a list: the default period, the points, the summary, the served dishe
   await page.getByRole("link", { name: "Ajouter les courses des repas" }).click();
   await expect(page).toHaveURL(`/tribes/demo/courses/repas?liste=${courses.id}`);
   await expect(page.getByRole("heading", { name: "Courses des repas", level: 1 })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Onglets" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Onglets" })).toHaveCount(tabsOnSubScreen());
   await expect(field(page, "Du")).toHaveText(/mar\. 6 oct\./);
   await expect(field(page, "Au")).toHaveText(/lun\. 12 oct\./);
   await expect(field(page, "Du")).toHaveAttribute("aria-pressed", "true");

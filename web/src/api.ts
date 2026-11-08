@@ -285,11 +285,20 @@ export interface ApiOptions {
   timeoutMs: number;
 }
 
-/** Api calls the API of the tribe of the page. */
-export class Api {
+/** The event of an Api at each tribe read or changed: its detail is the tribe (TribeInfo). */
+export const tribeEvent = "tribe";
+
+/**
+ * Api calls the API of the tribe of the page. It tells each tribe read or changed by a
+ * tribeEvent: the chip of the rail follows what a screen read (plan grands-ecrans, D4).
+ */
+export class Api extends EventTarget {
   readonly #options: ApiOptions;
+  /** The reading of the tribe in progress, shared by those who ask for it meanwhile. */
+  #tribeReading: Promise<Outcome<TribeInfo>> | undefined;
 
   constructor(options: ApiOptions) {
+    super();
     this.#options = options;
   }
 
@@ -313,24 +322,36 @@ export class Api {
     return toVoid(await this.#call("DELETE", "api/session"));
   }
 
-  /** The tribe: its name, its size and its number of active members. */
-  async getTribe(): Promise<Outcome<TribeInfo>> {
-    const outcome = await this.#call("GET", "api/tribe");
-    if (outcome.kind !== "ok") {
-      return outcome;
-    }
-    const tribe = tribeInfoOf(outcome.value);
-    return tribe === undefined ? { kind: "network-error" } : { kind: "ok", value: tribe };
+  /**
+   * The tribe: its name, its size and its number of active members. Asked again while a
+   * reading is in progress, its outcome is shared: the rail and the screen shown ask for it
+   * together (plan grands-ecrans, D4), with a single request.
+   */
+  getTribe(): Promise<Outcome<TribeInfo>> {
+    this.#tribeReading ??= this.#readTribe().finally(() => (this.#tribeReading = undefined));
+    return this.#tribeReading;
+  }
+
+  async #readTribe(): Promise<Outcome<TribeInfo>> {
+    return this.#tellTribe(await this.#call("GET", "api/tribe"));
   }
 
   /** Sets the size of the tribe (T3), from 1 to 50. */
   async setTribeSize(size: number): Promise<Outcome<TribeInfo>> {
-    const outcome = await this.#call("PUT", "api/tribe/size", { size });
+    return this.#tellTribe(await this.#call("PUT", "api/tribe/size", { size }));
+  }
+
+  /** The tribe of a response, told to the listeners of tribeEvent. */
+  #tellTribe(outcome: Outcome<unknown>): Outcome<TribeInfo> {
     if (outcome.kind !== "ok") {
       return outcome;
     }
     const tribe = tribeInfoOf(outcome.value);
-    return tribe === undefined ? { kind: "network-error" } : { kind: "ok", value: tribe };
+    if (tribe === undefined) {
+      return { kind: "network-error" };
+    }
+    this.dispatchEvent(new CustomEvent<TribeInfo>(tribeEvent, { detail: tribe }));
+    return { kind: "ok", value: tribe };
   }
 
   /** Creates a dish, or saves a change of a dish read in the revision given (D5). */

@@ -3,7 +3,7 @@
 // tribe proposed are proved by the scenarios P4, T1 and T3 against the real server
 // (scenarios.spec.ts).
 import { expect, test } from "@playwright/test";
-import { mockApi, pageReply, replies } from "./api-mock.ts";
+import { mockApi, pageReply, replies, tabsOnSubScreen } from "./api-mock.ts";
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 
@@ -53,7 +53,7 @@ test("a new dish: the size of the tribe, an ingredient chosen, another created, 
   await page.getByRole("link", { name: "Nouveau" }).click();
   await expect(page).toHaveURL(/\/tribes\/demo\/plats\/nouveau$/);
   await expect(page.getByRole("heading", { name: "Nouveau plat" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Onglets" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Onglets" })).toHaveCount(tabsOnSubScreen());
   const stepper = page.getByRole("group", { name: "Pour combien de parts ?" });
   await expect(stepper).toContainText("5");
 
@@ -335,7 +335,7 @@ test("a dish unknown to the library", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session], getDishes: [pageReply("dishes", 1, [chili])] });
   await page.goto(`/tribes/demo/plats/${id(9)}`);
   await expect(page.getByText("Ce plat est introuvable.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Plats" })).toHaveAttribute("href", "/tribes/demo/plats");
+  await expect(page.getByRole("main").getByRole("link", { name: "Plats" })).toHaveAttribute("href", "/tribes/demo/plats");
 });
 
 test("a dish opened without network: the message and “Réessayer”", async ({ page }) => {
@@ -389,7 +389,8 @@ test("a click on a button below the open suggestions reaches it", async ({ page 
 
 // A tap reached the button even before the suggestions closed after the gesture: the test
 // keeps it so.
-test("a tap on a button below the open suggestions reaches it", async ({ page }) => {
+test("a tap on a button below the open suggestions reaches it", async ({ page, hasTouch }) => {
+  test.skip(!hasTouch, "a tap needs a touch screen");
   await mockApi(page, { getSession: [replies.session], getIngredients: [pageReply("ingredients", 1, catalog)] });
   await page.goto("/tribes/demo/plats/nouveau");
   await page.getByRole("button", { name: "Ajouter un ingrédient" }).tap();

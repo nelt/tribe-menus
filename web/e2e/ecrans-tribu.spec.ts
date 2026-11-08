@@ -13,7 +13,7 @@ test("the tribe, its active members, and its size set by the stepper", async ({ 
   await expect(page.getByRole("heading", { name: "Les Démo" })).toBeVisible();
   await expect(page.getByText("TRIBU", { exact: true })).toBeVisible();
   await expect(page.getByText("2 membres actifs")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Planning" })).toHaveAttribute("href", "/tribes/demo/");
+  await expect(page.getByRole("main").getByRole("link", { name: "Planning" })).toHaveAttribute("href", "/tribes/demo/");
   const stepper = page.getByRole("group", { name: "Taille de la tribu" });
   await expect(stepper).toContainText("4");
 
