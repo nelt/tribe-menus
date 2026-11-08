@@ -161,6 +161,7 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
   - **Parcours de connexion réel sous le seul téléphone Chromium** : sous quatre projets Chromium, il dépassait les demandes de code de l'heure ; les écrans de la connexion sont prouvés dans tous les formats par `ecrans-connexion.spec.ts`.
   - **Pas encore fait** : courses des repas avec le calendrier et la destination côte à côte en moyen (« Écrans concernés ») : une colonne d'ici le lot D, qui place les courses des repas dans le volet de détail.
   - **Revue #107, point 3 : le composant de mise en page n'existe pas encore**, malgré l'étape 7 cochée. Au lot B, D8 tient plus simplement : `mt-app` rend toujours la navigation puis l'écran dans `.app-content`, et rien ne réagit au format. Le composant qui place le volet de liste et le détail (ADR 0030, point 4) reste à faire au lot D (étapes 14 et 15), où les scénarios de rotation (étape 16) le prouveront.
+  - **Revue #107, lien d'évitement** : sur téléphone, un lecteur d'écran entend les trois onglets avant chaque écran (la navigation précède l'écran, D8 et D10). Un lien « Aller au contenu », comme sur le site public, est possible ; à juger à la recette (étape 17), décision du développeur du 2026-11-08.
 
 ## Questions ouvertes
 
