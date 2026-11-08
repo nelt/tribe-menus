@@ -2,7 +2,7 @@
 
 - **Nom** : `grands-ecrans`
 - **Date** : 2026-11-07
-- **Statut** : en cours (lot B). Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
+- **Statut** : en cours (lot C). Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
 
 ## Objectif
 
@@ -111,9 +111,9 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 
 ### Lot C : planning en semainier (`feature/semainier`)
 
-- [ ] **11. Semainier** en étendu (D6) : 7 colonnes de 160 px au moins, midi et soir, cases et pilules d'après les maquettes, défilement horizontal calé sur un jour quand elles ne tiennent pas, en-tête de la plage et flèches fixes ; bornes de 2000 à 2099 comme aujourd'hui ; jours élargis en moyen.
-- [ ] **12. Détail d'un repas en panneau** (D6), sous le même chemin ; fermeture par la croix, Échap ou le voile, retour à la même plage ; rien de perdu à la rotation (D8).
-- [ ] **13. Scénarios `@ui`** du semainier, retirés de `pending.txt`.
+- [x] **11. Semainier** en étendu (D6) : 7 colonnes de 160 px au moins, midi et soir, cases et pilules d'après les maquettes, défilement horizontal calé sur un jour quand elles ne tiennent pas, en-tête de la plage et flèches fixes ; bornes de 2000 à 2099 comme aujourd'hui ; jours élargis en moyen. *Fait le 2026-11-08* : mêmes jours et mêmes cases qu'en compact, disposés par le CSS d'après `data-format` (grille de 7 colonnes `minmax(160px, 1fr)`, `scroll-snap`, hauteur de la fenêtre) ; « Menus » et la plage sur une ligne ; boutons « Jours précédents » et « Jours suivants » tant qu'il reste des jours de ce côté (`scrollEdges` dans `layout.ts`), qui font défiler d'un jour ; une autre semaine repart de son premier jour ; en moyen, la colonne de 680 px du lot B suffit.
+- [x] **12. Détail d'un repas en panneau** (D6), sous le même chemin ; fermeture par la croix, Échap ou le voile, retour à la même plage ; rien de perdu à la rotation (D8). *Fait le 2026-11-08* : voir les notes d'exécution du lot C.
+- [x] **13. Scénarios `@ui`** du semainier, retirés de `pending.txt`. *Fait le 2026-11-08* : cinq scénarios (semainier, défilement, 7 jours sur l'ordinateur, panneau, Échap) ; `ecrans-semainier.spec.ts` (défilement gardé à la fermeture, focus, voile, copies vérifiées, autre semaine, rotation), fenêtre de tablette posée par le test pour tourner sur chaque PR.
 
 ### Lot D : deux volets pour les plats et les courses (`feature/deux-volets`)
 
@@ -162,6 +162,12 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
   - **Pas encore fait** : courses des repas avec le calendrier et la destination côte à côte en moyen (« Écrans concernés ») : une colonne d'ici le lot D, qui place les courses des repas dans le volet de détail.
   - **Revue #107, point 3 : le composant de mise en page n'existe pas encore**, malgré l'étape 7 cochée. Au lot B, D8 tient plus simplement : `mt-app` rend toujours la navigation puis l'écran dans `.app-content`, et rien ne réagit au format. Le composant qui place le volet de liste et le détail (ADR 0030, point 4) reste à faire au lot D (étapes 14 et 15), où les scénarios de rotation (étape 16) le prouveront.
   - **Revue #107, lien d'évitement** : sur téléphone, un lecteur d'écran entend les trois onglets avant chaque écran (la navigation précède l'écran, D8 et D10). Un lien « Aller au contenu », comme sur le site public, est possible ; à juger à la recette (étape 17), décision du développeur du 2026-11-08.
+
+- **Lot C, mis en œuvre le 2026-11-08** :
+  - **Le Planning reste sous le panneau, le même élément** : en étendu, sur `repas/…`, l'application rend le Planning de la plage de retour (la dernière affichée, ou celle qui tient le repas) à la première place du contenu, puis le repas à la seconde, toujours dans `.meal-panel` ; le CSS en fait un panneau de 440 px sur un voile en étendu, et rien ailleurs. Le semainier garde ainsi son défilement à la fermeture, et une rotation ne recrée jamais l'écran du repas (D8) : en compact et en moyen, le Planning disparaît et le repas reste, avec sa recherche.
+  - **Couvert, le Planning est `inert` et `aria-hidden`** : un seul `main` et un seul titre de niveau 1, ceux du repas (Playwright ne tient pas compte d'`inert`) ; le rail reste accessible. Pas de rôle `dialog` sur le panneau, qui n'est pas modal pour le rail. Découvert, le Planning vérifie les copies, comme à chaque visite (plan `planning`, D15), puisqu'il n'est pas recréé.
+  - **Focus et clavier** (D10) : le repas ouvert depuis le semainier met le focus sur « Fermer le repas » ; fermé, le focus revient à sa case ; Échap le ferme, sauf si un dialogue est ouvert. La croix est un lien vers la plage de retour, comme « Planning », masqué en étendu.
+  - **Tests d'écran du repas en étendu** : le retour au Planning passe par la croix (`mealBackLink`, `api-mock.ts`).
 
 ## Questions ouvertes
 
