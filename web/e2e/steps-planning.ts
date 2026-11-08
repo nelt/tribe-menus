@@ -17,7 +17,7 @@ interface Written {
   year?: number;
 }
 
-function parseWritten(text: string): Written {
+export function parseWritten(text: string): Written {
   const m = /^(\S+) (1er|\d{1,2})(?: (\S+))?(?: (\d{4}))?$/.exec(text.trim());
   if (m === null) {
     throw new Error(`unreadable day "${text}"`);
@@ -38,7 +38,7 @@ function parseWritten(text: string): Written {
 }
 
 /** The local date of a day written, checking its day of the week. */
-function dateOf(written: Written, fallback?: Date): Date {
+export function dateOf(written: Written, fallback?: Date): Date {
   const month = written.month ?? fallback?.getMonth();
   const year = written.year ?? fallback?.getFullYear();
   if (month === undefined || year === undefined) {
@@ -52,7 +52,7 @@ function dateOf(written: Written, fallback?: Date): Date {
 }
 
 /** The label of a day on the planning: « Lundi 5 oct. », « Jeudi 1er oct. ». */
-function dayLabel(date: Date): string {
+export function dayLabel(date: Date): string {
   const weekday = weekdays[date.getDay()] ?? "";
   const n = date.getDate() === 1 ? "1er" : String(date.getDate());
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${n} ${shortMonths[date.getMonth()] ?? ""}`;
@@ -122,12 +122,12 @@ const mealtimes: Record<string, { api: string; path: string; label: string }> = 
 };
 
 /** A day of the API: YYYY-MM-DD, from the local date. */
-function apiDay(date: Date): string {
+export function apiDay(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 /** The meal of a scenario: « mardi 6 octobre 2026 au soir ». */
-function mealOf(day: string, mealtime: string): { date: Date; mealtime: { api: string; path: string; label: string } } {
+export function mealOf(day: string, mealtime: string): { date: Date; mealtime: { api: string; path: string; label: string } } {
   const time = mealtimes[mealtime];
   if (time === undefined) {
     throw new Error(`unknown mealtime "${mealtime}"`);
