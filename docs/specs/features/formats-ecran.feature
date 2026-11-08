@@ -138,7 +138,8 @@ Fonctionnalité: Formats d'écran
     Quand j'ouvre le plat "Chili con carne"
     Et je renomme le plat en "Chili du dimanche" sans l'enregistrer
     Et je reviens à la bibliothèque de plats
-    Alors la bibliothèque contient toujours le plat "Chili con carne"
+    Alors je vois la bibliothèque de plats
+    Et on ne me demande pas si j'abandonne la modification
 
   @ENF-03 @ui @moyen
   Scénario: Tourner la tablette ne perd pas la saisie d'un plat
