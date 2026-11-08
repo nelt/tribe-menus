@@ -2,7 +2,7 @@
 
 - **Nom** : `courses`
 - **Date** : 2026-11-06
-- **Statut** : en cours (lot E). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
+- **Statut** : terminé le 2026-11-08, `v0.4.0` en production. Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
 
 ## Objectif
 
@@ -106,9 +106,9 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 
 ### Recette et release
 
-- [ ] **26. Recette** sur l'archive de la PR de release `release/v0.4.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous.
-- [ ] **27. Release `v0.4.0`** selon `RELEASING.md`, déployée en production.
-- [ ] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, `courses-suite` prêt à cadrer, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/shopping`, version en service) ; `CHANGELOG.md`.
+- [x] **26. Recette** sur l'archive de la PR de release `release/v0.4.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous. *Faite du 2026-11-07 au 2026-11-08 sur la PR #102 : aucun défaut ; trois points reportés au cadrage de `courses-suite` ; compte rendu dans les notes d'exécution.*
+- [x] **27. Release `v0.4.0`** selon `RELEASING.md`, déployée en production. *Le 2026-11-08 : PR #102 fusionnée, étiquette sur `1231378`, release publiée par `release.yml` et vérifiée (empreinte, `tribe-menus v0.4.0 (1231378)`), déployée en production (`previous: v0.3.0`), sans provisionnement.*
+- [x] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, `courses-suite` prêt à cadrer, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/shopping`, version en service) ; `CHANGELOG.md`.
 
 ### Séance de recette (étape 26)
 
@@ -116,55 +116,55 @@ Par le développeur, sur l'archive de la PR `release/v0.4.0`, CI verte (artefact
 
 Déploiement :
 
-- [ ] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0009` s'applique ; l'onglet Courses est actif et ouvre « Courses », vide, marquée « principale » (C1, D14).
+- [x] `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration `0009` s'applique ; l'onglet Courses est actif et ouvre « Courses », vide, marquée « principale » (C1, D14).
 
 Listes (C1, C2, C12, D11, D12) :
 
-- [ ] Choix des listes : créer « Marché », puis « Drive » ; ordre « Courses », « Marché », « Drive » ; « Drive » devient principale : elle passe en tête et l'onglet l'ouvre ; renommer « Marché » en « Marché du samedi ».
-- [ ] Une liste sans nom, ou un nom de plus de 40 caractères : refusés avec leur message.
-- [ ] « Supprimer la liste » inactif sur la principale et sur une liste non vide, avec la raison ; actif et sans confirmation sur une liste vide.
-- [ ] Remettre « Courses » comme principale pour la suite.
+- [x] Choix des listes : créer « Marché », puis « Drive » ; ordre « Courses », « Marché », « Drive » ; « Drive » devient principale : elle passe en tête et l'onglet l'ouvre ; renommer « Marché » en « Marché du samedi ».
+- [x] Une liste sans nom, ou un nom de plus de 40 caractères : refusés avec leur message.
+- [x] « Supprimer la liste » inactif sur la principale et sur une liste non vide, avec la raison ; actif et sans confirmation sur une liste vide.
+- [x] Remettre « Courses » comme principale pour la suite.
 
 Articles à la main et coches (C3, C6, C11, D9) :
 
-- [ ] Ajouter « pain » pour 2 pièces, « lessive » sans quantité, puis un ingrédient nouveau : il est proposé ensuite dans l'écran d'un plat (C3).
-- [ ] Cocher « pain » : barré, en bas de la liste ; décocher, cocher de nouveau.
-- [ ] « Courses faites » : la feuille dit 1 article retiré, 1 restant ; « lessive » reste, non cochée ; bandeau vert ; retirer « lessive » par sa croix.
+- [x] Ajouter « pain » pour 2 pièces, « lessive » sans quantité, puis un ingrédient nouveau : il est proposé ensuite dans l'écran d'un plat (C3).
+- [x] Cocher « pain » : barré, en bas de la liste ; décocher, cocher de nouveau.
+- [x] « Courses faites » : la feuille dit 1 article retiré, 1 restant ; « lessive » reste, non cochée ; bandeau vert ; retirer « lessive » par sa croix.
 
 Courses des repas (C4, C5, P2, D3, D7) :
 
-- [ ] « Ajouter les courses des repas » : période de demain à J+7, liste « Courses » ; points sous les jours ayant des repas ; date de fin avant la date de début : message et bouton inactif.
-- [ ] Ajouter : les quantités sont celles attendues (bœuf haché selon les parts, oignon arrondi à l'entier, « sel » en ligne sans quantité) ; bandeau « N plats servis ajoutés ».
-- [ ] Toucher « bœuf haché » : les plats et repas concernés, avec leurs parts et la quantité apportée ; toucher de nouveau : replié. « pain » ne se déplie pas.
-- [ ] Ajouter de nouveau la même période : rien ne change, « N plats servis déjà reçus ignorés ».
-- [ ] Servir un plat de plus dans la période, ajouter de nouveau : seule sa part s'ajoute ; un article coché dont la quantité augmente est décoché.
-- [ ] Modifier la quantité d'un ingrédient d'un plat servi plus tard dans la semaine, puis ajouter les courses de ce seul jour à « Marché » : la quantité nouvelle (P2).
-- [ ] Une période de plus de 31 jours : message et bouton inactif.
+- [x] « Ajouter les courses des repas » : période de demain à J+7, liste « Courses » ; points sous les jours ayant des repas ; date de fin avant la date de début : message et bouton inactif.
+- [x] Ajouter : les quantités sont celles attendues (bœuf haché selon les parts, oignon arrondi à l'entier, « sel » en ligne sans quantité) ; bandeau « N plats servis ajoutés ».
+- [x] Toucher « bœuf haché » : les plats et repas concernés, avec leurs parts et la quantité apportée ; toucher de nouveau : replié. « pain » ne se déplie pas.
+- [x] Ajouter de nouveau la même période : rien ne change, « N plats servis déjà reçus ignorés ».
+- [x] Servir un plat de plus dans la période, ajouter de nouveau : seule sa part s'ajoute ; un article coché dont la quantité augmente est décoché.
+- [x] Modifier la quantité d'un ingrédient d'un plat servi plus tard dans la semaine, puis ajouter les courses de ce seul jour à « Marché » : la quantité nouvelle (P2).
+- [x] Une période de plus de 31 jours : message et bouton inactif.
 
 Deux appareils (T1, D9, D11) :
 
-- [ ] A coche un article ; B, laissé en arrière-plan sur la liste, revient au premier plan : la coche apparaît sans recharger.
-- [ ] B ouvre « Courses faites » (feuille ouverte), A coche un autre article, B confirme : seul l'article que B voyait coché part ; l'autre reste, coché.
-- [ ] A ajoute un article à « Marché du samedi » pendant que B, sur le choix des listes resté ouvert sur une liste vue vide, la supprime : refus, « Cette liste n'est plus vide. », la liste à jour.
-- [ ] A supprime une liste vide que B a ouverte ; B y ajoute un article : « Cette liste a été supprimée entre-temps. », retour à la liste principale.
+- [x] A coche un article ; B, laissé en arrière-plan sur la liste, revient au premier plan : la coche apparaît sans recharger.
+- [x] B ouvre « Courses faites » (feuille ouverte), A coche un autre article, B confirme : seul l'article que B voyait coché part ; l'autre reste, coché.
+- [x] A ajoute un article à « Marché du samedi » pendant que B, sur le choix des listes resté ouvert sur une liste vue vide, la supprime : refus, « Cette liste n'est plus vide. », la liste à jour.
+- [x] A supprime une liste vide que B a ouverte ; B y ajoute un article : « Cette liste a été supprimée entre-temps. », retour à la liste principale.
 
 Sans réseau (D2) :
 
-- [ ] Mode avion sur une liste affichée : elle reste lisible ; cocher, ajouter un article, « Courses faites » : « Réseau nécessaire », rien n'est changé une fois le réseau revenu.
+- [x] Mode avion sur une liste affichée : elle reste lisible ; cocher, ajouter un article, « Courses faites » : « Réseau nécessaire », rien n'est changé une fois le réseau revenu.
 
 iPhone, s'il y en a un :
 
-- [ ] Les étapes ci-dessus sous Safari, au moins l'onglet, l'ajout des courses des repas, la coche et les courses faites ; si possible, les points reportés de Safari.
+- [ ] *(Reporté : pas d'appareil Apple à la séance ; WebKit couvert par Playwright.)* Les étapes ci-dessus sous Safari, au moins l'onglet, l'ajout des courses des repas, la coche et les courses faites ; si possible, les points reportés de Safari.
 
 Retour arrière avec restauration (migration `0009`, ADR 0016, point 2) :
 
-- [ ] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
-- [ ] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : `v0.3.0` revient, onglet Courses inactif ; le planning d'avant l'instantané est là.
-- [ ] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, « Courses » existe, vide.
+- [x] `sudo tribe-menus-deploy --env recette --rollback` : refusé, avec la date de l'instantané et ce qui serait perdu.
+- [x] `sudo tribe-menus-deploy --env recette --rollback --restore-data` : `v0.3.0` revient, onglet Courses inactif ; le planning d'avant l'instantané est là.
+- [x] De nouveau `sudo tribe-menus-deploy --env recette --pr <numéro>` : la migration repasse, « Courses » existe, vide.
 
 Fin de séance :
 
-- [ ] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
+- [x] `sudo tribe-menus-check report`, remis avec les observations ; défauts éventuels corrigés par des PR ordinaires, la PR de release ensuite mise à jour avec `main`.
 
 ## Critères de validation
 
@@ -314,5 +314,20 @@ Proposées le 2026-11-06, à confirmer à la revue du plan.
 - **Point 3, à reprendre au cadrage de `courses-suite`, ou à vérifier à la recette (étape 26, « Deux appareils »)** : une provenance dont le plat manque à la copie de la bibliothèque est écartée du dépliage sans relancer de vérification ; la pastille dit « 2 plats », le dépliage n'en montre qu'un jusqu'au prochain retour sur l'onglet ou au premier plan. Rare : plat créé et servi par un autre membre depuis la dernière vérification ; aucun plat ne se supprime en V1 (Q5b).
 - **Point 4, à trancher au cadrage de `courses-suite`** : la période par défaut est fixée à l'ouverture de l'écran des courses des repas et ne suit pas le changement de date de l'appareil, contrairement au planning (Q34). Sans effet tant que l'écran ne reste pas ouvert d'une nuit à l'autre.
 - **Pour information, à voir à la recette** : le résumé de la période est fait de deux `span` sans espace (« 7 jours5 plats servis » en texte) ; ce qu'en lit un lecteur d'écran reste à vérifier.
+
+**Séance de recette** (2026-11-07 et 2026-11-08, étape 26, PR #102), par le développeur :
+
+- **Appareils** : Android (Chrome) et un ordinateur (Chrome) ; pas d'appareil Apple, Safari reporté comme aux versions précédentes (WebKit couvert par Playwright).
+- **Check-list** : tout conforme, du déploiement (migration `0009`, `pr-102-1e23214c842f`) au retour arrière avec restauration (`--rollback` refusé avec la date de l'instantané et le schéma 9 contre 8, `--rollback --restore-data` vers `pr-93-315e5b0918e2`, la `0.3.0`, redéploiement de la PR). Après la restauration, une session ouverte depuis l'instantané n'existe plus et un code est redemandé : attendu, les sessions sont dans la base de la tribu.
+- **Nom d'une liste** : la saisie s'arrête à 40 caractères (`maxlength`), sans message ; comportement accepté par le développeur. Le refus d'un nom trop long reste prouvé contre l'API.
+- **P2** : un premier essai a semblé garder l'ancienne quantité, sans doute un ajout vers une liste qui avait déjà reçu le plat servi, ou une liste déjà remplie regardée (une liste ne suit pas les modifications d'un plat avant C8) ; refait sur un plat et une liste neufs (« Essai P2 », farine de 100 g à 300 g) : conforme.
+- **Sans réseau** : aucune vérification automatique au retour du réseau ; la liste se vérifie au retour au premier plan ou en touchant l'onglet, comme prévu (D2).
+- **Non vérifiés à la séance** : le point 3 de la revue de la PR #101 (provenance absente du dépliage) et la lecture du résumé de la période par un lecteur d'écran ; ils restent reportés comme ci-dessus.
+- **`tribe-menus-check report`** : rien à signaler (ni alerte, ni erreur, ni échec d'envoi ; vérification SMTP au démarrage passée ; démarrages et déploiements de la séance).
+
+**Reporté au cadrage de `courses-suite`** (décisions du développeur à la séance de recette) :
+
+- **Article coché dont la quantité augmente** : décoché avec sa quantité totale (`fonctionnalites.md`, règles du calcul des courses) ; conforme mais peu intuitif, puisque la part déjà achetée redevient « à acheter ». À reconsidérer, par exemple en ne montrant à racheter que le supplément.
+- **Liste supprimée entre-temps** : l'article ajouté à une liste qu'un autre membre vient de supprimer mène à la liste principale, où s'affiche « Cette liste a été supprimée entre-temps. » ; déroutant, le bandeau arrivant sur une autre liste sans la nommer ni dire que l'article n'a pas été ajouté. Piste : « La liste « Jetable » a été supprimée entre-temps. L'article n'a pas été ajouté. »
 
 *(à compléter au fil des lots)*
