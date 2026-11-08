@@ -3,7 +3,7 @@
 // navigation, the dialogs, the days of the planning by week and the panel of a meal, measured
 // on the page.
 import { type Locator, type Page, expect } from "@playwright/test";
-import { scrollEnded } from "./scroll.ts";
+import { scrolledBy } from "./scroll.ts";
 import { findDish } from "./steps-dishes.ts";
 import { apiDay, dateOf, dayLabel, mealOf, parseWritten } from "./steps-planning.ts";
 import { step } from "./steps.ts";
@@ -145,15 +145,13 @@ step(/le (.+) est le premier jour visible, entièrement/, async (world, written)
 });
 
 step(/je fais défiler le semainier d'un jour vers les jours suivants/, async (world) => {
-  await world.page.getByRole("button", { name: "Jours suivants" }).click();
-  await scrollEnded(world.page.locator(".days"));
+  await scrolledBy(world.page.locator(".days"), () => world.page.getByRole("button", { name: "Jours suivants" }).click());
 });
 
 step(/je fais défiler le semainier jusqu'au dernier jour/, async (world) => {
   const next = world.page.getByRole("button", { name: "Jours suivants" });
   for (let i = 0; i < 7 && (await next.count()) > 0; i++) {
-    await next.click();
-    await scrollEnded(world.page.locator(".days"));
+    await scrolledBy(world.page.locator(".days"), () => next.click());
   }
   await expect(next).toHaveCount(0);
   await expect(world.page.getByRole("button", { name: "Jours précédents" })).toBeVisible();
