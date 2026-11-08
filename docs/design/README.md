@@ -382,7 +382,7 @@ Plan `grands-ecrans` (D2 à D13), maquettes `GE-*` validées par le développeur
 | **moyen** | de 720 à 1023 px de large, 560 px de haut au moins | tablette en portrait, fenêtre étroite d'ordinateur | rail, une colonne de 680 px au plus, centrée ; dialogues centrés | `GE-*-Portrait` (820 × 1180) |
 | **étendu** | 1024 px de large et 560 px de haut au moins | tablette en paysage, ordinateur | rail, semainier, deux volets ; dialogues centrés | `GE-*-Paysage` (1180 × 820), `GE-*-Ordinateur` (1440 × 900) |
 
-En compact, rien ne change par rapport aux maquettes `Doux-*`. Le site public garde sa mise en page d'ordinateur à partir de 900 px ; la connexion passe à deux colonnes (`ConnexionBureau`) à partir du format étendu.
+En compact, rien ne change par rapport aux maquettes `Doux-*`. La connexion fait partie de l'application : elle passe à deux colonnes (`ConnexionBureau`) en format étendu, et reste une colonne en compact et en moyen. Seul le site public, statique, garde sa propre mise en page d'ordinateur à partir de 900 px.
 
 - **Rail de navigation** (moyen et étendu, D4) : colonne de 96 px à gauche, liseré `#E7E1EE` à droite, pleine hauteur. De haut en bas : le symbole réduit (44 px) ; la pastille de la tribu, qui ouvre l'écran Tribu (76 px de large, liseré `#F2D27A`, texte `#8A6100` : icône et nombre de membres, puis le nom tronqué) ; un séparateur ; les trois onglets, 76 × 64 px, icône au-dessus du libellé, l'actif en aplat rouge tomate. Barre et rail sont la même navigation « Onglets ». En moyen et en étendu, la pastille de la tribu quitte l'en-tête du Planning.
 - **Contenu** : à droite du rail. Au-delà de 1440 px de large, le contenu de l'étendu garde sa largeur et se centre.
