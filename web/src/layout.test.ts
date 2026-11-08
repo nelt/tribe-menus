@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { type Format, type LayoutWindow, currentFormat, formatOf, isField, nextFormat, onFormatChange, resetFormatForTests, thresholdQueries, trackFormat } from "./layout.ts";
+import { type Format, type LayoutWindow, currentFormat, formatOf, isField, nextFormat, onFormatChange, resetFormatForTests, scrollEdges, thresholdQueries, trackFormat } from "./layout.ts";
 
 const formatCases: { name: string; width: number; height: number; want: Format }[] = [
   { name: "narrowest supported", width: 320, height: 640, want: "compact" },
@@ -44,6 +44,21 @@ for (const { name, current, measured, field, want } of nextCases) {
 /** A fake element: a tag and attributes. */
 function element(tag: string, attributes: Record<string, string> = {}): Element {
   return { tagName: tag.toUpperCase(), getAttribute: (name: string) => attributes[name] ?? null } as unknown as Element;
+}
+
+const edgeCases: { name: string; left: number; client: number; scroll: number; before: boolean; after: boolean }[] = [
+  { name: "everything fits (computer)", left: 0, client: 1280, scroll: 1280, before: false, after: false },
+  { name: "at the start, days after (tablet)", left: 0, client: 864, scroll: 1180, before: false, after: true },
+  { name: "in the middle", left: 170, client: 864, scroll: 1180, before: true, after: true },
+  { name: "at the end", left: 316, client: 864, scroll: 1180, before: true, after: false },
+  { name: "a fraction from the end is the end", left: 314.5, client: 864, scroll: 1180, before: true, after: false },
+  { name: "a fraction from the start is the start", left: 1.5, client: 864, scroll: 1180, before: false, after: true },
+];
+
+for (const { name, left, client, scroll, before, after } of edgeCases) {
+  test(`scrollEdges: ${name}`, () => {
+    assert.deepEqual(scrollEdges(left, client, scroll), { before, after });
+  });
 }
 
 test("isField", () => {
