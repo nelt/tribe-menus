@@ -75,6 +75,8 @@ export class PlanningScreen extends LitElement {
   daysBefore = false;
   daysAfter = false;
   readonly #onChange = () => this.revision++;
+  /** The button to give the focus to, the one that had it having gone with the last day on its side. */
+  #refocus: "before" | "after" | undefined;
   /** The size of the days changes with the window and the format, not with a render. */
   readonly #resize = new ResizeObserver(() => this.#measureDays());
   #observed: Element | undefined;
@@ -129,6 +131,10 @@ export class PlanningScreen extends LitElement {
   }
 
   protected override updated(changed: PropertyValues<this>) {
+    if (this.#refocus !== undefined) {
+      this.querySelector<HTMLElement>(`.week-scroll--${this.#refocus}`)?.focus();
+      this.#refocus = undefined;
+    }
     const days = this.#days();
     // Another range starts at its first day.
     if (changed.has("start") && days !== undefined) {
@@ -152,6 +158,14 @@ export class PlanningScreen extends LitElement {
   #measureDays() {
     const days = this.#days();
     const edges = days === undefined ? { before: false, after: false } : scrollEdges(days.scrollLeft, days.clientWidth, days.scrollWidth);
+    // The button with the focus goes with the last day on its side: the focus goes to the
+    // other one, there since days were scrolled, rather than to the body (D10).
+    const focused = this.querySelector(".week-scroll:focus");
+    if (focused?.classList.contains("week-scroll--after") === true && !edges.after) {
+      this.#refocus = "before";
+    } else if (focused?.classList.contains("week-scroll--before") === true && !edges.before) {
+      this.#refocus = "after";
+    }
     this.daysBefore = edges.before;
     this.daysAfter = edges.after;
   }

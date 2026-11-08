@@ -70,6 +70,25 @@ test("the veil and Échap close the panel; uncovered, the planning checks the co
   await expect.poll(() => received.filter((r) => r.method === "GET" && r.path === "meal-plan").length).toBeGreaterThan(checks);
 });
 
+test("the button that disappears with the last day hands the focus to the other one (D10, review of PR #108, point 1)", async ({ page }) => {
+  await mockWeek(page);
+  await page.goto("/tribes/demo/");
+  const next = page.getByRole("button", { name: "Jours suivants" });
+  const previous = page.getByRole("button", { name: "Jours précédents" });
+  await next.focus();
+  for (let i = 0; i < 7 && (await next.count()) > 0; i++) {
+    await page.keyboard.press("Enter");
+    await expect.poll(() => scrollOf(page)).toBeGreaterThan(0);
+  }
+  await expect(next).toHaveCount(0);
+  await expect(previous).toBeFocused();
+  for (let i = 0; i < 7 && (await previous.count()) > 0; i++) {
+    await page.keyboard.press("Enter");
+  }
+  await expect(previous).toHaveCount(0);
+  await expect(next).toBeFocused();
+});
+
 test("another week starts at its first day", async ({ page }) => {
   await mockWeek(page);
   await page.goto("/tribes/demo/");
