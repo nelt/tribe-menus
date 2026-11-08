@@ -35,6 +35,12 @@ export function warningBanner(text: string): TemplateResult {
   </div>`;
 }
 
+/** What a chip of the tribe reads: its name and its number of active members (Doux-Main). */
+export function tribeChipLabel(tribe: { name: string; activeMembers: number }): string {
+  const members = tribe.activeMembers > 1 ? `${tribe.activeMembers} membres` : `${tribe.activeMembers} membre`;
+  return `Tribu ${tribe.name}, ${members}`;
+}
+
 /** The footer of the screens: the brand and the link to the source code. */
 export function footer(): TemplateResult {
   return html`<footer class="app-footer">
