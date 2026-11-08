@@ -37,7 +37,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
    go run ./internal/tools/relnotes vX.Y.Z
    ```
 
-5. **PR** intitulée `Release X.Y.Z`, commit signé (`git commit -s`), `make ci` avant de pousser. La ligne de `CHANGELOG.md` de cette PR, c'est la section renommée : pas de ligne en plus.
+5. **PR** intitulée `Release X.Y.Z`, commit signé (`git commit -s`), `make ci` avant de pousser. La ligne de `CHANGELOG.md` de cette PR, c'est la section renommée : pas de ligne en plus. Sur une branche `release/…`, le workflow `e2e-formats` lance aussi tous les scénarios `@ui` et tests d'écran dans tous les formats (`make e2e-formats`, ADR 0030, point 7) : il doit être vert avant la recette.
 6. **Recette** : le développeur déploie l'archive de la PR en recette (`sudo tribe-menus-deploy --env recette --pr <numéro>`, qui lit l'artefact `tribe-menus-pr-<numéro>` de la CI) et y vérifie, sur téléphone :
    - les scénarios `@manuel` (ADR 0005), dont la liste est tenue ci-dessous ;
    - les stories de la section, sur un vrai appareil.
