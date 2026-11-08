@@ -200,14 +200,10 @@ export class Router {
   }
 
   /**
-   * Follows a link of the application: true when the path is a page of the tribe, which the
-   * router then shows; false for any other address, left to the browser.
+   * The page of a link of the application, that the router then shows; undefined for any
+   * other address, left to the browser.
    */
-  follow(pathname: string, search = ""): boolean {
-    if (!pathname.startsWith(this.#base)) {
-      return false;
-    }
-    this.navigate(pageFromPath(pathname, this.#base, search));
-    return true;
+  pageAt(pathname: string, search = ""): Page | undefined {
+    return pathname.startsWith(this.#base) ? pageFromPath(pathname, this.#base, search) : undefined;
   }
 }

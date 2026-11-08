@@ -9,6 +9,8 @@ import {
   hasControl,
   hasVisible,
   highlight,
+  inputDiffers,
+  inputOfDish,
   initialOf,
   normalizeName,
   parseQuantity,
@@ -312,5 +314,51 @@ test("splitSaved: the dish without the default units, and the ingredients of its
       ingredients: [{ name: "lentilles", quantity: "300", unit: "g" }, { name: "gingembre", quantity: "1", unit: "piece" }, { name: "sel" }],
     },
     ingredients: [{ name: "lentilles", defaultUnit: "g" }, { name: "gingembre", defaultUnit: "piece" }, { name: "sel" }],
+  });
+});
+
+// Plan grands-ecrans, D9: an input identical to what is saved is no input to confirm.
+const chili: Dish = {
+  id: "c",
+  name: "Chili con carne",
+  color: "#C2502E",
+  servings: 4,
+  revision: 2,
+  ingredients: [{ name: "bœuf haché", quantity: "500", unit: "g" }, { name: "oignon", quantity: "1.5", unit: "piece" }, { name: "sel" }],
+};
+
+const differences: { name: string; change: (f: ReturnType<typeof inputOfDish>) => void; want: boolean }[] = [
+  { name: "as saved", change: () => {}, want: false },
+  { name: "the name changed", change: (f) => (f.name = "Chili du dimanche"), want: true },
+  { name: "the name changed then back", change: (f) => (f.name = "Chili con carne"), want: false },
+  { name: "spaces around the name", change: (f) => (f.name = " Chili con carne "), want: false },
+  { name: "the servings changed", change: (f) => (f.servings = 6), want: true },
+  { name: "the servings not read yet", change: (f) => (f.servings = undefined), want: false },
+  { name: "a quantity changed", change: (f) => (f.lines[0]!.quantity = "600"), want: true },
+  { name: "a quantity as saved, with its comma", change: (f) => (f.lines[1]!.quantity = "1,5"), want: false },
+  { name: "a unit changed", change: (f) => (f.lines[0]!.unit = "kg"), want: true },
+  { name: "the unit of a line without quantity", change: (f) => (f.lines[2]!.unit = "g"), want: false },
+  { name: "a line removed", change: (f) => f.lines.pop(), want: true },
+  { name: "a line added", change: (f) => f.lines.push({ name: "cumin", quantity: "", unit: "" }), want: true },
+  { name: "the lines in another order", change: (f) => f.lines.reverse(), want: true },
+];
+
+for (const { name, change, want } of differences) {
+  test(`inputDiffers: ${name}`, () => {
+    const input = inputOfDish(chili);
+    change(input);
+    assert.equal(inputDiffers(inputOfDish(chili), input), want);
+  });
+}
+
+test("inputOfDish", () => {
+  assert.deepEqual(inputOfDish(chili), {
+    name: "Chili con carne",
+    servings: 4,
+    lines: [
+      { name: "bœuf haché", quantity: "500", unit: "g" },
+      { name: "oignon", quantity: "1,5", unit: "piece" },
+      { name: "sel", quantity: "", unit: "" },
+    ],
   });
 });

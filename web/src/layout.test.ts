@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { type Format, type LayoutWindow, currentFormat, formatOf, isField, nextFormat, onFormatChange, resetFormatForTests, scrollEdges, thresholdQueries, trackFormat } from "./layout.ts";
+import { type Format, type LayoutWindow, currentFormat, formatOf, isField, nextFormat, onFormatChange, onFormatWillChange, resetFormatForTests, scrollEdges, thresholdQueries, trackFormat } from "./layout.ts";
 
 const formatCases: { name: string; width: number; height: number; want: Format }[] = [
   { name: "narrowest supported", width: 320, height: 640, want: "compact" },
@@ -159,4 +159,15 @@ test("trackFormat: the keyboard closed with the focus, nothing changes", () => {
   win.resize(1180, 820);
   win.blur();
   assert.equal(win.attributes.get("data-format"), "etendu");
+});
+
+test("onFormatWillChange: told before the attribute changes, the format left still set", () => {
+  const win = new FakeWindow(1180, 820);
+  const seen: (string | undefined)[] = [];
+  trackFormat(win);
+  onFormatWillChange(() => seen.push(win.attributes.get("data-format")));
+  win.resize(820, 1180);
+  win.resize(820, 1100);
+  win.resize(390, 844);
+  assert.deepEqual(seen, ["etendu", "moyen"]);
 });

@@ -84,6 +84,7 @@ export const thresholdQueries = [`(min-width: ${mediumMinWidth}px)`, `(min-width
 
 let current: Format | undefined;
 const listeners = new Set<(format: Format) => void>();
+const beforeListeners = new Set<() => void>();
 
 /**
  * Sets the format on the root of the document, then follows the window: called once, before
@@ -95,6 +96,10 @@ export function trackFormat(win: LayoutWindow): Format {
     const next = current === undefined ? measured : nextFormat(current, measured, isField(win.document.activeElement));
     if (next === current) {
       return;
+    }
+    // While the page is still laid out in the format left: what scrolls, and how far (D8).
+    for (const listener of beforeListeners) {
+      listener();
     }
     current = next;
     win.document.documentElement.setAttribute(formatAttribute, next);
@@ -123,8 +128,18 @@ export function onFormatChange(listener: (format: Format) => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/**
+ * Calls the listener just before each change of the format, the page still laid out in the
+ * format left; returns what removes it.
+ */
+export function onFormatWillChange(listener: () => void): () => void {
+  beforeListeners.add(listener);
+  return () => beforeListeners.delete(listener);
+}
+
 /** Forgets the format and its listeners: for the tests. */
 export function resetFormatForTests(): void {
   current = undefined;
   listeners.clear();
+  beforeListeners.clear();
 }

@@ -333,6 +333,37 @@ export interface DishForm {
   lines: { name: string; quantity: string; unit: string }[];
 }
 
+/** A form of a dish with its servings: what the screen compares with what is saved (plan grands-ecrans, D9). */
+export interface DishInput extends DishForm {
+  /** Undefined while the size of the tribe is read, for a creation. */
+  servings: number | undefined;
+}
+
+/** The form that shows a dish as saved. */
+export function inputOfDish(dish: Dish): DishInput {
+  return {
+    name: dish.name,
+    servings: dish.servings,
+    lines: dish.ingredients.map((l) => ({ name: l.name, quantity: quantityInput(l.quantity), unit: l.unit ?? "" })),
+  };
+}
+
+/**
+ * Whether an input differs from what is saved (D9): the name, the servings, the lines in their
+ * order; spaces around a text, and the unit of a line without quantity, change nothing.
+ */
+export function inputDiffers(saved: DishInput, input: DishInput): boolean {
+  const lines = (form: DishInput) =>
+    JSON.stringify(
+      form.lines.map((l) => {
+        const quantity = trimSpaces(l.quantity);
+        return [trimSpaces(l.name), quantity, quantity === "" ? "" : l.unit];
+      }),
+    );
+  const servingsDiffer = saved.servings !== undefined && input.servings !== undefined && saved.servings !== input.servings;
+  return trimSpaces(saved.name) !== trimSpaces(input.name) || servingsDiffer || lines(saved) !== lines(input);
+}
+
 /**
  * Checks before sending what does not need the library, in the order of the server
  * (internal/dish, validate): the name, then each line, its name, its quantity and its unit
