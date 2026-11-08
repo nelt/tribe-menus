@@ -4,6 +4,8 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `courses` terminé (étape 28) : `v0.4.0` en production ; feuille de route (plan terminé, Safari étendu aux listes de courses, points reportés au cadrage de `courses-suite`), conception, `CLAUDE.md` (métier, paquet `internal/shopping`, version en service).
+
 ## 0.4.0 — 2026-11-07
 
 - `courses/E` (C4, C5) : courses des repas à l'écran, d'après `Doux-CoursesRepas` : chemin `courses/repas?liste=<id>`, période par défaut de demain à J+7, champs « Du » et « Au », calendrier du mois avec les jours ayant des repas, bornes et jours intermédiaires, période invalide (fin avant début, plus de 31 jours) et bouton inactif, destination et sa feuille, plats servis déjà reçus qui seront ignorés, période sans repas ; retour à la liste avec « N plats servis ajoutés, N déjà reçus ignorés » ; « Ajouter les courses des repas » sur l'écran d'une liste ; dépliage d'un article calculé vers ses plats et repas, avec la quantité apportée (table de cas commune à Go et TypeScript) ; la copie des listes se vérifie avec la bibliothèque ; C4 et C5 passent sous Chromium et WebKit.

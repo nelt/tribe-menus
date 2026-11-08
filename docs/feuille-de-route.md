@@ -33,7 +33,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `recette` | Serveur, recette, ouverture de la production et première release | [`2026-10-07-serveur-recette-et-premiere-release.md`](plans/2026-10-07-serveur-recette-et-premiere-release.md) | terminé |
 | `bibliotheque` | Bibliothèque de plats, référentiel d'ingrédients, taille de la tribu | [`2026-10-29-bibliotheque-de-plats.md`](plans/2026-10-29-bibliotheque-de-plats.md) | terminé |
 | `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | terminé |
-| `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | en cours |
+| `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | terminé |
 
 ### `production` : application prête pour la production
 
@@ -60,6 +60,8 @@ Terminé le 2026-11-07 : recette sur l'archive de la PR de release (#93), un dé
 ### `courses` : listes de courses
 
 Troisième plan du métier, qui complète l'application viable à montrer : onglet Courses actif sur la liste principale, « Courses », créée dans chaque tribu par la migration `0009` (C1) ; choix des listes : création, renommage, liste principale, suppression d'une liste vide (C2, C12) ; articles à la main, sur le référentiel (C3) ; courses des repas d'une période, calculées par le serveur à partir du planning et de la bibliothèque, plats servis déjà reçus ignorés, ligne dépliable vers ses plats et repas (C4, C5, P2) ; coches et courses faites sur les articles vus cochés (C6, C11). Pas de hors-ligne (D2) : la liste affichée reste lisible, mais cocher demande le réseau. Conception dans `conception/listes-de-courses.md`. Cinq lots (specs et design, listes et articles, courses des repas, onglet Courses et choix des listes, courses des repas à l'écran), puis la release `v0.4.0`. Cadré le 2026-11-06 ; rien des lots B à E n'est fusionné avant l'étiquette `v0.3.0` (D21). *`v0.3.0` posée le 2026-11-07 : le plan peut avancer.* En cours depuis le 2026-11-07 : lot A (specs, design, conception), lot B (listes et articles, domaine et API, migration `0009`), lot C (courses des repas, calcul et API), lot D (onglet Courses et choix des listes), lot E (courses des repas à l'écran, dépliage d'un article).
+
+Terminé le 2026-11-08 : recette sur l'archive de la PR de release (#102), sans défaut ; **`v0.4.0` en production le 2026-11-08**. Safari sur iPhone reste à vérifier, faute d'appareil. Reportés au cadrage de `courses-suite` : l'article coché qui repasse « à acheter » avec toute sa quantité, le message d'une liste supprimée entre-temps, et deux points de la revue #101 (provenance absente du dépliage, période par défaut figée à l'ouverture) ; détail dans les notes d'exécution du plan.
 
 ## Décisions d'ordonnancement
 
@@ -90,7 +92,7 @@ Le 2026-11-06, avec le développeur, pendant la recette de `planning`.
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **`courses-suite`**, après `courses` (décision du 2026-11-06) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection` ; `v0.5.0`. Nom réservé, plan à cadrer.
+- **`courses-suite`**, après `courses` (décision du 2026-11-06) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection` ; `v0.5.0`. Nom réservé, plan à cadrer ; points à reprendre au cadrage dans les notes d'exécution de `courses` (recette et revue #101).
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes ; consultation et coches des listes de courses sans réseau, rejeu au retour du réseau (C7, Q16, Q18) ; avant d'inviter la famille (décision du 2026-11-06).
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
@@ -101,7 +103,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Point | Origine | À reprendre |
 | --- | --- | --- |
 | Réception du code sur Outlook et iCloud non vérifiée | `recette`, S3 | avant d'inviter un membre qui utilise l'une de ces messageries |
-| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque, le planning et le `304` sur `GET dishes` et `GET meal-plan` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) ; `planning`, recette | avant d'inviter la famille |
+| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque, le planning, les listes de courses et le `304` sur `GET dishes`, `GET meal-plan` et `GET shopping-lists` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) ; `planning` et `courses`, recette | avant d'inviter la famille |
 | Sauvegarde hors du VPS | ADR 0025, point 4 | après une application viable à montrer (planning et listes de courses), au plus tard avant d'inviter la famille (décision du 2026-11-05) |
 | Un démarrage en échec envoie un e-mail de panne à chaque relance de systemd, dont le texte dit qu'il a cessé de le relancer | `recette`, S4 | prochaine PR touchant `deploy/` |
 | `make probe -timing` : le membre passe toujours en premier, sur une connexion à rétablir après l'heure d'attente | `recette`, mesure du 2026-11-01 | avant la prochaine mesure |

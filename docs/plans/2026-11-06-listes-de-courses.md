@@ -2,7 +2,7 @@
 
 - **Nom** : `courses`
 - **Date** : 2026-11-06
-- **Statut** : en cours (lot E). Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
+- **Statut** : terminé le 2026-11-08, `v0.4.0` en production. Décisions D1 à D3 prises par le développeur le 2026-11-06 au cadrage ; D4 à D24 proposées, confirmées le 2026-11-07 par la fusion de la PR du plan (#92) et l'accord du développeur au lancement du lot A, D3 retenue telle qu'écrite.
 
 ## Objectif
 
@@ -107,8 +107,8 @@ Documentation seule, une fois ce plan revu et ses décisions confirmées.
 ### Recette et release
 
 - [x] **26. Recette** sur l'archive de la PR de release `release/v0.4.0` (`RELEASING.md`, étape 6), qui contient tout le plan : check-list « Séance de recette » ci-dessous. *Faite du 2026-11-07 au 2026-11-08 sur la PR #102 : aucun défaut ; trois points reportés au cadrage de `courses-suite` ; compte rendu dans les notes d'exécution.*
-- [ ] **27. Release `v0.4.0`** selon `RELEASING.md`, déployée en production.
-- [ ] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, `courses-suite` prêt à cadrer, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/shopping`, version en service) ; `CHANGELOG.md`.
+- [x] **27. Release `v0.4.0`** selon `RELEASING.md`, déployée en production. *Le 2026-11-08 : PR #102 fusionnée, étiquette sur `1231378`, release publiée par `release.yml` et vérifiée (empreinte, `tribe-menus v0.4.0 (1231378)`), déployée en production (`previous: v0.3.0`), sans provisionnement.*
+- [x] **28. Clôture** : statut « terminé » ; feuille de route (plan terminé, `courses-suite` prêt à cadrer, points reportés à jour) ; document de conception ; `CLAUDE.md` (stack : paquet `internal/shopping`, version en service) ; `CHANGELOG.md`.
 
 ### Séance de recette (étape 26)
 
