@@ -307,7 +307,7 @@ export class App extends LitElement {
           .listHref=${(l: ShoppingList) => this.#router.href(this.#listPage(l))}
           .current=${beside ? { list } : undefined}
           .beside=${beside}
-          @open-list=${(e: CustomEvent<ShoppingList>) => this.#router.navigate(this.#listPage(e.detail))}
+          @open-list=${(e: CustomEvent<ShoppingList>) => this.#go(this.#listPage(e.detail))}
           @list-deleted=${this.#listDeleted}
         ></mt-list-picker>`;
       }
@@ -402,11 +402,7 @@ export class App extends LitElement {
     }
   }
 
-  /**
-   * A link to a page of the tribe is shown by the router, without reloading the page. In moyen
-   * and etendu, a navigation that would lose an input not saved waits for a confirmation (D9):
-   * the format counts at the time of the navigation.
-   */
+  /** A link to a page of the tribe is shown by the router, without reloading the page. */
   #followLink(e: MouseEvent) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
       return;
@@ -420,6 +416,15 @@ export class App extends LitElement {
       return;
     }
     e.preventDefault();
+    this.#go(page);
+  }
+
+  /**
+   * Goes to a page asked by the member. In moyen and etendu, a navigation that would lose an
+   * input not saved waits for a confirmation (D9): the format counts at the time of the
+   * navigation. Every navigation asked by the member goes through here.
+   */
+  #go(page: Page) {
     if (this.format !== "compact" && this.#loses(page)) {
       this.abandoning = page;
       return;

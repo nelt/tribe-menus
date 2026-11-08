@@ -123,6 +123,32 @@ test("the main list beside the list picker; an item typed, then another list: «
   await expect(abandon(page)).toBeVisible();
 });
 
+test("an item typed, then a new list created: « Abandonner la modification ? » before opening it (D9; review of PR #109, point 1)", async ({ page }) => {
+  const drive = list(12, "Drive");
+  await mockApi(page, {
+    getSession: [replies.session],
+    getTribe: [replies.tribe],
+    // Then unchanged: the copy keeps the list created.
+    getShoppingLists: [pageReply("shopping_lists", 7, [courses, marche]), notModified("shopping_lists", 8)],
+    createList: [{ status: 201, body: { list: drive, versions: { shopping_lists: 8 } } }],
+  });
+  await page.goto("/tribes/demo/courses");
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: "Ajouter un article à la main" }).click();
+  await page.getByRole("combobox", { name: "Article", exact: true }).fill("pain");
+  await picker(page).getByRole("button", { name: "Nouvelle liste" }).click();
+  await picker(page).getByRole("textbox", { name: "Nom de la liste" }).fill("Drive");
+  await picker(page).getByRole("button", { name: "Créer la liste" }).click();
+  await expect(abandon(page)).toBeVisible();
+
+  // Kept: the list is created, not opened.
+  await abandon(page).getByRole("button", { name: "Continuer la modification" }).click();
+  await expect(page).toHaveURL("/tribes/demo/courses");
+  await expect(page.getByRole("combobox", { name: "Article", exact: true })).toHaveValue("pain");
+  await expect(picker(page).locator(".list-card-name")).toHaveText(["Courses", "Marché", "Drive"]);
+  await expect(picker(page).locator('[aria-current="page"] .list-card-name')).toHaveText("Courses");
+});
+
 test("on a phone, an input is left without confirmation (D9)", async ({ page }) => {
   await page.setViewportSize(phone);
   await mock(page);
