@@ -11,7 +11,7 @@
 | `maquettes/` | Écrans de l'application. Le préfixe `Doux-` est le nom de la version graphique retenue ; il n'a pas d'autre sens. Le préfixe `GE-` désigne les écrans des grands formats (tablette et ordinateur, plan `grands-ecrans`), suivis de l'appareil dessiné : `Paysage` (1180 × 820), `Portrait` (820 × 1180), `Ordinateur` (1440 × 900). |
 | `maquettes/identite/` | Symbole, logotype, icônes, écrans de connexion et de chargement, pages du site public. |
 | `identite/` | Fichiers livrables de l'identité : symbole et logotype en SVG, image de partage. |
-| Canevas [Melting Tribe · design V3 · 2026-11-07](https://claude.ai/artifact/17K8X7ZFXJbsFf7yjwSdp5) (privé) | **Référence visuelle** : toutes les maquettes retenues, et elles seules, à la date du titre. Copie datée ; elle est refaite, avec un nouveau titre, quand le design change. |
+| Canevas [Melting Tribe · design V4 · 2026-11-08](https://claude.ai/artifact/UeRjgz28S1Njk3nXLw8EuZ) (privé) | **Référence visuelle** : toutes les maquettes retenues, et elles seules, à la date du titre. Copie datée ; elle est refaite, avec un nouveau titre, quand le design change. |
 | Canevas [Menus de la semaine](https://claude.ai/artifact/YFJvuxWWxS89coq6c5M6zH) (privé) | Canevas de travail des écrans de l'application, y compris les versions écartées. |
 | Canevas [Melting Tribe, déclinaisons](https://claude.ai/artifact/PnDbsVYrEjfZondTPHUVe1) (privé) | Canevas de travail de l'identité et de ses déclinaisons. |
 
