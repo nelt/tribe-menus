@@ -33,7 +33,19 @@ Décidé avec le développeur les 2026-11-07 et 2026-11-08 (plan `grands-ecrans`
 3. **Le CSS de l'application lit l'attribut, pas de requête de média de largeur** : `:root[data-format="etendu"] .…`. C'est compatible avec la CSP (un attribut, pas un style), les seuils n'ont qu'une source, et le format peut être figé : si l'ouverture du clavier virtuel fait passer une tablette de `moyen` ou `etendu` à `compact` alors qu'un champ a le focus, `layout.ts` garde le format tant que le focus reste dans un champ (D11). Le site public (`site/site.css`, à partir de 900 px) et la connexion (deux colonnes) gardent leurs requêtes de média : ils n'ont ni rail ni saisie à protéger ; la connexion passe à deux colonnes à partir de 1024 px de large et 560 px de haut, comme l'étendu.
 4. **Un composant de mise en page place le rail ou la barre d'onglets, le volet de liste et le détail.** Le **volet de détail occupe toujours la même place dans le rendu** : le volet de liste est ajouté à côté de lui ou masqué par le CSS, mais un changement de format ne recrée jamais l'élément du détail (D8). La saisie en cours, le chemin et la position de défilement du détail survivent ainsi à la rotation sans être copiés hors des composants. Les composants qui affichent un même écran différemment selon le format (semainier ou liste de jours) lisent le format par `layout.ts` ; ils ne détruisent pas pour autant un formulaire en cours.
 5. **Les feuilles deviennent des dialogues centrés en moyen et en étendu** (D7) : même élément `dialog`, même contenu, seuls ses styles changent avec l'attribut.
-6. **Formats des tests Playwright** : chaque projet a un format. Pixel 7 et iPhone 15 : `compact` ; tablette en portrait (820 × 1180) : `moyen` ; tablette en paysage (1180 × 820), sous Chromium et WebKit, et ordinateur (1440 × 900, Chromium) : `etendu`.
+6. **Formats des tests Playwright** : chaque projet a un format. Sept projets :
+
+   | Projet | Navigateur | Fenêtre | Format |
+   | --- | --- | --- | --- |
+   | Pixel 7 | Chromium | celle de l’appareil Playwright | `compact` |
+   | iPhone 15 | WebKit | celle de l’appareil Playwright | `compact` |
+   | tablette en portrait | Chromium | 820 × 1180 | `moyen` |
+   | tablette en portrait | WebKit | 820 × 1180 | `moyen` |
+   | tablette en paysage | Chromium | 1180 × 820 | `etendu` |
+   | tablette en paysage | WebKit | 1180 × 820 | `etendu` |
+   | ordinateur | Chromium | 1440 × 900 | `etendu` |
+
+   La tablette, en portrait comme en paysage, tourne sous WebKit en plus de Chromium : c'est la seule preuve pour l'iPad, faute d'appareil Apple en recette, rotation comprise.
    - Un scénario `@ui` qui ne vaut que dans certains formats porte un ou plusieurs tags `@compact`, `@moyen`, `@etendu` ; **sans tag de format, il vaut pour tous** (`docs/specs/conventions-gherkin.md`). L'outil d'export (`internal/tools/uiexport`) transmet les tags ; le registre d'étapes ne lance un scénario que dans les projets de ses formats.
    - Un test d'écran (`*.spec.ts`) propre à un format le déclare par un `test.skip` selon le format du projet (`ecrans-onglets.spec.ts`, barre d'onglets en bas : compact seul).
 7. **Deux niveaux d'exécution** (D14) : `make e2e`, sur chaque PR, lance tous les scénarios `@ui` et tests d'écran sous les deux téléphones, et seulement les scénarios de `formats-ecran.feature` sous la tablette et l'ordinateur ; `make e2e-formats`, sur la PR de release et chaque nuit, lance tout dans tous les projets. Le changement des workflows se pousse depuis l'hôte (ADR 0020, point 2). Les durées mesurées au lot B sont notées ci-dessous.
@@ -50,7 +62,7 @@ Décidé avec le développeur les 2026-11-07 et 2026-11-08 (plan `grands-ecrans`
 ## Conséquences
 
 - **Positif** : une seule source des seuils ; un format qu'on peut figer ; aucune dépendance nouvelle ; la rotation ne perd rien par construction ; les écrans à venir se dessinent dans les trois formats (D13) et héritent du composant de mise en page.
-- **Négatif** : la mise en page dépend du JavaScript, qui pose l'attribut : sans lui, l'application ne fonctionne de toute façon pas (SPA, ADR 0004). Un instant sans attribut est évité en le posant avant le premier rendu. Les sélecteurs du CSS s'allongent (`:root[data-format="…"]`). Cinq projets Playwright au lieu de deux, et une cible `make e2e-formats` à ajouter (`CLAUDE.md`, `make help`, ADR 0010).
+- **Négatif** : la mise en page dépend du JavaScript, qui pose l'attribut : sans lui, l'application ne fonctionne de toute façon pas (SPA, ADR 0004). Un instant sans attribut est évité en le posant avant le premier rendu. Les sélecteurs du CSS s'allongent (`:root[data-format="…"]`). Sept projets Playwright au lieu de deux (cinq nouveaux), et une cible `make e2e-formats` à ajouter (`CLAUDE.md`, `make help`, ADR 0010).
 - **Précise l'ADR 0028** : formats des projets, tags de format des scénarios `@ui`, et jugement de `pending.txt` d'après les projets d'un scénario et selon la cible (points 6 à 8 ci-dessus).
 - **Précise l'ADR 0004** : la mise en page de l'application passe par un attribut de la racine, lu par le CSS, et non par des requêtes de média de largeur.
 - **Durées** : à noter au lot B (`make e2e` et `make e2e-formats`, sur la CI).
