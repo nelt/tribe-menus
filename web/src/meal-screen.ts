@@ -6,6 +6,8 @@
 // (D3) and writes without network (D13) are told above the meal, which stays shown. The rows
 // of the dishes served are keyed by dish served, and the removal buttons wait while a removal
 // runs and a moment after, the next dish taking the place of the one removed under the finger.
+// In etendu, the meal is a panel over the planning by week (plan grands-ecrans, D6): the cross
+// « Fermer le repas » of its head takes the place of the link « Planning », after data-format.
 import { LitElement, html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
@@ -41,7 +43,7 @@ export class MealScreen extends LitElement {
   declare planning: Planning;
   declare date: Day;
   declare mealtime: Mealtime;
-  /** The range the link « Planning » goes back to. */
+  /** The range the link « Planning », or the cross of the panel, goes back to. */
   declare planningHref: string;
   declare newDishHref: string;
   query = "";
@@ -103,6 +105,9 @@ export class MealScreen extends LitElement {
           <span class="meal-head-time">${mealtimeLabels[this.mealtime]}</span>
         </h1>
         ${total === 0 ? nothing : html`<span class="meal-head-total">${servingsLabel(total)}</span>`}
+        <a class="meal-close" href=${this.planningHref} aria-label="Fermer le repas">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </a>
       </div>
       ${this.#message()}
       ${this.failed ? html`${alertMessage("meal-check-error", networkErrorMessage)}<button class="button-secondary" type="button" @click=${this.#check}>Réessayer</button>` : nothing}

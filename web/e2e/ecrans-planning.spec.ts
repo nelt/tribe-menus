@@ -2,7 +2,7 @@
 // D15) and the clock of Playwright on Monday 5 October 2026. R1 and R5 are proved by their
 // scenarios against the real server (scenarios.spec.ts).
 import { expect, type Page, test } from "@playwright/test";
-import { type Received, mockApi, pageReply, replies } from "./api-mock.ts";
+import { type Received, mealBackLink, mockApi, pageReply, replies } from "./api-mock.ts";
 
 const dish = (n: number, name: string, color: string, servings = 4) => ({
   id: n.toString(16).padStart(32, "0"),
@@ -218,7 +218,7 @@ test("a meal tile opens its meal; « Planning » goes back to the same range (D1
   await tile(page, "Mardi 13 oct., soir").click();
   await expect(page).toHaveURL(/\/tribes\/demo\/repas\/2026-10-13\/soir$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Mardi 13 octobre\s*Soir/);
-  await page.getByRole("main").getByRole("link", { name: "Planning", exact: true }).click();
+  await mealBackLink(page).click();
   await expect(page).toHaveURL(/\?du=2026-10-12$/);
   await expect(title(page)).toHaveText("12 – 18 octobre");
 });

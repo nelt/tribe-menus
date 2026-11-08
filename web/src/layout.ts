@@ -52,6 +52,20 @@ export function isField(element: Element | null): boolean {
   return element.getAttribute("contenteditable") !== null && element.getAttribute("contenteditable") !== "false";
 }
 
+/** What is left to scroll on each side of an element scrolled sideways (the planning by week, D6). */
+export interface ScrollEdges {
+  before: boolean;
+  after: boolean;
+}
+
+/** A pixel or so is no day left: the sizes are rounded, and a zoom gives fractions. */
+const scrollTolerance = 2;
+
+/** What is left to scroll before and after, from the measures of the element scrolled. */
+export function scrollEdges(scrollLeft: number, clientWidth: number, scrollWidth: number): ScrollEdges {
+  return { before: scrollLeft > scrollTolerance, after: scrollLeft + clientWidth < scrollWidth - scrollTolerance };
+}
+
 /** What the tracking of the format needs from the window. */
 export interface LayoutWindow {
   readonly innerWidth: number;

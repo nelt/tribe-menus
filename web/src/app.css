@@ -36,6 +36,7 @@
   --color-success-border: #a9d3b1;
   --color-success-text: #2f7a3e;
   --color-overlay: rgba(34, 25, 58, 0.45);
+  --color-overlay-light: rgba(34, 25, 58, 0.25);
   --color-hover: #f6f3f9;
 
   /* Dish colours: strong hue (text), and the same lightened by 60 % towards white (border) */
@@ -264,12 +265,17 @@ input {
   .dish-card,
   a.meal-tile,
   .list-card-link,
-  .range-arrow:enabled {
+  .range-arrow:enabled,
+  .week-scroll,
+  .meal-close,
+  .meal-overlay {
     cursor: pointer;
   }
 
   .tab:not([aria-current="page"]):hover,
   .range-arrow:enabled:hover,
+  .week-scroll:hover,
+  .meal-close:hover,
   a.meal-tile:hover {
     background: var(--color-hover);
   }
@@ -811,8 +817,8 @@ input {
   padding: 24px 20px calc(var(--tab-bar-height) + 16px);
 }
 
-/* Moyen and etendu, until the two panes and the planning by week (lots C and D of the plan
-   grands-ecrans): a column of 680 px at most, centred to the right of the rail. */
+/* Moyen and etendu, until the two panes (lot D of the plan grands-ecrans): a column of 680 px
+   at most, centred to the right of the rail; the planning by week takes the width (etendu). */
 :root:is([data-format="moyen"], [data-format="etendu"]) .screen {
   max-width: 680px;
   padding-right: 32px;
@@ -1629,6 +1635,121 @@ a.meal-tile:focus-visible {
   font-weight: 800;
 }
 
+/* The planning by week (etendu, plan grands-ecrans, D6; docs/design/README.md, « Formats
+   d'écran »): the title and the range on one line, then the 7 days side by side, at least
+   160 px each, filling the height of the window; when they do not fit, they scroll sideways
+   and settle on a day, a round button on each edge where days are left. */
+.planning-top {
+  display: contents;
+}
+
+.week-scroll {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  box-sizing: border-box;
+  padding: 0;
+  border: var(--border-strong) solid var(--color-text);
+  border-radius: var(--radius-pill);
+  background: var(--color-background);
+  color: var(--color-text);
+  transform: translateY(-50%);
+}
+
+.week-scroll--before {
+  left: calc(var(--touch-target) / -2);
+}
+
+.week-scroll--after {
+  right: calc(var(--touch-target) / -2);
+}
+
+:root[data-format="etendu"] .planning {
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  padding: 24px 32px;
+}
+
+:root[data-format="etendu"] .planning-top {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+:root[data-format="etendu"] .planning-top .range {
+  width: 380px;
+  box-sizing: border-box;
+}
+
+:root[data-format="etendu"] .week {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+:root[data-format="etendu"] .days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(160px, 1fr));
+  gap: 10px;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+}
+
+:root[data-format="etendu"] .day {
+  padding: 10px;
+  scroll-snap-align: start;
+}
+
+:root[data-format="etendu"] .day-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 46px;
+  padding: 2px 4px 0;
+}
+
+:root[data-format="etendu"] .day-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+:root[data-format="etendu"] .day-date {
+  margin-left: 0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+:root[data-format="etendu"] .day-today {
+  align-self: flex-start;
+  margin-left: 0;
+  padding: 1px 9px;
+}
+
+:root[data-format="etendu"] .day-meals {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+:root[data-format="etendu"] .meal-tile {
+  flex: 1;
+  min-height: 150px;
+}
+
 /* Sign-out at the bottom of the screen Tribu (plan planning, D5). */
 .sign-out {
   display: flex;
@@ -1687,6 +1808,68 @@ a.meal-tile:focus-visible {
   color: var(--color-action);
   font-size: 15px;
   font-weight: 800;
+}
+
+/* The meal in a panel over the planning by week (etendu, D6): 440 px on the right, full
+   height, on a light veil that leaves the rail free; the cross « Fermer le repas » in its head
+   instead of the link « Planning ». */
+.meal-overlay,
+.meal-close {
+  display: none;
+}
+
+:root[data-format="etendu"] .meal-overlay {
+  position: fixed;
+  inset: 0 0 0 var(--rail-width);
+  z-index: 2;
+  display: block;
+  background: var(--color-overlay-light);
+}
+
+:root[data-format="etendu"] .meal-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 440px;
+  max-width: calc(100% - var(--rail-width));
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-left: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-sheet) 0 0 var(--radius-sheet);
+  background: var(--color-background);
+}
+
+:root[data-format="etendu"] .meal-panel .meal {
+  max-width: none;
+  padding: 20px 24px 32px;
+}
+
+:root[data-format="etendu"] .meal .back-link {
+  display: none;
+}
+
+:root[data-format="etendu"] .meal-head {
+  position: relative;
+}
+
+:root[data-format="etendu"] .meal-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: 12px;
+  color: var(--color-text);
+}
+
+:root[data-format="etendu"] .meal-close:hover {
+  color: var(--color-text);
 }
 
 .meal-section {

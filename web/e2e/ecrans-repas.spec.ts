@@ -3,7 +3,7 @@
 // their refusals are proved against the real server by godog; R2 « ne m'est pas proposé » by
 // its scenario @ui (scenarios.spec.ts).
 import { expect, type Page, test } from "@playwright/test";
-import { type Received, mockApi, pageReply, replies } from "./api-mock.ts";
+import { type Received, mealBackLink, mockApi, pageReply, replies } from "./api-mock.ts";
 
 const dish = (n: number, name: string, color: string, servings = 4) => ({
   id: n.toString(16).padStart(32, "0"),
@@ -136,7 +136,7 @@ test("a suggestion touched is served at once, for the size of the tribe, and no 
   await expect(page.getByRole("alert")).toHaveCount(0);
 
   // Back on the planning: the tile shows it; the copy took the version written.
-  await page.getByRole("main").getByRole("link", { name: "Planning", exact: true }).click();
+  await mealBackLink(page).click();
   await expect(page.getByRole("link", { name: /^Mardi 6 oct\., soir : / }).locator(".dish-pill-name")).toHaveText(["Chili con carne", "Chili végétarien", "Ratatouille"]);
   await expect.poll(() => received.filter((r) => r.method === "GET" && r.path === "meal-plan").map((r) => r.ifNoneMatch ?? "")).toEqual(["", '"meal_plan-8"']);
 });
@@ -284,9 +284,9 @@ test("a meal opened by its path: « Planning » goes to the range that holds it 
   await mondayMorning(page);
   await mockMeal(page);
   await page.goto(tuesdayDinner);
-  await expect(page.locator(".back-link")).toHaveAttribute("href", "/tribes/demo/");
+  await expect(mealBackLink(page)).toHaveAttribute("href", "/tribes/demo/");
   await page.goto("/tribes/demo/repas/2026-10-20/midi");
-  await expect(page.locator(".back-link")).toHaveAttribute("href", "/tribes/demo/?du=2026-10-20");
+  await expect(mealBackLink(page)).toHaveAttribute("href", "/tribes/demo/?du=2026-10-20");
   // A day out of the bounds gives the planning.
   await page.goto("/tribes/demo/repas/2100-01-01/midi");
   await expect(page).toHaveURL(/\/tribes\/demo\/repas\/2100-01-01\/midi$/);
