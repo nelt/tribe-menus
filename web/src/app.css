@@ -36,6 +36,7 @@
   --color-success-border: #a9d3b1;
   --color-success-text: #2f7a3e;
   --color-overlay: rgba(34, 25, 58, 0.45);
+  --color-hover: #f6f3f9;
 
   /* Dish colours: strong hue (text), and the same lightened by 60 % towards white (border) */
   --color-dish-1: #c2502e;
@@ -251,6 +252,39 @@ input {
 
 .app-footer a {
   color: var(--color-text-muted);
+}
+
+/* With a mouse (plan grands-ecrans, D10), in every format: what is touched shows a pointer,
+   and its border or its background is slightly strengthened under it. Never on a touch screen,
+   where a hover would stay after the tap. */
+@media (hover: hover) and (pointer: fine) {
+  .tab,
+  .rail-tribe,
+  .tribe-chip,
+  .dish-card,
+  a.meal-tile,
+  .list-card-link,
+  .range-arrow:enabled {
+    cursor: pointer;
+  }
+
+  .tab:not([aria-current="page"]):hover,
+  .range-arrow:enabled:hover,
+  a.meal-tile:hover {
+    background: var(--color-hover);
+  }
+
+  .dish-card:hover,
+  .list-card:not(.list-card--main):has(.list-card-link:hover) {
+    border-color: var(--color-dashed);
+    background: var(--color-hover);
+  }
+
+  .list-card--main:has(.list-card-link:hover),
+  .rail-tribe:hover,
+  .tribe-chip:hover {
+    background: var(--color-hover);
+  }
 }
 
 /* Login (maquettes identite/Connexion, ConnexionBureau, Code) */
