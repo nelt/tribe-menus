@@ -36,6 +36,7 @@
   --color-success-border: #a9d3b1;
   --color-success-text: #2f7a3e;
   --color-overlay: rgba(34, 25, 58, 0.45);
+  --color-overlay-light: rgba(34, 25, 58, 0.25);
   --color-hover: #f6f3f9;
 
   /* Dish colours: strong hue (text), and the same lightened by 60 % towards white (border) */
@@ -265,13 +266,16 @@ input {
   a.meal-tile,
   .list-card-link,
   .range-arrow:enabled,
-  .week-scroll {
+  .week-scroll,
+  .meal-close,
+  .meal-overlay {
     cursor: pointer;
   }
 
   .tab:not([aria-current="page"]):hover,
   .range-arrow:enabled:hover,
   .week-scroll:hover,
+  .meal-close:hover,
   a.meal-tile:hover {
     background: var(--color-hover);
   }
@@ -1804,6 +1808,68 @@ a.meal-tile:focus-visible {
   color: var(--color-action);
   font-size: 15px;
   font-weight: 800;
+}
+
+/* The meal in a panel over the planning by week (etendu, D6): 440 px on the right, full
+   height, on a light veil that leaves the rail free; the cross « Fermer le repas » in its head
+   instead of the link « Planning ». */
+.meal-overlay,
+.meal-close {
+  display: none;
+}
+
+:root[data-format="etendu"] .meal-overlay {
+  position: fixed;
+  inset: 0 0 0 var(--rail-width);
+  z-index: 2;
+  display: block;
+  background: var(--color-overlay-light);
+}
+
+:root[data-format="etendu"] .meal-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 440px;
+  max-width: calc(100% - var(--rail-width));
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-left: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-sheet) 0 0 var(--radius-sheet);
+  background: var(--color-background);
+}
+
+:root[data-format="etendu"] .meal-panel .meal {
+  max-width: none;
+  padding: 20px 24px 32px;
+}
+
+:root[data-format="etendu"] .meal .back-link {
+  display: none;
+}
+
+:root[data-format="etendu"] .meal-head {
+  position: relative;
+}
+
+:root[data-format="etendu"] .meal-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: 12px;
+  color: var(--color-text);
+}
+
+:root[data-format="etendu"] .meal-close:hover {
+  color: var(--color-text);
 }
 
 .meal-section {

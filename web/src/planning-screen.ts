@@ -39,6 +39,7 @@ export class PlanningScreen extends LitElement {
     tribeHref: { attribute: false },
     mealHref: { attribute: false },
     go: { attribute: false },
+    covered: { attribute: false },
     today: { state: true },
     tribe: { state: true },
     failed: { state: true },
@@ -55,6 +56,11 @@ export class PlanningScreen extends LitElement {
   declare mealHref: (date: Day, mealtime: Mealtime) => string;
   /** Shows another range: undefined for that of today. */
   declare go: (start: Day | undefined) => void;
+  /**
+   * Under the panel of a meal (etendu, D6): out of reach, inert and hidden from the
+   * accessibility tree; uncovered, it checks the copies, as at each visit (D15).
+   */
+  covered = false;
   /** The day of the device (D4), read again at each return to the foreground (D17). */
   today: Day = today();
   /** The tribe, for its chip; undefined until read, or if it cannot be. */
@@ -105,6 +111,21 @@ export class PlanningScreen extends LitElement {
     document.removeEventListener("visibilitychange", this.#onVisibility);
     this.#resize.disconnect();
     this.#observed = undefined;
+  }
+
+  protected override willUpdate(changed: PropertyValues<this>) {
+    if (!changed.has("covered")) {
+      return;
+    }
+    this.inert = this.covered;
+    if (this.covered) {
+      this.setAttribute("aria-hidden", "true");
+    } else {
+      this.removeAttribute("aria-hidden");
+      if (changed.get("covered") === true) {
+        void this.#retry();
+      }
+    }
   }
 
   protected override updated(changed: PropertyValues<this>) {

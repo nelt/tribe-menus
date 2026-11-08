@@ -1,6 +1,6 @@
 // Simulated responses of the API (D15), defined once, after the contract of the notes of
 // lot B in docs/plans/2026-10-03-socle-donnees-et-connexion.md.
-import { type Page, type Route, test } from "@playwright/test";
+import { type Locator, type Page, type Route, test } from "@playwright/test";
 
 /** A simulated response, or a network failure, possibly after a delay. */
 export interface Reply {
@@ -177,4 +177,14 @@ export function notModified(collection: string, version: number): Reply {
  */
 export function tabsOnSubScreen(): number {
   return test.info().project.metadata["format"] === "compact" ? 0 : 1;
+}
+
+/**
+ * The way back from a meal to the planning: the link « Planning » of the screen, or in etendu
+ * the cross of the panel over the planning by week (plan grands-ecrans, D6).
+ */
+export function mealBackLink(page: Page): Locator {
+  return test.info().project.metadata["format"] === "etendu"
+    ? page.getByRole("link", { name: "Fermer le repas" })
+    : page.getByRole("main").getByRole("link", { name: "Planning", exact: true });
 }

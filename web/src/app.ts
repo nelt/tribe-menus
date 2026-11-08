@@ -1,11 +1,12 @@
 // The application: checks the session at startup, then shows the login or the planning of
 // the tribe, under /tribes/<identifier>/ (ADR 0004, 0006).
-import { LitElement, html, nothing } from "lit";
+import { LitElement, type PropertyValues, html, nothing } from "lit";
 import { keyed } from "lit/directives/keyed.js";
 import { Api, type Session } from "./api.ts";
 import "./dish-library-screen.ts";
 import "./dish-screen.ts";
 import type { Dish } from "./dishes.ts";
+import { type Format, currentFormat, onFormatChange } from "./layout.ts";
 import { Library } from "./library.ts";
 import "./list-picker-screen.ts";
 import "./loading-screen.ts";
@@ -39,11 +40,15 @@ export class App extends LitElement {
     startup: { state: true },
     session: { state: true },
     page: { state: true },
+    format: { state: true },
   };
 
   startup: Startup = "checking";
   session: Session | undefined = undefined;
   declare page: Page;
+  /** The format of the screen: in etendu, a meal is a panel over the planning (D6). */
+  format: Format = currentFormat();
+  #unfollowFormat: (() => void) | undefined;
   readonly #router: Router;
   readonly #api: Api;
   /** The dish library and the catalog in memory, shared by the screens (D25). */
@@ -77,6 +82,7 @@ export class App extends LitElement {
     this.#planning = new Planning(this.#api, this.#library);
     this.#shopping = new ShoppingLists(this.#api, this.#library);
     this.addEventListener("click", (e) => this.#followLink(e));
+    document.addEventListener("keydown", (e) => this.#closeMealOnEscape(e));
     // Back in the foreground, the copies are checked: what another member changed in between
     // appears (D25, D29; plan planning, D15).
     document.addEventListener("visibilitychange", () => {
@@ -101,7 +107,32 @@ export class App extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
+    this.#unfollowFormat = onFormatChange((format) => (this.format = format));
+    this.format = currentFormat();
     void this.#checkSession();
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.#unfollowFormat?.();
+  }
+
+  /**
+   * In etendu, the focus goes to the panel of a meal opened from the planning, and back to the
+   * tile of the meal once it is closed (D10).
+   */
+  protected override updated(changed: PropertyValues<this>) {
+    const before = changed.get("page") as Page | undefined;
+    if (before === undefined || this.format !== "etendu") {
+      return;
+    }
+    if (this.page.name === "meal" && before.name === "planning") {
+      void this.querySelector("mt-meal-screen")?.updateComplete.then(() => this.querySelector<HTMLElement>(".meal-close")?.focus());
+    } else if (this.page.name === "planning" && before.name === "meal") {
+      // Once the planning is no longer inert.
+      const tile = `a.meal-tile[href="${this.#router.href(before)}"]`;
+      void this.querySelector("mt-planning-screen")?.updateComplete.then(() => this.querySelector<HTMLElement>(tile)?.focus());
+    }
   }
 
   override render() {
@@ -130,31 +161,69 @@ export class App extends LitElement {
         .shoppingHref=${this.#router.href(pages.shopping)}
         .tribeHref=${this.#router.href(pages.tribe)}
       ></mt-tab-bar>
-      <div class="app-content">${this.#screen(this.page)}</div>`;
+      <div class="app-content">${this.#planningBehind(this.page)}${this.#screen(this.page)}</div>`;
+  }
+
+  /** The range of the planning a meal goes back to: the last one shown, or the one that holds it. */
+  #planningOf(page: Page & { name: "meal" }): Page {
+    return this.#lastPlanning ?? planningAround(page.date, today());
+  }
+
+  /**
+   * The planning, in the first place of the content: on its page, and in etendu under the panel
+   * of a meal, where it is the same element, so the planning by week keeps its scroll (D6). Under
+   * the panel, it is covered: one main, the meal's.
+   */
+  #planningBehind(page: Page) {
+    let start: Day | undefined;
+    if (page.name === "planning") {
+      start = page.start;
+    } else if (page.name === "meal" && this.format === "etendu") {
+      const behind = this.#planningOf(page);
+      start = behind.name === "planning" ? behind.start : undefined;
+    } else {
+      return nothing;
+    }
+    return html`<mt-planning-screen
+      .covered=${page.name === "meal"}
+      .planning=${this.#planning}
+      .api=${this.#api}
+      .start=${start}
+      .tribeHref=${this.#router.href(pages.tribe)}
+      .mealHref=${(date: Day, mealtime: Mealtime) => this.#router.href({ name: "meal", date, mealtime })}
+      .go=${(s: Day | undefined) => this.#router.navigate(s === undefined ? pages.planning : { name: "planning", start: s })}
+    ></mt-planning-screen>`;
+  }
+
+  /** Échap closes the panel of a meal, in etendu, unless a dialog is open (D10). */
+  #closeMealOnEscape(e: KeyboardEvent) {
+    if (e.key !== "Escape" || e.defaultPrevented || this.page.name !== "meal" || this.format !== "etendu" || this.querySelector("dialog[open]") !== null) {
+      return;
+    }
+    this.#router.navigate(this.#planningOf(this.page));
   }
 
   #screen(page: Page) {
     switch (page.name) {
       case "planning":
-        return html`<mt-planning-screen
-          .planning=${this.#planning}
-          .api=${this.#api}
-          .start=${page.start}
-          .tribeHref=${this.#router.href(pages.tribe)}
-          .mealHref=${(date: Day, mealtime: Mealtime) => this.#router.href({ name: "meal", date, mealtime })}
-          .go=${(start: Day | undefined) => this.#router.navigate(start === undefined ? pages.planning : { name: "planning", start })}
-        ></mt-planning-screen>`;
+        // In the first place of the content (#planningBehind).
+        return nothing;
       case "meal":
-        return keyed(
-          `${page.date} ${page.mealtime}`,
-          html`<mt-meal-screen
-            .planning=${this.#planning}
-            .date=${page.date}
-            .mealtime=${page.mealtime}
-            .planningHref=${this.#router.href(this.#lastPlanning ?? planningAround(page.date, today()))}
-            .newDishHref=${this.#router.href(pages.newDish)}
-          ></mt-meal-screen>`,
-        );
+        // Always in the same place, a panel over the planning in etendu after data-format: a
+        // change of format never creates the meal again (D8).
+        return html`<div class="meal-overlay" @click=${() => this.#router.navigate(this.#planningOf(page))}></div>
+          <div class="meal-panel">
+            ${keyed(
+              `${page.date} ${page.mealtime}`,
+              html`<mt-meal-screen
+                .planning=${this.#planning}
+                .date=${page.date}
+                .mealtime=${page.mealtime}
+                .planningHref=${this.#router.href(this.#planningOf(page))}
+                .newDishHref=${this.#router.href(pages.newDish)}
+              ></mt-meal-screen>`,
+            )}
+          </div>`;
       case "dishes":
         return html`<mt-dish-library
           .library=${this.#library}
