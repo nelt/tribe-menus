@@ -179,6 +179,11 @@ export function tabsOnSubScreen(): number {
   return test.info().project.metadata["format"] === "compact" ? 0 : 1;
 }
 
+/** The format of the project is etendu: the library and the list picker beside the detail (plan grands-ecrans, D5). */
+export function twoPanes(): boolean {
+  return test.info().project.metadata["format"] === "etendu";
+}
+
 /**
  * The way back from a meal to the planning: the link « Planning » of the screen, or in etendu
  * the cross of the panel over the planning by week (plan grands-ecrans, D6).

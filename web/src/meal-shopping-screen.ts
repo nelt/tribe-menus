@@ -169,25 +169,29 @@ export class MealShoppingScreen extends LitElement {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
             <span>${this.error}</span>
           </div>`}
-      <div class="period-fields">
-        ${this.#field("from", "Du", false)} ${this.#field("to", "Au", refused !== undefined)}
-      </div>
-      ${this.#calendar(served)}
-      ${refused === undefined
-        ? html`<div class="period-summary"><span>${summary.days}</span><span class="period-summary-dishes">${summary.dishes}</span></div>`
-        : alertMessage("period-error", mealShoppingErrorMessage(refused) ?? "")}
-      <button class="target-field" type="button" aria-haspopup="dialog" @click=${() => (this.choosing = true)}>
-        <span class="target-field-text"><span class="target-field-label">Ajouter à la liste</span> <span class="target-field-name">${target.name}</span></span>
-        ${target.main ? html`<span class="pill pill--main">principale</span>` : nothing} ${chevron("M6 9l6 6 6-6")}
-      </button>
-      ${ignored === undefined ? nothing : html`<p class="hint hint--left" role="status">${ignored}</p>`}
-      ${refused === undefined && inPeriod.length === 0
-        ? html`<p class="hint hint--left" role="status">Aucun repas planifié sur cette période : l’ajout ne changera rien à la liste.</p>`
-        : nothing}
-      <div class="meal-shopping-send">
-        ${this.sending
-          ? html`<button class="button-primary" type="button" disabled aria-busy="true">Ajout en cours…</button>`
-          : html`<button class="button-primary" type="button" ?disabled=${refused !== undefined} @click=${() => this.#send(target)}>${cta}</button>`}
+      <div class="meal-shopping-body">
+        <div class="period-fields">
+          ${this.#field("from", "Du", false)} ${this.#field("to", "Au", refused !== undefined)}
+        </div>
+        ${this.#calendar(served)}
+        <div class="meal-shopping-rest">
+          ${refused === undefined
+            ? html`<div class="period-summary"><span>${summary.days}</span><span class="period-summary-dishes">${summary.dishes}</span></div>`
+            : alertMessage("period-error", mealShoppingErrorMessage(refused) ?? "")}
+          <button class="target-field" type="button" aria-haspopup="dialog" @click=${() => (this.choosing = true)}>
+            <span class="target-field-text"><span class="target-field-label">Ajouter à la liste</span> <span class="target-field-name">${target.name}</span></span>
+            ${target.main ? html`<span class="pill pill--main">principale</span>` : nothing} ${chevron("M6 9l6 6 6-6")}
+          </button>
+          ${ignored === undefined ? nothing : html`<p class="hint hint--left" role="status">${ignored}</p>`}
+          ${refused === undefined && inPeriod.length === 0
+            ? html`<p class="hint hint--left" role="status">Aucun repas planifié sur cette période : l’ajout ne changera rien à la liste.</p>`
+            : nothing}
+          <div class="meal-shopping-send">
+            ${this.sending
+              ? html`<button class="button-primary" type="button" disabled aria-busy="true">Ajout en cours…</button>`
+              : html`<button class="button-primary" type="button" ?disabled=${refused !== undefined} @click=${() => this.#send(target)}>${cta}</button>`}
+          </div>
+        </div>
       </div>`;
   }
 
@@ -307,7 +311,9 @@ export class MealShoppingScreen extends LitElement {
       // A 401 has already brought back to the login.
       if (result.kind !== "unauthorized") {
         this.error = (result.kind === "refused" ? mealShoppingErrorMessage(result.error) : undefined) ?? networkNeededMessage;
+        // The window, or the pane of the meal shopping in etendu.
         window.scrollTo({ top: 0 });
+        this.scrollTop = 0;
       }
     } finally {
       this.sending = false;

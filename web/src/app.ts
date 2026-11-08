@@ -3,10 +3,10 @@
 import { LitElement, type PropertyValues, html, nothing } from "lit";
 import { keyed } from "lit/directives/keyed.js";
 import { Api, type Session } from "./api.ts";
-import "./dish-library-screen.ts";
+import { chooseDish } from "./dish-library-screen.ts";
 import "./dish-screen.ts";
 import type { Dish } from "./dishes.ts";
-import { type Format, currentFormat, onFormatChange } from "./layout.ts";
+import { type Format, currentFormat, onFormatChange, onFormatWillChange } from "./layout.ts";
 import { Library } from "./library.ts";
 import "./list-picker-screen.ts";
 import "./loading-screen.ts";
@@ -15,6 +15,7 @@ import type { SignedInEvent } from "./login-screen.ts";
 import "./meal-screen.ts";
 import "./meal-shopping-screen.ts";
 import type { MealShoppingAddedEvent } from "./meal-shopping-screen.ts";
+import { type Detail, type ListPane, detailKey, detailOf, holdsUnsaved, listPaneOf, lostBy, paneAttribute } from "./panes.ts";
 import { type Day, type Mealtime, today } from "./meal-plan.ts";
 import { Planning } from "./planning.ts";
 import "./planning-screen.ts";
@@ -41,6 +42,7 @@ export class App extends LitElement {
     session: { state: true },
     page: { state: true },
     format: { state: true },
+    abandoning: { state: true },
   };
 
   startup: Startup = "checking";
@@ -48,7 +50,11 @@ export class App extends LitElement {
   declare page: Page;
   /** The format of the screen: in etendu, a meal is a panel over the planning (D6). */
   format: Format = currentFormat();
+  /** The page a navigation would show, once the loss of an input not saved is confirmed (D9). */
+  abandoning: Page | undefined = undefined;
+  #detailScroll: number | undefined;
   #unfollowFormat: (() => void) | undefined;
+  #unfollowFormatWill: (() => void) | undefined;
   readonly #router: Router;
   readonly #api: Api;
   /** The dish library and the catalog in memory, shared by the screens (D25). */
@@ -108,6 +114,7 @@ export class App extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.#unfollowFormat = onFormatChange((format) => (this.format = format));
+    this.#unfollowFormatWill = onFormatWillChange(() => this.#keepDetailScroll());
     this.format = currentFormat();
     void this.#checkSession();
   }
@@ -115,13 +122,43 @@ export class App extends LitElement {
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.#unfollowFormat?.();
+    this.#unfollowFormatWill?.();
   }
 
   /**
    * In etendu, the focus goes to the panel of a meal opened from the planning, and back to the
    * tile of the meal once it is closed (D10).
    */
+  /**
+   * How far the detail is scrolled, just before a change of format, kept for the new one (D8):
+   * the window scrolls with one pane, the detail on its own beside the pane of a list.
+   */
+  #keepDetailScroll() {
+    const detail = this.#detailElement();
+    this.#detailScroll = detail === null ? undefined : this.querySelector(".app-content--panes") === null ? window.scrollY : detail.scrollTop;
+  }
+
+  /** The element of the detail: a dish, a list, the meal shopping (panes.ts). */
+  #detailElement(): HTMLElement | null {
+    return this.querySelector<HTMLElement>(`.app-content > [${paneAttribute}="detail"]`);
+  }
+
   protected override updated(changed: PropertyValues<this>) {
+    // The detail scrolls on its own beside the pane of a list, with the window otherwise.
+    const scroll = this.#detailScroll;
+    this.#detailScroll = undefined;
+    const detail = this.#detailElement();
+    if (scroll !== undefined && detail !== null) {
+      if (this.querySelector(".app-content--panes") === null) {
+        window.scrollTo({ top: scroll });
+      } else {
+        detail.scrollTop = scroll;
+      }
+    }
+    const dialog = this.querySelector<HTMLDialogElement>("dialog.abandon");
+    if (changed.has("abandoning") && dialog !== null && !dialog.open) {
+      dialog.showModal();
+    }
     const before = changed.get("page") as Page | undefined;
     if (before === undefined || this.format !== "etendu") {
       return;
@@ -152,6 +189,11 @@ export class App extends LitElement {
     // comes first, for the order of tabulation (D10), and the screen always keeps the same
     // place, never created again by a change of format (D8; ADR 0030, point 4).
     const subScreen = this.page.name === "new-dish" || this.page.name === "dish" || this.page.name === "tribe" || this.page.name === "meal-shopping";
+    // The pane of a list and the detail, each in a place of its own (plan grands-ecrans, D5,
+    // D8): side by side in etendu.
+    const listPane = listPaneOf(this.page, this.format);
+    const detail = detailOf(this.page, this.format);
+    const panes = this.format === "etendu" && listPane !== undefined;
     return html`<mt-tab-bar
         .active=${this.page.name === "tribe" ? undefined : tabOf(this.page)}
         ?sub=${subScreen}
@@ -161,7 +203,10 @@ export class App extends LitElement {
         .shoppingHref=${this.#router.href(pages.shopping)}
         .tribeHref=${this.#router.href(pages.tribe)}
       ></mt-tab-bar>
-      <div class="app-content">${this.#planningBehind(this.page)}${this.#screen(this.page)}</div>`;
+      <div class="app-content ${panes ? "app-content--panes" : ""}">
+        ${this.#planningBehind(this.page)}${this.#listPane(this.page, listPane, panes)}${this.#detail(detail, panes)}${this.#screen(this.page)}
+      </div>
+      ${this.#abandonDialog()}`;
   }
 
   /** The range of the planning a meal goes back to: the last one shown, or the one that holds it. */
@@ -225,55 +270,13 @@ export class App extends LitElement {
             )}
           </div>`;
       case "dishes":
-        return html`<mt-dish-library
-          .library=${this.#library}
-          .newDishHref=${this.#router.href(pages.newDish)}
-          .dishHref=${(dish: Dish) => this.#router.href({ name: "dish", id: dish.id })}
-        ></mt-dish-library>`;
       case "new-dish":
-      case "dish": {
-        const id = page.name === "dish" ? page.id : undefined;
-        return keyed(
-          id ?? "new",
-          html`<mt-dish-screen
-            .library=${this.#library}
-            .api=${this.#api}
-            .dishId=${id}
-            .libraryHref=${this.#router.href(pages.dishes)}
-            @saved=${() => this.#router.navigate(pages.dishes, { replace: true })}
-          ></mt-dish-screen>`,
-        );
-      }
+      case "dish":
       case "shopping":
-        return keyed(
-          page.list ?? "main",
-          html`<mt-shopping-list-screen
-            .lists=${this.#shopping}
-            .listId=${page.list}
-            .pickerHref=${this.#router.href(pages.listPicker)}
-            .mealShoppingHref=${(list: ShoppingList) => this.#router.href({ name: "meal-shopping", list: list.id })}
-            .notice=${this.#notice}
-            @unknown-list=${() => this.#router.navigate(pages.shopping, { replace: true })}
-            @list-deleted=${this.#listDeleted}
-          ></mt-shopping-list-screen>`,
-        );
       case "list-picker":
-        return html`<mt-list-picker
-          .lists=${this.#shopping}
-          .backHref=${this.#router.href(this.#lastList)}
-          .listHref=${(list: ShoppingList) => this.#router.href(this.#listPage(list))}
-          @open-list=${(e: CustomEvent<ShoppingList>) => this.#router.navigate(this.#listPage(e.detail))}
-          @list-deleted=${this.#listDeleted}
-        ></mt-list-picker>`;
       case "meal-shopping":
-        return html`<mt-meal-shopping-screen
-          .lists=${this.#shopping}
-          .planning=${this.#planning}
-          .listId=${page.list}
-          .listHref=${(id: string | undefined) => this.#router.href(this.#listPageOf(id))}
-          @meal-shopping-added=${this.#mealShoppingAdded}
-          @list-deleted=${this.#listDeleted}
-        ></mt-meal-shopping-screen>`;
+        // In the panes (#listPane, #detail).
+        return nothing;
       case "tribe":
         return html`<mt-tribe-screen .api=${this.#api} .planningHref=${this.#router.href(pages.planning)} @signed-out=${this.#signedOut}></mt-tribe-screen>`;
       case "login":
@@ -281,7 +284,126 @@ export class App extends LitElement {
     }
   }
 
-  /** A link to a page of the tribe is shown by the router, without reloading the page. */
+  /** The pane of a list: the library, or the list picker; beside the detail in etendu (D5). */
+  #listPane(page: Page, pane: ListPane | undefined, beside: boolean) {
+    switch (pane) {
+      case "library":
+        return html`<mt-dish-library
+          data-pane="list"
+          .library=${this.#library}
+          .newDishHref=${this.#router.href(pages.newDish)}
+          .dishHref=${(dish: Dish) => this.#router.href({ name: "dish", id: dish.id })}
+          .current=${page.name === "dish" ? page.id : undefined}
+          .beside=${beside}
+        ></mt-dish-library>`;
+      case "lists": {
+        const list = page.name === "shopping" || page.name === "meal-shopping" ? page.list : undefined;
+        return html`<mt-list-picker
+          data-pane="list"
+          .lists=${this.#shopping}
+          .backHref=${this.#router.href(this.#lastList)}
+          .listHref=${(l: ShoppingList) => this.#router.href(this.#listPage(l))}
+          .current=${beside ? { list } : undefined}
+          .beside=${beside}
+          @open-list=${(e: CustomEvent<ShoppingList>) => this.#router.navigate(this.#listPage(e.detail))}
+          @list-deleted=${this.#listDeleted}
+        ></mt-list-picker>`;
+      }
+      case undefined:
+        return nothing;
+    }
+  }
+
+  /**
+   * The detail: a dish, a list, the meal shopping, or in etendu the invitation to choose a dish.
+   * The same detail is the same element, whatever the format (D8).
+   */
+  #detail(detail: Detail | undefined, beside: boolean) {
+    if (detail === undefined) {
+      return nothing;
+    }
+    switch (detail.kind) {
+      case "choose-dish":
+        return chooseDish(this.#router.href(pages.newDish));
+      case "dish":
+        return keyed(
+          detailKey(detail),
+          html`<mt-dish-screen
+            data-pane="detail"
+            .library=${this.#library}
+            .api=${this.#api}
+            .dishId=${detail.id}
+            .libraryHref=${this.#router.href(pages.dishes)}
+            .beside=${beside}
+            @saved=${() => this.#router.navigate(pages.dishes, { replace: true })}
+          ></mt-dish-screen>`,
+        );
+      case "list":
+        return keyed(
+          detailKey(detail),
+          html`<mt-shopping-list-screen
+            data-pane="detail"
+            .lists=${this.#shopping}
+            .listId=${detail.list}
+            .pickerHref=${this.#router.href(pages.listPicker)}
+            .mealShoppingHref=${(list: ShoppingList) => this.#router.href({ name: "meal-shopping", list: list.id })}
+            .notice=${this.#notice}
+            .beside=${beside}
+            @unknown-list=${() => this.#router.navigate(pages.shopping, { replace: true })}
+            @list-deleted=${this.#listDeleted}
+          ></mt-shopping-list-screen>`,
+        );
+      case "meal-shopping":
+        return html`<mt-meal-shopping-screen
+          data-pane="detail"
+          .lists=${this.#shopping}
+          .planning=${this.#planning}
+          .listId=${detail.list}
+          .listHref=${(id: string | undefined) => this.#router.href(this.#listPageOf(id))}
+          @meal-shopping-added=${this.#mealShoppingAdded}
+          @list-deleted=${this.#listDeleted}
+        ></mt-meal-shopping-screen>`;
+    }
+  }
+
+  /** « Abandonner la modification ? » (D9; GE-Plats-*), while a navigation waits for it. */
+  #abandonDialog() {
+    if (this.abandoning === undefined) {
+      return nothing;
+    }
+    return html`<dialog class="sheet abandon" aria-labelledby="abandon-title" aria-describedby="abandon-text" @close=${() => (this.abandoning = undefined)} @click=${this.#closeAbandonOnBackdrop}>
+      <h2 class="sheet-title" id="abandon-title">Abandonner la modification ?</h2>
+      <p class="sheet-text" id="abandon-text">Ce que vous avez saisi sera perdu.</p>
+      <button class="button-primary" type="button" @click=${this.#abandon}>Abandonner</button>
+      <button class="button-text button-text--wide" type="button" autofocus @click=${this.#keepEditing}>Continuer la modification</button>
+    </dialog>`;
+  }
+
+  #closeAbandonOnBackdrop(e: MouseEvent) {
+    if (e.target instanceof HTMLDialogElement) {
+      this.#keepEditing();
+    }
+  }
+
+  #keepEditing() {
+    this.querySelector<HTMLDialogElement>("dialog.abandon")?.close();
+    this.abandoning = undefined;
+  }
+
+  /** The input is lost: the navigation waiting goes on. */
+  #abandon() {
+    const page = this.abandoning;
+    this.#keepEditing();
+    if (page !== undefined) {
+      this.#router.navigate(page);
+    }
+  }
+
+  /**
+   * A link to a page of the tribe is shown by the router, without reloading the page. In moyen
+   * and etendu, a navigation that would lose an input not saved waits for a confirmation (D9):
+   * the format counts at the time of the navigation.
+   */
   #followLink(e: MouseEvent) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
       return;
@@ -290,9 +412,23 @@ export class App extends LitElement {
     if (link === null || link.target !== "" || link.origin !== location.origin) {
       return;
     }
-    if (this.#router.follow(link.pathname, link.search)) {
-      e.preventDefault();
+    const page = this.#router.pageAt(link.pathname, link.search);
+    if (page === undefined) {
+      return;
     }
+    e.preventDefault();
+    if (this.format !== "compact" && this.#loses(page)) {
+      this.abandoning = page;
+      return;
+    }
+    this.#router.navigate(page);
+  }
+
+  /** Whether going to a page loses an input not saved: in a pane whose content changes (D8, D9). */
+  #loses(page: Page): boolean {
+    const lost = lostBy(this.page, page, this.format);
+    const unsaved = (pane: "list" | "detail") => holdsUnsaved(this.querySelector(`.app-content > [${paneAttribute}="${pane}"]`));
+    return (lost.list && unsaved("list")) || (lost.detail && unsaved("detail"));
   }
 
   async #checkSession() {

@@ -4,6 +4,7 @@
 // on the page.
 import { type Locator, type Page, expect } from "@playwright/test";
 import { scrollEnded } from "./scroll.ts";
+import { findDish } from "./steps-dishes.ts";
 import { apiDay, dateOf, dayLabel, mealOf, parseWritten } from "./steps-planning.ts";
 import { step } from "./steps.ts";
 
@@ -204,4 +205,163 @@ step(/j'appuie sur Échap/, async (world) => {
 step(/aucun repas n'est ouvert/, async (world) => {
   await expect(world.page).not.toHaveURL(/\/repas\//);
   await expect(world.page.locator("mt-meal-screen")).toHaveCount(0);
+});
+
+// Two panes (D5).
+
+/** Where an element is shown: its box, once visible. */
+async function boxOf(locator: Locator) {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  if (box === null) {
+    throw new Error("nothing to measure");
+  }
+  return box;
+}
+
+/** Whether the detail is to the right of the pane of a list, side by side. */
+async function besidePane(pane: Locator, detail: Locator): Promise<void> {
+  const left = await boxOf(pane);
+  const right = await boxOf(detail);
+  expect(right.x).toBeGreaterThanOrEqual(left.x + left.width - 1);
+  expect(right.y).toBeLessThan(left.y + left.height);
+}
+
+function library(page: Page): Locator {
+  return page.locator("mt-dish-library section");
+}
+
+/** The card of a dish in the library, by its name. */
+function dishCard(page: Page, name: string): Locator {
+  return library(page).locator("a.dish-card").filter({ has: page.locator(".dish-name").getByText(name, { exact: true }) });
+}
+
+function dishName(page: Page): Locator {
+  return page.getByRole("textbox", { name: "Nom du plat" });
+}
+
+step(/j'ouvre la bibliothèque de plats/, async (world) => {
+  await world.open("je", "plats");
+  await expect(world.page.getByRole("heading", { name: "Plats", exact: true })).toBeVisible();
+});
+
+step(/l'invitation à choisir un plat s'affiche à côté de la bibliothèque/, async (world) => {
+  await besidePane(library(world.page), world.page.getByRole("main").filter({ hasText: "Choisissez un plat ou créez-en un" }));
+  await expect(world.page.getByRole("link", { name: "Nouveau plat" })).toBeVisible();
+});
+
+step(/j'ouvre le plat "([^"]*)"/, async (world, name) => {
+  if (world.pageOwner === undefined) {
+    await world.open("je", "plats");
+  }
+  await dishCard(world.page, name ?? "").click();
+  await expect(dishName(world.page)).toHaveValue(name ?? "");
+});
+
+step(/j'ouvre le plat "([^"]*)" dans la bibliothèque/, async (world, name) => {
+  await dishCard(world.page, name ?? "").click();
+});
+
+step(/le plat "([^"]*)" s'affiche à côté de la bibliothèque/, async (world, name) => {
+  const main = world.page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText(name ?? "");
+  await besidePane(library(world.page), main);
+});
+
+step(/le plat "([^"]*)" est marqué dans la bibliothèque/, async (world, name) => {
+  await expect(dishCard(world.page, name ?? "")).toHaveAttribute("aria-current", "page");
+  await expect(library(world.page).locator('a.dish-card[aria-current="page"]')).toHaveCount(1);
+});
+
+// Abandon an input not saved (D9).
+
+step(/je renomme le plat en "([^"]*)" sans l'enregistrer/, async (world, name) => {
+  await dishName(world.page).fill(name ?? "");
+});
+
+step(/j'ouvre l'onglet Planning/, async (world) => {
+  await tabs(world.page).getByRole("link", { name: "Planning" }).click();
+});
+
+function abandonDialog(page: Page): Locator {
+  return page.getByRole("dialog", { name: "Abandonner la modification ?" });
+}
+
+step(/on me demande si j'abandonne la modification/, async (world) => {
+  await expect(abandonDialog(world.page)).toBeVisible();
+  await expect(abandonDialog(world.page)).toContainText("Ce que vous avez saisi sera perdu.");
+});
+
+step(/on ne me demande pas si j'abandonne la modification/, async (world) => {
+  await expect(abandonDialog(world.page)).toHaveCount(0);
+});
+
+step(/je continue la modification/, async (world) => {
+  await abandonDialog(world.page).getByRole("button", { name: "Continuer la modification" }).click();
+  await expect(abandonDialog(world.page)).toHaveCount(0);
+});
+
+step(/j'abandonne la modification/, async (world) => {
+  await abandonDialog(world.page).getByRole("button", { name: "Abandonner", exact: true }).click();
+});
+
+step(/le plat "([^"]*)" est ouvert avec le nom "([^"]*)"/, async (world, saved, typed) => {
+  const dish = await findDish(world, "je", saved ?? "");
+  await expect(world.page).toHaveURL(new RegExp(`/plats/${dish.id}$`));
+  await expect(world.page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText(saved ?? "");
+  await expect(dishName(world.page)).toHaveValue(typed ?? "");
+});
+
+step(/la bibliothèque contient toujours le plat "([^"]*)"/, async (world, name) => {
+  await findDish(world, "je", name ?? "");
+});
+
+step(/je reviens à la bibliothèque de plats/, async (world) => {
+  await world.page.getByRole("main").getByRole("link", { name: "Plats" }).click();
+});
+
+step(/je vois la bibliothèque de plats/, async (world) => {
+  await expect(world.page).toHaveURL(/\/plats$/);
+  await expect(world.page.getByRole("heading", { name: "Plats", level: 1 })).toBeVisible();
+});
+
+// Rotation (D8).
+
+step(/je tourne la tablette/, async (world) => {
+  const viewport = world.page.viewportSize();
+  if (viewport === null) {
+    throw new Error("no window to turn");
+  }
+  await world.page.setViewportSize({ width: viewport.height, height: viewport.width });
+});
+
+function itemCombobox(page: Page): Locator {
+  return page.getByRole("combobox", { name: "Article", exact: true });
+}
+
+step(/je saisis l'article "([^"]*)" à la main sans l'ajouter/, async (world, ingredient) => {
+  await world.page.getByRole("button", { name: "Ajouter un article à la main" }).click();
+  await itemCombobox(world.page).fill(ingredient ?? "");
+});
+
+step(/la saisie de l'article "([^"]*)" est toujours en cours/, async (world, ingredient) => {
+  await expect(itemCombobox(world.page)).toHaveValue(ingredient ?? "");
+});
+
+function picker(page: Page): Locator {
+  return page.locator("mt-list-picker section");
+}
+
+step(/la liste "([^"]*)" s'affiche à côté du choix des listes/, async (world, name) => {
+  const main = world.page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 }).locator(".shopping-title-name")).toHaveText(name ?? "");
+  await besidePane(picker(world.page), main);
+  await expect(picker(world.page).locator('.list-card-link[aria-current="page"] .list-card-name')).toHaveText(name ?? "");
+});
+
+step(/j'ouvre la liste "([^"]*)" depuis le choix des listes/, async (world, name) => {
+  await picker(world.page)
+    .locator(".list-card-link")
+    .filter({ has: world.page.locator(".list-card-name").getByText(name ?? "", { exact: true }) })
+    .click();
 });

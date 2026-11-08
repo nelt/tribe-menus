@@ -44,7 +44,7 @@ async function newDishScreen(world: World, who: string): Promise<void> {
   } else {
     // Followed by the router, without reloading the application.
     await world.page.getByRole("link", { name: "Plats" }).click();
-    await world.page.getByRole("link", { name: "Nouveau" }).click();
+    await world.page.getByRole("link", { name: "Nouveau", exact: true }).click();
   }
   await expect(world.page.getByRole("heading", { name: "Nouveau plat" })).toBeVisible();
   // The size of the tribe is read: the parts are proposed (D16).
@@ -75,7 +75,7 @@ async function notReloaded(world: World): Promise<void> {
   expect(await world.page.evaluate(() => (window as unknown as { notReloaded?: boolean }).notReloaded)).toBe(true);
 }
 
-async function findDish(world: World, who: string, name: string): Promise<ApiDish> {
+export async function findDish(world: World, who: string, name: string): Promise<ApiDish> {
   const tribe = await world.tribe();
   const page = (await tribe.apiOk(who, "GET", "dishes")) as { items: ApiDish[]; next?: string };
   const dish = page.items.find((d) => d.name === name);

@@ -3,7 +3,7 @@
 // tribe proposed are proved by the scenarios P4, T1 and T3 against the real server
 // (scenarios.spec.ts).
 import { expect, test } from "@playwright/test";
-import { mockApi, pageReply, replies, tabsOnSubScreen } from "./api-mock.ts";
+import { mockApi, pageReply, replies, tabsOnSubScreen, twoPanes } from "./api-mock.ts";
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 
@@ -50,7 +50,7 @@ test("a new dish: the size of the tribe, an ingredient chosen, another created, 
     createDish: [{ status: 201, body: { dish: curry, versions: { dishes: 2, ingredients: 2 } } }],
   });
   await page.goto("/tribes/demo/plats");
-  await page.getByRole("link", { name: "Nouveau" }).click();
+  await page.getByRole("link", { name: "Nouveau", exact: true }).click();
   await expect(page).toHaveURL(/\/tribes\/demo\/plats\/nouveau$/);
   await expect(page.getByRole("heading", { name: "Nouveau plat" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Onglets" })).toHaveCount(tabsOnSubScreen());
@@ -335,14 +335,19 @@ test("a dish unknown to the library", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session], getDishes: [pageReply("dishes", 1, [chili])] });
   await page.goto(`/tribes/demo/plats/${id(9)}`);
   await expect(page.getByText("Ce plat est introuvable.")).toBeVisible();
-  await expect(page.getByRole("main").getByRole("link", { name: "Plats" })).toHaveAttribute("href", "/tribes/demo/plats");
+  // In etendu, the library is beside the dish, without link back (plan grands-ecrans, D5).
+  await expect(page.getByRole("main").getByRole("link", { name: "Plats" })).toHaveCount(twoPanes() ? 0 : 1);
+  if (!twoPanes()) {
+    await expect(page.getByRole("main").getByRole("link", { name: "Plats" })).toHaveAttribute("href", "/tribes/demo/plats");
+  }
 });
 
 test("a dish opened without network: the message and “Réessayer”", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session], getDishes: [replies.networkError, pageReply("dishes", 1, [chili])] });
   await page.goto(`/tribes/demo/plats/${chili.id}`);
-  await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
-  await page.getByRole("button", { name: "Réessayer" }).click();
+  // In etendu, the library beside tells it too.
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
+  await page.getByRole("main").getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByLabel("Nom du plat")).toHaveValue("Chili con carne");
 });
 
