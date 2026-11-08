@@ -3,6 +3,7 @@
 // navigation, the dialogs, the days of the planning by week and the panel of a meal, measured
 // on the page.
 import { type Locator, type Page, expect } from "@playwright/test";
+import { scrollEnded } from "./scroll.ts";
 import { apiDay, dateOf, dayLabel, mealOf, parseWritten } from "./steps-planning.ts";
 import { step } from "./steps.ts";
 
@@ -142,29 +143,16 @@ step(/le (.+) est le premier jour visible, entièrement/, async (world, written)
   await expect.poll(async () => Math.round((await placeInWeek(day(world.page, written ?? ""))).left)).toBe(0);
 });
 
-/** Waits for the scroll of the days to end: their position no longer changes. */
-async function scrollEnded(page: Page): Promise<void> {
-  let last = -1;
-  await expect
-    .poll(async () => {
-      const now = await page.locator(".days").evaluate((e) => e.scrollLeft);
-      const still = now === last;
-      last = now;
-      return still;
-    })
-    .toBe(true);
-}
-
 step(/je fais défiler le semainier d'un jour vers les jours suivants/, async (world) => {
   await world.page.getByRole("button", { name: "Jours suivants" }).click();
-  await scrollEnded(world.page);
+  await scrollEnded(world.page.locator(".days"));
 });
 
 step(/je fais défiler le semainier jusqu'au dernier jour/, async (world) => {
   const next = world.page.getByRole("button", { name: "Jours suivants" });
   for (let i = 0; i < 7 && (await next.count()) > 0; i++) {
     await next.click();
-    await scrollEnded(world.page);
+    await scrollEnded(world.page.locator(".days"));
   }
   await expect(next).toHaveCount(0);
   await expect(world.page.getByRole("button", { name: "Jours précédents" })).toBeVisible();
