@@ -46,6 +46,7 @@ test("each name changes with its content, and only with it", async () => {
     "app.css",
     "logotype.svg",
     "main.js",
+    "symbole-reduit.svg",
     "symbole.svg",
   ]);
   for (const [fixed, produced] of Object.entries(first)) {
