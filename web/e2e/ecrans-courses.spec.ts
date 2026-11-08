@@ -3,7 +3,7 @@
 // are proved against the real server by godog; C1 and C2 on screen by their scenarios @ui
 // (scenarios.spec.ts).
 import { expect, type Page, test } from "@playwright/test";
-import { type Received, type Reply, mockApi, pageReply, replies } from "./api-mock.ts";
+import { type Received, type Reply, mockApi, pageReply, replies, twoPanes } from "./api-mock.ts";
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 
@@ -53,9 +53,11 @@ test("the tab Courses opens the main list: name, progress, items in the order of
   await expect(tabs.getByRole("link", { name: "Courses" })).toHaveAttribute("aria-current", "page");
   const title = page.getByRole("heading", { level: 1 });
   await expect(title).toHaveText(/Courses\s*principale/);
-  await expect(title.getByRole("link", { name: "Courses, liste principale. Changer de liste" })).toHaveAttribute("href", "/tribes/demo/courses/listes");
+  if (!twoPanes()) {
+    await expect(title.getByRole("link", { name: "Courses, liste principale. Changer de liste" })).toHaveAttribute("href", "/tribes/demo/courses/listes");
+  }
   await expect(page.getByText("2 sur 5 articles")).toBeVisible();
-  await expect(page.getByText("3 à prendre")).toBeVisible();
+  await expect(page.getByRole("main").getByText("3 à prendre")).toBeVisible();
   expect(await itemTexts(page)).toEqual(["bœuf haché 2 plats 875 g", "lessive ajouté", "sel 1 plat", "crème 1 plat 50 cl", "pain ajouté 2 pièces"]);
   await expect(page.getByRole("checkbox", { name: "Cocher crème" })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: "Cocher sel" })).not.toBeChecked();
@@ -69,12 +71,14 @@ test("no inline style: the CSP of the application refuses them", async ({ page }
   page.on("console", (m) => {
     if (m.text().includes("Content Security Policy")) refused.push(m.text());
   });
-  await mockLists(page, [courses, marche], { getShoppingLists: [{ ...pageReply("shopping_lists", 7, [courses, marche]), delayMs: 300 }] });
+  await mockLists(page, [courses, marche], { getShoppingLists: [{ ...pageReply("shopping_lists", 7, [courses, marche]), delayMs: 1000 }] });
   await page.goto("/tribes/demo/courses");
   await expect(page.getByRole("status", { name: "Chargement de la liste" })).toBeVisible();
   await expect(page.getByText("2 sur 5 articles")).toBeVisible();
-  expect(await page.locator("progress").evaluate((e: HTMLProgressElement) => e.position)).toBeCloseTo(0.4);
-  await page.getByRole("link", { name: /Changer de liste/ }).click();
+  expect(await page.getByRole("main").locator("progress").evaluate((e: HTMLProgressElement) => e.position)).toBeCloseTo(0.4);
+  if (!twoPanes()) {
+    await page.getByRole("link", { name: /Changer de liste/ }).click();
+  }
   await expect(page.getByRole("heading", { name: "Listes" })).toBeVisible();
   expect(refused).toEqual([]);
 });
@@ -83,9 +87,11 @@ test("an empty list, another list, a list unknown brings back to the main list (
   await mockLists(page, [courses, drive, marche]);
   await page.goto(`/tribes/demo/courses/${drive.id}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Drive");
-  await expect(page.getByRole("link", { name: "Drive. Changer de liste" })).toBeVisible();
+  if (!twoPanes()) {
+    await expect(page.getByRole("link", { name: "Drive. Changer de liste" })).toBeVisible();
+  }
   await expect(page.getByText("La liste est vide. Ajoutez les courses des repas ou un article à la main.")).toBeVisible();
-  await expect(page.locator("progress")).toHaveCount(0);
+  await expect(page.getByRole("main").locator("progress")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Courses faites" })).toBeDisabled();
   await expect(page.getByText("Cochez les articles achetés pour les retirer de la liste.")).toBeVisible();
 
@@ -97,8 +103,9 @@ test("an empty list, another list, a list unknown brings back to the main list (
 test("loading impossible: the message and « Réessayer »", async ({ page }) => {
   await mockLists(page, [], { getShoppingLists: [replies.networkError, pageReply("shopping_lists", 7, [courses])] });
   await page.goto("/tribes/demo/courses");
-  await expect(page.getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
-  await page.getByRole("button", { name: "Réessayer" }).click();
+  // In etendu, the list picker beside tells it too.
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText("Le réseau est lent ou absent. Réessayez.");
+  await page.getByRole("main").getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByText("2 sur 5 articles")).toBeVisible();
 });
 
@@ -213,8 +220,13 @@ test("a write on a list deleted in between opens the main list, which tells it (
 test("the list picker: order of C2, summaries, the sheet of each list (C1, C2, C12)", async ({ page }) => {
   await mockLists(page, [drive, marche, courses]);
   await page.goto(`/tribes/demo/courses/${marche.id}`);
-  await page.getByRole("link", { name: "Marché du samedi. Changer de liste" }).click();
-  await expect(page).toHaveURL(/\/tribes\/demo\/courses\/listes$/);
+  // In etendu, the list picker is beside the list, its card marked (plan grands-ecrans, D5).
+  if (twoPanes()) {
+    await expect(page.locator('.list-card-link[aria-current="page"] .list-card-name')).toHaveText("Marché du samedi");
+  } else {
+    await page.getByRole("link", { name: "Marché du samedi. Changer de liste" }).click();
+    await expect(page).toHaveURL(/\/tribes\/demo\/courses\/listes$/);
+  }
   await expect(page.getByRole("navigation", { name: "Onglets" }).getByRole("link", { name: "Courses" })).toHaveAttribute("aria-current", "page");
   const cards = page.locator(".list-card-link");
   expect(await cards.evaluateAll((all) => all.map((e) => (e.textContent ?? "").replace(/\s+/g, " ").trim()))).toEqual([
@@ -222,7 +234,9 @@ test("the list picker: order of C2, summaries, the sheet of each list (C1, C2, C
     "Marché du samedi 1 article · 1 à prendre 0 sur 1",
     "Drive Vide",
   ]);
-  await expect(page.getByRole("link", { name: "Retour à la liste" })).toHaveAttribute("href", `/tribes/demo/courses/${marche.id}`);
+  if (!twoPanes()) {
+    await expect(page.getByRole("link", { name: "Retour à la liste" })).toHaveAttribute("href", `/tribes/demo/courses/${marche.id}`);
+  }
   await page.screenshot({ path: "test-results/courses-listes.png", fullPage: true });
 
   await page.getByRole("button", { name: "Actions pour la liste Courses" }).click();

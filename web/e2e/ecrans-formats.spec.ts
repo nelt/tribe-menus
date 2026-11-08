@@ -39,7 +39,7 @@ for (const { width, format } of widths) {
         getShoppingLists: [pageReply("shopping_lists", 1, [courses, marche])],
       });
       await page.goto(`/tribes/demo/${screen}`);
-      await expect(page.locator("main, .login").first()).toBeVisible();
+      await expect(page.locator("main, [role=main], .login").first()).toBeVisible();
       await expect(page.locator("html")).toHaveAttribute("data-format", format);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, `horizontal scroll on /${screen}`).toBeLessThanOrEqual(0);

@@ -70,6 +70,11 @@ step(/(?:que )?j'ai créé la liste "([^"]*)" puis la liste "([^"]*)"/, async (w
 
 step(/j'ouvre le choix des listes/, async (world) => {
   await world.open("je", "courses");
+  // In etendu, the list picker is beside the list (plan grands-ecrans, D5).
+  if ((await world.page.locator("html").getAttribute("data-format")) === "etendu") {
+    await expect(world.page.getByRole("heading", { name: "Listes", level: 2 })).toBeVisible();
+    return;
+  }
   await world.page.getByRole("link", { name: /Changer de liste$/ }).click();
   await expect(world.page.getByRole("heading", { name: "Listes", level: 1 })).toBeVisible();
 });

@@ -59,6 +59,7 @@ export class ShoppingListScreen extends LitElement {
     pickerHref: { attribute: false },
     mealShoppingHref: { attribute: false },
     notice: { attribute: false },
+    beside: { attribute: false },
     failed: { state: true },
     revision: { state: true },
     adding: { state: true },
@@ -77,6 +78,8 @@ export class ShoppingListScreen extends LitElement {
   declare mealShoppingHref: (list: ShoppingList) => string;
   /** What the screen tells above the list; given by the application after a list deleted. */
   declare notice: Notice | undefined;
+  /** Beside the list picker, in etendu: the name is a title alone, the picker is beside (plan grands-ecrans, D5). */
+  beside = false;
   /** The last check failed for lack of network, the copy never loaded. */
   failed = false;
   /** Increases at each change of the copy, to render again. */
@@ -130,6 +133,11 @@ export class ShoppingListScreen extends LitElement {
     }
   }
 
+  /** An item is being typed by hand, not added yet (plan grands-ecrans, D9). */
+  get unsaved(): boolean {
+    return this.adding && (trimSpaces(this.draft.ingredient) !== "" || trimSpaces(this.draft.quantity) !== "");
+  }
+
   async #check() {
     this.failed = false;
     const outcome = await this.lists.check();
@@ -173,11 +181,13 @@ export class ShoppingListScreen extends LitElement {
     const label = list.main ? `${list.name}, liste principale. Changer de liste` : `${list.name}. Changer de liste`;
     const progress = progressOf(list);
     return html`<h1 class="screen-title shopping-title">
-        <a class="shopping-title-link" href=${this.pickerHref} aria-label=${label}>
-          <span class="shopping-title-name">${list.name}</span>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
-          ${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}
-        </a>
+        ${this.beside
+          ? html`<span class="shopping-title-text"><span class="shopping-title-name">${list.name}</span>${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}</span>`
+          : html`<a class="shopping-title-link" href=${this.pickerHref} aria-label=${label}>
+              <span class="shopping-title-name">${list.name}</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+              ${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}
+            </a>`}
       </h1>
       ${progress.total === 0
         ? nothing
@@ -525,7 +535,9 @@ export class ShoppingListScreen extends LitElement {
     // A 401 has already brought back to the login.
     if (result.kind !== "unauthorized") {
       this.notice = { kind: "network" };
+      // The window, or the pane of the list in etendu.
       window.scrollTo({ top: 0 });
+      this.scrollTop = 0;
     }
   }
 }

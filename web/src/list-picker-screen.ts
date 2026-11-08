@@ -7,6 +7,7 @@
 import { LitElement, type PropertyValues, html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
+import { trimSpaces } from "./dishes.ts";
 import { networkErrorMessage } from "./login.ts";
 import { type ShoppingList, checkListName, deleteBlocked, listSummary, maxListNameLength, maxLists, progressOf, shoppingErrorMessage, sortLists } from "./shopping.ts";
 import { networkBanner } from "./shopping-list-screen.ts";
@@ -29,6 +30,8 @@ export class ListPickerScreen extends LitElement {
     lists: { attribute: false },
     backHref: { attribute: false },
     listHref: { attribute: false },
+    current: { attribute: false },
+    beside: { attribute: false },
     failed: { state: true },
     revision: { state: true },
     network: { state: true },
@@ -42,6 +45,10 @@ export class ListPickerScreen extends LitElement {
   /** The list the member comes from. */
   declare backHref: string;
   declare listHref: (list: ShoppingList) => string;
+  /** The list open beside the picker, whose card is marked: its identifier, or undefined for the main list (plan grands-ecrans, D5). */
+  current: { list: string | undefined } | undefined = undefined;
+  /** A pane beside a list, in etendu: no link back, the main of the page is the list (D5). */
+  beside = false;
   failed = false;
   revision = 0;
   /** The last write failed for lack of network (D2). */
@@ -75,6 +82,11 @@ export class ListPickerScreen extends LitElement {
     }
   }
 
+  /** The name of a new list is being typed (plan grands-ecrans, D9); a renaming is in a modal sheet. */
+  get unsaved(): boolean {
+    return this.creating && trimSpaces(this.newName) !== "";
+  }
+
   async #check() {
     this.failed = false;
     const outcome = await this.lists.check();
@@ -83,15 +95,19 @@ export class ListPickerScreen extends LitElement {
 
   override render() {
     const lists = this.lists.lists.items;
-    return html`<main class="screen shopping">
-        <a class="back-link" href=${this.backHref}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>Retour à la liste
-        </a>
-        <h1 class="screen-title shopping-title">Listes</h1>
+    // Beside a list, the picker is a region of the page, titled at the level under the list:
+    // only the role and the title change, the name of a new list keeps its field (D8).
+    return html`<section class="screen shopping" role=${this.beside ? nothing : "main"} aria-labelledby="picker-title">
+        ${this.beside
+          ? html`<h2 class="screen-title shopping-title" id="picker-title">Listes</h2>`
+          : html`<a class="back-link" href=${this.backHref}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>Retour à la liste
+              </a>
+              <h1 class="screen-title shopping-title" id="picker-title">Listes</h1>`}
         ${this.network ? networkBanner() : nothing}
         ${this.failed ? html`${alertMessage("picker-error", networkErrorMessage)}<button class="button-secondary" type="button" @click=${this.#check}>Réessayer</button>` : nothing}
         ${lists === undefined ? nothing : this.#lists(lists)}
-      </main>
+      </section>
       ${lists === undefined ? nothing : this.#sheet(lists)}`;
   }
 
@@ -103,8 +119,9 @@ export class ListPickerScreen extends LitElement {
 
   #card(list: ShoppingList) {
     const progress = progressOf(list);
-    return html`<li class="list-card ${list.main ? "list-card--main" : ""}">
-      <a class="list-card-link" href=${this.listHref(list)}>
+    const current = this.current !== undefined && (this.current.list === undefined ? list.main : this.current.list === list.id);
+    return html`<li class="list-card ${list.main ? "list-card--main" : ""} ${current ? "list-card--current" : ""}">
+      <a class="list-card-link" href=${this.listHref(list)} aria-current=${current ? "page" : nothing}>
         <span class="list-card-head">
           <span class="list-card-name">${list.name}</span>
           ${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}
@@ -367,7 +384,9 @@ export class ListPickerScreen extends LitElement {
     if (result.kind !== "unauthorized") {
       this.#closeSheet();
       this.network = true;
+      // The window, or the pane of the picker in etendu.
       window.scrollTo({ top: 0 });
+      this.scrollTop = 0;
     }
   }
 }

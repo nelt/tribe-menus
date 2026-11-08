@@ -2127,6 +2127,10 @@ a.button-secondary {
   padding-right: 6px;
 }
 
+.banner-done--plain {
+  padding-right: 14px;
+}
+
 .banner-done > span {
   flex-grow: 1;
 }
@@ -3045,4 +3049,160 @@ dialog.sheet::backdrop {
   border: var(--border-thin) solid var(--color-border);
   border-radius: var(--radius-card);
   background: none;
+}
+
+/* Meal shopping in moyen and etendu (docs/design/README.md, « Formats d'écran »): the calendar
+   on the left; on the right, the fields, the summary, the target list and the button, which
+   follows the form. In compact, one column, in the order of the document. */
+.meal-shopping-body,
+.meal-shopping-rest {
+  display: contents;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .meal-shopping-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto 1fr;
+  gap: 12px 24px;
+  align-items: start;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .meal-shopping-body > .period-fields {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .meal-shopping-body > .calendar {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+:root:is([data-format="moyen"], [data-format="etendu"]) .meal-shopping-rest {
+  display: flex;
+  flex-direction: column;
+  grid-column: 2;
+  grid-row: 2;
+  gap: 12px;
+}
+
+/* Two panes in etendu (plan grands-ecrans, D5): the pane of a list on the left, scrolling on
+   its own, the detail on the right, in a column centred in the room left. */
+:root[data-format="etendu"] .app-content--panes {
+  display: grid;
+  grid-template-columns: clamp(380px, 30vw, 420px) minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+:root[data-format="etendu"] .app-content--panes > * {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+:root[data-format="etendu"] .app-content--panes > [data-pane="list"] {
+  border-right: var(--border-thin) solid var(--color-border);
+}
+
+:root[data-format="etendu"] .app-content--panes > [data-pane="list"] .screen {
+  max-width: none;
+  padding: 24px 24px 32px;
+}
+
+:root[data-format="etendu"] .app-content--panes > :not([data-pane="list"]) .screen,
+:root[data-format="etendu"] .app-content--panes > .screen {
+  max-width: 760px;
+  min-height: 100%;
+  padding: 24px 32px 32px;
+}
+
+:root[data-format="etendu"] .app-content--panes > [data-pane="detail"] .screen--form,
+:root[data-format="etendu"] .app-content--panes > .dish-choose {
+  max-width: 640px;
+}
+
+/* « Enregistrer le plat » at the bottom of the pane of the dish, as on a phone (D11): after
+   a short form, at the bottom all the same. */
+:root[data-format="etendu"] .app-content--panes .screen--form {
+  padding-bottom: 0;
+}
+
+:root[data-format="etendu"] .app-content--panes .dish-form {
+  flex-grow: 1;
+}
+
+:root[data-format="etendu"] .app-content--panes .save-bar {
+  position: sticky;
+  margin-top: auto;
+  margin-bottom: -32px;
+  padding: 8px 0 24px;
+}
+
+:root[data-format="etendu"] .app-content--panes .save-bar .button-primary {
+  max-width: none;
+}
+
+/* The dish or the list open: its card in a dark outline of 2 px (GE-Plats-*, GE-Courses-*). */
+.dish-card[aria-current="page"] {
+  padding: 11.5px;
+  border: var(--border-strong) solid var(--color-text);
+}
+
+.list-card--current {
+  border: var(--border-strong) solid var(--color-text);
+}
+
+/* The title of a list beside the picker: its name alone, no link. */
+.shopping-title-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+/* Plats in etendu, without dish open (GE-Plats-*): a dashed box the height of the pane. */
+.dish-choose-box {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 360px;
+  box-sizing: border-box;
+  padding: 32px;
+  border: var(--border-strong) dashed var(--color-dashed);
+  border-radius: 24px;
+  text-align: center;
+}
+
+.dish-choose-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: 20px;
+  color: var(--color-text-secondary);
+}
+
+.dish-choose-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.dish-choose-box .button-secondary {
+  gap: 6px;
+}
+
+.dish-choose-text {
+  max-width: 340px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.45;
 }

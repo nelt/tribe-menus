@@ -147,15 +147,13 @@ test("Router: back in the history tells the page", () => {
   assert.deepEqual(changes, [pages.login, pages.planning]);
 });
 
-test("Router.follow: a page of the tribe, or the browser", () => {
+test("Router.pageAt: a page of the tribe, or the browser", () => {
   const { window, calls } = fakeWindow("/tribes/demo/");
-  const changes: Page[] = [];
-  const router = new Router(window, base, (p) => changes.push(p));
-  assert.equal(router.follow("/tribes/demo/plats"), true);
-  assert.equal(router.follow("/tribes/demo/", "?du=2026-09-28"), true);
-  assert.equal(router.follow("/tribes/autre/plats"), false);
-  assert.equal(router.follow("/mentions-legales.html"), false);
-  assert.deepEqual(calls, ["push /tribes/demo/plats", "push /tribes/demo/?du=2026-09-28"]);
-  assert.deepEqual(changes, [pages.dishes, { name: "planning", start: "2026-09-28" }]);
+  const router = new Router(window, base, () => {});
+  assert.deepEqual(router.pageAt("/tribes/demo/plats"), pages.dishes);
+  assert.deepEqual(router.pageAt("/tribes/demo/", "?du=2026-09-28"), { name: "planning", start: "2026-09-28" });
+  assert.equal(router.pageAt("/tribes/autre/plats"), undefined);
+  assert.equal(router.pageAt("/mentions-legales.html"), undefined);
+  assert.deepEqual(calls, []);
   assert.equal(router.href(pages.tribe), "/tribes/demo/tribu");
 });

@@ -27,7 +27,7 @@ test("the library, by alphabetical order, and the search", async ({ page }) => {
   await expect(names).toHaveText(["Chili con carne", "Gratin de courgettes", "Ratatouille"]);
   await expect(page.getByRole("link", { name: /Gratin de courgettes/ })).toContainText("pour 6");
   await expect(page.getByRole("link", { name: /Gratin de courgettes/ })).toHaveAttribute("href", `/tribes/demo/plats/${"2".padStart(32, "0")}`);
-  await expect(page.getByRole("link", { name: "Nouveau" })).toHaveAttribute("href", "/tribes/demo/plats/nouveau");
+  await expect(page.getByRole("link", { name: "Nouveau", exact: true })).toHaveAttribute("href", "/tribes/demo/plats/nouveau");
 
   const search = page.getByRole("searchbox", { name: "Rechercher un plat ou un ingrédient" });
   await search.fill("courg");
@@ -48,7 +48,7 @@ test("an empty library", async ({ page }) => {
   await mockApi(page, { getSession: [replies.session] });
   await page.goto("/tribes/demo/plats");
   await expect(page.getByText("Aucun plat pour l'instant")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Nouveau" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Nouveau", exact: true })).toBeVisible();
 });
 
 test("the library comes by pages, the next ones with If-Match (ADR 0029)", async ({ page }) => {

@@ -399,6 +399,14 @@ En compact, rien ne change par rapport aux maquettes `Doux-*`. La connexion fait
 - **Souris et clavier** (D10) : survol (liserés et fonds légèrement renforcés) et curseur sur ce qui se touche, seulement sous `(hover: hover) and (pointer: fine)` ; focus visible partout (`:focus-visible`) ; tabulation : rail, volet de liste, détail ; Échap ferme un dialogue ou le panneau d'un repas. Les maquettes ne montrent ni le survol ni le focus.
 - **Rotation** (D8) : passer d'un format à l'autre garde l'écran, le chemin, la saisie en cours et la position du volet de détail.
 
+**Réalisation des deux volets** (plan `grands-ecrans`, lot D, 2026-11-08), à valider à la revue :
+
+- **Cartes** : celles de la bibliothèque et du choix des listes restent des liens (vers `plats/<id>`, `courses/<id>`), la carte ouverte marquée `aria-current="page"`, plutôt que des boutons comme la maquette.
+- **Titres** : à côté d'un détail, « Plats » et « Listes » sont des titres de niveau 2, et le détail garde son `main` et son titre de niveau 1 ; la maquette met les deux volets dans un même `main`, titre du plat en niveau 2 (écart gardé, décision du développeur, 2026-11-08).
+- **Enregistrer un plat** en étendu, comme la maquette : le plat reste ouvert avec « Plat enregistré. » (bandeau vert sans croix), qui disparaît à la première modification ; un plat créé s'ouvre sous son chemin. En compact et en moyen, retour à la bibliothèque.
+- **Abandonner une saisie** : le focus va sur « Continuer la modification » ; Échap et le voile valent « Continuer ». Le nom d'une nouvelle liste n'est perdu qu'en quittant le choix des listes : en étendu, ouvrir une autre liste le garde, sans confirmation.
+- **Courses des repas** (moyen et étendu) : le calendrier à gauche, à droite les champs « Du » et « Au » au-dessus du reste.
+
 ## Navigation
 
 - Site public → liens vers les pages légales et le dépôt. Il ne mène pas à l'application, qui est sous `/tribes/<identifiant>/` (ADR 0006).

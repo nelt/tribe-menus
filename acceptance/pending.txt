@@ -23,15 +23,6 @@ authentification.feature: Les modifications autres que les listes de courses né
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
-formats-ecran.feature: Abandonner une modification la perd
-formats-ecran.feature: La bibliothèque reste affichée à côté du plat ouvert
-formats-ecran.feature: La liste ouverte s'affiche à côté du choix des listes
-formats-ecran.feature: Ouvrir un autre plat pendant une modification demande confirmation
-formats-ecran.feature: Quitter une modification non enregistrée demande confirmation
-formats-ecran.feature: Sur téléphone, quitter une modification ne demande pas de confirmation
-formats-ecran.feature: Tourner la tablette ne perd pas la saisie d'un article
-formats-ecran.feature: Tourner la tablette ne perd pas la saisie d'un plat
-formats-ecran.feature: Une saisie revenue à ce qui est enregistré ne demande pas de confirmation
 liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Cocher un article sans réseau
 liste-courses.feature: Créer une liste à partir d'une sélection

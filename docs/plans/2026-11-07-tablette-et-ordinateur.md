@@ -2,7 +2,7 @@
 
 - **Nom** : `grands-ecrans`
 - **Date** : 2026-11-07
-- **Statut** : en cours (lot C). Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
+- **Statut** : en cours (lot D). Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
 
 ## Objectif
 
@@ -117,10 +117,10 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 
 ### Lot D : deux volets pour les plats et les courses (`feature/deux-volets`)
 
-- [ ] **14. Plats** en deux volets (D5) : bibliothèque et recherche à gauche, plat ouvert ou « Choisissez un plat ou créez-en un » à droite, carte du plat ouvert marquée.
-- [ ] **14 bis. Confirmation avant d'abandonner une saisie** (D9) : état « saisie non enregistrée » du plat, de l'article à la main et du nom d'une liste (comparé à ce qui est enregistré) ; garde sur les navigations de l'application en moyen et en étendu ; dialogue « Abandonner la modification ? » ; scénarios `@ui` retirés de `pending.txt`.
-- [ ] **15. Courses** en deux volets (D5) : choix des listes à gauche, liste à droite ; courses des repas dans le volet de détail ; « Nouvelle liste » ouvre la liste créée à droite.
-- [ ] **16. Rotation** : scénario « Tourner la tablette ne perd pas la saisie » sur un plat et sur un article (D8), retirés de `pending.txt`.
+- [x] **14. Plats** en deux volets (D5) : bibliothèque et recherche à gauche, plat ouvert ou « Choisissez un plat ou créez-en un » à droite, carte du plat ouvert marquée. *Fait le 2026-11-08* : voir les notes d'exécution du lot D.
+- [x] **14 bis. Confirmation avant d'abandonner une saisie** (D9) : état « saisie non enregistrée » du plat, de l'article à la main et du nom d'une liste (comparé à ce qui est enregistré) ; garde sur les navigations de l'application en moyen et en étendu ; dialogue « Abandonner la modification ? » ; scénarios `@ui` retirés de `pending.txt`. *Fait le 2026-11-08* : `inputDiffers` (`dishes.ts`), `unsaved` des trois écrans, garde dans `mt-app` d'après `lostBy` (`panes.ts`) ; cinq scénarios retirés.
+- [x] **15. Courses** en deux volets (D5) : choix des listes à gauche, liste à droite ; courses des repas dans le volet de détail ; « Nouvelle liste » ouvre la liste créée à droite. *Fait le 2026-11-08* : et courses des repas avec le calendrier à gauche en moyen et en étendu (reporté du lot B).
+- [x] **16. Rotation** : scénario « Tourner la tablette ne perd pas la saisie » sur un plat et sur un article (D8), retirés de `pending.txt`. *Fait le 2026-11-08* : et `ecrans-volets.spec.ts` (même élément du plat, saisie et défilement gardés dans les deux sens).
 
 ### Recette et release
 
@@ -169,6 +169,15 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
   - **Focus et clavier** (D10) : le repas ouvert depuis le semainier met le focus sur « Fermer le repas » ; fermé, le focus revient à sa case ; Échap le ferme, sauf si un dialogue est ouvert. La croix est un lien vers la plage de retour, comme « Planning », masqué en étendu.
   - **Tests d'écran du repas en étendu** : le retour au Planning passe par la croix (`mealBackLink`, `api-mock.ts`).
   - **Branche `feature/planning-hebdo`** au lieu de `feature/semainier` : « semainier » contient `main`, et la règle `git push *main*` de `.claude/settings.json` en refusait le push (décision du développeur, 2026-11-08) ; règle de nommage des branches ajoutée à `CLAUDE.md`.
+
+- **Lot D, mis en œuvre le 2026-11-08** :
+  - **Pas de composant de mise en page à part** (revue #107, point 3 ; ADR 0030, point 4, note de mise en œuvre validée par le développeur le 2026-11-08) : `web/src/panes.ts`, module pur testé par `node:test`, dit pour une page et un format quel volet de liste (bibliothèque, choix des listes) et quel détail (plat, liste, courses des repas, invitation « Choisissez un plat ») s'affichent ; `mt-app` rend chacun à sa place dans `.app-content` (Planning, volet de liste, détail, autre écran), le détail sous une clé qui ne dépend pas du format. Un changement de format ajoute ou retire le volet de liste et ne recrée jamais le détail (D8), comme le Planning sous le panneau d'un repas au lot C. Le CSS place les deux volets d'après `data-format` et la classe `app-content--panes`.
+  - **Ce qu'une navigation ferait perdre** (D9) se déduit des mêmes fonctions (`lostBy`) : un volet dont le contenu change. Ouvrir une autre liste en étendu garde donc le nom d'une liste en cours de création dans le choix des listes, sans confirmation ; quitter l'onglet la demande. Seuls les liens de l'application sont gardés (`#followLink`), jamais le retour arrière du navigateur. Le dialogue met le focus sur « Continuer la modification », l'action sans perte ; Échap et le voile valent « Continuer ».
+  - **Un seul `main`** : à côté d'un détail, la bibliothèque et le choix des listes sont une région (`section`, rôle `main` quand ils sont seuls), titrée en niveau 2 ; le détail garde son `main` et son titre de niveau 1 (la maquette met un `main` autour des deux volets et le titre du plat en niveau 2 ; écart gardé, décision du développeur, 2026-11-08). Seuls le rôle et le titre changent avec le format : le champ de recherche ou le nom d'une nouvelle liste ne sont pas recréés.
+  - **Défilement à la rotation** (D8) : en un volet, c'est la fenêtre qui défile, en deux volets le détail ; `mt-app` reporte la position de l'un à l'autre au changement de format.
+  - **Après l'enregistrement d'un plat en étendu**, le plat reste ouvert avec « Plat enregistré. », comme la maquette (décision du développeur, 2026-11-08) ; un plat créé s'ouvre sous son chemin `plats/<id>`. Le message disparaît à la première modification. En compact et en moyen, retour à la bibliothèque, comme avant.
+  - **Revue #109** : « Nouvelle liste » ouvrait la liste créée sans passer par la garde, et perdait en étendu l'article en cours de saisie (point 1) : les liens et `open-list` passent maintenant par `#go` ; le retour arrière ferme le dialogue d'abandon resté ouvert (point 2). **Point 4, à revoir avec `courses-suite`** : les autres navigations par événement de `mt-app` (`@unknown-list`, `@list-deleted`, `#mealShoppingAdded`, `#dishSaved`) ne passent pas par la garde ; sans risque aujourd'hui (elles suivent une écriture, ou une liste disparue), mais toute navigation nouvelle demandée par le membre, par exemple les actions de sélection d'articles, devra passer par `#go`.
+  - **Tests d'écran** : en étendu, plusieurs se lisaient sur un seul volet (deux liens « Nouveau », deux alertes de réseau, titre de la liste devenu un titre seul) ; ils cherchent dans le `main` ou lisent le format (`twoPanes`, `api-mock.ts`). L'étape « j'ouvre le choix des listes » ne touche plus le titre en étendu.
 
 ## Questions ouvertes
 
