@@ -112,7 +112,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Point | Origine | À reprendre |
 | --- | --- | --- |
 | Réception du code sur Outlook et iCloud non vérifiée | `recette`, S3 | avant d'inviter un membre qui utilise l'une de ces messageries |
-| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque, le planning, les listes de courses et le `304` sur `GET dishes`, `GET meal-plan` et `GET shopping-lists` au retour sur l'application | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) ; `planning` et `courses`, recette | avant d'inviter la famille |
+| Connexion sous Safari sur un vrai iPhone non vérifiée (WebKit seul) ; de même la bibliothèque, le planning, les listes de courses et le `304` sur `GET dishes`, `GET meal-plan` et `GET shopping-lists` au retour sur l'application ; les formats moyen et étendu sur iPad et sous Safari sur Mac | `recette`, S3 (décision du 2026-11-01) ; `bibliotheque`, recette (revue #77, point 4) ; `planning`, `courses` et `grands-ecrans`, recette | avant d'inviter la famille |
 | Sauvegarde hors du VPS | ADR 0025, point 4 | après une application viable à montrer (planning et listes de courses), au plus tard avant d'inviter la famille (décision du 2026-11-05) |
 | Un démarrage en échec envoie un e-mail de panne à chaque relance de systemd, dont le texte dit qu'il a cessé de le relancer | `recette`, S4 | prochaine PR touchant `deploy/` |
 | `make probe -timing` : le membre passe toujours en premier, sur une connexion à rétablir après l'heure d'attente | `recette`, mesure du 2026-11-01 | avant la prochaine mesure |
@@ -124,6 +124,8 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Avis de sécurité GitHub publié après une version corrective, en plus de l'analyse et de `CHANGELOG.md` | `canal-prive` et `recette`, questions ouvertes | à la première vraie vulnérabilité, ou s'il existe d'autres instances |
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
 | Mise en page d'ordinateur de l'application (navigation latérale, bibliothèque et plat côte à côte) : les écrans restent une colonne de téléphone | recette de `bibliotheque` (2026-11-04) | plan `grands-ecrans` (en cours) |
+| Clavier virtuel sur une tablette en paysage : la mise en page ne bascule pas, mais « Enregistrer le plat » n'est pas visible au-dessus du clavier, qu'il faut fermer (scénario `@manuel` de `formats-ecran.feature` tenu en partie) | recette de `grands-ecrans` (2026-11-09, écart accepté) | corriger le bouton ou alléger le scénario, au plus tard avec `courses-suite` |
+| Lien d'évitement « Aller au contenu » dans l'application : la navigation précède l'écran dans le document, un lecteur d'écran ou le clavier passe les onglets avant chaque écran | revue #107 ; recette de `grands-ecrans` (2026-11-09) | avant d'inviter la famille |
 | Mise à jour automatique de l'application : après un déploiement, un onglet resté ouvert garde l'ancienne version sans prévenir, jusqu'à ce qu'on le recharge | recette de `bibliotheque` (2026-11-05) | avec le service worker (ADR 0004), au plus tard avant d'inviter la famille |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
 | Fichier de base orphelin si le processus meurt pendant la création d'une tribu | revue de la PR #26 | EF-10 |
