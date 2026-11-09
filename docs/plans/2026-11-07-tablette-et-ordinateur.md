@@ -2,7 +2,7 @@
 
 - **Nom** : `grands-ecrans`
 - **Date** : 2026-11-07
-- **Statut** : en cours (lot D). Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
+- **Statut** : terminé le 2026-11-09, `v0.5.0` en production. Demandé par le développeur le 2026-11-07 ; D1, D6, D9 et D14 prises par le développeur le 2026-11-07 ; les autres décisions confirmées par le développeur le 2026-11-08, D12 modifiée (format posé en attribut de la racine, revue #104, point 3). Place dans la feuille de route (D1) : après `courses`, avant `courses-suite`.
 
 ## Objectif
 
@@ -125,8 +125,8 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 ### Recette et release
 
 - [x] **17. Recette** sur l'archive de la PR `release/v0.5.0` : check-list ci-dessous. *Faite le 2026-11-09 sur la PR #111 : un écart accepté (clavier virtuel), lien d'évitement reporté ; compte rendu dans les notes d'exécution.*
-- [ ] **18. Release `v0.5.0`** selon `RELEASING.md`, déployée en production.
-- [ ] **19. Clôture** : statut « terminé » ; feuille de route (point reporté « Mise en page d'ordinateur » retiré) ; `CLAUDE.md` ; `CHANGELOG.md`.
+- [x] **18. Release `v0.5.0`** selon `RELEASING.md`, déployée en production. *Le 2026-11-09 : PR #111 fusionnée, étiquette sur `352ca62`, release publiée par `release.yml` et vérifiée (empreinte, `tribe-menus v0.5.0 (352ca62)`), déployée en production (`previous: v0.4.0`) au second essai (premier téléchargement en `504` chez GitHub, rien d'installé), sans migration ni provisionnement.*
+- [x] **19. Clôture** : statut « terminé » ; feuille de route (point reporté « Mise en page d'ordinateur » retiré) ; `CLAUDE.md` ; `CHANGELOG.md`.
 
 ### Séance de recette (étape 17)
 
