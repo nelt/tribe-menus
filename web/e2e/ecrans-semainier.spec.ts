@@ -36,7 +36,8 @@ const sunday = (page: Page) => page.getByRole("link", { name: /^Dimanche 11 oct\
 test("the panel closed by its cross: the days kept where they were scrolled, the focus back on the meal (D6, D10)", async ({ page }) => {
   await mockWeek(page);
   await page.goto("/tribes/demo/");
-  await page.getByRole("button", { name: "Jours suivants" }).click();
+  // The button goes 2 pixels before the end (layout.ts): the scroll is read once it has ended.
+  await scrolledBy(days(page), () => page.getByRole("button", { name: "Jours suivants" }).click());
   await expect(page.getByRole("button", { name: "Jours suivants" })).toHaveCount(0);
   const scrolled = await scrollOf(page);
   expect(scrolled).toBeGreaterThan(0);
@@ -112,7 +113,7 @@ test("the button that disappears with the last day hands the focus to the other 
 test("another week starts at its first day", async ({ page }) => {
   await mockWeek(page);
   await page.goto("/tribes/demo/");
-  await page.getByRole("button", { name: "Jours suivants" }).click();
+  await scrolledBy(days(page), () => page.getByRole("button", { name: "Jours suivants" }).click());
   // One day is all that is left on a tablet in landscape.
   await expect(page.getByRole("button", { name: "Jours suivants" })).toHaveCount(0);
   await page.getByRole("button", { name: "Semaine suivante" }).click();
