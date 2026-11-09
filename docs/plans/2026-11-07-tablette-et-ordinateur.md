@@ -124,7 +124,7 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 
 ### Recette et release
 
-- [ ] **17. Recette** sur l'archive de la PR `release/v0.5.0` : check-list ci-dessous.
+- [x] **17. Recette** sur l'archive de la PR `release/v0.5.0` : check-list ci-dessous. *Faite le 2026-11-09 sur la PR #111 : un écart accepté (clavier virtuel), lien d'évitement reporté ; compte rendu dans les notes d'exécution.*
 - [ ] **18. Release `v0.5.0`** selon `RELEASING.md`, déployée en production.
 - [ ] **19. Clôture** : statut « terminé » ; feuille de route (point reporté « Mise en page d'ordinateur » retiré) ; `CLAUDE.md` ; `CHANGELOG.md`.
 
@@ -132,15 +132,15 @@ Tous les écrans utilisables dans les trois formats, une colonne au besoin ; pas
 
 Par le développeur, guidé pas à pas, sur trois appareils : téléphone Android, tablette Android, ordinateur.
 
-- [ ] Téléphone : rien n'a changé, en portrait ni en paysage (le paysage reste en compact).
-- [ ] Tablette en portrait : rail, colonnes élargies, dialogues centrés.
-- [ ] Tablette en paysage : semainier, son défilement au doigt calé sur un jour, détail d'un repas en panneau ; deux volets des plats et des courses ; cibles confortables au doigt.
-- [ ] Rotation pendant la saisie d'un plat, d'un article et d'une période : rien n'est perdu, l'écran reste le même.
-- [ ] Clavier virtuel ouvert en paysage : la mise en page ne bascule pas, « Enregistrer le plat » reste visible (D11).
-- [ ] Ordinateur, fenêtre large puis réduite jusqu'au téléphone : passage d'un format à l'autre sans perte ; survol et focus ; tout au clavier, Échap compris.
-- [ ] Tablette et ordinateur : un plat modifié non enregistré, puis un autre plat, le rail ou « Nouveau » : « Abandonner la modification ? » ; « Continuer la modification » garde la saisie, « Abandonner » la perd. Même essai sur le téléphone : pas de confirmation.
-- [ ] Connexion sur la tablette et l'ordinateur.
-- [ ] Ordinateur, fenêtre large mais de moins de 560 px de haut (fenêtre réduite en hauteur, ou portable 1366 × 768 avec des barres d'outils) : l'application passe en compact, barre d'onglets en bas (D3).
+- [x] Téléphone : rien n'a changé, en portrait ni en paysage (le paysage reste en compact).
+- [x] Tablette en portrait : rail, colonnes élargies, dialogues centrés.
+- [x] Tablette en paysage : semainier, son défilement au doigt calé sur un jour, détail d'un repas en panneau ; deux volets des plats et des courses ; cibles confortables au doigt.
+- [x] Rotation pendant la saisie d'un plat, d'un article et d'une période : rien n'est perdu, l'écran reste le même.
+- [x] Clavier virtuel ouvert en paysage : la mise en page ne bascule pas, « Enregistrer le plat » reste visible (D11). *Écart accepté : la mise en page ne bascule pas, mais il faut fermer le clavier pour atteindre « Enregistrer le plat » ; voir les notes d'exécution.*
+- [x] Ordinateur, fenêtre large puis réduite jusqu'au téléphone : passage d'un format à l'autre sans perte ; survol et focus ; tout au clavier, Échap compris.
+- [x] Tablette et ordinateur : un plat modifié non enregistré, puis un autre plat, le rail ou « Nouveau » : « Abandonner la modification ? » ; « Continuer la modification » garde la saisie, « Abandonner » la perd. Même essai sur le téléphone : pas de confirmation.
+- [x] Connexion sur la tablette et l'ordinateur.
+- [x] Ordinateur, fenêtre large mais de moins de 560 px de haut (fenêtre réduite en hauteur, ou portable 1366 × 768 avec des barres d'outils) : l'application passe en compact, barre d'onglets en bas (D3).
 
 ## Critères de validation
 
@@ -180,6 +180,13 @@ Par le développeur, guidé pas à pas, sur trois appareils : téléphone Androi
   - **Après l'enregistrement d'un plat en étendu**, le plat reste ouvert avec « Plat enregistré. », comme la maquette (décision du développeur, 2026-11-08) ; un plat créé s'ouvre sous son chemin `plats/<id>`. Le message disparaît à la première modification. En compact et en moyen, retour à la bibliothèque, comme avant.
   - **Revue #109** : « Nouvelle liste » ouvrait la liste créée sans passer par la garde, et perdait en étendu l'article en cours de saisie (point 1) : les liens et `open-list` passent maintenant par `#go` ; le retour arrière ferme le dialogue d'abandon resté ouvert (point 2). **Point 4, à revoir avec `courses-suite`** : les autres navigations par événement de `mt-app` (`@unknown-list`, `@list-deleted`, `#mealShoppingAdded`, `#dishSaved`) ne passent pas par la garde ; sans risque aujourd'hui (elles suivent une écriture, ou une liste disparue), mais toute navigation nouvelle demandée par le membre, par exemple les actions de sélection d'articles, devra passer par `#go`.
   - **Tests d'écran** : en étendu, plusieurs se lisaient sur un seul volet (deux liens « Nouveau », deux alertes de réseau, titre de la liste devenu un titre seul) ; ils cherchent dans le `main` ou lisent le format (`twoPanes`, `api-mock.ts`). L'étape « j'ouvre le choix des listes » ne touche plus le titre en étendu.
+
+**Séance de recette** (2026-11-09, étape 17, PR #111, archive du commit `ad0f50e`, CI et `e2e-formats` verts), par le développeur, guidé pas à pas : téléphone Android (Chrome), tablette Android en portrait et en paysage (Chrome), ordinateur Ubuntu 24.04 (Chrome).
+
+- Toute la check-list conforme, sauf le clavier virtuel ; connexion refaite sur la tablette et l'ordinateur ; scénario `@manuel` « La session survit au redémarrage du navigateur » conforme sous Chrome (Android), Safari non vérifié faute d'appareil Apple ; « La session survit à la fermeture de l'app installée » sans objet (application pas encore installable) ; `tribe-menus-check report` sans alerte, erreur ni échec d'envoi.
+- **Écart accepté pour `v0.5.0`** (décision du développeur, 2026-11-09) : sur la tablette en paysage, le clavier virtuel ne fait pas basculer la mise en page (D11 tenue sur ce point), mais « Enregistrer le plat » n'est pas visible au-dessus du clavier : il faut le fermer pour l'atteindre. Le scénario `@manuel` « Le clavier virtuel ne change pas la mise en page d'une tablette » (`formats-ecran.feature`) n'est donc tenu qu'en partie ; reporté dans la feuille de route (corriger le bouton ou alléger le scénario).
+- **Lien d'évitement** (revue #107) : reporté, avant d'inviter la famille (décision du développeur, 2026-11-09) ; dans la feuille de route.
+- iPad et Safari sur Mac prouvés par WebKit seul, ajoutés au point reporté de Safari (critères de validation).
 
 ## Questions ouvertes
 
