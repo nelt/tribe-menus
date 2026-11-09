@@ -4,6 +4,8 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `grands-ecrans` terminé (étape 19) : `v0.5.0` en production ; feuille de route (plan terminé, point reporté « Mise en page d'ordinateur » retiré, message de `tribe-menus-deploy` quand GitHub ne répond pas reporté), `CLAUDE.md` (version en service).
+
 ## 0.5.0 — 2026-11-08
 
 - `grands-ecrans/C` (ENF-03) : deux autres tests du semainier rendus stables, après un échec de la CI de la PR de release #111 : « Jours suivants » disparaît à 2 px de la fin, avant que le défilement fluide ait fini ; les tests attendent sa fin (`scrolledBy`) avant de lire la position.
