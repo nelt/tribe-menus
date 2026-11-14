@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"io/fs"
 	"path/filepath"
 	"regexp"
@@ -28,12 +29,14 @@ func TestShoppingListsSchema(t *testing.T) {
 		"INSERT INTO ingredients (id, name, normalized_name) VALUES (1, 'pain', 'pain')",
 		"INSERT INTO dishes VALUES ('d1', 'Chili', 'chili', '#C2502E', 4, 1)",
 		"INSERT INTO shopping_lists VALUES ('l2', 'Marché', 2, 0)",
-		"INSERT INTO shopping_items VALUES ('i1', 'l2', 1, 2000, 'piece', 0, 1)",
-		"INSERT INTO shopping_items VALUES ('i2', 'l2', 1, NULL, NULL, 1, 0)",
+		"INSERT INTO shopping_items VALUES ('i1', 'l2', 1, 2000, 'piece', 0, 1, NULL)",
+		"INSERT INTO shopping_items VALUES ('i2', 'l2', 1, NULL, NULL, 1, 0, NULL)",
 		"INSERT INTO shopping_item_sources VALUES ('i2', 's1', 'd1', '2026-10-06', 'dinner', 4, NULL, NULL)",
 		"INSERT INTO shopping_received VALUES ('l2', 's1', 'd1', 4, 4)",
 		"INSERT INTO shopping_received_lines VALUES ('l2', 's1', 0, 1, NULL, NULL)",
 		"INSERT INTO shopping_received_lines VALUES ('l2', 's1', 1, 1, 500000, 'g')",
+		// A taken quantity (migration 0010; courses-suite, D9).
+		"INSERT INTO shopping_items VALUES ('i3', 'l2', 1, 750000, 'g', 0, 0, 250000)",
 	}
 	for _, s := range setup {
 		if _, err := db.Exec(s); err != nil {
@@ -45,13 +48,13 @@ func TestShoppingListsSchema(t *testing.T) {
 		{"two main lists (Q23)", "UPDATE shopping_lists SET main = 1 WHERE id = 'l2'"},
 		{"main 2", "INSERT INTO shopping_lists VALUES ('l3', 'Drive', 3, 2)"},
 		{"rank 0", "INSERT INTO shopping_lists VALUES ('l3', 'Drive', 0, 0)"},
-		{"item of an unknown list", "INSERT INTO shopping_items VALUES ('i9', 'l9', 1, NULL, NULL, 0, 1)"},
-		{"item of an unknown ingredient", "INSERT INTO shopping_items VALUES ('i9', 'l2', 9, NULL, NULL, 0, 1)"},
-		{"amount without unit", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 2000, NULL, 0, 1)"},
-		{"unit without amount", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, NULL, 'g', 0, 1)"},
-		{"amount 0", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 0, 'g', 0, 1)"},
-		{"unknown unit", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 1, 'cup', 0, 1)"},
-		{"checked 2", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, NULL, NULL, 2, 1)"},
+		{"item of an unknown list", "INSERT INTO shopping_items VALUES ('i9', 'l9', 1, NULL, NULL, 0, 1, NULL)"},
+		{"item of an unknown ingredient", "INSERT INTO shopping_items VALUES ('i9', 'l2', 9, NULL, NULL, 0, 1, NULL)"},
+		{"amount without unit", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 2000, NULL, 0, 1, NULL)"},
+		{"unit without amount", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, NULL, 'g', 0, 1, NULL)"},
+		{"amount 0", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 0, 'g', 0, 1, NULL)"},
+		{"unknown unit", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 1, 'cup', 0, 1, NULL)"},
+		{"checked 2", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, NULL, NULL, 2, 1, NULL)"},
 		{"source of an unknown item", "INSERT INTO shopping_item_sources VALUES ('i9', 's1', 'd1', '2026-10-06', 'dinner', 4, NULL, NULL)"},
 		{"same served dish twice in an item", "INSERT INTO shopping_item_sources VALUES ('i2', 's1', 'd1', '2026-10-06', 'dinner', 4, NULL, NULL)"},
 		{"source of an unknown dish", "INSERT INTO shopping_item_sources VALUES ('i2', 's2', 'd9', '2026-10-06', 'dinner', 4, NULL, NULL)"},
@@ -64,6 +67,12 @@ func TestShoppingListsSchema(t *testing.T) {
 		{"received dish servings 0", "INSERT INTO shopping_received VALUES ('l2', 's2', 'd1', 4, 0)"},
 		{"line of an unknown received served dish", "INSERT INTO shopping_received_lines VALUES ('l2', 's2', 0, 1, NULL, NULL)"},
 		{"same position twice", "INSERT INTO shopping_received_lines VALUES ('l2', 's1', 0, 1, NULL, NULL)"},
+		{"taken quantity of a checked item", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 750000, 'g', 1, 0, 250000)"},
+		{"taken quantity of a manual item", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 750000, 'g', 0, 1, 250000)"},
+		{"taken quantity without quantity", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, NULL, NULL, 0, 0, 250000)"},
+		{"taken quantity equal to the quantity", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 750000, 'g', 0, 0, 750000)"},
+		{"taken quantity 0", "INSERT INTO shopping_items VALUES ('i9', 'l2', 1, 750000, 'g', 0, 0, 0)"},
+		{"checked with its taken quantity", "UPDATE shopping_items SET checked = 1 WHERE id = 'i3'"},
 		{"list with items deleted", "DELETE FROM shopping_lists WHERE id = 'l2'"},
 		{"item with sources deleted", "DELETE FROM shopping_items WHERE id = 'i2'"},
 	}
@@ -90,7 +99,7 @@ func TestShoppingListsTriggers(t *testing.T) {
 		{"insert a dish", "INSERT INTO dishes VALUES ('d1', 'Chili', 'chili', '#C2502E', 4, 1)", 0, 1},
 		{"insert a list", "INSERT INTO shopping_lists VALUES ('l2', 'Marché', 2, 0)", 1, 0},
 		{"rename a list", "UPDATE shopping_lists SET name = 'Drive' WHERE id = 'l2'", 1, 0},
-		{"insert an item", "INSERT INTO shopping_items VALUES ('i1', 'l2', 1, NULL, NULL, 0, 0)", 1, 0},
+		{"insert an item", "INSERT INTO shopping_items VALUES ('i1', 'l2', 1, NULL, NULL, 0, 0, NULL)", 1, 0},
 		{"check an item", "UPDATE shopping_items SET checked = 1", 1, 0},
 		{"insert a source", "INSERT INTO shopping_item_sources VALUES ('i1', 's1', 'd1', '2026-10-06', 'dinner', 4, NULL, NULL)", 1, 0},
 		{"update a source", "UPDATE shopping_item_sources SET servings = 3", 1, 0},
@@ -121,17 +130,16 @@ func TestShoppingListsTriggers(t *testing.T) {
 	}
 }
 
-// TestShoppingListsMigrationOfAnExistingTribe: a tribe created before the migration 0009
-// receives its main list "Courses" (D14).
-func TestShoppingListsMigrationOfAnExistingTribe(t *testing.T) {
-	ctx := context.Background()
+// migratedBefore returns a tribe database migrated up to the migration named, excluded.
+func migratedBefore(t *testing.T, migration string) *sql.DB {
+	t.Helper()
 	all, err := EmbeddedMigrations()
 	if err != nil {
 		t.Fatal(err)
 	}
 	before := fstest.MapFS{}
 	err = fs.WalkDir(all.Tribe, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || path >= "0009" {
+		if err != nil || d.IsDir() || path >= migration {
 			return err
 		}
 		data, err := fs.ReadFile(all.Tribe, path)
@@ -141,20 +149,37 @@ func TestShoppingListsMigrationOfAnExistingTribe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	db, err := openDB(ctx, filepath.Join(t.TempDir(), "tribe.db"), true)
+	db, err := openDB(context.Background(), filepath.Join(t.TempDir(), "tribe.db"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
-	if err := migrate(ctx, db, before); err != nil {
+	t.Cleanup(func() { _ = db.Close() })
+	if err := migrate(context.Background(), db, before); err != nil {
 		t.Fatal(err)
 	}
+	return db
+}
+
+// migrateAll applies every migration of a tribe database.
+func migrateAll(t *testing.T, db *sql.DB) {
+	t.Helper()
+	all, err := EmbeddedMigrations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := migrate(context.Background(), db, all.Tribe); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestShoppingListsMigrationOfAnExistingTribe: a tribe created before the migration 0009
+// receives its main list "Courses" (D14).
+func TestShoppingListsMigrationOfAnExistingTribe(t *testing.T) {
+	db := migratedBefore(t, "0009")
 	if _, err := db.Exec("INSERT INTO dishes VALUES ('d1', 'Chili', 'chili', '#C2502E', 4, 1)"); err != nil {
 		t.Fatal(err)
 	}
-	if err := migrate(ctx, db, all.Tribe); err != nil {
-		t.Fatal(err)
-	}
+	migrateAll(t, db)
 	var lists []string
 	rows, err := db.Query("SELECT name || ' ' || main FROM shopping_lists")
 	if err != nil {
@@ -172,5 +197,39 @@ func TestShoppingListsMigrationOfAnExistingTribe(t *testing.T) {
 	}
 	if !slices.Equal(lists, []string{"Courses 1"}) {
 		t.Errorf("lists %v", lists)
+	}
+}
+
+// TestTakenAmountMigration: the items of a tribe of the migration 0009 stay intact, without
+// taken quantity (courses-suite, step 8).
+func TestTakenAmountMigration(t *testing.T) {
+	db := migratedBefore(t, "0010")
+	for _, s := range []string{
+		"INSERT INTO ingredients (id, name, normalized_name) VALUES (1, 'bœuf haché', 'boeuf hache')",
+		"INSERT INTO shopping_items SELECT 'i1', id, 1, 500000, 'g', 1, 0 FROM shopping_lists",
+		"INSERT INTO shopping_items SELECT 'i2', id, 1, NULL, NULL, 0, 1 FROM shopping_lists",
+	} {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("%s: %v", s, err)
+		}
+	}
+	migrateAll(t, db)
+	var items []string
+	rows, err := db.Query("SELECT id || ' ' || coalesce(amount, '-') || ' ' || coalesce(taken_amount, '-') || ' ' || checked || ' ' || manual FROM shopping_items ORDER BY id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var it string
+		if err := rows.Scan(&it); err != nil {
+			t.Fatal(err)
+		}
+		items = append(items, it)
+	}
+	if err := rows.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"i1 500000 - 1 0", "i2 - - 0 1"}; !slices.Equal(items, want) {
+		t.Errorf("items %v, want %v", items, want)
 	}
 }

@@ -10,6 +10,38 @@ import (
 	"database/sql"
 )
 
+const allShoppingLists = `-- name: AllShoppingLists :many
+SELECT id, name, rank, main FROM shopping_lists ORDER BY id
+`
+
+func (q *Queries) AllShoppingLists(ctx context.Context) ([]ShoppingList, error) {
+	rows, err := q.db.QueryContext(ctx, allShoppingLists)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ShoppingList
+	for rows.Next() {
+		var i ShoppingList
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Rank,
+			&i.Main,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const clearMainShoppingList = `-- name: ClearMainShoppingList :exec
 UPDATE shopping_lists SET main = 0 WHERE main = 1
 `
@@ -46,6 +78,34 @@ func (q *Queries) DeleteShoppingList(ctx context.Context, id string) error {
 	return err
 }
 
+const deleteShoppingReceived = `-- name: DeleteShoppingReceived :exec
+DELETE FROM shopping_received WHERE list_id = ? AND served_dish_id = ?
+`
+
+type DeleteShoppingReceivedParams struct {
+	ListID       string
+	ServedDishID string
+}
+
+func (q *Queries) DeleteShoppingReceived(ctx context.Context, arg DeleteShoppingReceivedParams) error {
+	_, err := q.db.ExecContext(ctx, deleteShoppingReceived, arg.ListID, arg.ServedDishID)
+	return err
+}
+
+const deleteShoppingReceivedLines = `-- name: DeleteShoppingReceivedLines :exec
+DELETE FROM shopping_received_lines WHERE list_id = ? AND served_dish_id = ?
+`
+
+type DeleteShoppingReceivedLinesParams struct {
+	ListID       string
+	ServedDishID string
+}
+
+func (q *Queries) DeleteShoppingReceivedLines(ctx context.Context, arg DeleteShoppingReceivedLinesParams) error {
+	_, err := q.db.ExecContext(ctx, deleteShoppingReceivedLines, arg.ListID, arg.ServedDishID)
+	return err
+}
+
 const deleteShoppingReceivedLinesOfList = `-- name: DeleteShoppingReceivedLinesOfList :exec
 DELETE FROM shopping_received_lines WHERE list_id = ?
 `
@@ -62,6 +122,55 @@ DELETE FROM shopping_received WHERE list_id = ?
 func (q *Queries) DeleteShoppingReceivedOfList(ctx context.Context, listID string) error {
 	_, err := q.db.ExecContext(ctx, deleteShoppingReceivedOfList, listID)
 	return err
+}
+
+const dishLinesReceivedBy = `-- name: DishLinesReceivedBy :many
+SELECT l.dish_id, l.position, l.ingredient_id, l.amount, l.unit, i.name
+FROM dish_ingredients l JOIN ingredients i ON i.id = l.ingredient_id
+WHERE l.dish_id IN (
+    SELECT s.dish_id FROM served_dishes s
+    WHERE s.id IN (SELECT served_dish_id FROM shopping_received WHERE list_id = ?)
+)
+ORDER BY l.dish_id, l.position
+`
+
+type DishLinesReceivedByRow struct {
+	DishID       string
+	Position     int64
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+	Name         string
+}
+
+func (q *Queries) DishLinesReceivedBy(ctx context.Context, listID string) ([]DishLinesReceivedByRow, error) {
+	rows, err := q.db.QueryContext(ctx, dishLinesReceivedBy, listID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DishLinesReceivedByRow
+	for rows.Next() {
+		var i DishLinesReceivedByRow
+		if err := rows.Scan(
+			&i.DishID,
+			&i.Position,
+			&i.IngredientID,
+			&i.Amount,
+			&i.Unit,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const dishLinesServedBetween = `-- name: DishLinesServedBetween :many
@@ -118,8 +227,8 @@ func (q *Queries) DishLinesServedBetween(ctx context.Context, arg DishLinesServe
 }
 
 const insertShoppingItem = `-- name: InsertShoppingItem :exec
-INSERT INTO shopping_items (id, list_id, ingredient_id, amount, unit, checked, manual)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO shopping_items (id, list_id, ingredient_id, amount, unit, taken_amount, checked, manual)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertShoppingItemParams struct {
@@ -128,6 +237,7 @@ type InsertShoppingItemParams struct {
 	IngredientID int64
 	Amount       sql.NullInt64
 	Unit         sql.NullString
+	TakenAmount  sql.NullInt64
 	Checked      int64
 	Manual       int64
 }
@@ -139,6 +249,7 @@ func (q *Queries) InsertShoppingItem(ctx context.Context, arg InsertShoppingItem
 		arg.IngredientID,
 		arg.Amount,
 		arg.Unit,
+		arg.TakenAmount,
 		arg.Checked,
 		arg.Manual,
 	)
@@ -316,26 +427,58 @@ func (q *Queries) ServedDishesBetween(ctx context.Context, arg ServedDishesBetwe
 	return items, nil
 }
 
+const servedDishesReceivedBy = `-- name: ServedDishesReceivedBy :many
+SELECT s.id, s.date, s.mealtime, s.dish_id, s.servings, d.servings AS dish_servings
+FROM served_dishes s JOIN dishes d ON d.id = s.dish_id
+WHERE s.id IN (SELECT served_dish_id FROM shopping_received WHERE list_id = ?)
+ORDER BY s.id
+`
+
+type ServedDishesReceivedByRow struct {
+	ID           string
+	Date         string
+	Mealtime     string
+	DishID       string
+	Servings     int64
+	DishServings int64
+}
+
+func (q *Queries) ServedDishesReceivedBy(ctx context.Context, listID string) ([]ServedDishesReceivedByRow, error) {
+	rows, err := q.db.QueryContext(ctx, servedDishesReceivedBy, listID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ServedDishesReceivedByRow
+	for rows.Next() {
+		var i ServedDishesReceivedByRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Mealtime,
+			&i.DishID,
+			&i.Servings,
+			&i.DishServings,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setMainShoppingList = `-- name: SetMainShoppingList :exec
 UPDATE shopping_lists SET main = 1 WHERE id = ?
 `
 
 func (q *Queries) SetMainShoppingList(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, setMainShoppingList, id)
-	return err
-}
-
-const setShoppingItemChecked = `-- name: SetShoppingItemChecked :exec
-UPDATE shopping_items SET checked = ? WHERE id = ?
-`
-
-type SetShoppingItemCheckedParams struct {
-	Checked int64
-	ID      string
-}
-
-func (q *Queries) SetShoppingItemChecked(ctx context.Context, arg SetShoppingItemCheckedParams) error {
-	_, err := q.db.ExecContext(ctx, setShoppingItemChecked, arg.Checked, arg.ID)
 	return err
 }
 
@@ -384,7 +527,7 @@ func (q *Queries) ShoppingItemSourcesOfLists(ctx context.Context, arg ShoppingIt
 }
 
 const shoppingItemsOfLists = `-- name: ShoppingItemsOfLists :many
-SELECT i.id, i.list_id, i.amount, i.unit, i.checked, i.manual, g.name
+SELECT i.id, i.list_id, i.amount, i.unit, i.taken_amount, i.checked, i.manual, g.name
 FROM shopping_items i JOIN ingredients g ON g.id = i.ingredient_id
 WHERE i.list_id >= ?1 AND i.list_id <= ?2
 ORDER BY i.list_id, i.id
@@ -396,13 +539,14 @@ type ShoppingItemsOfListsParams struct {
 }
 
 type ShoppingItemsOfListsRow struct {
-	ID      string
-	ListID  string
-	Amount  sql.NullInt64
-	Unit    sql.NullString
-	Checked int64
-	Manual  int64
-	Name    string
+	ID          string
+	ListID      string
+	Amount      sql.NullInt64
+	Unit        sql.NullString
+	TakenAmount sql.NullInt64
+	Checked     int64
+	Manual      int64
+	Name        string
 }
 
 func (q *Queries) ShoppingItemsOfLists(ctx context.Context, arg ShoppingItemsOfListsParams) ([]ShoppingItemsOfListsRow, error) {
@@ -419,6 +563,7 @@ func (q *Queries) ShoppingItemsOfLists(ctx context.Context, arg ShoppingItemsOfL
 			&i.ListID,
 			&i.Amount,
 			&i.Unit,
+			&i.TakenAmount,
 			&i.Checked,
 			&i.Manual,
 			&i.Name,
@@ -501,6 +646,91 @@ func (q *Queries) ShoppingListsAfter(ctx context.Context, arg ShoppingListsAfter
 	return items, nil
 }
 
+const shoppingReceivedLinesOfList = `-- name: ShoppingReceivedLinesOfList :many
+SELECT l.served_dish_id, l.position, l.ingredient_id, l.amount, l.unit, i.name
+FROM shopping_received_lines l JOIN ingredients i ON i.id = l.ingredient_id
+WHERE l.list_id = ? ORDER BY l.served_dish_id, l.position
+`
+
+type ShoppingReceivedLinesOfListRow struct {
+	ServedDishID string
+	Position     int64
+	IngredientID int64
+	Amount       sql.NullInt64
+	Unit         sql.NullString
+	Name         string
+}
+
+func (q *Queries) ShoppingReceivedLinesOfList(ctx context.Context, listID string) ([]ShoppingReceivedLinesOfListRow, error) {
+	rows, err := q.db.QueryContext(ctx, shoppingReceivedLinesOfList, listID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ShoppingReceivedLinesOfListRow
+	for rows.Next() {
+		var i ShoppingReceivedLinesOfListRow
+		if err := rows.Scan(
+			&i.ServedDishID,
+			&i.Position,
+			&i.IngredientID,
+			&i.Amount,
+			&i.Unit,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const shoppingReceivedOfList = `-- name: ShoppingReceivedOfList :many
+SELECT served_dish_id, dish_id, servings, dish_servings FROM shopping_received
+WHERE list_id = ? ORDER BY served_dish_id
+`
+
+type ShoppingReceivedOfListRow struct {
+	ServedDishID string
+	DishID       string
+	Servings     int64
+	DishServings int64
+}
+
+func (q *Queries) ShoppingReceivedOfList(ctx context.Context, listID string) ([]ShoppingReceivedOfListRow, error) {
+	rows, err := q.db.QueryContext(ctx, shoppingReceivedOfList, listID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ShoppingReceivedOfListRow
+	for rows.Next() {
+		var i ShoppingReceivedOfListRow
+		if err := rows.Scan(
+			&i.ServedDishID,
+			&i.DishID,
+			&i.Servings,
+			&i.DishServings,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const shoppingReceivedOfLists = `-- name: ShoppingReceivedOfLists :many
 SELECT list_id, served_dish_id FROM shopping_received
 WHERE list_id >= ?1 AND list_id <= ?2
@@ -541,20 +771,22 @@ func (q *Queries) ShoppingReceivedOfLists(ctx context.Context, arg ShoppingRecei
 }
 
 const updateShoppingItem = `-- name: UpdateShoppingItem :exec
-UPDATE shopping_items SET amount = ?, unit = ?, checked = ? WHERE id = ?
+UPDATE shopping_items SET amount = ?, unit = ?, taken_amount = ?, checked = ? WHERE id = ?
 `
 
 type UpdateShoppingItemParams struct {
-	Amount  sql.NullInt64
-	Unit    sql.NullString
-	Checked int64
-	ID      string
+	Amount      sql.NullInt64
+	Unit        sql.NullString
+	TakenAmount sql.NullInt64
+	Checked     int64
+	ID          string
 }
 
 func (q *Queries) UpdateShoppingItem(ctx context.Context, arg UpdateShoppingItemParams) error {
 	_, err := q.db.ExecContext(ctx, updateShoppingItem,
 		arg.Amount,
 		arg.Unit,
+		arg.TakenAmount,
 		arg.Checked,
 		arg.ID,
 	)

@@ -33,9 +33,12 @@ type Item struct {
 	ID         ItemID
 	Ingredient string
 	Quantity   *dish.Quantity
-	Checked    bool
-	Manual     bool
-	Sources    []Source
+	// Taken is the taken quantity of an unchecked computed item: what it held when it was
+	// checked and its quantity increased, below its quantity, in its unit (Q41, D9).
+	Taken   *dish.Quantity
+	Checked bool
+	Manual  bool
+	Sources []Source
 }
 
 // Source is what a served dish brought to a computed item, at the time of the computation

@@ -232,12 +232,12 @@ func TestPourMealShopping(t *testing.T) {
 			added:    3,
 		},
 		{
-			name: "poured into the computed item present, checked item whose quantity increases unchecked",
+			name: "poured into the computed item present, checked item whose quantity increases unchecked, its taken quantity kept (Q41)",
 			list: List{ID: "courses", Items: []Item{
 				{ID: "old", Ingredient: "bœuf haché", Quantity: q(250_000, dish.Gram), Checked: true, Sources: []Source{mon}},
 			}, Received: []ServedDishID{"s0"}},
 			served:   []Served{served("s1", "chili", "2026-10-06", "dinner", 4, 4, chiliLines[:1])},
-			items:    []Item{{ID: "old", Ingredient: "bœuf haché", Quantity: q(750_000, dish.Gram), Sources: []Source{mon, with(tue(4), q(500_000, dish.Gram))}}},
+			items:    []Item{{ID: "old", Ingredient: "bœuf haché", Quantity: q(750_000, dish.Gram), Taken: q(250_000, dish.Gram), Sources: []Source{mon, with(tue(4), q(500_000, dish.Gram))}}},
 			received: []ServedDishID{"s0", "s1"},
 			added:    1,
 		},
@@ -369,10 +369,58 @@ func TestMealShoppingChanges(t *testing.T) {
 func dump(items []Item) string {
 	s := ""
 	for _, it := range items {
-		s += fmt.Sprintf("  %s %s %v checked=%v manual=%v\n", it.ID, it.Ingredient, it.Quantity, it.Checked, it.Manual)
+		s += fmt.Sprintf("  %s %s %v taken=%v checked=%v manual=%v\n", it.ID, it.Ingredient, it.Quantity, it.Taken, it.Checked, it.Manual)
 		for _, src := range it.Sources {
 			s += fmt.Sprintf("    %+v %v\n", src, src.Quantity)
 		}
 	}
 	return s
+}
+
+// takenCases is testdata/taken.json, shared with web/src/shopping.ts.
+type takenCases struct {
+	Cases []struct {
+		Name   string    `json:"name"`
+		Unit   dish.Unit `json:"unit"`
+		Before *struct {
+			Quantity string `json:"quantity"`
+			Taken    string `json:"taken"`
+			Checked  bool   `json:"checked"`
+		} `json:"before"`
+		After   string `json:"after"`
+		Checked bool   `json:"checked"`
+		Taken   string `json:"taken"`
+	} `json:"cases"`
+}
+
+func TestApplyTaken(t *testing.T) {
+	data, err := os.ReadFile("testdata/taken.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases takenCases
+	if err := json.Unmarshal(data, &cases); err != nil {
+		t.Fatal(err)
+	}
+	quantity := func(text string, u dish.Unit) *dish.Quantity {
+		if text == "" {
+			return nil
+		}
+		q := mustQuantity(t, text, u)
+		return &q
+	}
+	for _, c := range cases.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var before Item
+			if c.Before != nil {
+				before = Item{Quantity: quantity(c.Before.Quantity, c.Unit), Taken: quantity(c.Before.Taken, c.Unit), Checked: c.Before.Checked}
+			}
+			after := before
+			after.Quantity = quantity(c.After, c.Unit)
+			got := applyTaken(before, after)
+			if !reflect.DeepEqual(got.Quantity, after.Quantity) || got.Checked != c.Checked || !reflect.DeepEqual(got.Taken, quantity(c.Taken, c.Unit)) {
+				t.Errorf("got quantity %v, checked %v, taken %v; want %s, %v, %q", got.Quantity, got.Checked, got.Taken, c.After, c.Checked, c.Taken)
+			}
+		})
+	}
 }

@@ -139,8 +139,8 @@ type mealShopping struct {
 // Q36, Q37): the served dishes the list already received are ignored; the others become
 // received served dishes, even without ingredients; each line brings its contribution to the
 // computed item of its ingredient and family, created if absent; items added by hand are
-// never touched. The item adds the contributions of all its sources, then rounds; a checked
-// item whose quantity increases is unchecked, an item without quantity keeps its check.
+// never touched. The item adds the contributions of all its sources, then rounds; its check
+// and taken quantity follow applyTaken, an item without quantity keeps its check.
 // ErrTooManyItems beyond 300 items (D12). NewID gives the identifiers of the new items.
 func addMealShopping(list List, served []Served, newID func() (string, error)) (mealShopping, error) {
 	m := mealShopping{list: list}
@@ -215,10 +215,9 @@ func addMealShopping(list List, served []Served, newID func() (string, error)) (
 				}
 			}
 			total = RoundItem(total)
-			if it.Checked && (it.Quantity == nil || total.Amount > it.Quantity.Amount) {
-				it.Checked = false
-			}
+			before := *it
 			it.Quantity = &total
+			*it = applyTaken(before, *it)
 		}
 		changes[i].item = *it
 		m.items = append(m.items, *changes[i])
@@ -239,4 +238,28 @@ func sortSources(sources []Source) {
 			cmp.Compare(a.ServedDish, b.ServedDish),
 		)
 	})
+}
+
+// applyTaken gives the item after, of a new quantity, its check and its taken quantity from
+// the item before (Q41, D9): a checked item whose quantity increases is unchecked and keeps
+// what it held as taken quantity; an unchecked item keeps its taken quantity while its
+// quantity stays above it, and is checked again, without taken quantity, when its quantity
+// falls to it or below. An item without quantity keeps its check, never a taken quantity.
+func applyTaken(before, after Item) Item {
+	after.Checked, after.Taken = before.Checked, before.Taken
+	switch {
+	case after.Quantity == nil:
+		after.Taken = nil
+	case before.Quantity == nil || after.Quantity.Amount > before.Quantity.Amount:
+		if before.Checked {
+			after.Checked = false
+			if before.Quantity != nil {
+				taken := *before.Quantity
+				after.Taken = &taken
+			}
+		}
+	case after.Taken != nil && after.Quantity.Amount <= after.Taken.Amount:
+		after.Checked, after.Taken = true, nil
+	}
+	return after
 }

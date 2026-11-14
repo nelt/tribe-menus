@@ -64,6 +64,16 @@ func (s *ShoppingStore) Write(ctx context.Context, write func(shopping.Tx) error
 	})
 }
 
+// Read runs read in a transaction rolled back: it writes nothing.
+func (s *ShoppingStore) Read(ctx context.Context, read func(shopping.Tx) error) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("read shopping lists: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	return read(shoppingTx{catalogTx{q: tribedb.New(tx)}})
+}
+
 // readLists reads the items, their sources and the received served dishes of the lists of
 // the rows, ordered by identifier: the lists from the first to the last.
 func readLists(ctx context.Context, q *tribedb.Queries, rows []tribedb.ShoppingList) ([]shopping.List, error) {
@@ -91,7 +101,8 @@ func readLists(ctx context.Context, q *tribedb.Queries, rows []tribedb.ShoppingL
 	for _, r := range items {
 		itemsOf[r.ListID] = append(itemsOf[r.ListID], shopping.Item{
 			ID: shopping.ItemID(r.ID), Ingredient: r.Name, Quantity: quantityOf(r.Amount, r.Unit),
-			Checked: r.Checked == 1, Manual: r.Manual == 1, Sources: sourcesOf[r.ID],
+			Taken: quantityOf(r.TakenAmount, r.Unit), Checked: r.Checked == 1, Manual: r.Manual == 1,
+			Sources: sourcesOf[r.ID],
 		})
 	}
 	receivedOf := map[string][]shopping.ServedDishID{}
@@ -141,6 +152,17 @@ func (t shoppingTx) List(ctx context.Context, id shopping.ListID) (shopping.List
 		return shopping.List{}, err
 	}
 	return lists[0], nil
+}
+
+func (t shoppingTx) AllLists(ctx context.Context) ([]shopping.List, error) {
+	rows, err := t.q.AllShoppingLists(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("read shopping lists: %w", err)
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return readLists(ctx, t.q, rows)
 }
 
 func (t shoppingTx) ListCount(ctx context.Context) (int, error) {
@@ -204,15 +226,9 @@ func (t shoppingTx) InsertItem(ctx context.Context, list shopping.ListID, item s
 		Checked: boolInt(item.Checked), Manual: boolInt(item.Manual),
 	}
 	p.Amount, p.Unit = nullQuantity(item.Quantity)
+	p.TakenAmount = nullAmount(item.Taken)
 	if err := t.q.InsertShoppingItem(ctx, p); err != nil {
 		return fmt.Errorf("insert shopping item: %w", err)
-	}
-	return nil
-}
-
-func (t shoppingTx) SetChecked(ctx context.Context, id shopping.ItemID, checked bool) error {
-	if err := t.q.SetShoppingItemChecked(ctx, tribedb.SetShoppingItemCheckedParams{Checked: boolInt(checked), ID: string(id)}); err != nil {
-		return fmt.Errorf("check shopping item: %w", err)
 	}
 	return nil
 }
@@ -257,12 +273,22 @@ func nullQuantity(q *dish.Quantity) (sql.NullInt64, sql.NullString) {
 	if q == nil {
 		return sql.NullInt64{}, sql.NullString{}
 	}
-	return sql.NullInt64{Int64: q.Amount, Valid: true}, nullUnit(q.Unit)
+	return nullAmount(q), nullUnit(q.Unit)
 }
 
+// nullAmount is the amount of a quantity whose unit is that of its item: a taken quantity.
+func nullAmount(q *dish.Quantity) sql.NullInt64 {
+	if q == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: q.Amount, Valid: true}
+}
+
+// UpdateItem writes the quantity, the taken quantity and the check of an item.
 func (t shoppingTx) UpdateItem(ctx context.Context, item shopping.Item) error {
 	p := tribedb.UpdateShoppingItemParams{Checked: boolInt(item.Checked), ID: string(item.ID)}
 	p.Amount, p.Unit = nullQuantity(item.Quantity)
+	p.TakenAmount = nullAmount(item.Taken)
 	if err := t.q.UpdateShoppingItem(ctx, p); err != nil {
 		return fmt.Errorf("update shopping item: %w", err)
 	}
@@ -297,6 +323,73 @@ func (t shoppingTx) InsertReceived(ctx context.Context, list shopping.ListID, s 
 		if err := t.q.InsertShoppingReceivedLine(ctx, p); err != nil {
 			return fmt.Errorf("insert received line: %w", err)
 		}
+	}
+	return nil
+}
+
+// Received reads the served dishes received by a list as recorded, with the lines of their
+// dish at the time of the computation (D5).
+func (t shoppingTx) Received(ctx context.Context, list shopping.ListID) ([]shopping.Served, error) {
+	rows, err := t.q.ShoppingReceivedOfList(ctx, string(list))
+	if err != nil {
+		return nil, fmt.Errorf("read received served dishes: %w", err)
+	}
+	lines, err := t.q.ShoppingReceivedLinesOfList(ctx, string(list))
+	if err != nil {
+		return nil, fmt.Errorf("read received lines: %w", err)
+	}
+	linesOf := map[string][]shopping.DishLine{}
+	for _, l := range lines {
+		linesOf[l.ServedDishID] = append(linesOf[l.ServedDishID], shopping.DishLine{Ingredient: l.Name, Key: l.IngredientID, Quantity: quantityOf(l.Amount, l.Unit)})
+	}
+	served := make([]shopping.Served, 0, len(rows))
+	for _, r := range rows {
+		served = append(served, shopping.Served{
+			ID: shopping.ServedDishID(r.ServedDishID), Dish: dish.ID(r.DishID),
+			Servings: int(r.Servings), DishServings: int(r.DishServings), Lines: linesOf[r.ServedDishID],
+		})
+	}
+	return served, nil
+}
+
+// CurrentReceived reads the served dishes received by a list still in the meal plan, with
+// the servings of reference and the lines of their dishes as they are now (P2).
+func (t shoppingTx) CurrentReceived(ctx context.Context, list shopping.ListID) ([]shopping.Served, error) {
+	rows, err := t.q.ServedDishesReceivedBy(ctx, string(list))
+	if err != nil {
+		return nil, fmt.Errorf("read served dishes received: %w", err)
+	}
+	lines, err := t.q.DishLinesReceivedBy(ctx, string(list))
+	if err != nil {
+		return nil, fmt.Errorf("read lines of the served dishes received: %w", err)
+	}
+	linesOf := map[string][]shopping.DishLine{}
+	for _, l := range lines {
+		linesOf[l.DishID] = append(linesOf[l.DishID], shopping.DishLine{Ingredient: l.Name, Key: l.IngredientID, Quantity: quantityOf(l.Amount, l.Unit)})
+	}
+	served := make([]shopping.Served, 0, len(rows))
+	for _, r := range rows {
+		served = append(served, shopping.Served{
+			ID: shopping.ServedDishID(r.ID), Dish: dish.ID(r.DishID), Date: r.Date, Mealtime: r.Mealtime,
+			Servings: int(r.Servings), DishServings: int(r.DishServings), Lines: linesOf[r.DishID],
+		})
+	}
+	return served, nil
+}
+
+func (t shoppingTx) ReplaceReceived(ctx context.Context, list shopping.ListID, s shopping.Served) error {
+	if err := t.q.DeleteShoppingReceivedLines(ctx, tribedb.DeleteShoppingReceivedLinesParams{ListID: string(list), ServedDishID: string(s.ID)}); err != nil {
+		return fmt.Errorf("replace received served dish: lines: %w", err)
+	}
+	if err := t.q.DeleteShoppingReceived(ctx, tribedb.DeleteShoppingReceivedParams{ListID: string(list), ServedDishID: string(s.ID)}); err != nil {
+		return fmt.Errorf("replace received served dish: %w", err)
+	}
+	return t.InsertReceived(ctx, list, s)
+}
+
+func (t shoppingTx) DeleteSources(ctx context.Context, id shopping.ItemID) error {
+	if err := t.q.DeleteShoppingItemSources(ctx, string(id)); err != nil {
+		return fmt.Errorf("delete item sources: %w", err)
 	}
 	return nil
 }

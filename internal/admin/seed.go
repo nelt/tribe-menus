@@ -184,19 +184,21 @@ func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 			ids[created.Name] = created.ID
 		}
 		plan := mealplan.NewPlan(storage.NewMealPlanStore(db))
+		var served []mealplan.ServedDish
 		for _, s := range week {
-			_, _, err := plan.Serve(ctx, mealplan.ServeInput{
+			sd, _, err := plan.Serve(ctx, mealplan.ServeInput{
 				Date: now.AddDate(0, 0, s.day).Format(time.DateOnly), Mealtime: string(s.mealtime),
 				Dish: ids[s.dish], Servings: &s.servings,
 			})
 			if err != nil {
 				return err
 			}
+			served = append(served, sd)
 		}
 		if !demo {
 			return nil
 		}
-		return seedShopping(ctx, shopping.NewLists(storage.NewShoppingStore(db)), now)
+		return seedShopping(ctx, shopping.NewLists(storage.NewShoppingStore(db)), plan, served, now)
 	})
 	if err != nil {
 		return fmt.Errorf("create the demonstration tribe: %w", err)
@@ -205,10 +207,20 @@ func (c *Command) Seed(ctx context.Context, members []SeedMember) error {
 	return nil
 }
 
+// demoTakenServed and demoStaleServed are the served dishes of demoWeek whose servings change
+// after the shopping of the week (plan courses-suite, D20): the Tuesday chili, the list
+// recomputed, then the onion soup, the list left stale.
+const (
+	demoTakenServed, demoTakenServings = 3, 5
+	demoStaleServed, demoStaleServings = 5, 6
+)
+
 // seedShopping fills the lists of the demonstration tribe (plan courses, D20): the shopping
 // of the week of the seed and the items added by hand in « Courses », the main list, and a
-// list « Marché » with one item.
-func seedShopping(ctx context.Context, lists *shopping.Lists, now time.Time) error {
+// list « Marché » with one item. Then (plan courses-suite, D20) « bœuf haché » is checked and
+// the Tuesday chili served for 5: the recomputation gives it a taken quantity; the onion soup
+// served for 6 leaves « Courses » stale.
+func seedShopping(ctx context.Context, lists *shopping.Lists, plan *mealplan.Plan, served []mealplan.ServedDish, now time.Time) error {
 	_, page, err := lists.Page(ctx, "")
 	if err != nil {
 		return err
@@ -232,6 +244,27 @@ func seedShopping(ctx context.Context, lists *shopping.Lists, now time.Time) err
 	if err != nil {
 		return err
 	}
-	_, _, err = lists.AddItem(ctx, market.ID, demoMarket)
+	if _, _, err = lists.AddItem(ctx, market.ID, demoMarket); err != nil {
+		return err
+	}
+
+	l, _, err := lists.Recompute(ctx, main)
+	if err != nil {
+		return err
+	}
+	for _, it := range l.Items {
+		if it.Ingredient == "bœuf haché" {
+			if _, _, err := lists.SetChecked(ctx, main, it.ID, true); err != nil {
+				return err
+			}
+		}
+	}
+	if _, _, err := plan.SetServings(ctx, served[demoTakenServed].ID, demoTakenServings); err != nil {
+		return err
+	}
+	if _, _, err := lists.Recompute(ctx, main); err != nil {
+		return err
+	}
+	_, _, err = plan.SetServings(ctx, served[demoStaleServed].ID, demoStaleServings)
 	return err
 }
