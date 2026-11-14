@@ -141,13 +141,13 @@ Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot B : part prise, péremption et recalcul, domaine et API (`feature/recalcul-api`)
 
-- [ ] **8. Migration `0010`** : `taken_amount` dans `shopping_items` (entier positif facultatif, absent pour un article coché, sans quantité ou ajouté, inférieur à la quantité), test de migration sur une base de `0009` ; requêtes sqlc, `make generate`.
-- [ ] **9. Part prise dans l'ajout des courses des repas** (D9), tests en tableaux d'abord ; table de cas `internal/shopping/testdata/taken.json`, quantité affichée comprise ; `taken` dans l'API ; coche et décoche selon D9.
-- [ ] **10. Recalcul et péremption purs** (D5, D6), tests en tableaux d'abord, à partir des scénarios C8 et des cas de D5 (ligne ajoutée, ligne changée de famille, ligne retirée, plat servi retiré, plat servi sans provenance restante, article acheté, article déplacé, quantité réécrite, parts d'un plat sans quantité, baisse jusqu'à la part prise, 300 articles).
-- [ ] **11. `shopping.Lists`** : `Recompute` et `Stale` derrière l'interface `Store`, dans une transaction qui lit le planning, les plats et les listes ; adaptateur `ShoppingStore`.
-- [ ] **12. API** : `GET shopping-lists/stale`, `POST shopping-lists/{id}/recompute` (D7) ; codes d'erreur dans la conception.
-- [ ] **13. Étapes godog** des scénarios « API » du lot, retirés de `pending.txt`.
-- [ ] **14. `make seed`** (D20).
+- [x] **8. Migration `0010`** : `taken_amount` dans `shopping_items` (entier positif facultatif, absent pour un article coché, sans quantité ou ajouté, inférieur à la quantité), test de migration sur une base de `0009` ; requêtes sqlc, `make generate`. *Fait le 2026-11-14* : contrainte `CHECK` de la colonne, testée ; la coche s'écrit par `UpdateItem` (`SetChecked` du `Tx` retiré).
+- [x] **9. Part prise dans l'ajout des courses des repas** (D9), tests en tableaux d'abord ; table de cas `internal/shopping/testdata/taken.json`, quantité affichée comprise ; `taken` dans l'API ; coche et décoche selon D9. *Fait le 2026-11-14* : `applyTaken` ; `taken.json` porte aussi `shown` et `remaining` (« encore 250 g ») pour `shopping.ts` (lot D).
+- [x] **10. Recalcul et péremption purs** (D5, D6), tests en tableaux d'abord, à partir des scénarios C8 et des cas de D5 (ligne ajoutée, ligne changée de famille, ligne retirée, plat servi retiré, plat servi sans provenance restante, article acheté, article déplacé, quantité réécrite, parts d'un plat sans quantité, baisse jusqu'à la part prise, 300 articles). *Fait le 2026-11-14* : `recompute` et `stale` dans `recompute.go` ; la limite de 300 articles est vérifiée par `Lists.Recompute`, pour que `stale` dise périmée une liste dont le recalcul serait refusé.
+- [x] **11. `shopping.Lists`** : `Recompute` et `Stale` derrière l'interface `Store`, dans une transaction qui lit le planning, les plats et les listes ; adaptateur `ShoppingStore`. *Fait le 2026-11-14* : `Store.Read` (transaction annulée) pour `Stale` ; `Tx` : `AllLists`, `Received`, `CurrentReceived`, `ReplaceReceived`, `DeleteSources`.
+- [x] **12. API** : `GET shopping-lists/stale`, `POST shopping-lists/{id}/recompute` (D7) ; codes d'erreur dans la conception. *Fait le 2026-11-14.*
+- [x] **13. Étapes godog** des scénarios « API » du lot, retirés de `pending.txt`. *Fait le 2026-11-14* : 17 scénarios retirés (`acceptance/steps_recompute_test.go`).
+- [x] **14. `make seed`** (D20). *Fait le 2026-11-14* : « bœuf haché » coché, le chili du mardi passé à 5 parts puis la liste recalculée (part prise de 875 g), la soupe à l'oignon passée à 6 parts ensuite (« Courses » périmée).
 
 ### Lot C : déplacement et nouvelle liste, domaine et API (`feature/deplacement-api`)
 
@@ -217,3 +217,10 @@ Par le développeur, guidé pas à pas, sur téléphone Android, tablette Androi
 - **Scénarios nouveaux au-delà du tableau du plan**, à valider à la revue : « Une liste périmée est signalée dans le choix des listes » (`@ui`), « Les plats servis des articles déplacés deviennent reçus par la liste d'arrivée », « Une liste créée à partir d'une sélection vient après les autres », « Un article avec une part prise reste après les courses faites », « La part prise s'efface quand l'article est coché ou décoché ».
 - **Maquettes**, interprétations validées par le développeur le 2026-11-14 : part prise en seconde ligne ambre sous le nom (« encore 375 g ») et phrase dans le dépliage ; « Liste recalculée. » en bandeau vert ; après un déplacement, le nom de la liste d'arrivée en lien dans le bandeau vert ; liste d'arrivée supprimée en avertissement ambre, 300 articles en erreur rouge, la sélection gardée dans les deux cas ; en moyen et en étendu, actions de 260 px au plus, centrées, en bas du volet de la liste. Message du recalcul au-delà de 300 articles écrit dans le README, sans maquette.
 - **Conception** : noms du `Tx` donnés à titre indicatif, à fixer aux lots B et C comme l'a fait `courses` ; `applyTaken`, pas commun de l'ajout des courses et du recalcul pour la coche et la part prise.
+
+**Lot B** (`feature/recalcul-api`), 2026-11-14, dans le Dev Container :
+
+- **Liste qui n'est pas périmée** : `Recompute` n'écrit rien, pas même les lignes gardées, et rend des versions vides (D7). Une liste dont seules les lignes gardées diffèrent (quantité réécrite en kg, parts d'un plat servi sans quantité) garde donc ses lignes gardées d'avant, sans effet : la comparaison suivante donne le même résultat. Revers : la provenance d'un ingrédient sans quantité garde les parts d'avant (« 4 parts » dans le dépliage) tant que rien d'autre ne fait recalculer la liste.
+- **Péremption et refus des 300 articles** : `stale` dit périmée une liste dont le recalcul serait refusé ; le bandeau reste, et « Recalculer » affiche le message des 300 articles.
+- **Plats servis reçus réécrits** : le recalcul remplace les lignes gardées, les parts et les parts de référence de tous les plats servis vivants encore au planning, changés ou non.
+- **En attente du lot C** : « Le recalcul ne recrée pas un article déplacé vers une autre liste » et l'exemple « recalculer » de « Une liste d'une autre tribu ne peut être ni recalculée ni vidée par un déplacement », qui passe déjà, le plan du scénario attendant son exemple du déplacement.
