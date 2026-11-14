@@ -3,7 +3,8 @@
 // dish brought to it (Q37), the progress, the summary of « Courses faites » (D9), why a list
 // cannot be deleted (C12), the period of the meal shopping and its calendar (C4, D24), the
 // served dishes already received (Q22), the unfolded lines of an item (C5), what remains to
-// take of an item (plan courses-suite, D9) and the messages of the screens
+// take of an item (plan courses-suite, D9), the selection of items and its move (D14) and the
+// messages of the screens
 // (docs/design/README.md, « Listes de courses »). Pure functions, tested by node:test; the
 // order of the items and the quantities share their tables of cases with Go.
 import { type Dish, hasControl, hasVisible, normalizeName, quantityInput, unitLabel, units } from "./dishes.ts";
@@ -580,4 +581,104 @@ export function deletedListMessage(name: string | undefined, lost?: LostWrite): 
   const deleted = name === undefined ? "Cette liste a été supprimée entre-temps." : `La liste « ${name} » a été supprimée entre-temps.`;
   const what = lost === undefined ? undefined : lostWrites[lost];
   return what === undefined ? deleted : `${deleted} ${what}`;
+}
+
+/** The header of the selection mode (plan courses-suite, D14): « Aucun article », « 2 sélectionnés ». */
+export function selectionLabel(n: number): string {
+  return n === 0 ? "Aucun article" : n > 1 ? `${n} sélectionnés` : "1 sélectionné";
+}
+
+/** Under the header of the selection mode. */
+export function selectionHint(name: string): string {
+  return `Choisissez les articles à sortir de « ${name} ». Ils gardent leur coche et leurs plats.`;
+}
+
+/**
+ * The items selected that the list still holds, in the order of the list: an item gone from
+ * the copy leaves the selection (D14), and is never sent.
+ */
+export function selectedIn(selected: ReadonlySet<string>, list: Pick<ShoppingList, "items">): string[] {
+  return list.items.filter((i) => selected.has(i.id)).map((i) => i.id);
+}
+
+/** Selects an item, or unselects it. */
+export function toggleSelected(selected: ReadonlySet<string>, item: string): Set<string> {
+  const next = new Set(selected);
+  if (!next.delete(item)) {
+    next.add(item);
+  }
+  return next;
+}
+
+function allSelected(selected: ReadonlySet<string>, list: Pick<ShoppingList, "items">): boolean {
+  return selectedIn(selected, list).length === list.items.length;
+}
+
+/** « Tout », or « Aucun » once every item of the list is selected, checked ones too (D14). */
+export function selectAllLabel(selected: ReadonlySet<string>, list: Pick<ShoppingList, "items">): string {
+  return allSelected(selected, list) ? "Aucun" : "Tout";
+}
+
+/** « Tout » selects every item; « Aucun » none. */
+export function toggleAll(selected: ReadonlySet<string>, list: Pick<ShoppingList, "items">): Set<string> {
+  return allSelected(selected, list) ? new Set() : new Set(list.items.map((i) => i.id));
+}
+
+/** The title of the sheet « Déplacer vers… ». */
+export function moveTitle(n: number): string {
+  return `Déplacer ${articles(n)} vers…`;
+}
+
+/** The sheet « Nouvelle liste » of a selection. */
+export function newListSheetMessage(n: number, name: string): string {
+  return `${n > 1 ? `Les ${n} articles sélectionnés quitteront` : "L’article sélectionné quittera"} « ${name} » pour cette nouvelle liste.`;
+}
+
+/** The lists a selection can move to: the others, in the order of the list picker (C2). */
+export function moveTargets(lists: Iterable<ShoppingList>, from: string): ShoppingList[] {
+  return sortLists(lists).filter((l) => l.id !== from);
+}
+
+/** A list of the sheet « Déplacer vers… »: « 3 articles », or « Vide ». */
+export function targetSummary(list: Pick<ShoppingList, "items">): string {
+  return list.items.length === 0 ? "Vide" : articles(list.items.length);
+}
+
+/** The green banner after a move: the name of the target list, in between, is a link that opens it. */
+export interface MovedMessage {
+  start: string;
+  link: string;
+  end: string;
+}
+
+/**
+ * The green banner after a move (D11, D14): « 2 articles déplacés vers « Marché ». », « … vers
+ * la nouvelle liste « Drive ». », then the items gone in between (Q42). Toward a new list,
+ * every item may have gone: the list is created all the same, empty (review of PR #118,
+ * point 1).
+ */
+export function movedMessage(moved: number, missing: number, target: string, created: boolean): MovedMessage {
+  const link = `« ${target} »`;
+  const gone = missing === 0 ? "" : missing > 1 ? ` ${missing} articles n’étaient plus dans la liste.` : " 1 article n’était plus dans la liste.";
+  if (moved === 0 && created) {
+    return { start: "La nouvelle liste ", link, end: ` a été créée, vide.${gone}` };
+  }
+  const done = moved === 0 ? "Aucun article déplacé" : moved > 1 ? `${moved} articles déplacés` : "1 article déplacé";
+  return { start: `${done} vers ${created ? "la nouvelle liste " : ""}`, link, end: `.${gone}` };
+}
+
+/**
+ * The refusals of a move shown above the list, the selection kept (Q38, Q42): the target list
+ * deleted in between, as a warning; 300 items, as an error. The refusals of a new list are
+ * shown in its sheet (shoppingErrorMessage): undefined.
+ */
+export function moveErrorMessage(error: string, target: string): { kind: "warning" | "error"; text: string } | undefined {
+  switch (error) {
+    case "target_not_found":
+      return { kind: "warning", text: `La liste « ${target} » a été supprimée entre-temps. Rien n’a été déplacé.` };
+    case "too_many_items":
+      return { kind: "error", text: `La liste « ${target} » ne peut pas dépasser 300 articles : rien n’a été déplacé.` };
+    default:
+      return undefined;
+  }
 }

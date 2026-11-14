@@ -5,7 +5,8 @@
 // version it gives, or checks the copy if another member wrote in between; a list or an item
 // unknown (404) makes it check itself, then tells whether the list is still there (D8, D11),
 // named after the copy before the check (plan courses-suite, D12). After each check, the stale
-// lists, a state derived from the meal plan and the dishes, are read apart (C8, ADR 0031).
+// lists, a state derived from the meal plan and the dishes, are read apart (C8, ADR 0031), and
+// again after a move or a checkout, which may change them (review of PR #119, point 2).
 // Nothing is written on the device (D2): the copy goes with a reload, the sign-out or a 401.
 import type { Api, Failure, ItemBody, Outcome, ShoppingWrite } from "./api.ts";
 import { CachedCollection } from "./collections.ts";
@@ -17,7 +18,7 @@ import { type Item, type ItemSource, type Period, type ShoppingList, sortItems }
 const collection = "shopping_lists";
 
 /** The refusals of a write that another member's write may cause (409). */
-const conflicts = new Set(["main_list", "list_not_empty", "too_many_lists", "too_many_items"]);
+const conflicts = new Set(["main_list", "list_not_empty", "too_many_lists", "too_many_items", "target_not_found"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -98,6 +99,12 @@ export type WriteResult =
 /** The result of the meal shopping (C4): the served dishes added and ignored (Q22), or as a write. */
 export type MealShoppingResult = { kind: "done"; added: number; ignored: number } | Exclude<WriteResult, { kind: "done" }>;
 
+/**
+ * The result of a move (C9, C10): the target list up to date, the items moved and those gone
+ * in between (Q42), or as a write.
+ */
+export type MoveResult = { kind: "done"; target: ShoppingList; moved: number; missing: number } | Exclude<WriteResult, { kind: "done" }>;
+
 /** ShoppingLists holds the copy of the lists; it dispatches "change" after each check and write. */
 export class ShoppingLists extends EventTarget {
   readonly lists: CachedCollection<ShoppingList>;
@@ -149,15 +156,20 @@ export class ShoppingLists extends EventTarget {
   async #checkLists(tell = true): Promise<Outcome<undefined>> {
     const outcome = await this.lists.check();
     if (outcome.kind === "ok") {
-      const stale = await this.#api.getStaleLists();
-      if (stale.kind === "ok") {
-        this.#stale = new Set(stale.value);
-      }
+      await this.#readStale();
     }
     if (tell) {
       this.dispatchEvent(new Event("change"));
     }
     return outcome;
+  }
+
+  /** Reads the stale lists (D7); without answer, they stay as they were. */
+  async #readStale(): Promise<void> {
+    const stale = await this.#api.getStaleLists();
+    if (stale.kind === "ok") {
+      this.#stale = new Set(stale.value);
+    }
   }
 
   /** Checks the copy of the library alone: a source whose dish it does not hold (plan courses-suite, D15). */
@@ -270,9 +282,17 @@ export class ShoppingLists extends EventTarget {
     return true;
   }
 
-  /** Removes the items seen checked that still are (C11, D9). */
+  /**
+   * Removes the items seen checked that still are (C11, D9). The last items of a served dish
+   * changed may leave: the stale lists are read again.
+   */
   async checkOut(id: string, items: string[]): Promise<WriteResult> {
-    return this.#written(id, await this.#api.checkOut(id, items));
+    const result = await this.#written(id, await this.#api.checkOut(id, items));
+    if (result.kind === "done") {
+      await this.#readStale();
+      this.dispatchEvent(new Event("change"));
+    }
+    return result;
   }
 
   /**
@@ -300,6 +320,34 @@ export class ShoppingLists extends EventTarget {
       this.dispatchEvent(new Event("change"));
     }
     return result;
+  }
+
+  /**
+   * Moves the items selected to another list, or to a new list of a name (C9, C10, D10): the
+   * two lists sent back are taken. The served dishes received go with the items: the stale
+   * lists are read again, the target may become stale and the source cease to be. A target
+   * list unknown was deleted in between (Q42): refused, the copy checks itself.
+   */
+  async move(id: string, items: string[], to: { list: string } | { name: string }): Promise<MoveResult> {
+    const outcome = await this.#api.moveItems(id, items, to);
+    if (outcome.kind !== "ok") {
+      return outcome;
+    }
+    const write = outcome.value;
+    if (write.kind !== "written") {
+      const result = await this.#refusedOrDeleted(id, write);
+      // The items gone are counted, never unknown: a 404 on a list still there is unforeseen.
+      return result.kind === "done" ? { kind: "network-error" } : result;
+    }
+    const source = listOf(write.list);
+    const target = listOf(write.target);
+    if (source === undefined || target === undefined) {
+      return { kind: "network-error" };
+    }
+    await this.#apply([source, target], write.versions);
+    await this.#readStale();
+    this.dispatchEvent(new Event("change"));
+    return { kind: "done", target, moved: write.moved ?? 0, missing: write.missing ?? 0 };
   }
 
   /** Takes the answer to a write on a list: the list written, a refusal, or a list unknown. */

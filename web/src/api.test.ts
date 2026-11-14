@@ -285,3 +285,17 @@ test("Api.recomputeList: POST without body (C8)", async () => {
   assert.deepEqual(await api.recomputeList("c/1"), { kind: "ok", value: { kind: "written", list: { id: "c/1" }, versions: {}, removed: undefined } });
   assert.deepEqual(requests, [{ url: "api/shopping-lists/c%2F1/recompute", method: "POST", body: undefined }]);
 });
+
+test("Api.moveItems: toward a list, or toward a new list of a name (C9, C10)", async () => {
+  const answer = { list: { id: "c" }, target: { id: "m" }, moved: 1, missing: 0, versions: { shopping_lists: 2 } };
+  const { api, requests } = apiWith(async () => jsonResponse(200, answer));
+  assert.deepEqual(await api.moveItems("c", ["a1"], { list: "m" }), {
+    kind: "ok",
+    value: { kind: "written", list: { id: "c" }, target: { id: "m" }, moved: 1, missing: 0, versions: { shopping_lists: 2 }, removed: undefined },
+  });
+  await api.moveItems("c", ["a1", "a2"], { name: "Drive" });
+  assert.deepEqual(requests, [
+    { url: "api/shopping-lists/c/move", method: "POST", body: { items: ["a1"], to: "m" } },
+    { url: "api/shopping-lists/c/move", method: "POST", body: { items: ["a1", "a2"], name: "Drive" } },
+  ]);
+});

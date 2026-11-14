@@ -352,6 +352,7 @@ export class App extends LitElement {
             .listId=${detail.list}
             .pickerHref=${this.#router.href(pages.listPicker)}
             .mealShoppingHref=${(list: ShoppingList) => this.#router.href({ name: "meal-shopping", list: list.id })}
+            .listHref=${(list: ShoppingList) => this.#router.href(this.#listPage(list))}
             .notice=${this.#notice}
             .beside=${beside}
             @unknown-list=${() => this.#router.navigate(pages.shopping, { replace: true })}
