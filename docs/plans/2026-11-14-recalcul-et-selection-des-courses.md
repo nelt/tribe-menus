@@ -2,7 +2,7 @@
 
 - **Nom** : `courses-suite`
 - **Date** : 2026-11-14
-- **Statut** : brouillon. D1 à D4 prises par le développeur le 2026-11-14 au cadrage ; D5 à D22 proposées, à confirmer à la revue de la PR du plan. Place dans la feuille de route : après `grands-ecrans` (décisions du 2026-11-06 et du 2026-11-07), avant le plan hors-ligne.
+- **Statut** : en cours depuis le 2026-11-14. D1 à D4 prises par le développeur le 2026-11-14 au cadrage ; D5 à D22 confirmées le 2026-11-14 par la fusion de la PR du plan (#114) et l'accord du développeur au lancement du lot A. Place dans la feuille de route : après `grands-ecrans` (décisions du 2026-11-06 et du 2026-11-07), avant le plan hors-ligne.
 
 ## Objectif
 
@@ -57,7 +57,7 @@ Le 2026-11-14, au cadrage, avec le développeur.
 - **D3. La péremption est calculée par le serveur, à la demande** : `GET shopping-lists/stale` renvoie les identifiants des listes périmées, à chaque appel, sans ETag (D7). Elle se fonde sur la même fonction pure que le recalcul : une liste est périmée si le recalcul y changerait quelque chose (D6). Écartés : un drapeau par liste dans `GET shopping-lists`, avec un ETag qui combine les versions des listes, du planning et des plats, qui fait recharger toutes les listes à chaque modification du planning et demande de préciser l'ADR 0029 ; le calcul dans le navigateur, qui exposerait les lignes gardées et écrirait la règle en TypeScript, contre `courses`, D6.
 - **D4. Clavier virtuel** (écart accepté à la recette de `v0.5.0`) : `interactive-widget=resizes-content` dans la balise `viewport` de l'application. Sous Chrome et Firefox pour Android, la fenêtre de mise en page rétrécit au-dessus du clavier, et « Enregistrer le plat », fixé en bas, reste visible. Le format est figé tant qu'un champ a le focus (`grands-ecrans`, D11 ; déjà en place dans `layout.ts`), donc une tablette en paysage ne bascule pas en compact. Safari ignore l'attribut : vérifié par WebKit seul. Le scénario `@manuel` de `formats-ecran.feature` redevient tenu en entier, et le point reporté de la feuille de route est fermé à la recette. Écartés : le bouton dans le flux en moyen et en étendu, qui s'écarte de la maquette ; alléger le scénario.
 
-Proposées le 2026-11-14, à confirmer à la revue de la PR du plan.
+Proposées le 2026-11-14, confirmées le même jour par la fusion de la PR du plan (#114).
 
 - **D5. Règle du recalcul**, pure, dans `internal/shopping`. Pour chaque plat servi reçu par la liste qui y a **encore une provenance** (D2), on compare les lignes actuelles du plat aux **lignes gardées** (`courses`, D5), par clé (ingrédient et famille d'unités, ou ingrédient sans quantité) :
   - **la clé a une ligne gardée et un article de la liste a une provenance de ce plat servi pour elle** : la provenance est recalculée sur l'état actuel (parts du plat servi, parts de référence et quantité du plat) ;
@@ -131,13 +131,13 @@ Proposées le 2026-11-14, à confirmer à la revue de la PR du plan.
 
 Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 
-- [ ] **1. Maquettes dans Design** (D17) : états et formats listés en D17 ; validation par le développeur.
-- [ ] **2. Report dans le dépôt** : maquettes dans `docs/design/maquettes/` ; `docs/design/README.md` : « Listes de courses » (périmée, recalcul, part prise, sélection dans les trois formats ; « Laissé de côté » mis à jour), « Messages des listes de courses » (D11, D12, refus du déplacement et du recalcul), « Formats d'écran » (actions de sélection).
-- [ ] **3. `fonctionnalites.md`** (D21) et **`glossaire.md`** (D19).
-- [ ] **4. Scénarios**, selon `conventions-gherkin.md` : tags `@ui` (D16) ; « Une coche est retirée si la quantité augmente » accordé à D1 ; exemple de la quantité réécrite dans « Un changement sans effet… » ; scénarios nouveaux du tableau « Scénarios couverts » ; deux scénarios de `formats-ecran.feature` ; exemples recalculer et déplacer dans « Une écriture sur une liste supprimée entre-temps est refusée » et dans l'accès croisé de `compartimentage-tribus.feature`. Titres nouveaux dans `acceptance/pending.txt`.
-- [ ] **5. Conception** : `listes-de-courses.md` : modèle (part prise), règle du recalcul et de la péremption, déplacement, API (D7), données dans le navigateur, échanges (recalcul ; déplacement avec articles partis entre-temps), avec leurs diagrammes ; « Ce que ce document ne couvre pas encore » réduit au hors-ligne.
-- [ ] **6. ADR 0031** (D8) ; ADR 0030 : note sur `interactive-widget` (D4), qui complète son point sur le clavier virtuel.
-- [ ] **7. Feuille de route** : plan « en cours ».
+- [x] **1. Maquettes dans Design** (D17) : états et formats listés en D17 ; validation par le développeur. *Fait le 2026-11-14* : cinq planches sur le canevas « Menus de la semaine », rangées K et L : `Doux-ListeSuite`, `Doux-ChoixListesSuite`, `GE-CoursesSuite-Paysage`, `-Ordinateur`, `-Portrait` ; validation du développeur dans les notes d'exécution.
+- [x] **2. Report dans le dépôt** : maquettes dans `docs/design/maquettes/` ; `docs/design/README.md` : « Listes de courses » (périmée, recalcul, part prise, sélection dans les trois formats ; « Laissé de côté » mis à jour), « Messages des listes de courses » (D11, D12, refus du déplacement et du recalcul), « Formats d'écran » (actions de sélection). *Fait le 2026-11-14* : planches dans `docs/design/maquettes/` ; README : tableau des écrans, « Recalcul, part prise et sélection », messages, composants, « Formats d'écran ».
+- [x] **3. `fonctionnalites.md`** (D21) et **`glossaire.md`** (D19). *Fait le 2026-11-14* : concept Article, « Ajout des courses d'une période », « Recalcul d'une liste », « Sélection d'articles », Q11, Q41 à Q43 ; glossaire.
+- [x] **4. Scénarios**, selon `conventions-gherkin.md` : tags `@ui` (D16) ; « Une coche est retirée si la quantité augmente » accordé à D1 ; exemple de la quantité réécrite dans « Un changement sans effet… » ; scénarios nouveaux du tableau « Scénarios couverts » ; deux scénarios de `formats-ecran.feature` ; exemples recalculer et déplacer dans « Une écriture sur une liste supprimée entre-temps est refusée » et dans l'accès croisé de `compartimentage-tribus.feature`. Titres nouveaux dans `acceptance/pending.txt`. *Fait le 2026-11-14* : voir les notes d'exécution du lot A ; 22 titres dans `pending.txt`.
+- [x] **5. Conception** : `listes-de-courses.md` : modèle (part prise), règle du recalcul et de la péremption, déplacement, API (D7), données dans le navigateur, échanges (recalcul ; déplacement avec articles partis entre-temps), avec leurs diagrammes ; « Ce que ce document ne couvre pas encore » réduit au hors-ligne. *Fait le 2026-11-14* : sections « Recalcul et péremption » et « Déplacement », deux diagrammes de séquence nouveaux, classes et API complétées.
+- [x] **6. ADR 0031** (D8) ; ADR 0030 : note sur `interactive-widget` (D4), qui complète son point sur le clavier virtuel. *Fait le 2026-11-14* : `0031-etat-derive-calcule-par-le-serveur.md` ; ADR 0030, point 3, complété.
+- [x] **7. Feuille de route** : plan « en cours ». *Fait le 2026-11-14.*
 
 ### Lot B : part prise, péremption et recalcul, domaine et API (`feature/recalcul-api`)
 
@@ -209,4 +209,11 @@ Par le développeur, guidé pas à pas, sur téléphone Android, tablette Androi
 
 ## Notes d'exécution
 
-*(à compléter au fil des lots)*
+**Lot A** (`feature/specs-courses-suite`), 2026-11-14, depuis une session cloud, à valider à la revue :
+
+- **Décisions** : D5 à D22 tenues pour confirmées par la fusion de #114, avec l'accord du développeur au lancement du lot.
+- **Scénarios gardés intacts quand ils passent déjà**, des scénarios nouveaux plutôt que des exemples ajoutés, pour ne pas remettre en attente ce qui est prouvé : « Un article coché dont la quantité augmente est décoché » (C4) reste, « … garde sa part prise » s'y ajoute ; « Une écriture sur une liste supprimée entre-temps est refusée » garde ses exemples, « Recalculer une liste supprimée entre-temps est refusé » s'y ajoute ; l'accès croisé d'ENF-02 aussi (« … ni recalculée ni vidée par un déplacement », « … vers une liste d'une autre tribu », « Les listes périmées d'une autre tribu ne sont jamais visibles »).
+- **Scénarios C8 : « Quand je touche "Recalculer" » devient « Quand je recalcule la liste "Courses" »** dans les scénarios prouvés contre l'API ; les deux scénarios `@ui` gardent le geste. « Un changement sans effet sur les articles… » devient un plan du scénario (parts des « Restes », quantité réécrite en 0,5 kg, plat renommé) ; « Les changements qui rendent une liste périmée » gagne les parts de référence, une ligne ajoutée et une ligne retirée.
+- **Scénarios nouveaux au-delà du tableau du plan**, à valider à la revue : « Une liste périmée est signalée dans le choix des listes » (`@ui`), « Les plats servis des articles déplacés deviennent reçus par la liste d'arrivée », « Une liste créée à partir d'une sélection vient après les autres », « Un article avec une part prise reste après les courses faites », « La part prise s'efface quand l'article est coché ou décoché ».
+- **Maquettes**, interprétations à valider : part prise en seconde ligne ambre sous le nom (« encore 375 g ») et phrase dans le dépliage ; « Liste recalculée. » en bandeau vert ; après un déplacement, le nom de la liste d'arrivée en lien dans le bandeau vert ; liste d'arrivée supprimée en avertissement ambre, 300 articles en erreur rouge, la sélection gardée dans les deux cas ; en moyen et en étendu, actions de 260 px au plus, centrées, en bas du volet de la liste. Message du recalcul au-delà de 300 articles écrit dans le README, sans maquette.
+- **Conception** : noms du `Tx` donnés à titre indicatif, à fixer aux lots B et C comme l'a fait `courses` ; `applyTaken`, pas commun de l'ajout des courses et du recalcul pour la coche et la part prise.
