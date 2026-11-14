@@ -374,6 +374,8 @@ Le bandeau d'avertissement n'a pas de bouton de fermeture : il disparaît à l'a
 | Coche d'un article disparu entre-temps, retrait d'un article déjà retiré (Q39) | aucun message : l'article disparaît |
 | Toute écriture sans réseau (D2), ou réponse imprévue du serveur | bandeau d'erreur « Réseau nécessaire. Le réseau est lent ou absent : réessayez. » |
 
+Réalisation (`courses-suite`, lot D) : « Elle n'a pas été désignée comme principale. » et « Les articles cochés n'ont pas été retirés. » complètent les phrases de D12 ; une coche ou un retrait sur une liste supprimée entre-temps n'ont que la première phrase.
+
 Les bandeaux d'avertissement n'ont pas de bouton de fermeture : ils disparaissent à l'action suivante. Aucun refus du serveur que l'écran peut provoquer ne s'affiche comme « Réseau nécessaire ».
 
 **Recalcul, part prise et sélection** (plan `courses-suite`, lot A, 2026-11-14)
@@ -389,6 +391,7 @@ Les bandeaux d'avertissement n'ont pas de bouton de fermeture : ils disparaissen
 - **Feuille « Déplacer N articles vers… »** : « Un article calculé rejoint la ligne du même ingrédient s'il y en a une ; un article ajouté à la main reste à part. », puis les autres listes dans l'ordre du choix des listes, chacune avec son nombre d'articles (« Vide ») et un chevron, puis « Annuler ». **Feuille « Nouvelle liste »** : « Les 2 articles sélectionnés quitteront « Courses » pour cette nouvelle liste. », champ « Nom de la liste » (40 caractères, `maxlength`), « Créer la liste » inactif tant que le nom est vide, « Annuler ». En moyen et en étendu, dialogues centrés de 440 px.
 - **Après un déplacement** : la liste de départ, hors sélection, avec un bandeau vert : « 2 articles déplacés vers « Marché ». » ou « … vers la nouvelle liste « Drive ». » ; le nom de la liste d'arrivée est un lien qui l'ouvre. Des articles partis entre-temps (Q42) : « 1 article déplacé vers « Marché ». 1 article n'était plus dans la liste. »
 - **Recalcul et part prise en étendu** : comme en compact, dans le volet de la liste ; la pastille « Repas modifiés » de la liste ouverte disparaît avec le bandeau.
+- **Réalisation** (lot D, à valider à la revue) : la phrase du dépliage dit « 875 g déjà pris : il reste 375 g à prendre. Cochez quand tout est pris. », sans « avant le recalcul », une part prise pouvant venir d'un ajout de courses des repas ; « Liste recalculée. » s'affiche à la place des autres bandeaux verts, sous la progression.
 
 ### Planches de référence de l'identité
 

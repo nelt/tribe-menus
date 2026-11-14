@@ -35,10 +35,7 @@ liste-courses.feature: La sélection est impossible sans article sélectionné
 liste-courses.feature: Les actions sur les listes elles-mêmes nécessitent le réseau
 liste-courses.feature: Les articles ajoutés hors ligne à une liste supprimée entre-temps sont ignorés
 liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau
-liste-courses.feature: Recalculer met la liste à jour et fait disparaître le bandeau
-liste-courses.feature: Un bandeau signale que des plats servis ont changé
 liste-courses.feature: Un ingrédient créé hors ligne n'est pas dupliqué
-liste-courses.feature: Une liste périmée est signalée dans le choix des listes
 membres-et-sessions.feature: Ajouter un membre
 membres-et-sessions.feature: Consulter les membres de sa tribu
 membres-et-sessions.feature: Consulter ses sessions

@@ -3,6 +3,7 @@
 // as a member would with another device; what is proved is what the browser shows.
 import { expect } from "@playwright/test";
 import { unitCode } from "./steps-dishes.ts";
+import { apiDay, mealOf } from "./steps-planning.ts";
 import { World, step } from "./steps.ts";
 
 interface ApiList {
@@ -242,4 +243,87 @@ step(/elle ne propose pas de détail de repas/, async (world) => {
   const item = world.page.locator(".item").filter({ has: world.page.locator(".item-name", { hasText: ingredient }) });
   await expect(item.locator("[aria-expanded]")).toHaveCount(0);
   await expect(item.locator(".item-sources")).toHaveCount(0);
+});
+
+// C8
+step(/la liste "([^"]*)"/, async (world, name) => {
+  await ensureList(world, name ?? "");
+});
+
+/** Sets the servings of a dish served, through the API, as a member would with another device. */
+async function setServings(world: World, who: string, name: string, day: string, mealtime: string, servings: string): Promise<void> {
+  const meal = mealOf(day, mealtime);
+  const tribe = await world.tribe();
+  const dishes = (await tribe.apiOk(who, "GET", "dishes")) as { items: { id: string; name: string }[] };
+  const dish = dishes.items.find((d) => d.name === name);
+  const plan = (await tribe.apiOk(who, "GET", "meal-plan")) as { items: { id: string; date: string; mealtime: string; dish: string }[] };
+  const served = plan.items.find((s) => s.date === apiDay(meal.date) && s.mealtime === meal.mealtime.api && s.dish === dish?.id);
+  if (served === undefined) {
+    throw new Error(`no "${name}" served ${day} ${mealtime}`);
+  }
+  await tribe.apiOk(who, "PUT", `meal-plan/${served.id}/servings`, { servings: Number(servings) });
+}
+
+step(/un membre règle à (\d+) parts le "([^"]*)" du (.+?) (à midi|au soir)/, async (world, servings, name, day, mealtime) => {
+  await setServings(world, "Bruno", name ?? "", day ?? "", mealtime ?? "", servings ?? "");
+});
+
+step(/le "([^"]*)" du (.+?) (à midi|au soir) réglé à (\d+) parts/, async (world, name, day, mealtime, servings) => {
+  await setServings(world, "je", name ?? "", day ?? "", mealtime ?? "", servings ?? "");
+});
+
+/** Shows a list in the browser, unless it already is: the main list at the path of the tab. */
+async function showList(world: World, name: string): Promise<void> {
+  const title = world.page.getByRole("heading", { level: 1 }).locator(".shopping-title-name");
+  if (world.pageOwner !== undefined && (await title.count()) > 0 && (await title.textContent()) === name) {
+    return;
+  }
+  const list = (await lists(world)).find((l) => l.name === name);
+  if (list === undefined) {
+    throw new Error(`no list "${name}"`);
+  }
+  await world.open("je", list.main ? "courses" : `courses/${list.id}`);
+  await expect(title).toHaveText(name);
+}
+
+const staleText = "Des repas ont changé depuis l’ajout de leurs courses à cette liste.";
+
+step(/un bandeau en haut de la liste "([^"]*)" indique que des repas ont changé/, async (world, name) => {
+  await showList(world, name ?? "");
+  await expect(world.page.locator(".banner-stale")).toContainText(staleText);
+});
+
+step(/le bandeau propose l'action "([^"]*)"/, async (world, action) => {
+  await expect(world.page.locator(".banner-stale").getByRole("button", { name: action ?? "" })).toBeEnabled();
+});
+
+step(/la liste "([^"]*)" contient (?:toujours )?(\S+) (\S+) de "([^"]*)"/, async (world, name, quantity, unit, ingredient) => {
+  await showList(world, name ?? "");
+  const item = world.page.locator(".item").filter({ has: world.page.locator(".item-name", { hasText: new RegExp(`^${ingredient ?? ""}$`) }) });
+  await expect(item.locator(".item-quantity")).toHaveText(`${quantity ?? ""} ${unit ?? ""}`);
+});
+
+step(/je touche "Recalculer"/, async (world) => {
+  // The scenario names no list: the main one, that of the tab.
+  const main = (await lists(world)).find((l) => l.main);
+  await showList(world, main?.name ?? "");
+  await world.page.getByRole("button", { name: "Recalculer" }).click();
+});
+
+step(/le bandeau n'est plus affiché/, async (world) => {
+  await expect(world.page.getByText(staleText)).toHaveCount(0);
+});
+
+step(/un message m'indique que la liste a été recalculée/, async (world) => {
+  await expect(world.page.getByRole("status").filter({ hasText: "Liste recalculée." })).toBeVisible();
+});
+
+step(/la liste "([^"]*)" (ne )?porte (?:pas )?la mention "([^"]*)"/, async (world, name, ne, mention) => {
+  const card = world.page.locator(".list-card").filter({ has: world.page.locator(".list-card-name", { hasText: new RegExp(`^${name ?? ""}$`) }) });
+  await expect(card).toBeVisible();
+  if (ne === "") {
+    await expect(card).toContainText(mention ?? "");
+  } else {
+    await expect(card).not.toContainText(mention ?? "");
+  }
 });

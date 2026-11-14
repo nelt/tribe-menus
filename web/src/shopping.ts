@@ -2,9 +2,10 @@
 // the lists (C2) and of the items (Q40), the quantity shown of an item and of what a served
 // dish brought to it (Q37), the progress, the summary of « Courses faites » (D9), why a list
 // cannot be deleted (C12), the period of the meal shopping and its calendar (C4, D24), the
-// served dishes already received (Q22), the unfolded lines of an item (C5) and the messages
-// of the screens (docs/design/README.md, « Listes de courses »). Pure functions, tested by
-// node:test; the order of the items and the quantities share their tables of cases with Go.
+// served dishes already received (Q22), the unfolded lines of an item (C5), what remains to
+// take of an item (plan courses-suite, D9) and the messages of the screens
+// (docs/design/README.md, « Listes de courses »). Pure functions, tested by node:test; the
+// order of the items and the quantities share their tables of cases with Go.
 import { type Dish, hasControl, hasVisible, normalizeName, quantityInput, unitLabel, units } from "./dishes.ts";
 import { type Day, type Mealtime, type ServedDish, addDays, firstDay, lastDay, mealtimes } from "./meal-plan.ts";
 
@@ -28,6 +29,11 @@ export interface Item {
   quantity?: string;
   unit?: string;
   checked: boolean;
+  /**
+   * The taken quantity (plan courses-suite, D9, Q41): what an item unchecked by a quantity
+   * that increased had when it was checked, in the unit of quantity; absent otherwise.
+   */
+  taken?: string;
   /** Entered by hand (C3); otherwise computed from the meal plan, with its sources (C4). */
   manual: boolean;
   sources: ItemSource[];
@@ -167,6 +173,37 @@ export function contributedQuantity(source: Pick<ItemSource, "quantity" | "unit"
   }
   const step = families[0]?.includes(unit) ? 1000 : families[1]?.includes(unit) ? 1 : 10;
   return shownAmount(Math.ceil(amount / step) * step, unit);
+}
+
+/** What remains to take of an amount in base units, as the screen shows it (D9, Q37): « 250 g ». */
+function remaining(item: Pick<Item, "quantity" | "unit" | "taken">): { taken: number; remaining: number; unit: string } | undefined {
+  const { quantity, unit, taken } = item;
+  if (quantity === undefined || unit === undefined || taken === undefined) {
+    return undefined;
+  }
+  const total = baseAmount(quantity, unit);
+  const part = baseAmount(taken, unit);
+  return total === undefined || part === undefined || part >= total ? undefined : { taken: part, remaining: total - part, unit };
+}
+
+/**
+ * What remains to take of an unchecked item with a taken quantity (plan courses-suite, D9),
+ * under its name: « encore 250 g », in the largest unit of its family that gives at least 1
+ * (Q37); undefined without taken quantity. Kept in agreement with Go by
+ * internal/shopping/testdata/taken.json.
+ */
+export function remainingQuantity(item: Pick<Item, "quantity" | "unit" | "taken"> & { checked?: boolean }): string | undefined {
+  const r = item.checked === true ? undefined : remaining(item);
+  return r === undefined ? undefined : `encore ${shownAmount(r.remaining, r.unit)}`;
+}
+
+/** Under the sources of an item unfolded with a taken quantity: what was taken and what remains (D9). */
+export function takenSentence(item: Pick<Item, "quantity" | "unit" | "taken"> & { checked?: boolean }): string | undefined {
+  const r = item.checked === true ? undefined : remaining(item);
+  if (r === undefined) {
+    return undefined;
+  }
+  return `${shownAmount(r.taken, r.unit)} déjà pris : il reste ${shownAmount(r.remaining, r.unit)} à prendre. Cochez quand tout est pris.`;
 }
 
 /** « 1 plat », « 3 plats »: the served dishes an item comes from (C5). */
@@ -502,7 +539,45 @@ export function sourceRows(item: Pick<Item, "sources">, dishes: Iterable<Dish>):
 }
 
 /** What a computed item reads, folded or not: « bœuf haché, 875 g, 2 plats. Afficher les repas ». */
-export function itemRowLabel(item: Pick<Item, "ingredient" | "quantity" | "unit" | "manual" | "sources">, open: boolean): string {
+export function itemRowLabel(item: Pick<Item, "ingredient" | "quantity" | "unit" | "manual" | "sources" | "taken"> & { checked?: boolean }, open: boolean): string {
   const quantity = itemQuantity(item);
-  return `${item.ingredient}, ${quantity === "" ? "sans quantité" : quantity}, ${dishCount(item)}. ${open ? "Masquer les repas" : "Afficher les repas"}`;
+  const rest = remainingQuantity(item);
+  return `${item.ingredient}, ${quantity === "" ? "sans quantité" : quantity}, ${rest === undefined ? "" : `${rest} à prendre, `}${dishCount(item)}. ${open ? "Masquer les repas" : "Afficher les repas"}`;
+}
+
+/** The stale banner of a list (C8, D13). */
+export const staleMessage = "Des repas ont changé depuis l’ajout de leurs courses à cette liste.";
+
+/** The green banner after « Recalculer » (D13). */
+export const recomputedMessage = "Liste recalculée.";
+
+/** The message of a refusal of « Recalculer » (Q38). */
+export function recomputeErrorMessage(error: string): string | undefined {
+  return error === "too_many_items" ? "La liste ne peut pas dépasser 300 articles : rien n’a été recalculé." : undefined;
+}
+
+/** The write that a list deleted in between refused (D12): what the message says was not done. */
+export type LostWrite = "add-item" | "meal-shopping" | "rename" | "main" | "recompute" | "move" | "checkout" | "check" | "remove";
+
+const lostWrites: Record<LostWrite, string | undefined> = {
+  "add-item": "L’article n’a pas été ajouté.",
+  "meal-shopping": "Les courses des repas n’ont pas été ajoutées.",
+  rename: "Elle n’a pas été renommée.",
+  main: "Elle n’a pas été désignée comme principale.",
+  recompute: "Rien n’a été recalculé.",
+  move: "Rien n’a été déplacé.",
+  checkout: "Les articles cochés n’ont pas été retirés.",
+  // A check or a removal says nothing more (plan courses, D8 and D11).
+  check: undefined,
+  remove: undefined,
+};
+
+/**
+ * The warning of a write on a list deleted in between (plan courses-suite, D12), shown on the
+ * main list: the list named after the copy before the check, then what was not done.
+ */
+export function deletedListMessage(name: string | undefined, lost?: LostWrite): string {
+  const deleted = name === undefined ? "Cette liste a été supprimée entre-temps." : `La liste « ${name} » a été supprimée entre-temps.`;
+  const what = lost === undefined ? undefined : lostWrites[lost];
+  return what === undefined ? deleted : `${deleted} ${what}`;
 }

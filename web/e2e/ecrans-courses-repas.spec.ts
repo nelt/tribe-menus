@@ -97,6 +97,43 @@ test("a day touched sets « Du », then « Au »; the end before the start, more
   await expect(page.getByText("Octobre 2026")).toBeVisible();
 });
 
+async function backToForeground(page: Page) {
+  await page.evaluate(() => {
+    for (const state of ["hidden", "visible"]) {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => state });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }
+  });
+}
+
+test("back in the foreground on another day, the period follows the date until a day is touched (plan courses-suite, D15)", async ({ page }) => {
+  await mock(page);
+  await page.goto("/tribes/demo/courses/repas");
+  await expect(field(page, "Du")).toHaveText(/mar\. 6 oct\./);
+  await page.clock.setFixedTime(new Date(2026, 9, 7, 9, 0));
+  await backToForeground(page);
+  await expect(field(page, "Du")).toHaveText(/jeu\. 8 oct\./);
+  await expect(field(page, "Au")).toHaveText(/mer\. 14 oct\./);
+
+  await page.getByRole("button", { name: /^samedi 10 octobre/ }).click();
+  await page.clock.setFixedTime(new Date(2026, 9, 9, 9, 0));
+  await backToForeground(page);
+  await expect(field(page, "Du")).toHaveText(/sam\. 10 oct\./);
+  await expect(field(page, "Au")).toHaveText(/mer\. 14 oct\./);
+});
+
+test("back in the foreground the same day, the month browsed stays (review of PR #119, point 1)", async ({ page }) => {
+  await mock(page);
+  await page.goto("/tribes/demo/courses/repas");
+  await expect(page.getByText("Octobre 2026")).toBeVisible();
+  await page.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(page.getByText("Novembre 2026")).toBeVisible();
+  await page.clock.setFixedTime(new Date(2026, 9, 5, 18, 0));
+  await backToForeground(page);
+  await expect(page.getByText("Novembre 2026")).toBeVisible();
+  await expect(field(page, "Du")).toHaveText(/mar\. 6 oct\./);
+});
+
 test("the months stop at January 2000 and December 2099 (Q35)", async ({ page }) => {
   await mock(page);
   await page.clock.setFixedTime(new Date(2000, 0, 1, 10, 0));
@@ -148,7 +185,7 @@ test("added: back to the target list with the green banner (C4, Q22)", async ({ 
   await expect(page).toHaveURL(`/tribes/demo/courses/${marche.id}`);
 });
 
-test("300 items, without network: the message, nothing added; a list deleted in between (Q38, D2, D11)", async ({ page }) => {
+test("300 items, without network: the message, nothing added; a list deleted in between, named (Q38, D2, D11; plan courses-suite, D12)", async ({ page }) => {
   await mock(page, {
     addMealShopping: [{ status: 409, body: { error: "too_many_items" } }, replies.networkError, { status: 404, body: { error: "not_found" } }],
     // Read at the opening, after the refusal of 300 items, then after the 404.
@@ -162,7 +199,7 @@ test("300 items, without network: the message, nothing added; a list deleted in 
   await expect(page.getByRole("alert")).toHaveText("Réseau nécessaire. Le réseau est lent ou absent : réessayez.");
   await add.click();
   await expect(page).toHaveURL(/\/tribes\/demo\/courses$/);
-  await expect(page.getByRole("alert")).toHaveText("Cette liste a été supprimée entre-temps.");
+  await expect(page.getByRole("alert")).toHaveText("La liste « Drive » a été supprimée entre-temps. Les courses des repas n’ont pas été ajoutées.");
 });
 
 test("loading impossible: the message and « Réessayer »", async ({ page }) => {

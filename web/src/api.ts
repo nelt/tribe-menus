@@ -435,6 +435,27 @@ export class Api extends EventTarget {
     return this.#writeShopping("POST", `${listURL(list)}/meal-shopping`, { from, to });
   }
 
+  /** Brings a list back in line with the meals (C8, D5): the versions empty when nothing changes. */
+  recomputeList(list: string): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("POST", `${listURL(list)}/recompute`);
+  }
+
+  /**
+   * The identifiers of the stale lists (C8, D7): a state derived from the meal plan and the
+   * dishes, computed at each call, without ETag (ADR 0031).
+   */
+  async getStaleLists(): Promise<Outcome<string[]>> {
+    const outcome = await this.#call("GET", "api/shopping-lists/stale");
+    if (outcome.kind !== "ok") {
+      return outcome;
+    }
+    const lists = isRecord(outcome.value) ? outcome.value["lists"] : undefined;
+    if (!Array.isArray(lists) || !lists.every((l) => typeof l === "string")) {
+      return { kind: "network-error" };
+    }
+    return { kind: "ok", value: lists as string[] };
+  }
+
   async #writeShopping(method: string, url: string, body?: unknown): Promise<Outcome<ShoppingWrite>> {
     const outcome = shoppingWriteOf((await this.#send(method, url, body)).raw);
     if (outcome.kind === "unauthorized") {

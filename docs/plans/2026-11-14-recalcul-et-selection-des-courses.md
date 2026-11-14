@@ -158,11 +158,11 @@ Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot D : péremption, recalcul et points reportés à l'écran (`feature/ecran-recalcul`)
 
-- [ ] **19. Copie des listes** : péremption lue après chaque vérification (D7), recalcul, liste recalculée retirée des listes périmées ; message nommé d'une liste supprimée entre-temps (D12), d'après la copie d'avant la vérification.
-- [ ] **20. Écran d'une liste** : bandeau de liste périmée, « Recalculer », « Liste recalculée. » (D13) ; part prise (D9) ; pastille « Repas modifiés » dans le choix des listes.
-- [ ] **21. Points reportés** (D15) : période par défaut qui suit la date ; provenance absente du dépliage.
-- [ ] **22. Clavier virtuel** (D4) : `interactive-widget=resizes-content` dans `web/src/index.html` ; test d'écran qui vérifie la balise ; `layout.ts` inchangé, son gel du format prouvé par ses tests existants.
-- [ ] **23. C8 sous les sept projets** (`make e2e-formats`), retirés de `pending.txt`.
+- [x] **19. Copie des listes** : péremption lue après chaque vérification (D7), recalcul, liste recalculée retirée des listes périmées ; message nommé d'une liste supprimée entre-temps (D12), d'après la copie d'avant la vérification. *Fait le 2026-11-14* : `Api.getStaleLists` et `recomputeList` ; `ShoppingLists.isStale`, `recompute`, `checkLibrary` ; `deleted` porte le nom ; `deletedListMessage` dans `shopping.ts`, événement `list-deleted` qui porte le message.
+- [x] **20. Écran d'une liste** : bandeau de liste périmée, « Recalculer », « Liste recalculée. » (D13) ; part prise (D9) ; pastille « Repas modifiés » dans le choix des listes. *Fait le 2026-11-14* : `remainingQuantity` et `takenSentence` contrôlés par `taken.json` ; états d'écran dans `e2e/ecrans-recalcul.spec.ts`.
+- [x] **21. Points reportés** (D15) : période par défaut qui suit la date ; provenance absente du dépliage. *Fait le 2026-11-14.*
+- [x] **22. Clavier virtuel** (D4) : `interactive-widget=resizes-content` dans `web/src/index.html` ; test d'écran qui vérifie la balise ; `layout.ts` inchangé, son gel du format prouvé par ses tests existants. *Fait le 2026-11-14* (`ecrans-formats.spec.ts`).
+- [x] **23. C8 sous les sept projets** (`make e2e-formats`), retirés de `pending.txt`. *Fait le 2026-11-14* : trois scénarios `@ui` (étapes dans `e2e/steps-shopping.ts`).
 
 ### Lot E : sélection à l'écran, dans les trois formats (`feature/ecran-selection`)
 
@@ -233,3 +233,14 @@ Par le développeur, guidé pas à pas, sur téléphone Android, tablette Androi
 - **ENF-02** : le déplacement depuis une liste d'une autre tribu est essayé avec une liste nouvelle comme arrivée ; la transaction échoue sur la liste de départ avant de créer quoi que ce soit.
 - **Revue de la PR #118, point 1, pour le lot E** : vers une liste nouvelle, `moved` peut valoir 0 alors que la liste est créée ; les libellés de D11 ne prévoient pas ce cas. À prévoir dans `shopping.ts` (étape 24), avec sa ligne dans la table de cas, et à faire valider à l'écran.
 - **Revue de la PR #118, point 2, pour la recette (étape 28)** : un déplacement copie les plats servis reçus et leurs lignes gardées dans la liste d'arrivée, et la liste de départ les garde (Q22) ; un même plat servi peut donc être reçu par plusieurs listes. La taille de `GET shopping-lists` (D15) se mesure après quelques déplacements, pas seulement sur une liste fraîche.
+
+**Lot D** (`feature/ecran-recalcul`), 2026-11-14, dans le Dev Container, à valider à la revue :
+
+- **Phrase du dépliage d'un article avec une part prise** : « 875 g déjà pris : il reste 375 g à prendre. Cochez quand tout est pris. », sans « avant le recalcul » de la maquette : une part prise vient aussi d'un ajout de courses des repas (C4), pas seulement d'un recalcul.
+- **Message d'une liste supprimée entre-temps, écritures que D12 ne nomme pas** : désigner la liste principale, « Elle n'a pas été désignée comme principale. » ; « Courses faites », « Les articles cochés n'ont pas été retirés. » ; une coche et un retrait ouvrent la liste principale avec la seule première phrase (« La liste « Jetable » a été supprimée entre-temps. »), comme avant le lot, avec le nom en plus. Liste absente de la copie : « Cette liste a été supprimée entre-temps. », suivie de la seconde phrase.
+- **« Liste recalculée. »** prend la place des autres bandeaux verts, sous la progression, et non celle du bandeau de liste périmée, au-dessus.
+- **Listes périmées** gardées à part de la copie, relues après chaque vérification de la copie des listes, y compris après un refus ou un `404` ; sans réponse, elles restent ce qu'elles étaient. Une liste recalculée en sort, même si rien n'a changé ; refusée au-delà de 300 articles, elle y reste.
+- **Période par défaut** : elle suit la date de l'appareil au retour au premier plan tant qu'aucun jour n'a été touché ; toucher « Du » ou « Au » sans choisir de jour ne la fige pas.
+- **Provenance absente du dépliage** : la copie de la bibliothèque est vérifiée une fois par plat manquant d'un article déplié, pas à chaque rendu.
+- **Revue de la PR #119, point 2, pour le lot E (étape 24 ou 25, copie des listes)** : les listes périmées ne sont relues qu'aux vérifications de la copie. « Courses faites » peut retirer les derniers articles d'un plat servi changé : la liste n'est plus périmée (D2), mais le bandeau et la pastille restent jusqu'à la vérification suivante, et « Recalculer » répond « Liste recalculée. » sans rien changer. Au lot E, un déplacement peut rendre périmée la liste d'arrivée (plats servis reçus copiés, D10) et cesser de rendre périmée celle de départ. À faire : relire `GET shopping-lists/stale` après un déplacement réussi et après « Courses faites », avec leurs tests dans `shopping-lists.test.ts`.
+- **Revue de la PR #119, pour la clôture (étape 30)** : reporter dans le tableau « Messages des listes de courses » de `docs/design/README.md` les deux phrases ajoutées à D12, si le développeur les valide.

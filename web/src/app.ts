@@ -538,11 +538,11 @@ export class App extends LitElement {
     this.requestUpdate();
   };
 
-  /** A write on a list deleted in between: the main list opens, and tells it (D11). */
-  readonly #listDeleted = () => {
+  /** A write on a list deleted in between: the main list opens, and tells it (D11, plan courses-suite, D12). */
+  readonly #listDeleted = (e: CustomEvent<string>) => {
     this.#router.navigate(pages.shopping);
     // After the navigation, which clears the notice of the page left.
-    this.#notice = { kind: "deleted" };
+    this.#notice = { kind: "deleted", text: e.detail };
     this.requestUpdate();
   };
 

@@ -9,8 +9,8 @@ import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
 import { trimSpaces } from "./dishes.ts";
 import { networkErrorMessage } from "./login.ts";
-import { type ShoppingList, checkListName, deleteBlocked, listSummary, maxListNameLength, maxLists, progressOf, shoppingErrorMessage, sortLists } from "./shopping.ts";
-import { networkBanner } from "./shopping-list-screen.ts";
+import { type LostWrite, type ShoppingList, checkListName, deleteBlocked, listSummary, maxListNameLength, maxLists, progressOf, shoppingErrorMessage, sortLists } from "./shopping.ts";
+import { listDeletedEvent, networkBanner, recomputeIcon } from "./shopping-list-screen.ts";
 import type { ShoppingLists, WriteResult } from "./shopping-lists.ts";
 import { alertMessage, warningBanner } from "./templates.ts";
 
@@ -125,6 +125,7 @@ export class ListPickerScreen extends LitElement {
         <span class="list-card-head">
           <span class="list-card-name">${list.name}</span>
           ${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}
+          ${this.lists.isStale(list.id) ? html`<span class="pill pill--stale">${recomputeIcon(12, 3)}Repas modifiés</span>` : nothing}
         </span>
         <span class="list-card-summary">${listSummary(list)}</span>
         ${progress.total === 0
@@ -321,7 +322,7 @@ export class ListPickerScreen extends LitElement {
         this.sheet = { ...sheet, error: result.error };
         return;
       }
-      this.#failedWrite(result);
+      this.#failedWrite(result, "rename");
     } finally {
       this.#busy = false;
     }
@@ -338,7 +339,7 @@ export class ListPickerScreen extends LitElement {
         this.#closeSheet();
         return;
       }
-      this.#failedWrite(result);
+      this.#failedWrite(result, "main");
     } finally {
       this.#busy = false;
     }
@@ -375,10 +376,10 @@ export class ListPickerScreen extends LitElement {
   }
 
   /** A write not done: the list deleted in between, or « Réseau nécessaire » (D2, D11). */
-  #failedWrite(result: Exclude<WriteResult, { kind: "done" }>) {
+  #failedWrite(result: Exclude<WriteResult, { kind: "done" }>, lost?: LostWrite) {
     if (result.kind === "deleted") {
       this.#closeSheet();
-      this.dispatchEvent(new Event("list-deleted", { bubbles: true, composed: true }));
+      this.dispatchEvent(listDeletedEvent(result.name, lost));
       return;
     }
     if (result.kind !== "unauthorized") {
