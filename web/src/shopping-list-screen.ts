@@ -329,7 +329,7 @@ export class ShoppingListScreen extends LitElement {
     const label = list.main ? `${list.name}, liste principale. Changer de liste` : `${list.name}. Changer de liste`;
     const progress = progressOf(list);
     return html`<div class="shopping-head">
-        <h1 class="screen-title shopping-title">
+        <h1 class="screen-title shopping-title" tabindex="-1">
         ${this.beside
           ? html`<span class="shopping-title-text"><span class="shopping-title-name">${list.name}</span>${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}</span>`
           : html`<a class="shopping-title-link" href=${this.pickerHref} aria-label=${label}>
@@ -845,10 +845,13 @@ export class ShoppingListScreen extends LitElement {
     void this.updateComplete.then(() => this.querySelector<HTMLElement>(".selection-cancel")?.focus());
   }
 
-  /** Out of the selection mode; the focus back to « Sélectionner ». */
+  /**
+   * Out of the selection mode, by « Annuler » or a move done: the focus back to
+   * « Sélectionner », or to the title of a list emptied (review of PR #121, point 2).
+   */
   #stopSelecting() {
     this.selected = undefined;
-    void this.updateComplete.then(() => this.querySelector<HTMLElement>(".shopping-select")?.focus());
+    void this.updateComplete.then(() => (this.querySelector<HTMLElement>(".shopping-select") ?? this.querySelector<HTMLElement>(".shopping-title"))?.focus());
   }
 
   #openSheet(sheet: Sheet) {
@@ -894,7 +897,7 @@ export class ShoppingListScreen extends LitElement {
       const result = await this.lists.move(list.id, selection, to);
       if (result.kind === "done") {
         this.#closeSheet();
-        this.selected = undefined;
+        this.#stopSelecting();
         this.notice = { kind: "moved", message: movedMessage(result.moved, result.missing, result.target.name, "name" in to), href: this.listHref(result.target) };
         return;
       }

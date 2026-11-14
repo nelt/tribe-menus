@@ -100,8 +100,8 @@ test("« Déplacer vers… »: the other lists, then the banner whose link opens
   await expect(banner).toHaveText("1 article déplacé vers « Marché du samedi ».");
   await expect(sheet).toHaveCount(0);
   expect(writes(received)).toEqual([`POST shopping-lists/${courses.id}/move ${JSON.stringify({ items: [pain.id], to: marche.id })}`]);
-  // Out of the selection mode, on the source list.
-  await expect(page.getByRole("button", { name: "Sélectionner", exact: true })).toBeVisible();
+  // Out of the selection mode, on the source list, the focus on « Sélectionner » (review of PR #121, point 2).
+  await expect(page.getByRole("button", { name: "Sélectionner", exact: true })).toBeFocused();
   await expect(page.locator(".item-name")).toHaveText(["lessive", "bœuf haché"]);
   await page.screenshot({ path: "test-results/selection-apres-deplacement.png", fullPage: true });
 
@@ -137,6 +137,7 @@ test("« Nouvelle liste »: its name, 20 lists in the sheet, then a list created
   // Another member has removed « lessive » in between.
   await sheet.getByRole("button", { name: "Créer la liste" }).click();
   await expect(page.getByRole("status").filter({ hasText: "nouvelle liste" })).toHaveText("La nouvelle liste « Boucherie » a été créée, vide. 1 article n’était plus dans la liste.");
+  await expect(page.getByRole("button", { name: "Sélectionner", exact: true })).toBeFocused();
   expect(writes(received).at(-1)).toBe(`POST shopping-lists/${courses.id}/move ${JSON.stringify({ items: [lessive.id], name: "Boucherie" })}`);
 });
 
@@ -250,4 +251,16 @@ test("an item gone from the copy leaves the selection, and comes back unselected
   await backToForeground(page);
   await expect(pick(page, "pain")).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aucun article");
+});
+
+test("a move that empties the list: the focus on its title (review of PR #121, point 2)", async ({ page }) => {
+  const moved = { list: { ...courses, items: [] }, target: { ...drive, items: courses.items }, moved: 3, missing: 0, versions: { shopping_lists: 8 } };
+  await mock(page, { moveItems: [{ status: 200, body: moved }] });
+  await page.goto("/tribes/demo/courses");
+  await page.getByRole("button", { name: "Sélectionner", exact: true }).click();
+  await page.getByRole("button", { name: "Tout" }).click();
+  await actions(page).getByRole("button", { name: "Déplacer vers…" }).click();
+  await page.getByRole("dialog").locator(".sheet-target").filter({ hasText: "Drive" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "déplacés" })).toHaveText("3 articles déplacés vers « Drive ».");
+  await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
 });
