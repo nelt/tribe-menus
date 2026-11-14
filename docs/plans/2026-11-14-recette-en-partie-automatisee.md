@@ -33,7 +33,7 @@ Le 2026-11-14, avec le développeur.
 - **D1. Recette en partie automatisée** : scénarios joués par Playwright contre l'instance de recette, depuis le Dev Container, enregistrés en vidéo comme preuve de recette.
 - **D2. Code de connexion relevé dans une boîte dédiée**, le Dev Container ne pouvant pas recevoir de courrier ; aucune route qui exposerait le code sur la recette.
 - **D3. Une phase d'analyse en tête de chaque recette** détermine le plan de recette, en séparant ce qui peut passer par la recette automatique de ce qui doit rester manuel, à partir d'une analyse des changements et des risques.
-- **D4. L'enregistrement vidéo permet un contrôle** : un jugement humain qui ne demande pas de vrai appareil (rendu, conformité à la maquette, enchaînement, messages) se fait en regardant la vidéo du parcours automatique, pas en séance sur l'appareil. Seul ce qui dépend de l'appareil physique ou des vraies messageries reste manuel.
+- **D4. L'enregistrement vidéo permet un contrôle** : un jugement humain qui ne demande pas de vrai appareil (rendu, conformité à la maquette, enchaînement, messages) se fait en regardant la vidéo du parcours automatique, pas en séance sur l'appareil. Seul ce qui dépend de l'appareil physique ou des vraies messageries reste manuel. La séance manuelle elle-même n'est pas filmée (décision du développeur, 2026-11-14).
 
 Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
@@ -100,7 +100,6 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 - **Lot A pour `v0.6.0`** (D14) : le développeur veut-il l'analyse dès la recette de `v0.6.0`, quitte à fusionner le lot A avant la PR de release de `courses-suite` ?
 - **Projets** : quatre suffisent-ils, ou faut-il la tablette en portrait (`moyen`) dans les parcours de base ?
-- **Vidéo de la séance manuelle** : filmer aussi l'écran du téléphone pendant la séance (enregistreur d'écran d'Android), pour garder une preuve des points manuels ? Hors du plan sauf demande.
 - **Taille des preuves** : vidéo de chaque test dans quatre projets ; à mesurer à la première exécution, quitte à ne garder la vidéo que du projet `setup` et des échecs.
 - **Tribu `recette-auto` qui s'emplit** : la recréer à chaque reconstruction de la recette, ou ajouter une commande d'administration qui la vide ?
 - **Parcours de deux appareils** (écritures croisées, deux contextes Playwright sur la même session) : utiles en automatique, ou laissés à la séance manuelle ?
