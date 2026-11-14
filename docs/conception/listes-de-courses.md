@@ -128,7 +128,7 @@ Exemple : « Chili con carne », défini pour 4 parts avec 500 g de bœuf haché
 Plan `courses-suite`, D10 ; « Sélection d'articles » de la spec ; Q41, Q42. Fonction pure `move` : elle reçoit la liste de départ, la liste d'arrivée (ou le nom d'une liste nouvelle) et les identifiants sélectionnés ; elle rend les deux listes et les comptes.
 
 1. **Articles déplacés** : les identifiants sélectionnés encore dans la liste de départ ; les autres sont comptés dans `missing` (Q42), sans erreur.
-2. **Article calculé** : s'il existe dans la liste d'arrivée un article calculé de même clé, les deux sont **fusionnés** : provenances réunies par plat servi, une provenance déjà présente n'étant pas comptée deux fois ; quantité recalculée et arrondie ; coché si les deux l'étaient, sinon part prise = somme des parts prises (la quantité entière d'un article coché), s'il y en a une (Q41). Sinon l'article passe tel quel dans la liste d'arrivée, son identifiant gardé.
+2. **Article calculé** : s'il existe dans la liste d'arrivée un article calculé de même clé, les deux sont **fusionnés** : provenances réunies par plat servi, une provenance déjà présente n'étant pas comptée deux fois ; quantité recalculée et arrondie ; coché si les deux l'étaient, sinon part prise = somme des parts prises (la quantité entière d'un article coché), s'il y en a une (Q41) ; une part prise qui atteint la quantité (un plat servi présent des deux côtés, non compté deux fois) recoche l'article, comme une baisse jusqu'à la part prise. Sinon l'article passe tel quel dans la liste d'arrivée, son identifiant gardé.
 3. **Article ajouté** : passe tel quel, ligne distincte (Q13).
 4. **Plats servis reçus** : ceux des provenances déplacées sont copiés, avec leurs lignes gardées, dans la liste d'arrivée qui ne les a pas encore reçus ; elle garde les siens sinon. La liste de départ les garde aussi (Q22) : ils n'y ont plus de provenance pour les articles partis, que le recalcul ne recrée pas (étape 3 ci-dessus).
 5. **Nouvelle liste** : nom selon `ParseListName` (D12), rang suivant, non principale, créée dans la même transaction.
@@ -156,6 +156,7 @@ classDiagram
             +Stale(ctx) []ListID
             +Recompute(ctx, ListID) List, Versions
             +Move(ctx, ListID, []ItemID, Target) List, List, moved, missing, Versions
+            Target : List ou New et Name
         }
         class Store {
             <<interface>>
@@ -185,7 +186,7 @@ classDiagram
             +CurrentReceived(ctx, ListID) ceux encore au planning, plats et lignes actuels
             +ReplaceReceived(ctx, ListID, Served) et lignes du plat
             +DeleteSources(ctx, ItemID)
-            +MoveItem(ctx, ItemID, ListID) au lot C
+            +MoveItem(ctx, ItemID, ListID) l'article et ses provenances
         }
         class compute {
             <<functions>>
@@ -194,7 +195,7 @@ classDiagram
             +RoundItem(Quantity) Quantity
             recompute(List, kept, current []Served, newID) liste recalculée, changements, stale
             stale(List, kept, current []Served) bool
-            move(source, target, []ItemID) départ, arrivée, moved, missing
+            move(source, target, []ItemID, kept []Served) départ, arrivée, moved, missing, changements
             applyTaken(before, after Item) Item : coche et part prise (Q41)
         }
         class rules {
@@ -310,7 +311,7 @@ classDiagram
 ```
 
 - **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles et leur facteur (`Unit.Factor`), les quantités, le nom normalisé, la règle des noms (`CleanName`), celle d'une ligne saisie (`ParseLine`) et la résolution d'un ingrédient dans le référentiel (`ResolveIngredient`, sur l'interface `dish.Catalog`), communes aux plats et aux articles ajoutés ; de `internal/mealplan` pour la seule règle des dates (`ParseDate`), le `Tx` lui rendant les plats servis de la période. Le `Tx` écrit par opérations ciblées (une liste, un article, une coche, une provenance, un plat servi reçu), lues puis vérifiées par `Lists` ; le calcul pur rend la liste après, les articles créés ou changés avec les provenances qu'ils gagnent, et les plats servis reçus, que `Lists` écrit. Table de cas des quantités apportées et des arrondis : `internal/shopping/testdata/meal-shopping.json`, lue par `go test` et par `shopping.ts` (lot E).
-- **Plan `courses-suite`** : `Stale`, `Recompute` et `Move` dans `Lists` ; `recompute`, `stale` (`recompute.go`), `move` et `applyTaken` dans le calcul pur, avec leurs tables de cas (`internal/shopping/testdata/`, dont `taken.json`, lue aussi par `shopping.ts`) ; migration `0010` (`taken_amount`). Lot B : `Stale` lit dans une transaction annulée (`Store.Read`) ; la coche s'écrit par `UpdateItem`, qui porte la part prise ; `Recompute` n'écrit rien pour une liste qui n'est pas périmée, et vérifie la limite de 300 articles après `recompute`, pour que `stale` dise périmée une liste dont le recalcul serait refusé. Noms du déplacement à fixer par le lot C.
+- **Plan `courses-suite`** : `Stale`, `Recompute` et `Move` dans `Lists` ; `recompute`, `stale` (`recompute.go`), `move` et `applyTaken` dans le calcul pur, avec leurs tables de cas (`internal/shopping/testdata/`, dont `taken.json`, lue aussi par `shopping.ts`) ; migration `0010` (`taken_amount`). Lot B : `Stale` lit dans une transaction annulée (`Store.Read`) ; la coche s'écrit par `UpdateItem`, qui porte la part prise ; `Recompute` n'écrit rien pour une liste qui n'est pas périmée, et vérifie la limite de 300 articles après `recompute`, pour que `stale` dise périmée une liste dont le recalcul serait refusé. Lot C : `move` (`move.go`) rend les articles déplacés tels quels (`Tx.MoveItem`, identifiant et provenances gardés), les fusions (article de départ retiré par `DeleteItem`, article d'arrivée réécrit par `UpdateItem` avec les seules provenances des plats servis qu'il n'avait pas) et les plats servis reçus copiés de la liste de départ (`Received` puis `InsertReceived`) ; `Target` distingue une liste existante (`List`) d'une liste nouvelle (`New`, `Name`) ; une liste nouvelle est créée même si tous les articles sélectionnés sont partis entre-temps (`moved` à 0), comme le membre l'a demandé.
 - **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. Une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`. Supprimer une liste supprime ses plats servis reçus et leurs lignes ; retirer un article, ses provenances.
 - **`internal/collection`** : inchangé ; `GET shopping-lists` passe par `Serve`.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
@@ -332,7 +333,7 @@ classDiagram
 | `POST shopping-lists/{id}/meal-shopping` | `{ from, to }` | 200 : `{ list, added, ignored, versions }`, `versions` vide sans plat servi ajouté ; 400 `invalid_date`, `invalid_period`, `period_too_long` ; 409 `too_many_items` ; 404 |
 | `GET shopping-lists/stale` | | 200 : `{ lists: [ListID] }`, les listes périmées dans l'ordre des identifiants, calculées à chaque appel ; sans ETag ni `304` (ADR 0031) |
 | `POST shopping-lists/{id}/recompute` | | 200 : `{ list, versions }`, `versions` vide si rien ne change ; 409 `too_many_items` ; 404 |
-| `POST shopping-lists/{id}/move` | `{ items: [ItemID], to: ListID }` ou `{ items, name }` | 200 : `{ list, target, moved, missing, versions }`, la liste de départ et la liste d'arrivée à jour ; 400 `no_items`, `same_list`, les codes du nom d'une liste ; 404 (liste de départ), 404 `{ error: "target_not_found" }` ; 409 `too_many_items`, `too_many_lists` |
+| `POST shopping-lists/{id}/move` | `{ items: [ItemID], to: ListID }` ou `{ items, name }` | 200 : `{ list, target, moved, missing, versions }`, la liste de départ et la liste d'arrivée à jour, `versions` vide si rien n'est déplacé vers une liste existante ; 400 `no_items`, `same_list`, les codes du nom d'une liste, `bad_request` sans `to` ni `name` ou avec les deux ; 404 (liste de départ), 404 `{ error: "target_not_found" }` ; 409 `too_many_items`, `too_many_lists` |
 
 Une liste (`List`) : `{ id, name, main, rank, items: [Item], received: [ServedDishID] }`, ses articles dans l'ordre de Q40 (`SortItems` : non cochés puis cochés, nom normalisé, avec quantité avant sans quantité, calculé avant ajouté, puis identifiant pour un ordre stable) ; un article (`Item`) : `{ id, ingredient, quantity?, unit?, taken?, checked, manual, sources: [{ servedDish, dish, date, mealtime, servings, quantity?, unit? }] }`.
 
