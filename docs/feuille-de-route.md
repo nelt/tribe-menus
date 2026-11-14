@@ -1,6 +1,6 @@
 # Feuille de route
 
-- **Mise à jour** : 2026-11-08
+- **Mise à jour** : 2026-11-14
 
 Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pourquoi ; le détail de chaque sujet est dans son plan (`plans/`), les décisions dans les ADR et les specs. Il est mis à jour quand un plan est créé, terminé ou déplacé, dans la même PR.
 
@@ -35,6 +35,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `planning` | Planning des repas | [`2026-11-05-planning-des-repas.md`](plans/2026-11-05-planning-des-repas.md) | terminé |
 | `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | terminé |
 | `grands-ecrans` | Tablette (portrait et paysage) et ordinateur : formats, rail de navigation, semainier, deux volets | [`2026-11-07-tablette-et-ordinateur.md`](plans/2026-11-07-tablette-et-ordinateur.md) | terminé |
+| `courses-suite` | Listes de courses : liste périmée et recalcul, part prise, sélection, déplacement et nouvelle liste | [`2026-11-14-recalcul-et-selection-des-courses.md`](plans/2026-11-14-recalcul-et-selection-des-courses.md) | brouillon |
 
 ### `production` : application prête pour la production
 
@@ -70,6 +71,10 @@ Adaptation de l'interface, dessinée pour le téléphone, à la tablette en port
 
 Terminé le 2026-11-09 : recette sur l'archive de la PR de release (#111) sur téléphone, tablette Android et ordinateur ; **`v0.5.0` en production le 2026-11-09**. Écart accepté : sous le clavier virtuel d'une tablette en paysage, il faut fermer le clavier pour atteindre « Enregistrer le plat » ; lien d'évitement reporté (points reportés ci-dessous). iPad et Safari sur Mac prouvés par WebKit seul.
 
+### `courses-suite` : recalcul et sélection des courses
+
+Quatrième plan du métier, qui termine les listes de courses en ligne : bandeau de liste périmée et « Recalculer » (C8), calculés par le serveur à partir de ce que `courses` a gardé (`courses`, D5) ; un article coché dont la quantité augmente montre ce qui reste à prendre (« encore 250 g », migration `0010`) ; sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), dans les trois formats ; points reportés à ce cadrage (message d'une liste supprimée entre-temps, période par défaut, provenance absente du dépliage, clavier virtuel d'une tablette en paysage, navigations par événement). Cinq lots (design, specs, conception et ADR 0031 ; part prise, péremption et recalcul ; déplacement ; recalcul à l'écran et points reportés ; sélection à l'écran), puis `v0.6.0`. Brouillon du 2026-11-14 : D1 à D4 prises par le développeur (part prise, ligne ajoutée à un plat recréée par le recalcul, péremption calculée par le serveur à la demande, `interactive-widget=resizes-content`), les autres à confirmer à la revue du plan.
+
 ## Décisions d'ordonnancement
 
 Le 2026-10-04, avec le développeur.
@@ -103,7 +108,6 @@ Le 2026-11-07, avec le développeur.
 Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 
 - **Membres et sessions dans l'interface** (EF-01 à EF-07). Débloque le scénario EF-08 « Le premier membre peut se connecter et ajouter des membres ».
-- **`courses-suite`**, après `courses` (décision du 2026-11-06), puis après `grands-ecrans` (décision du 2026-11-07) : liste périmée et « Recalculer » (C8), sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), d'après les états périmée et sélection de `Doux-Courses` et `Doux-CoursesSelection`, dans les trois formats ; `v0.6.0`. Nom réservé, plan à cadrer ; points à reprendre au cadrage dans les notes d'exécution de `courses` (recette et revue #101).
 - **Hors-ligne et PWA installable** : service worker, IndexedDB, manifeste par tribu, icônes ; consultation et coches des listes de courses sans réseau, rejeu au retour du réseau (C7, Q16, Q18) ; avant d'inviter la famille (décision du 2026-11-06).
 - **Administration** : EF-09, EF-10, EF-11.
 - **Invitation de la famille** : révocation d'un membre et fermeture d'une session à distance (`revue-securite`, constat 5), puis ouverture de la production à d'autres membres que le développeur. Le site public, la boîte `contact@` et la première release en production passent au plan `recette` (D1).
@@ -126,7 +130,7 @@ Ces sujets n'ont pas encore de plan, donc pas encore de nom.
 | Durée de HSTS à allonger | `recette` | après quelques semaines sans incident |
 | Avis de sécurité GitHub publié après une version corrective, en plus de l'analyse et de `CHANGELOG.md` | `canal-prive` et `recette`, questions ouvertes | à la première vraie vulnérabilité, ou s'il existe d'autres instances |
 | Effacement automatique du journal d'audit après 12 mois, annoncé par la page Confidentialité | PT-07 ; `recette`, lot D | avant octobre 2027, au plus tard avec EF-07 ou EF-11 |
-| Clavier virtuel sur une tablette en paysage : la mise en page ne bascule pas, mais « Enregistrer le plat » n'est pas visible au-dessus du clavier, qu'il faut fermer (scénario `@manuel` de `formats-ecran.feature` tenu en partie) | recette de `grands-ecrans` (2026-11-09, écart accepté) | corriger le bouton ou alléger le scénario, au plus tard avec `courses-suite` |
+| Clavier virtuel sur une tablette en paysage : la mise en page ne bascule pas, mais « Enregistrer le plat » n'est pas visible au-dessus du clavier, qu'il faut fermer (scénario `@manuel` de `formats-ecran.feature` tenu en partie) | recette de `grands-ecrans` (2026-11-09, écart accepté) | `courses-suite`, D4 (`interactive-widget=resizes-content`), vérifié à sa recette |
 | Lien d'évitement « Aller au contenu » dans l'application : la navigation précède l'écran dans le document, un lecteur d'écran ou le clavier passe les onglets avant chaque écran | revue #107 ; recette de `grands-ecrans` (2026-11-09) | avant d'inviter la famille |
 | Mise à jour automatique de l'application : après un déploiement, un onglet resté ouvert garde l'ancienne version sans prévenir, jusqu'à ce qu'on le recharge | recette de `bibliotheque` (2026-11-05) | avec le service worker (ADR 0004), au plus tard avant d'inviter la famille |
 | iPad vu comme un ordinateur par la détection de l'appareil | revue de la PR #29 ; `socle`, D12 | EF-04 |
