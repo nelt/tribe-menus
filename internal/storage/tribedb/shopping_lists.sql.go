@@ -351,6 +351,20 @@ func (q *Queries) InsertShoppingReceivedLine(ctx context.Context, arg InsertShop
 	return err
 }
 
+const moveShoppingItem = `-- name: MoveShoppingItem :exec
+UPDATE shopping_items SET list_id = ? WHERE id = ?
+`
+
+type MoveShoppingItemParams struct {
+	ListID string
+	ID     string
+}
+
+func (q *Queries) MoveShoppingItem(ctx context.Context, arg MoveShoppingItemParams) error {
+	_, err := q.db.ExecContext(ctx, moveShoppingItem, arg.ListID, arg.ID)
+	return err
+}
+
 const nextShoppingListRank = `-- name: NextShoppingListRank :one
 SELECT CAST(coalesce(max(rank), 0) + 1 AS INTEGER) FROM shopping_lists
 `

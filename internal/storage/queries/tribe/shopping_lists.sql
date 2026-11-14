@@ -120,3 +120,6 @@ DELETE FROM shopping_received_lines WHERE list_id = ? AND served_dish_id = ?;
 
 -- name: DeleteShoppingReceived :exec
 DELETE FROM shopping_received WHERE list_id = ? AND served_dish_id = ?;
+
+-- name: MoveShoppingItem :exec
+UPDATE shopping_items SET list_id = ? WHERE id = ?;

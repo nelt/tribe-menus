@@ -393,3 +393,11 @@ func (t shoppingTx) DeleteSources(ctx context.Context, id shopping.ItemID) error
 	}
 	return nil
 }
+
+// MoveItem moves an item to another list: its sources follow it, by its identifier.
+func (t shoppingTx) MoveItem(ctx context.Context, id shopping.ItemID, list shopping.ListID) error {
+	if err := t.q.MoveShoppingItem(ctx, tribedb.MoveShoppingItemParams{ListID: string(list), ID: string(id)}); err != nil {
+		return fmt.Errorf("move shopping item: %w", err)
+	}
+	return nil
+}
