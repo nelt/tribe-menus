@@ -36,6 +36,7 @@ Ordre des plans de travail. Ce document dit **dans quel ordre** on avance et pou
 | `courses` | Listes de courses : listes, articles, courses des repas, coches, courses faites | [`2026-11-06-listes-de-courses.md`](plans/2026-11-06-listes-de-courses.md) | terminé |
 | `grands-ecrans` | Tablette (portrait et paysage) et ordinateur : formats, rail de navigation, semainier, deux volets | [`2026-11-07-tablette-et-ordinateur.md`](plans/2026-11-07-tablette-et-ordinateur.md) | terminé |
 | `courses-suite` | Listes de courses : liste périmée et recalcul, part prise, sélection, déplacement et nouvelle liste | [`2026-11-14-recalcul-et-selection-des-courses.md`](plans/2026-11-14-recalcul-et-selection-des-courses.md) | en cours |
+| `recette-auto` | Recette en partie automatisée : plan de recette par analyse des changements et des risques, parcours Playwright filmés sur la recette | [`2026-11-14-recette-en-partie-automatisee.md`](plans/2026-11-14-recette-en-partie-automatisee.md) | brouillon |
 
 ### `production` : application prête pour la production
 
@@ -74,6 +75,10 @@ Terminé le 2026-11-09 : recette sur l'archive de la PR de release (#111) sur t�
 ### `courses-suite` : recalcul et sélection des courses
 
 Quatrième plan du métier, qui termine les listes de courses en ligne : bandeau de liste périmée et « Recalculer » (C8), calculés par le serveur à partir de ce que `courses` a gardé (`courses`, D5) ; un article coché dont la quantité augmente montre ce qui reste à prendre (« encore 250 g », migration `0010`) ; sélection d'articles, déplacement vers une autre liste et nouvelle liste à partir d'une sélection (C9, C10), dans les trois formats ; points reportés à ce cadrage (message d'une liste supprimée entre-temps, période par défaut, provenance absente du dépliage, clavier virtuel d'une tablette en paysage, navigations par événement). Cinq lots (design, specs, conception et ADR 0031 ; part prise, péremption et recalcul ; déplacement ; recalcul à l'écran et points reportés ; sélection à l'écran), puis `v0.6.0`. Cadré le 2026-11-14 : D1 à D4 prises par le développeur (part prise, ligne ajoutée à un plat recréée par le recalcul, péremption calculée par le serveur à la demande, `interactive-widget=resizes-content`), les autres confirmées par la fusion de la PR du plan (#114). En cours depuis le 2026-11-14 : lot A (maquettes dans les trois formats, specs, conception, ADR 0031), lot B (part prise, péremption et recalcul, domaine et API, migration `0010`), lot C (déplacement et nouvelle liste, domaine et API), lot D (péremption, recalcul et points reportés à l'écran).
+
+### `recette-auto` : recette en partie automatisée
+
+Chaque recette commence par une analyse des changements et des risques, qui produit le plan de recette de la version (`docs/recettes/vX.Y.Z.md`) et classe chaque changement : prouvé par la CI, prouvé automatiquement sur la recette, ou manuel (vrai appareil, jugement visuel, vraies messageries, scénarios `@manuel`). `make recette-auto`, depuis le Dev Container, se connecte à la recette par le code relevé en POP3 dans une boîte dédiée (`recette-auto@`, tribu `recette-auto`), joue les parcours de base et les parcours ciblés sous quatre projets Playwright, filmés, et produit une archive de preuves gardée hors de GitHub, avec son empreinte (ADR 0032). Trois lots (procédure et plan de recette ; relève du code et outillage ; parcours de base et première recette). Brouillon du 2026-11-14 : le lot A peut servir dès la recette de `v0.6.0` ; les lots B et C suivent `courses-suite`, avant le plan hors-ligne (D12).
 
 ## Décisions d'ordonnancement
 
