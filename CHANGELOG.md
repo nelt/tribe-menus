@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Go 1.27.4 (`toolchain` de `go.mod`) : corrige GO-2026-6859 (CVE-2026-97054) de `net/http`, que `make vuln` signale depuis sa publication le 2026-11-11 ; avec Go 1.27.3, un serveur qui lit le corps d'une requête limité par `MaxBytesReader` pendant qu'il écrit l'en-tête de la réponse peut s'arrêter sur une panique. `readJSONLimit` lit puis écrit dans la même goroutine, sans cette concurrence ; gravité faible, niveau normal (`docs/traitement-des-vulnerabilites.md`), livré avec `v0.6.0` (décision du développeur, 2026-11-14).
 - Plan `grands-ecrans` terminé (étape 19) : `v0.5.0` en production ; feuille de route (plan terminé, point reporté « Mise en page d'ordinateur » retiré, message de `tribe-menus-deploy` quand GitHub ne répond pas reporté), `CLAUDE.md` (version en service).
 
 ## 0.5.0 — 2026-11-08
