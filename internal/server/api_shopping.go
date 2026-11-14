@@ -11,7 +11,8 @@ import (
 	"github.com/nelt/tribe-menus/internal/storage"
 )
 
-// maxCheckoutBodyBytes bounds the body of the shopping done: up to 300 identifiers of 32
+// maxCheckoutBodyBytes bounds the body of the shopping done and of a move: up to 300
+// identifiers of 32
 // hexadecimal characters, about 10.5 KiB, do not fit in the 4 KiB of the rest of the API
 // (conception des listes de courses, « API »).
 const maxCheckoutBodyBytes = 16 << 10
@@ -28,6 +29,9 @@ const (
 	errComputedItem    = "computed_item"
 	errInvalidPeriod   = "invalid_period"
 	errPeriodTooLong   = "period_too_long"
+	errNoItems         = "no_items"
+	errSameList        = "same_list"
+	errTargetNotFound  = "target_not_found"
 )
 
 // listResponse is a shopping list of the API: its items in the order of Q40, and the
@@ -87,6 +91,16 @@ type mealShoppingResponse struct {
 	Versions collection.Versions `json:"versions"`
 }
 
+// movedResponse answers a move (C9, C10, D7): the source and target lists up to date, the
+// number of items moved and of selected items no longer in the source list (Q42).
+type movedResponse struct {
+	List     listResponse        `json:"list"`
+	Target   listResponse        `json:"target"`
+	Moved    int                 `json:"moved"`
+	Missing  int                 `json:"missing"`
+	Versions collection.Versions `json:"versions"`
+}
+
 // staleResponse gives the stale lists, in the order of their identifiers (C8, D7).
 type staleResponse struct {
 	Lists []shopping.ListID `json:"lists"`
@@ -126,7 +140,7 @@ func newListResponse(l shopping.List) listResponse {
 }
 
 // shoppingRoutes registers the routes of the shopping lists, behind the session; bodies of
-// 4 KiB at most, 16 KiB for the shopping done.
+// 4 KiB at most, 16 KiB for the shopping done and a move.
 func (a *api) shoppingRoutes(handle func(pattern string, h http.Handler)) {
 	handle("GET /tribes/{tribe}/api/shopping-lists", a.withMember(a.listShoppingLists))
 	handle("POST /tribes/{tribe}/api/shopping-lists", a.withMember(a.createList))
@@ -140,6 +154,7 @@ func (a *api) shoppingRoutes(handle func(pattern string, h http.Handler)) {
 	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/meal-shopping", a.withMember(a.addMealShopping))
 	handle("GET /tribes/{tribe}/api/shopping-lists/stale", a.withMember(a.staleLists))
 	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/recompute", a.withMember(a.recomputeList))
+	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/move", a.withMember(a.moveItems))
 }
 
 // listsOf is the shopping lists of the tribe of the request: its own database only (ENF-02).
@@ -344,6 +359,37 @@ func (a *api) recomputeList(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, listWrittenResponse{List: newListResponse(l), Versions: versions})
 }
 
+// moveItems: POST shopping-lists/{id}/move {items, to} to an existing list, or {items,
+// name} to a new list (C9, C10, D7, D10): exactly one of to and name.
+func (a *api) moveItems(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Items []shopping.ItemID `json:"items"`
+		To    *string           `json:"to"`
+		Name  *string           `json:"name"`
+	}
+	if !readJSONLimit(w, r, &body, maxCheckoutBodyBytes) {
+		return
+	}
+	var to shopping.Target
+	switch {
+	case (body.To == nil) == (body.Name == nil):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errBadRequest})
+		return
+	case body.To != nil:
+		to.List = shopping.ListID(*body.To)
+	default:
+		to.New, to.Name = true, *body.Name
+	}
+	source, target, moved, missing, versions, err := listsOf(r).Move(r.Context(), listID(r), body.Items, to)
+	if err != nil {
+		a.writeShoppingError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, movedResponse{
+		List: newListResponse(source), Target: newListResponse(target), Moved: moved, Missing: missing, Versions: versions,
+	})
+}
+
 func (a *api) writeShoppingError(w http.ResponseWriter, err error) {
 	var itemErr *shopping.ItemError
 	var notEmpty *shopping.NotEmptyError
@@ -362,6 +408,12 @@ func (a *api) writeShoppingError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errInvalidPeriod})
 	case errors.Is(err, shopping.ErrPeriodTooLong):
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errPeriodTooLong})
+	case errors.Is(err, shopping.ErrNoItems):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errNoItems})
+	case errors.Is(err, shopping.ErrSameList):
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: errSameList})
+	case errors.Is(err, shopping.ErrTargetNotFound):
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: errTargetNotFound})
 	case errors.Is(err, shopping.ErrTooManyLists):
 		writeJSON(w, http.StatusConflict, errorResponse{Error: errTooManyLists})
 	case errors.Is(err, shopping.ErrTooManyItems):
