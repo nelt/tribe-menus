@@ -25,19 +25,23 @@ Le Dev Container n'a ni adresse publique ni port 25 : il ne peut pas recevoir de
    - **gravité** si le défaut passe en production : *haute* (données perdues ou faussées, une tribu qui voit une autre, connexion impossible, sécurité), *moyenne* (une fonction inutilisable, contournement possible), *faible* (gêne, affichage) ;
    - **probabilité qu'un défaut ait échappé à la CI** : *élevée* (code nouveau sans scénario passé, calcul, migration, comportement que seul un navigateur réel exerce, scénarios encore en attente, écran prouvé seulement sur l'API simulée), *moyenne*, *faible* (scénarios godog ou `@ui` passés dans tous les formats, changement mécanique) ;
    - **dépendance à l'environnement réel** : migration sur des données existantes ; Caddy, TLS, en-têtes, cookies ; envoi SMTP ; systemd et provisionnement ; cache et empreintes du front ; vrai appareil (toucher, clavier virtuel, rotation, application installée) ; jugement visuel ; vraies messageries ; Safari réel.
-4. **Voie de preuve**, déduite des trois réponses ; un changement peut en avoir plusieurs :
-   - **CI** : risque faible (gravité et probabilité faibles ou moyennes) sans dépendance à l'environnement. Rien de plus en recette que les parcours de base (point 5) ;
-   - **automatique sur la recette** : dépendance au serveur, à l'envoi ou au cache, ou risque moyen ou élevé qu'un écran émulé suffit à voir. Le plan de recette nomme le parcours qui le couvre, ou en demande un ;
-   - **manuel** : ce que l'émulation ne prouve pas (vrai appareil, jugement visuel, vraies messageries), les scénarios `@manuel`, et tout changement de gravité haute et de probabilité élevée, même couvert par un parcours automatique.
+4. **Voie de preuve**, déduite des trois réponses ; un changement peut en avoir plusieurs. La dépendance à l'environnement se lit en deux familles : **le serveur** (migration, Caddy, TLS, cookies, cache, envoi SMTP), qu'un parcours sur la recette voit ; **l'appareil physique** (toucher, clavier virtuel, rotation de l'appareil, application installée, ressenti de la fluidité) et **les vraies messageries**, qu'aucun navigateur émulé ne voit, filmé ou non. Les règles s'appliquent dans l'ordre :
+   1. **manuel sur un vrai appareil** : ce qui dépend de l'appareil physique ou des vraies messageries, et les scénarios `@manuel`. La vidéo d'un navigateur émulé n'en prouve rien ;
+   2. **automatique avec contrôle de la vidéo** : ce qui demande un jugement humain sans demander d'appareil (conformité à la maquette, lisibilité, enchaînement d'un parcours, messages et bandeaux, mise en page dans un format), et tout changement de gravité haute et de probabilité élevée qui ne relève pas de la règle 1. Le parcours joue et vérifie ce qui s'assert ; le développeur regarde ensuite les passages que le plan de recette désigne, et y consigne son verdict. Le contrôle se fait après l'exécution, sans téléphone en main, et se refait sur la même preuve ;
+   3. **automatique** : dépendance au serveur, ou risque moyen ou élevé que des vérifications du parcours suffisent à établir (une quantité juste, un article déplacé, une écriture relue) ;
+   4. **CI** : risque faible (gravité et probabilité faibles ou moyennes) sans dépendance à l'environnement. Rien de plus en recette que les parcours de base (point 5), dont la vidéo n'est regardée qu'en cas d'échec.
+
+   Le plan de recette nomme le parcours qui couvre un changement, ou en demande un ; un point automatisable sans parcours existant est soit l'occasion d'en écrire un, s'il resservira, soit vérifié à la main pour cette release. Le développeur peut faire passer tout point dans une voie plus manuelle.
 5. **Parcours de base**, joués à chaque recette quoi qu'en dise l'analyse : connexion par code reçu par e-mail ; chaque onglet s'ouvre ; une écriture relue par onglet (un plat, un plat servi, un article coché) ; rechargement sur une version nouvelle.
 6. **Les parcours de recette sont des tests Playwright ordinaires**, dans `web/recette/`, avec leur configuration (`web/playwright.recette.config.ts`), pas des `.feature` : ils ne sont pas des critères d'acceptation (ADR 0005, point 1, inchangé) mais la preuve qu'une version déployée tient. Ils créent leurs données par l'interface : `e2efixture` écrit dans des bases locales et n'a pas cours sur une instance distante.
 7. **Une tribu dédiée sur l'instance de recette**, `recette-auto`, dont l'unique membre est `recette-auto@codingmatters.org`, une **vraie boîte du MX Plan**, pas une redirection, qui ne reçoit que les codes de cette tribu. Elle n'est jamais membre en production. Les données d'une exécution portent un suffixe d'exécution et s'accumulent (un plat ne se supprime pas) ; la tribu se recrée quand elle gêne.
 8. **Le code est relevé en POP3** par un outil Go du projet (`internal/tools/mailbox`), sur la bibliothèque standard (`crypto/tls`, `net/textproto`) : connexion TLS au MX Plan, message le plus récent adressé à l'adresse et arrivé après l'heure de la demande, code imprimé sur la sortie standard, messages relevés supprimés. Les parcours l'appellent comme un programme. Le mot de passe de la boîte est dans un fichier hors du dépôt, dans le Dev Container ; jamais dans la CI.
 9. **Une seule demande de code par exécution** : un projet Playwright `setup`, filmé, se connecte et enregistre l'état de la session (`storageState`) hors du dépôt ; les autres projets le reprennent. L'exécution se lance avant la séance manuelle, qui part souvent de la même IP.
 10. **Quatre projets** repris de `web/playwright.config.ts` : `phone-chromium`, `phone-webkit`, `tablet-landscape-chromium`, `computer-chromium`. Vidéo, trace et captures toujours enregistrées ; rapport HTML.
-11. **Les preuves restent hors de GitHub** : résultats dans `web/recette-results/` (ignoré par Git), réunis en une archive `recette-vX.Y.Z-<horodatage>.tar.gz` avec son empreinte SHA-256, gardée par le développeur. Le plan de recette consigne la date, l'archive de PR déployée, le résultat de chaque parcours et l'empreinte des preuves.
-12. **Lancement par `make recette-auto`** depuis le Dev Container, après `tribe-menus-deploy --env recette --pr <numéro>` ; Claude Code peut le lancer et reporter le résultat dans le plan de recette, et un résumé sur la PR. Pas de workflow GitHub : la CI n'a pas le mot de passe de la boîte et ne doit pas l'avoir (dépôt public, workflows sur PR).
-13. **Version corrective d'une vulnérabilité** (ADR 0022) : au niveau normal, comme une release ordinaire. Aux niveaux accéléré et urgent, l'analyse reste dans la conversation, hors de GitHub, et seul un plan de recette en termes neutres entre dans la PR, après la production.
+11. **Des preuves faites pour être contrôlées** : vidéo à la taille de la fenêtre (Playwright la réduit par défaut à 800 × 800 au plus, illisible pour un ordinateur) ; chaque parcours découpé en étapes nommées (`test.step`), qui titrent la trace ; une capture pleine page à chaque point de contrôle désigné par le plan de recette, nommée d'après lui ; un court temps d'arrêt après chaque action visible, pour que la vidéo montre l'état obtenu et pas seulement la transition. La trace (pellicule, état de la page à chaque étape) sert à examiner un passage douteux de la vidéo.
+12. **Les preuves restent hors de GitHub** : résultats dans `web/recette-results/` (ignoré par Git), réunis en une archive `recette-vX.Y.Z-<horodatage>.tar.gz` avec son empreinte SHA-256, gardée par le développeur. Le plan de recette consigne la date, l'archive de PR déployée, le résultat de chaque parcours, le verdict de chaque contrôle de la vidéo et l'empreinte des preuves.
+13. **Lancement par `make recette-auto`** depuis le Dev Container, après `tribe-menus-deploy --env recette --pr <numéro>` ; Claude Code peut le lancer et reporter le résultat dans le plan de recette, et un résumé sur la PR. Pas de workflow GitHub : la CI n'a pas le mot de passe de la boîte et ne doit pas l'avoir (dépôt public, workflows sur PR).
+14. **Version corrective d'une vulnérabilité** (ADR 0022) : au niveau normal, comme une release ordinaire. Aux niveaux accéléré et urgent, l'analyse reste dans la conversation, hors de GitHub, et seul un plan de recette en termes neutres entre dans la PR, après la production.
 
 ### Déroulé d'une exécution
 
@@ -69,6 +73,8 @@ sequenceDiagram
     PW->>R: lectures et écritures dans la tribu recette-auto
     PW-->>DC: rapport, vidéos, traces
     DC-->>Dev: archive des preuves et son SHA-256,<br/>résultats dans docs/recettes/vX.Y.Z.md
+    Dev->>DC: contrôle de la vidéo aux points désignés<br/>(verdicts dans docs/recettes/vX.Y.Z.md)
+    Note over Dev: séance manuelle réduite<br/>au vrai appareil et aux vraies messageries
 ```
 
 ## Alternatives envisagées
@@ -79,13 +85,13 @@ sequenceDiagram
 - **IMAP** (`imapflow` en npm, `go-imap` en Go) : écarté. Une dépendance pour un besoin que POP3 couvre avec la bibliothèque standard.
 - **Mailpit dans le Dev Container** : écarté pour la recette, qui envoie par le MX Plan ; possible plus tard pour éprouver `SMTPMailer` en local.
 - **Une boîte Gmail dédiée** : écarté pour l'automatique. Ajoute un compte tiers ; la réception sur les vraies messageries reste une vérification manuelle, ponctuelle (ADR 0014, point 6).
-- **Les parcours dans un workflow GitHub** : écarté (point 12).
+- **Les parcours dans un workflow GitHub** : écarté (point 13).
 - **Les vidéos en artefact de CI ou dans la PR** : écarté. Elles montrent l'identifiant de la tribu de recette dans les URL et pèsent lourd ; une empreinte suffit à les lier au plan de recette.
 - **Une check-list fixe qui s'allonge à chaque plan** : c'est l'état actuel. Écarté au profit de l'analyse, qui garde la séance manuelle courte et la justifie.
 
 ## Conséquences
 
-- **Positif** : chaque séance de recette a un plan argumenté, relu avant d'être joué ; la séance manuelle se réduit à ce qui demande un appareil ou un œil ; l'environnement réel (serveur, envoi, migration) est éprouvé à chaque release, avec des preuves datées ; aucune dépendance nouvelle.
+- **Positif** : chaque séance de recette a un plan argumenté, relu avant d'être joué ; le jugement visuel se fait sur la vidéo, après coup et de nouveau si besoin, et la séance manuelle se réduit à ce qui demande un vrai appareil ou une vraie messagerie ; l'environnement réel (serveur, envoi, migration) est éprouvé à chaque release, avec des preuves datées ; aucune dépendance nouvelle.
 - **Négatif** : un outil POP3 et des parcours à maintenir, cassés par des changements d'écran comme les tests d'écran ; une boîte, une tribu et un secret de plus à gérer ; l'analyse ajoute un temps de rédaction à chaque release ; la tribu `recette-auto` s'emplit.
 - **Risques acceptés** : le mot de passe de la boîte est lisible dans le Dev Container, donc par Claude Code ; il ne donne accès qu'à la tribu `recette-auto` de la recette, qui n'a que des données de test. La relève dépend de la disponibilité du POP3 du MX Plan.
 - **Précise** l'ADR 0005 (point 4 : ce qui est vérifié en recette) et l'ADR 0016 (déroulé de la recette) ; `RELEASING.md`, étape 6, renvoie à `docs/recette.md`.
