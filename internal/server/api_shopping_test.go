@@ -45,6 +45,8 @@ func TestShoppingRoutesNeedASession(t *testing.T) {
 		{"PUT", "/api/shopping-lists/0123/items/0456/checked", `{"checked":true}`},
 		{"POST", "/api/shopping-lists/0123/checkout", `{"items":[]}`},
 		{"POST", "/api/shopping-lists/0123/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`},
+		{"GET", "/api/shopping-lists/stale", ""},
+		{"POST", "/api/shopping-lists/0123/recompute", ""},
 	}
 	for _, slug := range []string{"martin", "dupont"} {
 		for _, r := range routes {
@@ -210,6 +212,7 @@ func TestShoppingErrors(t *testing.T) {
 		{"period after 2099", "POST", lists + courses + "/meal-shopping", `{"from":"2099-12-28","to":"2100-01-01"}`, 400, `{"error":"invalid_date"}`},
 		{"period without end", "POST", lists + courses + "/meal-shopping", `{"from":"2026-10-06"}`, 400, `{"error":"invalid_date"}`},
 		{"period unreal", "POST", lists + courses + "/meal-shopping", `{"from":"2026-02-30","to":"2026-03-01"}`, 400, `{"error":"invalid_date"}`},
+		{"recompute an unknown list", "POST", lists + unknown + "/recompute", "", 404, `{"error":"not_found"}`},
 		{"no reading route for a list", "GET", lists + marche, "", 404, `{"error":"not_found"}`},
 		{"no change of a list but its name", "PUT", lists + marche, `{"name":"Drive"}`, 405, ""},
 	}
@@ -306,6 +309,61 @@ func TestMealShopping(t *testing.T) {
 	wantStatus(t, rec, http.StatusOK)
 	if strings.Contains(rec.Body.String(), "taken") {
 		t.Errorf("checked: %s", rec.Body)
+	}
+}
+
+// TestRecompute: a list whose served dishes changed is stale, at each call, without ETag;
+// recomputing it brings it back in line with the meals, once (C8, D7, ADR 0031).
+func TestRecompute(t *testing.T) {
+	f := newAPIFixture(t)
+	alice := f.signIn(t, "martin", "alice@exemple.fr")
+	courses := f.mainList(t, "martin", alice).ID
+	rec := f.do("POST", "/tribes/martin/api/dishes", `{"name":"Chili con carne","servings":4,"ingredients":[`+
+		`{"name":"bœuf haché","quantity":"500","unit":"g"},{"name":"oignon","quantity":"1","unit":"piece"}]}`, alice)
+	wantStatus(t, rec, http.StatusCreated)
+	chili := decode[savedResponse](t, rec).Dish.ID
+	rec = f.do("POST", "/tribes/martin/api/meal-plan", serveBody("2026-10-06", "dinner", chili), alice)
+	wantStatus(t, rec, http.StatusCreated)
+	tue := decode[struct {
+		ServedDish struct {
+			ID string `json:"id"`
+		} `json:"servedDish"`
+	}](t, rec).ServedDish.ID
+	wantStatus(t, f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`, alice), http.StatusOK)
+	stale := func() string {
+		t.Helper()
+		rec := f.do("GET", "/tribes/martin/api/shopping-lists/stale", "", alice)
+		wantStatus(t, rec, http.StatusOK)
+		if rec.Header().Get("Cache-Control") != "no-store" || rec.Header().Get("ETag") != "" {
+			t.Errorf("headers %v", rec.Header())
+		}
+		return strings.TrimSpace(rec.Body.String())
+	}
+	if got := stale(); got != `{"lists":[]}` {
+		t.Errorf("stale %s", got)
+	}
+
+	wantStatus(t, f.do("PUT", "/tribes/martin/api/meal-plan/"+tue+"/servings", `{"servings":6}`, alice), http.StatusOK)
+	if got := stale(); got != `{"lists":["`+courses+`"]}` {
+		t.Errorf("stale %s", got)
+	}
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/recompute", "", alice)
+	wantStatus(t, rec, http.StatusOK)
+	got := decode[listWrittenResponse](t, rec)
+	if len(got.List.Items) != 2 || got.List.Items[0].Quantity != "750" || got.List.Items[0].Sources[0].Servings != 6 || got.Versions["shopping_lists"] != 2 {
+		t.Errorf("recomputed %s", rec.Body)
+	}
+	if lists := f.lists(t, "martin", alice); fmt.Sprint(lists[0]) != fmt.Sprint(got.List) {
+		t.Errorf("read back %+v\nreturned %+v", lists[0], got.List)
+	}
+	if got := stale(); got != `{"lists":[]}` {
+		t.Errorf("stale after the recomputation %s", got)
+	}
+	// Again: nothing changes, no version.
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/recompute", "", alice)
+	wantStatus(t, rec, http.StatusOK)
+	if got := decode[listWrittenResponse](t, rec); len(got.Versions) != 0 || got.List.Items[0].Quantity != "750" {
+		t.Errorf("again %s", rec.Body)
 	}
 }
 
@@ -443,6 +501,7 @@ func TestShoppingListsOfAnotherTribe(t *testing.T) {
 		{"POST", "shopping-lists/%s/items", `{"ingredient":"pain"}`},
 		{"POST", "shopping-lists/%s/checkout", `{"items":[]}`},
 		{"POST", "shopping-lists/%s/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`},
+		{"POST", "shopping-lists/%s/recompute", ""},
 		{"PUT", "shopping-lists/" + courses + "/items/%s/checked", `{"checked":true}`},
 		{"DELETE", "shopping-lists/" + courses + "/items/%s", ""},
 	}

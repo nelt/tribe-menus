@@ -87,6 +87,11 @@ type mealShoppingResponse struct {
 	Versions collection.Versions `json:"versions"`
 }
 
+// staleResponse gives the stale lists, in the order of their identifiers (C8, D7).
+type staleResponse struct {
+	Lists []shopping.ListID `json:"lists"`
+}
+
 // listNotEmptyResponse refuses to delete a list that holds items, with the list up to date
 // (D11).
 type listNotEmptyResponse struct {
@@ -133,6 +138,8 @@ func (a *api) shoppingRoutes(handle func(pattern string, h http.Handler)) {
 	handle("PUT /tribes/{tribe}/api/shopping-lists/{id}/items/{item}/checked", a.withMember(a.setChecked))
 	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/checkout", a.withMember(a.checkOut))
 	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/meal-shopping", a.withMember(a.addMealShopping))
+	handle("GET /tribes/{tribe}/api/shopping-lists/stale", a.withMember(a.staleLists))
+	handle("POST /tribes/{tribe}/api/shopping-lists/{id}/recompute", a.withMember(a.recomputeList))
 }
 
 // listsOf is the shopping lists of the tribe of the request: its own database only (ENF-02).
@@ -313,6 +320,28 @@ func (a *api) addMealShopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, mealShoppingResponse{List: newListResponse(l), Added: added, Ignored: ignored, Versions: versions})
+}
+
+// staleLists: GET shopping-lists/stale, the lists a recomputation would change, computed
+// at each call: no ETag nor 304, a derived state outside the collections (ADR 0031).
+func (a *api) staleLists(w http.ResponseWriter, r *http.Request) {
+	ids, err := listsOf(r).Stale(r.Context())
+	if err != nil {
+		a.server.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, staleResponse{Lists: append([]shopping.ListID{}, ids...)})
+}
+
+// recomputeList: POST shopping-lists/{id}/recompute, the list brought back in line with the
+// meals (C8, D5); versions empty when nothing changes; 409 too_many_items.
+func (a *api) recomputeList(w http.ResponseWriter, r *http.Request) {
+	l, versions, err := listsOf(r).Recompute(r.Context(), listID(r))
+	if err != nil {
+		a.writeShoppingError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, listWrittenResponse{List: newListResponse(l), Versions: versions})
 }
 
 func (a *api) writeShoppingError(w http.ResponseWriter, err error) {
