@@ -1,13 +1,16 @@
 // Screen of a shopping list, after the mock-ups Doux-Liste and Doux-ArticleMain (plan courses,
-// C1, C3, C6, C11) and Doux-ListeSuite (plan courses-suite, C8): its name, which opens the list
-// picker, the banner of a stale list with « Recalculer », the progress, the items (checkbox,
-// quantity, what remains to take, « ajouté » and the cross of an item added), « Ajouter un article à la main » with
-// the combobox of the catalog, and « Courses faites » with its sheet. The list waits for the
-// copy of the lists, checked at each visit. Every write needs the network (D2): without it,
-// « Réseau nécessaire » above the list, which stays shown. A list deleted in between (D11)
+// C1, C3, C6, C11) and Doux-ListeSuite (plan courses-suite, C8 to C10): its name, which opens
+// the list picker, and « Sélectionner »; the banner of a stale list with « Recalculer », the
+// progress, the items (checkbox, quantity, what remains to take, « ajouté » and the cross of an
+// item added), « Ajouter un article à la main » with the combobox of the catalog, and « Courses
+// faites » with its sheet. In selection mode (D14), the items are selected, then moved to
+// another list or to a new list, each through its sheet; a selection is not an input: a
+// navigation loses it without confirmation, a change of format keeps it. The list waits for
+// the copy of the lists, checked at each visit. Every write needs the network (D2): without
+// it, « Réseau nécessaire » above the list, which stays shown. A list deleted in between (D11)
 // sends to the main list, which names it and tells what was not done (plan courses-suite,
 // D12).
-import { LitElement, type PropertyValues, html, nothing } from "lit";
+import { LitElement, type PropertyValues, type TemplateResult, html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
 import { type Ingredient, hasControl, initialOf, hasVisible, maxQuantityLength, normalizeName, parseQuantity, suggestIngredients, trimSpaces, unitLabel, units } from "./dishes.ts";
@@ -17,23 +20,38 @@ import { colorClass } from "./dish-library-screen.ts";
 import {
   type Item,
   type LostWrite,
+  type MovedMessage,
   type ShoppingList,
+  checkListName,
   checkoutOf,
   deletedListMessage,
   dishCount,
   itemQuantity,
   itemRowLabel,
   maxItems,
+  maxListNameLength,
+  moveErrorMessage,
+  moveTargets,
+  moveTitle,
+  movedMessage,
+  newListSheetMessage,
   progressOf,
   recomputeErrorMessage,
   recomputedMessage,
   remainingQuantity,
   removedMessage,
+  selectAllLabel,
+  selectedIn,
+  selectionHint,
+  selectionLabel,
   shoppingErrorMessage,
   sortItems,
   sourceRows,
   staleMessage,
   takenSentence,
+  targetSummary,
+  toggleAll,
+  toggleSelected,
 } from "./shopping.ts";
 import type { ShoppingLists, WriteResult } from "./shopping-lists.ts";
 import { alertMessage, networkNeededMessage, warningBanner } from "./templates.ts";
@@ -41,8 +59,19 @@ import { alertMessage, networkNeededMessage, warningBanner } from "./templates.t
 /** How long the crosses of the items added wait after a removal: a slow double touch removes one item only. */
 const removalPauseMs = 500;
 
-/** What the screen tells above the list: a green banner, a warning, or « Réseau nécessaire ». */
-export type Notice = { kind: "done"; text: string } | { kind: "deleted"; text: string } | { kind: "network" };
+/**
+ * What the screen tells above the list: a green banner, the green banner of a move with the
+ * link of its target list, a warning, an error, or « Réseau nécessaire ».
+ */
+export type Notice =
+  | { kind: "done"; text: string }
+  | { kind: "moved"; message: MovedMessage; href: string }
+  | { kind: "deleted"; text: string }
+  | { kind: "error"; text: string }
+  | { kind: "network" };
+
+/** The sheet open: « Courses faites ? » with the items it counted (D9), « Déplacer vers… », « Nouvelle liste ». */
+type Sheet = { kind: "checkout"; leaving: string[]; message: string } | { kind: "move" } | { kind: "new-list"; name: string; error: string | undefined };
 
 /**
  * The event of a write refused for a list deleted in between (D11): its detail is the warning
@@ -68,10 +97,12 @@ const calendarIcon = html`<svg width="22" height="22" viewBox="0 0 24 24" fill="
 export function recomputeIcon(size: number, stroke: number) {
   return html`<svg width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${stroke} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg>`;
 }
+const arrowIcon = html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>`;
+const chevronIcon = html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>`;
 const plusIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 /** The green banner of a write done, with its cross (Doux-Courses). */
-export function doneBanner(text: string, close: () => void) {
+export function doneBanner(text: string | TemplateResult, close: () => void) {
   return html`<div class="banner-done" role="status">
     ${checkIcon}<span>${text}</span>
     <button class="banner-close" type="button" aria-label="Fermer le message" @click=${close}>${crossIcon}</button>
@@ -103,6 +134,7 @@ export class ShoppingListScreen extends LitElement {
     listId: { attribute: false },
     pickerHref: { attribute: false },
     mealShoppingHref: { attribute: false },
+    listHref: { attribute: false },
     notice: { attribute: false },
     beside: { attribute: false },
     failed: { state: true },
@@ -115,6 +147,7 @@ export class ShoppingListScreen extends LitElement {
     open: { state: true },
     recomputing: { state: true },
     recomputeError: { state: true },
+    selected: { state: true },
   };
 
   declare lists: ShoppingLists;
@@ -123,6 +156,8 @@ export class ShoppingListScreen extends LitElement {
   declare pickerHref: string;
   /** The meal shopping, toward a list (D15). */
   declare mealShoppingHref: (list: ShoppingList) => string;
+  /** A list, from the banner after a move (D14). */
+  declare listHref: (list: ShoppingList) => string;
   /** What the screen tells above the list; given by the application after a list deleted. */
   declare notice: Notice | undefined;
   /** Beside the list picker, in etendu: the name is a title alone, the picker is beside (plan grands-ecrans, D5). */
@@ -136,20 +171,25 @@ export class ShoppingListScreen extends LitElement {
   draft: Draft = emptyDraft;
   /** The code of the refusal of the item added. */
   formError: string | undefined = undefined;
-  /** The sheet « Courses faites ? », with the items it counted (D9). */
-  sheet: { leaving: string[]; message: string } | undefined = undefined;
+  /** The sheet open. */
+  sheet: Sheet | undefined = undefined;
   /** The computed items unfolded (C5). */
   open: ReadonlySet<string> = new Set();
   /** « Recalculer » runs (D13). */
   recomputing = false;
   /** The message of a refusal of « Recalculer », under the stale banner (Q38). */
   recomputeError: string | undefined = undefined;
+  /**
+   * The items selected, in selection mode (D14); undefined out of it. An item gone from the
+   * copy leaves the selection (selectedIn).
+   */
+  selected: ReadonlySet<string> | undefined = undefined;
   /** The dishes of the sources already looked for by a check of the library (plan courses-suite, D15). */
   readonly #lookedFor = new Set<string>();
   /** A removal runs, or has just ended: the crosses wait. */
   removalPaused = false;
   #removalPause: ReturnType<typeof setTimeout> | undefined;
-  /** A write runs that a second touch must not repeat: an item added, a checkout. */
+  /** A write runs that a second touch must not repeat: an item added, a checkout, a move. */
   #busy = false;
   readonly #onChange = () => this.revision++;
   readonly #combobox = new IngredientCombobox(this, {
@@ -235,10 +275,18 @@ export class ShoppingListScreen extends LitElement {
     if (list === undefined) {
       return html`<main class="screen">${this.failed ? this.#failed() : this.#loading()}</main>`;
     }
+    // An empty list has nothing to select: the selection mode ends with its last item.
+    if (this.selected !== undefined && list.items.length > 0) {
+      const selection = selectedIn(this.selected, list);
+      return html`<main class="screen shopping shopping--selecting">
+          ${this.#selectionHeader(list, this.selected)} ${this.#notice(true)} ${this.#items(list, new Set(selection))} ${this.#selectionActions(selection)}
+        </main>
+        ${this.#sheet(list, selection)}`;
+    }
     return html`<main class="screen shopping">
-      ${this.#header(list)} ${this.#notice()} ${this.#items(list)} ${this.#mealShopping(list)} ${this.#addItem(list)} ${this.#checkout(list)}
+      ${this.#header(list)} ${this.#notice(false)} ${this.#items(list, undefined)} ${this.#mealShopping(list)} ${this.#addItem(list)} ${this.#checkout(list)}
     </main>
-    ${this.#sheet()}`;
+    ${this.#sheet(list, [])}`;
   }
 
   #loading() {
@@ -258,7 +306,8 @@ export class ShoppingListScreen extends LitElement {
   #header(list: ShoppingList) {
     const label = list.main ? `${list.name}, liste principale. Changer de liste` : `${list.name}. Changer de liste`;
     const progress = progressOf(list);
-    return html`<h1 class="screen-title shopping-title">
+    return html`<div class="shopping-head">
+        <h1 class="screen-title shopping-title">
         ${this.beside
           ? html`<span class="shopping-title-text"><span class="shopping-title-name">${list.name}</span>${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}</span>`
           : html`<a class="shopping-title-link" href=${this.pickerHref} aria-label=${label}>
@@ -266,7 +315,9 @@ export class ShoppingListScreen extends LitElement {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
               ${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}
             </a>`}
-      </h1>
+        </h1>
+        ${list.items.length === 0 ? nothing : html`<button class="button-text shopping-select" type="button" @click=${this.#startSelecting}>Sélectionner</button>`}
+      </div>
       ${this.#stale(list)}
       ${progress.total === 0
         ? nothing
@@ -288,12 +339,42 @@ export class ShoppingListScreen extends LitElement {
       ${this.recomputeError === undefined ? nothing : errorBanner(this.recomputeError)}`;
   }
 
-  #notice() {
-    switch (this.notice?.kind) {
+  /** The header of the selection mode (D14): « Annuler », the number of items selected, « Tout » or « Aucun ». */
+  #selectionHeader(list: ShoppingList, selected: ReadonlySet<string>) {
+    return html`<div class="selection-head">
+        <button class="button-text selection-cancel" type="button" @click=${this.#stopSelecting}>Annuler</button>
+        <h1 class="screen-title selection-title" aria-live="polite">${selectionLabel(selectedIn(selected, list).length)}</h1>
+        <button class="button-text selection-all" type="button" @click=${() => (this.selected = toggleAll(selected, list))}>${selectAllLabel(selected, list)}</button>
+      </div>
+      <p class="screen-text selection-hint">${selectionHint(list.name)}</p>`;
+  }
+
+  /**
+   * The actions of the selection, inactive without item selected (C9, C10): in compact in place
+   * of the tab bar, at the bottom of the pane of the list in moyen and etendu (D14).
+   */
+  #selectionActions(selection: string[]) {
+    const none = selection.length === 0;
+    return html`<div class="selection-actions" role="group" aria-label="Actions de la sélection">
+      <button class="selection-action selection-action--move" type="button" ?disabled=${none} @click=${() => this.#openSheet({ kind: "move" })}>${none ? nothing : arrowIcon}Déplacer vers…</button>
+      <button class="selection-action selection-action--new" type="button" ?disabled=${none} @click=${this.#openNewList}>${none ? nothing : plusIcon}Nouvelle liste</button>
+    </div>`;
+  }
+
+  /** The banners; in selection mode, the green ones are left out (Doux-ListeSuite). */
+  #notice(selecting: boolean) {
+    const notice = this.notice;
+    switch (notice?.kind) {
       case "done":
-        return doneBanner(this.notice.text, () => (this.notice = undefined));
+        return selecting ? nothing : doneBanner(notice.text, () => (this.notice = undefined));
+      case "moved": {
+        const { start, link, end } = notice.message;
+        return selecting ? nothing : doneBanner(html`${start}<a class="banner-link" href=${notice.href}>${link}</a>${end}`, () => (this.notice = undefined));
+      }
       case "deleted":
-        return warningBanner(this.notice.text);
+        return warningBanner(notice.text);
+      case "error":
+        return errorBanner(notice.text);
       case "network":
         return networkBanner();
       default:
@@ -301,21 +382,51 @@ export class ShoppingListScreen extends LitElement {
     }
   }
 
-  #items(list: ShoppingList) {
+  /** The items; in selection mode, with those selected (D14). */
+  #items(list: ShoppingList, selection: ReadonlySet<string> | undefined) {
     if (list.items.length === 0) {
       return html`<p class="shopping-empty">La liste est vide. Ajoutez les courses des repas ou un article à la main.</p>`;
     }
-    return html`<ul class="items">${repeat(sortItems(list.items), (i) => i.id, (i) => this.#item(list, i))}</ul>`;
+    return html`<ul class="items">${repeat(
+      sortItems(list.items),
+      (i) => i.id,
+      (i) => (selection === undefined ? this.#item(list, i) : this.#pickable(i, selection.has(i.id))),
+    )}</ul>`;
+  }
+
+  /** What a line shows of an item: its name and what remains to take, « ajouté » or its dishes, its quantity. */
+  #shown(item: Item) {
+    const quantity = itemQuantity(item);
+    const rest = remainingQuantity(item);
+    const name = html`<span class="item-name">${item.ingredient}</span>`;
+    return html`${rest === undefined ? name : html`<span class="item-names">${name} <span class="item-remaining">${rest}</span></span>`}
+      ${item.manual ? html`<span class="pill pill--dashed">ajouté</span>` : html`<span class="pill">${dishCount(item)}</span>`}
+      ${quantity === "" ? nothing : html`<span class="item-quantity">${quantity}</span>`}`;
+  }
+
+  /**
+   * An item in selection mode (D14): one button, a round mark, without unfolding; checked
+   * items too. Named with its quantity: two items added may share an ingredient (D23).
+   */
+  #pickable(item: Item, picked: boolean) {
+    const quantity = itemQuantity(item);
+    return html`<li class="item ${item.checked ? "item--checked" : ""} ${picked ? "item--picked" : ""}">
+      <button
+        class="item-pick"
+        type="button"
+        aria-pressed=${picked ? "true" : "false"}
+        aria-label=${`Sélectionner ${item.ingredient}${quantity === "" ? "" : `, ${quantity}`}`}
+        @click=${() => (this.selected = toggleSelected(this.selected ?? new Set(), item.id))}
+      >
+        <span class="item-pick-mark" aria-hidden="true">${checkIcon}</span>
+        ${this.#shown(item)}
+      </button>
+    </li>`;
   }
 
   #item(list: ShoppingList, item: Item) {
-    const quantity = itemQuantity(item);
     const open = !item.manual && this.open.has(item.id);
-    const rest = remainingQuantity(item);
-    const name = html`<span class="item-name">${item.ingredient}</span>`;
-    const shown = html`${rest === undefined ? name : html`<span class="item-names">${name} <span class="item-remaining">${rest}</span></span>`}
-      ${item.manual ? html`<span class="pill pill--dashed">ajouté</span>` : html`<span class="pill">${dishCount(item)}</span>`}
-      ${quantity === "" ? nothing : html`<span class="item-quantity">${quantity}</span>`}`;
+    const shown = this.#shown(item);
     return html`<li class="item ${item.checked ? "item--checked" : ""} ${open ? "item--open" : ""}">
       <div class="item-row">
         <input class="item-check" type="checkbox" aria-label=${`Cocher ${item.ingredient}`} .checked=${live(item.checked)} @change=${(e: Event) => this.#setChecked(list, item, (e.target as HTMLInputElement).checked)}>
@@ -438,15 +549,69 @@ export class ShoppingListScreen extends LitElement {
     </div>`;
   }
 
-  #sheet() {
-    if (this.sheet === undefined) {
-      return nothing;
+  #sheet(list: ShoppingList, selection: string[]) {
+    const sheet = this.sheet;
+    switch (sheet?.kind) {
+      case undefined:
+        return nothing;
+      case "checkout":
+        return html`<dialog class="sheet" aria-labelledby="checkout-title" @close=${() => (this.sheet = undefined)} @click=${this.#closeOnBackdrop}>
+          <h2 class="sheet-title" id="checkout-title">Courses faites ?</h2>
+          <p class="sheet-text">${sheet.message}</p>
+          <button class="button-primary" type="button" @click=${this.#confirmCheckout}>Retirer les articles cochés</button>
+          <button class="button-text button-text--wide" type="button" @click=${this.#closeSheet}>Annuler</button>
+        </dialog>`;
+      case "move":
+        return this.#moveSheet(list, selection);
+      case "new-list":
+        return this.#newListSheet(list, selection, sheet);
     }
-    return html`<dialog class="sheet" aria-labelledby="checkout-title" @close=${() => (this.sheet = undefined)} @click=${this.#closeOnBackdrop}>
-      <h2 class="sheet-title" id="checkout-title">Courses faites ?</h2>
-      <p class="sheet-text">${this.sheet.message}</p>
-      <button class="button-primary" type="button" @click=${this.#confirmCheckout}>Retirer les articles cochés</button>
+  }
+
+  /** « Déplacer N articles vers… » (C9): the other lists, in the order of the list picker, each with its number of items. */
+  #moveSheet(list: ShoppingList, selection: string[]) {
+    const targets = moveTargets(this.lists.lists.items ?? [], list.id);
+    return html`<dialog class="sheet" aria-labelledby="move-title" @close=${() => (this.sheet = undefined)} @click=${this.#closeOnBackdrop}>
+      <h2 class="sheet-title" id="move-title">${moveTitle(selection.length)}</h2>
+      <p class="sheet-text">Un article calculé rejoint la ligne du même ingrédient s’il y en a une ; un article ajouté à la main reste à part.</p>
+      ${targets.length === 0
+        ? html`<p class="sheet-text">Aucune autre liste : créez-en une avec « Nouvelle liste ».</p>`
+        : html`<div class="sheet-actions">
+            ${targets.map(
+              (t) => html`<button class="sheet-action sheet-target" type="button" @click=${() => this.#move(list, selection, { list: t.id }, t.name)}>
+                <span class="sheet-target-name">${t.name}</span><span class="sheet-target-summary">${targetSummary(t)}</span>${chevronIcon}
+              </button>`,
+            )}
+          </div>`}
       <button class="button-text button-text--wide" type="button" @click=${this.#closeSheet}>Annuler</button>
+    </dialog>`;
+  }
+
+  /** « Nouvelle liste » from a selection (C10): its name, then « Créer la liste », inactive while the name is empty. */
+  #newListSheet(list: ShoppingList, selection: string[], sheet: Sheet & { kind: "new-list" }) {
+    const message = sheet.error === undefined ? undefined : shoppingErrorMessage(sheet.error);
+    return html`<dialog class="sheet" aria-labelledby="new-list-title" @close=${() => (this.sheet = undefined)} @click=${this.#closeOnBackdrop}>
+      <h2 class="sheet-title" id="new-list-title">Nouvelle liste</h2>
+      <p class="sheet-text">${newListSheetMessage(selection.length, list.name)}</p>
+      <form class="sheet-form" novalidate @submit=${(e: Event) => this.#submitNewList(e, list, selection)}>
+        <label class="item-form-label">Nom de la liste
+          <input
+            class="field-input"
+            type="text"
+            name="list-name"
+            maxlength=${maxListNameLength}
+            autocomplete="off"
+            placeholder="ex. Marché, Boucherie"
+            aria-invalid=${message === undefined ? "false" : "true"}
+            aria-describedby=${message === undefined ? nothing : "new-list-error"}
+            .value=${live(sheet.name)}
+            @input=${(e: Event) => (this.sheet = { ...sheet, name: (e.target as HTMLInputElement).value, error: undefined })}
+          >
+        </label>
+        ${message === undefined ? nothing : alertMessage("new-list-error", message)}
+        <button class="button-primary" type="submit" ?disabled=${trimSpaces(sheet.name) === ""}>Créer la liste</button>
+        <button class="button-text button-text--wide" type="button" @click=${this.#closeSheet}>Annuler</button>
+      </form>
     </dialog>`;
   }
 
@@ -627,13 +792,13 @@ export class ShoppingListScreen extends LitElement {
   #askCheckout(list: ShoppingList) {
     this.#clearNotices();
     const { leaving, message } = checkoutOf(list);
-    this.sheet = { leaving, message };
+    this.sheet = { kind: "checkout", leaving, message };
   }
 
   async #confirmCheckout() {
     const sheet = this.sheet;
     const list = this.#list();
-    if (sheet === undefined || list === undefined || this.#busy) {
+    if (sheet?.kind !== "checkout" || list === undefined || this.#busy) {
       return;
     }
     this.#busy = true;
@@ -650,6 +815,85 @@ export class ShoppingListScreen extends LitElement {
     }
   }
 
+  /** « Sélectionner » (D14): the selection mode, nothing selected; the focus to « Annuler », the button gone. */
+  #startSelecting() {
+    this.#clearNotices();
+    this.#cancelAdding();
+    this.selected = new Set();
+    void this.updateComplete.then(() => this.querySelector<HTMLElement>(".selection-cancel")?.focus());
+  }
+
+  /** Out of the selection mode; the focus back to « Sélectionner ». */
+  #stopSelecting() {
+    this.selected = undefined;
+    void this.updateComplete.then(() => this.querySelector<HTMLElement>(".shopping-select")?.focus());
+  }
+
+  #openSheet(sheet: Sheet) {
+    this.#clearNotices();
+    this.sheet = sheet;
+  }
+
+  #openNewList() {
+    this.#openSheet({ kind: "new-list", name: "", error: undefined });
+    void this.updateComplete.then(() => this.querySelector<HTMLInputElement>("dialog.sheet input")?.focus());
+  }
+
+  async #submitNewList(e: Event, list: ShoppingList, selection: string[]) {
+    e.preventDefault();
+    const sheet = this.sheet;
+    if (sheet?.kind !== "new-list") {
+      return;
+    }
+    const refused = checkListName(sheet.name);
+    if (refused !== undefined) {
+      this.sheet = { ...sheet, error: refused };
+      return;
+    }
+    await this.#move(list, selection, { name: sheet.name }, trimSpaces(sheet.name));
+  }
+
+  /**
+   * Moves the items selected (C9, C10, D10): back out of the selection mode, with the green
+   * banner whose link opens the target list. Refused, the selection is kept: the target list
+   * deleted in between or full, above the list (Q42, Q38); a name or 20 lists, in the sheet.
+   */
+  async #move(list: ShoppingList, selection: string[], to: { list: string } | { name: string }, target: string) {
+    if (this.#busy) {
+      return;
+    }
+    // Every item selected has left the copy in between: nothing to send.
+    if (selection.length === 0) {
+      this.#closeSheet();
+      return;
+    }
+    this.#busy = true;
+    try {
+      const result = await this.lists.move(list.id, selection, to);
+      if (result.kind === "done") {
+        this.#closeSheet();
+        this.selected = undefined;
+        this.notice = { kind: "moved", message: movedMessage(result.moved, result.missing, result.target.name, "name" in to), href: this.listHref(result.target) };
+        return;
+      }
+      const sheet = this.sheet;
+      if (result.kind === "refused" && sheet?.kind === "new-list" && shoppingErrorMessage(result.error) !== undefined) {
+        this.sheet = { ...sheet, error: result.error };
+        return;
+      }
+      this.#closeSheet();
+      const refusal = result.kind === "refused" ? moveErrorMessage(result.error, target) : undefined;
+      if (refusal !== undefined) {
+        this.notice = refusal.kind === "warning" ? { kind: "deleted", text: refusal.text } : { kind: "error", text: refusal.text };
+        this.#scrollToTop();
+        return;
+      }
+      this.#failedWrite(result, "move");
+    } finally {
+      this.#busy = false;
+    }
+  }
+
   /** A write not done: the list deleted in between, or « Réseau nécessaire » (D2, D11). */
   #failedWrite(result: Exclude<WriteResult, { kind: "done" }>, lost: LostWrite) {
     if (result.kind === "deleted") {
@@ -659,10 +903,14 @@ export class ShoppingListScreen extends LitElement {
     // A 401 has already brought back to the login.
     if (result.kind !== "unauthorized") {
       this.notice = { kind: "network" };
-      // The window, or the pane of the list in etendu.
-      window.scrollTo({ top: 0 });
-      this.scrollTop = 0;
+      this.#scrollToTop();
     }
+  }
+
+  /** Up to the banners: the window, or the pane of the list in etendu. */
+  #scrollToTop() {
+    window.scrollTo({ top: 0 });
+    this.scrollTop = 0;
   }
 }
 

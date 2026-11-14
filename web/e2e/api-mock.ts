@@ -68,6 +68,8 @@ export interface Script {
   getStaleLists?: Reply[];
   /** POST shopping-lists/<id>/recompute, whatever the identifier. */
   recomputeList?: Reply[];
+  /** POST shopping-lists/<id>/move, whatever the identifier. */
+  moveItems?: Reply[];
 }
 
 export interface Received {
@@ -110,6 +112,7 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "POST shopping-lists/{id}/meal-shopping": [...(script.addMealShopping ?? [replies.networkError])],
     "GET shopping-lists/stale": [...(script.getStaleLists ?? [staleReply([])])],
     "POST shopping-lists/{id}/recompute": [...(script.recomputeList ?? [replies.networkError])],
+    "POST shopping-lists/{id}/move": [...(script.moveItems ?? [replies.networkError])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
