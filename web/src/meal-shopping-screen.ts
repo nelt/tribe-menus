@@ -102,9 +102,14 @@ export class MealShoppingScreen extends LitElement {
   readonly #onChange = () => this.revision++;
   /** Back in the foreground on another day, the period not touched follows it, as the planning (Q34). */
   readonly #onVisibility = () => {
-    if (document.visibilityState === "visible" && !this.#periodTouched) {
-      this.period = defaultPeriod(today());
-      this.month = monthOf(this.period[this.field]);
+    if (document.visibilityState !== "visible" || this.#periodTouched) {
+      return;
+    }
+    // The same day, the period is the same: the month browsed stays (review of PR #119, point 1).
+    const period = defaultPeriod(today());
+    if (period.from !== this.period.from || period.to !== this.period.to) {
+      this.period = period;
+      this.month = monthOf(period[this.field]);
     }
   };
 

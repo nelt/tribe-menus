@@ -122,6 +122,18 @@ test("back in the foreground on another day, the period follows the date until a
   await expect(field(page, "Au")).toHaveText(/mer\. 14 oct\./);
 });
 
+test("back in the foreground the same day, the month browsed stays (review of PR #119, point 1)", async ({ page }) => {
+  await mock(page);
+  await page.goto("/tribes/demo/courses/repas");
+  await expect(page.getByText("Octobre 2026")).toBeVisible();
+  await page.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(page.getByText("Novembre 2026")).toBeVisible();
+  await page.clock.setFixedTime(new Date(2026, 9, 5, 18, 0));
+  await backToForeground(page);
+  await expect(page.getByText("Novembre 2026")).toBeVisible();
+  await expect(field(page, "Du")).toHaveText(/mar\. 6 oct\./);
+});
+
 test("the months stop at January 2000 and December 2099 (Q35)", async ({ page }) => {
   await mock(page);
   await page.clock.setFixedTime(new Date(2000, 0, 1, 10, 0));
