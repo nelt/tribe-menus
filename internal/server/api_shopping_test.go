@@ -288,11 +288,24 @@ func TestMealShopping(t *testing.T) {
 		t.Errorf("read back %+v\nreturned %+v", lists[0], got.List)
 	}
 
-	// Again, with the next week: the two served dishes received are ignored.
+	// Again, with the next week, the beef checked: the two served dishes received are
+	// ignored; the beef is unchecked and keeps its taken quantity (Q41).
+	beef := got.List.Items[0].ID
+	wantStatus(t, f.do("PUT", "/tribes/martin/api/shopping-lists/"+courses+"/items/"+beef+"/checked", `{"checked":true}`, alice), http.StatusOK)
 	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/meal-shopping", `{"from":"2026-10-06","to":"2026-10-13"}`, alice)
 	wantStatus(t, rec, http.StatusOK)
-	if got := decode[mealShoppingResponse](t, rec); got.Added != 1 || got.Ignored != 2 || got.List.Items[0].Quantity != "1375" {
+	again := decode[mealShoppingResponse](t, rec)
+	if it := again.List.Items[0]; again.Added != 1 || again.Ignored != 2 || it.ID != beef || it.Quantity != "1375" || it.Taken != "875" || it.Checked {
 		t.Errorf("again %s", rec.Body)
+	}
+	if !strings.Contains(rec.Body.String(), `"unit":"g","taken":"875","checked":false`) {
+		t.Errorf("taken quantity in %s", rec.Body)
+	}
+	// Checking it erases its taken quantity.
+	rec = f.do("PUT", "/tribes/martin/api/shopping-lists/"+courses+"/items/"+beef+"/checked", `{"checked":true}`, alice)
+	wantStatus(t, rec, http.StatusOK)
+	if strings.Contains(rec.Body.String(), "taken") {
+		t.Errorf("checked: %s", rec.Body)
 	}
 }
 

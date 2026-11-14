@@ -624,3 +624,30 @@ func TestListsAddMealShopping(t *testing.T) {
 		t.Error("301 items: store changed")
 	}
 }
+
+// TestSetCheckedErasesTaken: checking an item erases its taken quantity, unchecking it gives
+// it none (Q41, D9); an item with a taken quantity stays after the shopping done.
+func TestSetCheckedErasesTaken(t *testing.T) {
+	ctx := context.Background()
+	store := newMemStore()
+	lists := newLists(store)
+	beef := Item{ID: "beef", Ingredient: "bœuf haché", Quantity: q(750_000, dish.Gram), Taken: q(250_000, dish.Gram),
+		Sources: []Source{src("s1", "chili", "2026-10-06", "dinner", 6, q(750_000, dish.Gram))}}
+	l := store.state.lists["courses"]
+	l.Items = []Item{beef}
+	store.state.lists["courses"] = l
+
+	l, _, _, err := lists.CheckOut(ctx, "courses", []ItemID{"beef"})
+	if err != nil || len(l.Items) != 1 || *l.Items[0].Taken != *beef.Taken {
+		t.Fatalf("check out: %+v, %v", l, err)
+	}
+	if l, _, err = lists.SetChecked(ctx, "courses", "beef", true); err != nil || l.Items[0].Taken != nil || !l.Items[0].Checked {
+		t.Fatalf("checked: %+v, %v", l, err)
+	}
+	if l, _, err = lists.SetChecked(ctx, "courses", "beef", false); err != nil || l.Items[0].Taken != nil || l.Items[0].Checked {
+		t.Fatalf("unchecked: %+v, %v", l, err)
+	}
+	if !reflect.DeepEqual(store.state.lists["courses"], l) {
+		t.Errorf("stored %+v, returned %+v", store.state.lists["courses"], l)
+	}
+}

@@ -42,12 +42,14 @@ type listResponse struct {
 }
 
 // itemResponse is an item: the ingredient by its name, as the lines of a dish; the quantity
-// as their text, with its unit (conception, « API »).
+// as their text, with its unit; the taken quantity in the same unit (conception, « API »,
+// Q41).
 type itemResponse struct {
 	ID         string           `json:"id"`
 	Ingredient string           `json:"ingredient"`
 	Quantity   string           `json:"quantity,omitempty"`
 	Unit       string           `json:"unit,omitempty"`
+	Taken      string           `json:"taken,omitempty"`
 	Checked    bool             `json:"checked"`
 	Manual     bool             `json:"manual"`
 	Sources    []sourceResponse `json:"sources"`
@@ -104,6 +106,7 @@ func newListResponse(l shopping.List) listResponse {
 	for _, it := range l.Items {
 		item := itemResponse{ID: string(it.ID), Ingredient: it.Ingredient, Checked: it.Checked, Manual: it.Manual, Sources: []sourceResponse{}}
 		item.Quantity, item.Unit = quantityText(it.Quantity)
+		item.Taken, _ = quantityText(it.Taken)
 		for _, s := range it.Sources {
 			source := sourceResponse{ServedDish: string(s.ServedDish), Dish: string(s.Dish), Date: s.Date, Mealtime: s.Mealtime, Servings: s.Servings}
 			source.Quantity, source.Unit = quantityText(s.Quantity)
