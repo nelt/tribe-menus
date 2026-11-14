@@ -357,6 +357,8 @@ Réalisation (lot E) : la copie des listes se vérifie avec celle de la biblioth
 
 Plan `courses-suite` : après chaque vérification de la copie, `GET shopping-lists/stale` donne les listes périmées, gardées à part de la copie (`stale`), puisqu'elles dépendent du planning et des plats et non de la version des listes (ADR 0031). Une liste recalculée en sort aussitôt ; un ajout de courses n'en fait pas entrer. Un déplacement prend les deux listes de la réponse. Le message d'une liste supprimée entre-temps nomme la liste d'après la copie d'avant la vérification (D12). La sélection est un état de l'écran d'une liste, jamais de la copie : un article qui disparaît de la copie quitte la sélection.
 
+Réalisation (`courses-suite`, lot D) : les listes périmées sont relues après chaque vérification de la copie, y compris celle qui suit un refus ou un `404` ; sans réponse, elles restent ce qu'elles étaient. Une coche montrée aussitôt efface la part prise de l'article. Un `404` rend le nom de la liste lu dans la copie avant la vérification ; l'écran qui a écrit en fait le message, avec ce qui n'a pas été fait (`deletedListMessage`), et le passe à la liste principale par l'événement `list-deleted`. Une provenance dont le plat manque à la copie de la bibliothèque fait vérifier celle-ci une fois par plat.
+
 Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses » et « Messages des listes de courses » (lot A). `shopping.ts` trie de nouveau les articles après une coche locale, avec la même règle que `SortItems`.
 
 ## Échanges
