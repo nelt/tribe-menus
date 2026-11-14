@@ -58,3 +58,9 @@ test("the rail shows the reduced symbol, made for 48 px and less (docs/design/RE
   // The file served, not only its name.
   await expect.poll(() => symbol.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 });
+
+test("the virtual keyboard resizes the layout, not only the visual viewport (plan courses-suite, D4)", async ({ page }) => {
+  await mockApi(page, { getSession: [replies.session] });
+  await page.goto("/tribes/demo/plats/nouveau");
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", "width=device-width, initial-scale=1, interactive-widget=resizes-content");
+});
