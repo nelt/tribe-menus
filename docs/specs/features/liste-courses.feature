@@ -357,6 +357,34 @@ Fonctionnalité: Listes de courses
     Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Alors "bœuf haché" apparaît comme non coché dans la liste "Courses"
 
+  @C4 @C6
+  Scénario: Un article coché dont la quantité augmente garde sa part prise
+    Étant donné la liste "Courses" contenant 250 g de "bœuf haché" provenant du "Chili con carne" du lundi 5 octobre 2026 au soir
+    Et "bœuf haché" est coché dans la liste "Courses"
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Alors la liste "Courses" contient une seule ligne "bœuf haché" de 750 g
+    Et il reste 500 g de "bœuf haché" à prendre dans la liste "Courses"
+
+  @C6
+  Plan du scénario: La part prise s'efface quand l'article est coché ou décoché
+    Étant donné la liste "Courses" contenant 750 g de "bœuf haché" dont 250 g déjà pris
+    Quand je <geste> "bœuf haché" dans la liste "Courses"
+    Alors il ne reste aucune part prise de "bœuf haché" dans la liste "Courses"
+
+    Exemples:
+      | geste                  |
+      | coche                  |
+      | coche puis je décoche  |
+
+  @C11 @C6
+  Scénario: Un article avec une part prise reste après les courses faites
+    Étant donné la liste "Courses" contenant 750 g de "bœuf haché" dont 250 g déjà pris
+    Et la liste "Courses" contenant l'article ajouté "pain"
+    Et "pain" est coché dans la liste "Courses"
+    Quand je déclare les courses faites de la liste "Courses"
+    Alors il reste 500 g de "bœuf haché" à prendre dans la liste "Courses"
+
   @C4
   Scénario: Un article ajouté n'est pas fusionné avec un article calculé
     Étant donné la liste "Courses" contenant l'article ajouté "oignon" pour 3 pièces
@@ -516,7 +544,7 @@ Fonctionnalité: Listes de courses
       | changer la liste principale             |
       | déclarer les courses faites             |
 
-  @C8
+  @C8 @ui
   Scénario: Un bandeau signale que des plats servis ont changé
     Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
@@ -525,7 +553,7 @@ Fonctionnalité: Listes de courses
     Et le bandeau propose l'action "Recalculer"
     Et la liste "Courses" contient toujours 500 g de "bœuf haché"
 
-  @C8
+  @C8 @ui
   Scénario: Recalculer met la liste à jour et fait disparaître le bandeau
     Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
@@ -533,6 +561,17 @@ Fonctionnalité: Listes de courses
     Quand je touche "Recalculer"
     Alors la liste "Courses" contient 750 g de "bœuf haché"
     Et le bandeau n'est plus affiché
+    Et un message m'indique que la liste a été recalculée
+
+  @C8 @ui
+  Scénario: Une liste périmée est signalée dans le choix des listes
+    Étant donné la liste "Marché"
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
+    Quand j'ouvre le choix des listes
+    Alors la liste "Courses" porte la mention "Repas modifiés"
+    Et la liste "Marché" ne porte pas la mention "Repas modifiés"
 
   @C8
   Plan du scénario: Les changements qui rendent une liste périmée
@@ -542,10 +581,13 @@ Fonctionnalité: Listes de courses
     Alors le bandeau de liste périmée est affiché
 
     Exemples:
-      | changement                                                                  |
+      | changement                                                                    |
       | le "Chili con carne" est retiré du repas du mardi 6 octobre 2026 au soir      |
       | les parts du "Chili con carne" du mardi 6 octobre 2026 au soir sont modifiées |
       | la quantité de "bœuf haché" du plat "Chili con carne" change                  |
+      | le plat "Chili con carne" est redéfini pour 2 parts                           |
+      | l'ingrédient "ail" est ajouté au plat "Chili con carne" pour 1 pièce          |
+      | l'ingrédient "oignon" est retiré du plat "Chili con carne"                    |
 
   @C8
   Scénario: Un plat ajouté au planning ne rend pas la liste périmée
@@ -555,10 +597,25 @@ Fonctionnalité: Listes de courses
     Alors le bandeau de liste périmée n'est pas affiché
 
   @C8
-  Scénario: Un changement sans effet sur les articles ne rend pas la liste périmée
+  Plan du scénario: Un changement sans effet sur les articles ne rend pas la liste périmée
     Étant donné le plat "Restes" sans ingrédient servi pour 4 parts le mercredi 7 octobre 2026 à midi
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
-    Quand les parts des "Restes" du mercredi 7 octobre 2026 à midi sont modifiées
+    Quand <changement>
+    Alors le bandeau de liste périmée n'est pas affiché
+
+    Exemples:
+      | changement                                                                      |
+      | les parts des "Restes" du mercredi 7 octobre 2026 à midi sont modifiées         |
+      | la quantité de "bœuf haché" du plat "Chili con carne" est réécrite en 0,5 kg    |
+      | le plat "Chili con carne" est renommé "Chili"                                   |
+
+  @C8
+  Scénario: Un plat servi dont tous les articles sont partis ne rend pas la liste périmée
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et j'ai coché "bœuf haché" et "oignon" dans la liste "Courses" et déclaré les courses faites
+    Quand l'ingrédient "ail" est ajouté au plat "Chili con carne" pour 1 pièce
     Alors le bandeau de liste périmée n'est pas affiché
 
   @C8
@@ -567,7 +624,7 @@ Fonctionnalité: Listes de courses
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Et la liste "Courses" contenant l'article ajouté "lessive"
     Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
-    Quand je touche "Recalculer"
+    Quand je recalcule la liste "Courses"
     Alors la liste "Courses" contient toujours l'article ajouté "lessive"
 
   @C8
@@ -576,7 +633,7 @@ Fonctionnalité: Listes de courses
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Et "bœuf haché" est coché dans la liste "Courses"
     Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 2 parts
-    Quand je touche "Recalculer"
+    Quand je recalcule la liste "Courses"
     Alors la liste "Courses" contient 250 g de "bœuf haché"
     Et "bœuf haché" apparaît comme coché dans la liste "Courses"
 
@@ -586,9 +643,22 @@ Fonctionnalité: Listes de courses
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Et "bœuf haché" est coché dans la liste "Courses"
     Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
-    Quand je touche "Recalculer"
+    Quand je recalcule la liste "Courses"
     Alors la liste "Courses" contient 750 g de "bœuf haché"
     Et "bœuf haché" apparaît comme non coché dans la liste "Courses"
+    Et il reste 250 g de "bœuf haché" à prendre dans la liste "Courses"
+
+  @C8
+  Scénario: Un article dont la quantité baisse jusqu'à sa part prise est de nouveau coché
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et "bœuf haché" est coché dans la liste "Courses"
+    Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
+    Et j'ai recalculé la liste "Courses"
+    Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 4 parts
+    Quand je recalcule la liste "Courses"
+    Alors la liste "Courses" contient 500 g de "bœuf haché"
+    Et "bœuf haché" apparaît comme coché dans la liste "Courses"
 
   @C8
   Scénario: Un article dont tous les plats servis ont été retirés disparaît, même coché
@@ -596,7 +666,7 @@ Fonctionnalité: Listes de courses
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Et "bœuf haché" est coché dans la liste "Courses"
     Et le "Chili con carne" retiré du repas du mardi 6 octobre 2026 au soir
-    Quand je touche "Recalculer"
+    Quand je recalcule la liste "Courses"
     Alors la liste "Courses" ne contient plus "bœuf haché"
 
   @C8
@@ -605,11 +675,43 @@ Fonctionnalité: Listes de courses
     Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Et j'ai coché "bœuf haché" dans la liste "Courses" et déclaré les courses faites
     Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
-    Quand je touche "Recalculer"
+    Quand je recalcule la liste "Courses"
     Alors la liste "Courses" ne contient pas "bœuf haché"
     Et la liste "Courses" contient 2 pièces de "oignon"
 
-  @C9
+  @C8
+  Scénario: Le recalcul crée l'article d'un ingrédient ajouté au plat
+    Étant donné le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et l'ingrédient "ail" ajouté au plat "Chili con carne" pour 1 pièce
+    Quand je recalcule la liste "Courses"
+    Alors la liste "Courses" contient 1 pièce de "ail" provenant de 1 plat servi
+    Et la liste "Courses" contient 500 g de "bœuf haché"
+    Et le bandeau de liste périmée n'est pas affiché
+
+  @C8
+  Scénario: Le recalcul ne recrée pas un article déplacé vers une autre liste
+    Étant donné la liste "Marché"
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et j'ai déplacé "bœuf haché" de la liste "Courses" vers la liste "Marché"
+    Et le "Chili con carne" du mardi 6 octobre 2026 au soir réglé à 6 parts
+    Quand je recalcule la liste "Courses"
+    Alors la liste "Courses" ne contient pas "bœuf haché"
+    Et la liste "Courses" contient 2 pièces de "oignon"
+
+  @C8
+  Scénario: Un recalcul qui dépasserait 300 articles est refusé
+    Étant donné la liste "Courses" contenant 298 articles ajoutés
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et l'ingrédient "ail" ajouté au plat "Chili con carne" pour 1 pièce
+    Quand je recalcule la liste "Courses"
+    Alors la requête est refusée
+    Et un message m'indique que la liste ne peut pas dépasser 300 articles
+    Et la liste "Courses" ne contient pas "ail"
+
+  @C9 @ui
   Scénario: Déplacer des articles sélectionnés vers une autre liste
     Étant donné la liste "Marché"
     Et la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
@@ -618,6 +720,7 @@ Fonctionnalité: Listes de courses
     Alors la liste "Marché" contient l'article ajouté "pain"
     Et la liste "Courses" ne contient plus "pain"
     Et la liste "Courses" contient toujours l'article ajouté "lessive"
+    Et un message m'indique que 1 article a été déplacé vers la liste "Marché"
 
   @C9
   Scénario: Un article déplacé garde sa coche et ses provenances
@@ -653,6 +756,7 @@ Fonctionnalité: Listes de courses
     Et "bœuf haché" est coché dans la liste "Courses"
     Quand je déplace "bœuf haché" de la liste "Courses" vers la liste "Marché"
     Alors "bœuf haché" apparaît comme non coché dans la liste "Marché"
+    Et il reste 500 g de "bœuf haché" à prendre dans la liste "Marché"
 
   @C9
   Scénario: Un article ajouté déplacé reste une ligne distincte
@@ -671,7 +775,55 @@ Fonctionnalité: Listes de courses
     Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
     Alors la liste "Courses" ne contient pas "bœuf haché"
 
-  @C10
+  @C9 @C4
+  Scénario: Les plats servis des articles déplacés deviennent reçus par la liste d'arrivée
+    Étant donné la liste "Marché"
+    Et le plat "Chili con carne" servi pour 4 parts le mardi 6 octobre 2026 au soir
+    Et j'ai ajouté les courses des repas du 6 au 12 octobre 2026 à la liste "Courses"
+    Et j'ai déplacé "bœuf haché" de la liste "Courses" vers la liste "Marché"
+    Quand j'ajoute les courses des repas du 6 au 12 octobre 2026 à la liste "Marché"
+    Alors la liste "Marché" contient une seule ligne "bœuf haché" de 500 g
+    Et la liste "Marché" ne contient pas "oignon"
+
+  @C9
+  Scénario: Seuls les articles encore dans la liste sont déplacés
+    Étant donné la liste "Marché"
+    Et la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
+    Et j'ai sélectionné "pain" et "lessive" dans la liste "Courses"
+    Et Bruno a retiré entre-temps l'article ajouté "lessive" de la liste "Courses"
+    Quand je déplace la sélection vers la liste "Marché"
+    Alors la liste "Marché" contient l'article ajouté "pain"
+    Et la liste "Marché" ne contient pas "lessive"
+    Et un message m'indique que 1 article n'était plus dans la liste
+
+  @C9
+  Scénario: Rien n'est déplacé vers une liste supprimée entre-temps
+    Étant donné la liste "Marché" vide
+    Et la liste "Courses" contenant l'article ajouté "pain"
+    Et j'ai sélectionné "pain" dans la liste "Courses"
+    Et Bruno a supprimé entre-temps la liste "Marché"
+    Quand je déplace la sélection vers la liste "Marché"
+    Alors la requête est refusée
+    Et un message m'indique que la liste "Marché" a été supprimée entre-temps
+    Et la liste "Courses" contient toujours l'article ajouté "pain"
+
+  @C9
+  Scénario: Des articles ne peuvent pas être déplacés vers leur propre liste
+    Étant donné la liste "Courses" contenant l'article ajouté "pain"
+    Quand je déplace "pain" de la liste "Courses" vers la liste "Courses"
+    Alors la requête est refusée
+    Et la liste "Courses" contient toujours l'article ajouté "pain"
+
+  @C9
+  Scénario: Un déplacement qui ferait dépasser 300 articles à la liste d'arrivée est refusé
+    Étant donné la liste "Marché" contenant 300 articles ajoutés
+    Et la liste "Courses" contenant l'article ajouté "pain"
+    Quand je déplace "pain" de la liste "Courses" vers la liste "Marché"
+    Alors la requête est refusée
+    Et un message m'indique que la liste ne peut pas dépasser 300 articles
+    Et la liste "Courses" contient toujours l'article ajouté "pain"
+
+  @C10 @ui
   Scénario: Créer une liste à partir d'une sélection
     Étant donné la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
     Quand je sélectionne "lessive" dans la liste "Courses"
@@ -688,7 +840,22 @@ Fonctionnalité: Listes de courses
     Et je crée la liste "Boucherie" à partir de la sélection
     Alors la liste "Boucherie" contient 500 g de "bœuf haché" provenant de 1 plat servi
 
-  @C9 @C10
+  @C10
+  Scénario: Une liste créée à partir d'une sélection vient après les autres
+    Étant donné les listes "Courses" et "Marché"
+    Et la liste "Courses" contenant l'article ajouté "lessive"
+    Quand je déplace "lessive" de la liste "Courses" vers une nouvelle liste "Drive"
+    Alors les listes de la tribu sont, dans l'ordre, "Courses", "Marché" et "Drive"
+
+  @C10
+  Scénario: Une nouvelle liste à partir d'une sélection suit les règles des listes
+    Étant donné la tribu a 20 listes de courses
+    Et la liste "Courses" contenant l'article ajouté "lessive"
+    Quand je déplace "lessive" de la liste "Courses" vers une nouvelle liste "Drive"
+    Alors la requête est refusée
+    Et la liste "Courses" contient toujours l'article ajouté "lessive"
+
+  @C9 @C10 @ui
   Scénario: La sélection est impossible sans article sélectionné
     Étant donné la liste "Courses" contenant l'article ajouté "pain"
     Quand aucun article n'est sélectionné
@@ -795,3 +962,12 @@ Fonctionnalité: Listes de courses
       | renommer la liste "Marché" en "Marché du samedi"                          |
       | désigner la liste "Marché" comme principale                               |
       | ajouter les courses des repas du 6 au 12 octobre 2026 à la liste "Marché" |
+
+  @C8
+  Scénario: Recalculer une liste supprimée entre-temps est refusé
+    Étant donné la liste "Marché" vide
+    Et j'ai ouvert la liste "Marché"
+    Et Bruno a supprimé entre-temps la liste "Marché"
+    Quand je recalcule la liste "Marché"
+    Alors la requête est refusée
+    Et un message m'indique que la liste a été supprimée entre-temps

@@ -100,6 +100,39 @@ Fonctionnalité: Compartimentage des données entre tribus
       | supprimer                               |
 
   @ENF-02
+  Plan du scénario: Une liste d'une autre tribu ne peut être ni recalculée ni vidée par un déplacement
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et la liste "Courses" de la tribu "durand" contient l'article ajouté "reblochon"
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je tente de <action> la liste "Courses" de la tribu "durand" en utilisant son identifiant
+    Alors la requête est refusée
+    Et la réponse est la même que pour un identifiant qui n'existe pas
+    Et l'article "reblochon" de la tribu "durand" est inchangé
+
+    Exemples:
+      | action                                 |
+      | recalculer                             |
+      | déplacer l'article "reblochon" depuis  |
+
+  @ENF-02
+  Scénario: Des articles ne peuvent pas être déplacés vers une liste d'une autre tribu
+    Étant donné la tribu "durand" a la liste "Marché" vide
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Et la liste "Courses" contenant l'article ajouté "pain"
+    Quand je tente de déplacer "pain" vers la liste "Marché" de la tribu "durand" en utilisant son identifiant
+    Alors la requête est refusée
+    Et la réponse est la même que pour une liste d'arrivée qui n'existe pas
+    Et la liste "Courses" contient toujours l'article ajouté "pain"
+
+  @ENF-02
+  Scénario: Les listes périmées d'une autre tribu ne sont jamais visibles
+    Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
+    Et la liste "Courses" de la tribu "durand" est périmée
+    Et je suis connecté à la tribu "martin" en tant que "alice@exemple.fr"
+    Quand je demande quelles listes sont périmées
+    Alors je ne vois aucun élément de la tribu "durand"
+
+  @ENF-02
   Scénario: Un article d'une autre tribu ne peut être ni coché ni retiré
     Étant donné la tribu "durand" a le plat "Tartiflette" et l'ingrédient "reblochon"
     Et la liste "Courses" de la tribu "durand" contient l'article ajouté "reblochon"

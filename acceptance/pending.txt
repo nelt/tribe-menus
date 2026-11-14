@@ -21,36 +21,58 @@ authentification.feature: Consultation hors ligne de la bibliothèque de plats
 authentification.feature: La déconnexion efface les données de la tribu sur l'appareil
 authentification.feature: Les modifications autres que les listes de courses nécessitent le réseau
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
+compartimentage-tribus.feature: Des articles ne peuvent pas être déplacés vers une liste d'une autre tribu
+compartimentage-tribus.feature: Les listes périmées d'une autre tribu ne sont jamais visibles
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
+compartimentage-tribus.feature: Une liste d'une autre tribu ne peut être ni recalculée ni vidée par un déplacement
+formats-ecran.feature: Sur un grand écran, les actions de la sélection restent dans le volet de la liste
+formats-ecran.feature: Tourner la tablette garde la sélection d'articles
 liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Cocher un article sans réseau
 liste-courses.feature: Créer une liste à partir d'une sélection
+liste-courses.feature: Des articles ne peuvent pas être déplacés vers leur propre liste
 liste-courses.feature: Déplacer des articles sélectionnés vers une autre liste
 liste-courses.feature: L'article fusionné n'est coché que si les deux l'étaient
 liste-courses.feature: La coche d'un article déplacé entre-temps s'applique dans sa nouvelle liste
 liste-courses.feature: La coche d'un article supprimé par un recalcul est ignorée
+liste-courses.feature: La part prise s'efface quand l'article est coché ou décoché
 liste-courses.feature: La sélection est impossible sans article sélectionné
+liste-courses.feature: Le recalcul crée l'article d'un ingrédient ajouté au plat
 liste-courses.feature: Le recalcul ne recrée pas les articles déjà achetés
+liste-courses.feature: Le recalcul ne recrée pas un article déplacé vers une autre liste
 liste-courses.feature: Les actions sur les listes elles-mêmes nécessitent le réseau
 liste-courses.feature: Les articles ajoutés hors ligne à une liste supprimée entre-temps sont ignorés
 liste-courses.feature: Les articles ajoutés à la main survivent au recalcul
 liste-courses.feature: Les changements qui rendent une liste périmée
 liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau
+liste-courses.feature: Les plats servis des articles déplacés deviennent reçus par la liste d'arrivée
 liste-courses.feature: Les plats servis des articles déplacés restent reçus par la liste de départ
 liste-courses.feature: Recalculer met la liste à jour et fait disparaître le bandeau
+liste-courses.feature: Recalculer une liste supprimée entre-temps est refusé
+liste-courses.feature: Rien n'est déplacé vers une liste supprimée entre-temps
+liste-courses.feature: Seuls les articles encore dans la liste sont déplacés
 liste-courses.feature: Un article ajouté déplacé reste une ligne distincte
+liste-courses.feature: Un article avec une part prise reste après les courses faites
 liste-courses.feature: Un article calculé déplacé est fusionné avec le même ingrédient
+liste-courses.feature: Un article coché dont la quantité augmente garde sa part prise
+liste-courses.feature: Un article dont la quantité baisse jusqu'à sa part prise est de nouveau coché
 liste-courses.feature: Un article dont tous les plats servis ont été retirés disparaît, même coché
 liste-courses.feature: Un article déplacé garde sa coche et ses provenances
 liste-courses.feature: Un bandeau signale que des plats servis ont changé
 liste-courses.feature: Un changement sans effet sur les articles ne rend pas la liste périmée
+liste-courses.feature: Un déplacement qui ferait dépasser 300 articles à la liste d'arrivée est refusé
 liste-courses.feature: Un ingrédient créé hors ligne n'est pas dupliqué
 liste-courses.feature: Un plat ajouté au planning ne rend pas la liste périmée
+liste-courses.feature: Un plat servi dont tous les articles sont partis ne rend pas la liste périmée
 liste-courses.feature: Un plat servi déjà présent dans la liste d'arrivée n'est pas compté deux fois
+liste-courses.feature: Un recalcul qui dépasserait 300 articles est refusé
 liste-courses.feature: Une coche est conservée si la quantité n'augmente pas
 liste-courses.feature: Une coche est retirée si la quantité augmente
 liste-courses.feature: Une liste créée à partir d'une sélection garde les provenances
+liste-courses.feature: Une liste créée à partir d'une sélection vient après les autres
+liste-courses.feature: Une liste périmée est signalée dans le choix des listes
+liste-courses.feature: Une nouvelle liste à partir d'une sélection suit les règles des listes
 membres-et-sessions.feature: Ajouter un membre
 membres-et-sessions.feature: Consulter les membres de sa tribu
 membres-et-sessions.feature: Consulter ses sessions

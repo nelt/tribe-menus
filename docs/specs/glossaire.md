@@ -134,10 +134,15 @@ Les spécifications et les scénarios Gherkin sont en français ; le code est en
 | cocher / coché | check / checked | |
 | déclarer les courses faites | check out | retire les articles cochés, C11 |
 | supprimer (une liste) | delete | liste vide et non principale, C12 |
-| recalculer / recalcul | recompute / recomputation | |
-| périmée | stale | |
-| sélection | selection | C9, C10 |
-| déplacer | move | C9 |
+| recalculer / recalcul | recompute / recomputation | C8, Q43 |
+| liste périmée | stale list | le recalcul y changerait un article, C8, Q43 |
+| part prise | taken quantity | quantité d'un article calculé quand il était coché, gardée quand sa quantité augmente, Q41 |
+| lignes gardées (d'un plat servi reçu) | received lines | lignes du plat au moment du calcul, dans le serveur seulement |
+| sélection, mode sélection | selection, selection mode | C9, C10 |
+| déplacer | move | C9, C10 |
+| liste de départ | source list | liste d'où partent les articles déplacés |
+| liste d'arrivée | target list | liste qui reçoit les articles déplacés, comme la destination des courses |
+| articles partis entre-temps | missing items | sélectionnés mais plus dans la liste au déplacement, Q42 |
 | provenance (d'un article calculé) | item source | un plat servi, C5 |
 | quantité apportée | contributed quantity | part d'une provenance, C5 |
 | nombre de plats servis (d'un article) | source count | C5 |
