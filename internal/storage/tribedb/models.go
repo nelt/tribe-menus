@@ -111,6 +111,7 @@ type ShoppingItem struct {
 	Unit         sql.NullString
 	Checked      int64
 	Manual       int64
+	TakenAmount  sql.NullInt64
 }
 
 type ShoppingItemSource struct {

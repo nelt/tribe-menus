@@ -978,7 +978,7 @@ func (w *world) givenComputed(ctx context.Context, list, quantity, ingredient, d
 		sql  string
 		args []any
 	}{
-		{"INSERT INTO shopping_items VALUES (?, ?, ?, ?, ?, 0, 0)", []any{itemID, l.ID, ingredientKey, itemAmount, itemUnit}},
+		{"INSERT INTO shopping_items VALUES (?, ?, ?, ?, ?, 0, 0, NULL)", []any{itemID, l.ID, ingredientKey, itemAmount, itemUnit}},
 		{"INSERT INTO shopping_item_sources VALUES (?, ?, ?, ?, ?, ?, ?, ?)", []any{itemID, served.ServedDish.ID, d.ID, m.date, m.mealtime, servings, itemAmount, itemUnit}},
 		{"INSERT INTO shopping_received VALUES (?, ?, ?, ?, ?)", []any{l.ID, served.ServedDish.ID, d.ID, servings, d.Servings}},
 	}

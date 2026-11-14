@@ -322,7 +322,7 @@ func TestShoppingLimits(t *testing.T) {
 		ids = append(ids, fmt.Sprintf("%032x", i+1))
 		for _, s := range []string{
 			fmt.Sprintf("INSERT INTO ingredients (id, name, normalized_name) VALUES (%d, 'article %d', 'article %d')", i+1, i, i),
-			fmt.Sprintf("INSERT INTO shopping_items VALUES ('%s', '%s', %d, NULL, NULL, 1, 1)", ids[i], courses, i+1),
+			fmt.Sprintf("INSERT INTO shopping_items VALUES ('%s', '%s', %d, NULL, NULL, 1, 1, NULL)", ids[i], courses, i+1),
 		} {
 			if _, err := db.Exec(s); err != nil {
 				t.Fatalf("%s: %v", s, err)
@@ -355,7 +355,7 @@ func TestShoppingLimits(t *testing.T) {
 	over := `{"items":["` + strings.Repeat("0", maxCheckoutBodyBytes) + `"]}`
 	// 299 items, then a dish of two ingredients served: refused in full (D12).
 	for _, id := range ids[:299] {
-		if _, err := db.Exec("INSERT INTO shopping_items VALUES (?, ?, 1, NULL, NULL, 0, 1)", id, courses); err != nil {
+		if _, err := db.Exec("INSERT INTO shopping_items VALUES (?, ?, 1, NULL, NULL, 0, 1, NULL)", id, courses); err != nil {
 			t.Fatal(err)
 		}
 	}

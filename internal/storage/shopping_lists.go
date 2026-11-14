@@ -91,7 +91,8 @@ func readLists(ctx context.Context, q *tribedb.Queries, rows []tribedb.ShoppingL
 	for _, r := range items {
 		itemsOf[r.ListID] = append(itemsOf[r.ListID], shopping.Item{
 			ID: shopping.ItemID(r.ID), Ingredient: r.Name, Quantity: quantityOf(r.Amount, r.Unit),
-			Checked: r.Checked == 1, Manual: r.Manual == 1, Sources: sourcesOf[r.ID],
+			Taken: quantityOf(r.TakenAmount, r.Unit), Checked: r.Checked == 1, Manual: r.Manual == 1,
+			Sources: sourcesOf[r.ID],
 		})
 	}
 	receivedOf := map[string][]shopping.ServedDishID{}
@@ -204,15 +205,9 @@ func (t shoppingTx) InsertItem(ctx context.Context, list shopping.ListID, item s
 		Checked: boolInt(item.Checked), Manual: boolInt(item.Manual),
 	}
 	p.Amount, p.Unit = nullQuantity(item.Quantity)
+	p.TakenAmount = nullAmount(item.Taken)
 	if err := t.q.InsertShoppingItem(ctx, p); err != nil {
 		return fmt.Errorf("insert shopping item: %w", err)
-	}
-	return nil
-}
-
-func (t shoppingTx) SetChecked(ctx context.Context, id shopping.ItemID, checked bool) error {
-	if err := t.q.SetShoppingItemChecked(ctx, tribedb.SetShoppingItemCheckedParams{Checked: boolInt(checked), ID: string(id)}); err != nil {
-		return fmt.Errorf("check shopping item: %w", err)
 	}
 	return nil
 }
@@ -257,12 +252,22 @@ func nullQuantity(q *dish.Quantity) (sql.NullInt64, sql.NullString) {
 	if q == nil {
 		return sql.NullInt64{}, sql.NullString{}
 	}
-	return sql.NullInt64{Int64: q.Amount, Valid: true}, nullUnit(q.Unit)
+	return nullAmount(q), nullUnit(q.Unit)
 }
 
+// nullAmount is the amount of a quantity whose unit is that of its item: a taken quantity.
+func nullAmount(q *dish.Quantity) sql.NullInt64 {
+	if q == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: q.Amount, Valid: true}
+}
+
+// UpdateItem writes the quantity, the taken quantity and the check of an item.
 func (t shoppingTx) UpdateItem(ctx context.Context, item shopping.Item) error {
 	p := tribedb.UpdateShoppingItemParams{Checked: boolInt(item.Checked), ID: string(item.ID)}
 	p.Amount, p.Unit = nullQuantity(item.Quantity)
+	p.TakenAmount = nullAmount(item.Taken)
 	if err := t.q.UpdateShoppingItem(ctx, p); err != nil {
 		return fmt.Errorf("update shopping item: %w", err)
 	}

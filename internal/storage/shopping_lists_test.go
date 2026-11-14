@@ -78,7 +78,7 @@ func TestShoppingStore(t *testing.T) {
 	}
 	for _, s := range []string{
 		"INSERT INTO ingredients (id, name, normalized_name) VALUES (9, 'oignon', 'oignon')",
-		fmt.Sprintf("INSERT INTO shopping_items VALUES ('c1', '%s', 9, 2000, 'piece', 0, 0)", courses.ID),
+		fmt.Sprintf("INSERT INTO shopping_items VALUES ('c1', '%s', 9, 2000, 'piece', 0, 0, NULL)", courses.ID),
 		"INSERT INTO shopping_item_sources VALUES ('c1', 's2', 'd1', '2026-10-08', 'lunch', 4, 1000, 'piece')",
 		"INSERT INTO shopping_item_sources VALUES ('c1', 's1', 'd1', '2026-10-06', 'dinner', 3, 750, 'piece')",
 		"INSERT INTO shopping_item_sources VALUES ('c1', 's3', 'd1', '2026-10-06', 'lunch', 1, 250, 'piece')",

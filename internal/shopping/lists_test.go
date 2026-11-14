@@ -171,20 +171,6 @@ func (t memTx) InsertItem(_ context.Context, list ListID, item Item, _ int64) er
 	return nil
 }
 
-func (t memTx) SetChecked(_ context.Context, id ItemID, checked bool) error {
-	for lid, l := range t.s.state.lists {
-		for i := range l.Items {
-			if l.Items[i].ID == id {
-				l.Items[i].Checked = checked
-				SortItems(l.Items)
-				t.s.state.lists[lid] = l
-				return nil
-			}
-		}
-	}
-	return nil
-}
-
 func (t memTx) DeleteItem(_ context.Context, id ItemID) error {
 	for lid, l := range t.s.state.lists {
 		l.Items = slices.DeleteFunc(l.Items, func(it Item) bool { return it.ID == id })
@@ -218,7 +204,7 @@ func (t memTx) item(id ItemID, change func(*Item)) {
 }
 
 func (t memTx) UpdateItem(_ context.Context, item Item) error {
-	t.item(item.ID, func(it *Item) { it.Quantity, it.Checked = item.Quantity, item.Checked })
+	t.item(item.ID, func(it *Item) { it.Quantity, it.Taken, it.Checked = item.Quantity, item.Taken, item.Checked })
 	return nil
 }
 

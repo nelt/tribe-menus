@@ -79,13 +79,12 @@ type Tx interface {
 	DeleteList(ctx context.Context, id ListID) error
 	// InsertItem adds an item to a list, its ingredient designated by its key.
 	InsertItem(ctx context.Context, list ListID, item Item, ingredient int64) error
-	SetChecked(ctx context.Context, id ItemID, checked bool) error
 	// DeleteItem deletes an item and its sources.
 	DeleteItem(ctx context.Context, id ItemID) error
 	// ServedDishes returns the served dishes of the period, ordered by meal, lunch before
 	// dinner, then by rank, each with its dish as it is now (P2).
 	ServedDishes(ctx context.Context, p Period) ([]Served, error)
-	// UpdateItem writes the quantity and the check of a computed item.
+	// UpdateItem writes the quantity, the taken quantity and the check of an item.
 	UpdateItem(ctx context.Context, item Item) error
 	// InsertSource adds a source to a computed item.
 	InsertSource(ctx context.Context, item ItemID, s Source) error
@@ -278,7 +277,8 @@ func (l *Lists) RemoveItem(ctx context.Context, id ListID, itemID ItemID) (List,
 }
 
 // SetChecked checks or unchecks an item (C6): the last save wins (D8); ErrNotFound for an
-// item absent from the list, maybe gone in between.
+// item absent from the list, maybe gone in between. Checking an item erases its taken
+// quantity: everything is taken; unchecking a checked item gives it none (Q41, D9).
 func (l *Lists) SetChecked(ctx context.Context, id ListID, itemID ItemID, checked bool) (List, collection.Versions, error) {
 	var list List
 	versions, err := l.Store.Write(ctx, func(tx Tx) error {
@@ -291,7 +291,10 @@ func (l *Lists) SetChecked(ctx context.Context, id ListID, itemID ItemID, checke
 			return ErrNotFound
 		}
 		list.Items[i].Checked = checked
-		return tx.SetChecked(ctx, itemID, checked)
+		if checked {
+			list.Items[i].Taken = nil
+		}
+		return tx.UpdateItem(ctx, list.Items[i])
 	})
 	if err != nil {
 		return List{}, nil, fmt.Errorf("check item %s: %w", itemID, err)
