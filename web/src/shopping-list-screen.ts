@@ -219,6 +219,28 @@ export class ShoppingListScreen extends LitElement {
     clearTimeout(this.#removalPause);
   }
 
+  /**
+   * The selection follows the copy (D14): an item gone leaves it, and comes back unselected; a
+   * list emptied ends the selection mode, with its sheet (review of PR #121, point 1).
+   */
+  protected override willUpdate() {
+    const list = this.#list();
+    if (this.selected === undefined || list === undefined) {
+      return;
+    }
+    if (list.items.length === 0) {
+      this.selected = undefined;
+      if (this.sheet?.kind === "move" || this.sheet?.kind === "new-list") {
+        this.sheet = undefined;
+      }
+      return;
+    }
+    const kept = selectedIn(this.selected, list);
+    if (kept.length !== this.selected.size) {
+      this.selected = new Set(kept);
+    }
+  }
+
   protected override updated(changed: PropertyValues<this>) {
     const dialog = this.querySelector<HTMLDialogElement>("dialog.sheet");
     if (changed.has("sheet") && dialog !== null && this.sheet !== undefined && !dialog.open) {
@@ -275,11 +297,11 @@ export class ShoppingListScreen extends LitElement {
     if (list === undefined) {
       return html`<main class="screen">${this.failed ? this.#failed() : this.#loading()}</main>`;
     }
-    // An empty list has nothing to select: the selection mode ends with its last item.
-    if (this.selected !== undefined && list.items.length > 0) {
+    // Never empty, nor holding an item gone (willUpdate).
+    if (this.selected !== undefined) {
       const selection = selectedIn(this.selected, list);
       return html`<main class="screen shopping shopping--selecting">
-          ${this.#selectionHeader(list, this.selected)} ${this.#notice(true)} ${this.#items(list, new Set(selection))} ${this.#selectionActions(selection)}
+          ${this.#selectionHeader(list, this.selected)} ${this.#notice(true)} ${this.#items(list, this.selected)} ${this.#selectionActions(selection)}
         </main>
         ${this.#sheet(list, selection)}`;
     }

@@ -200,3 +200,54 @@ test("the actions at the bottom of the pane of the list, beside the picker in et
     await expect(actions(page)).toHaveCount(0);
   }
 });
+
+async function backToForeground(page: Page) {
+  await page.evaluate(() => {
+    for (const state of ["hidden", "visible"]) {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => state });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }
+  });
+}
+
+test("a list emptied in between ends the selection mode; an item added afterwards does not bring it back (D14; review of PR #121, point 1)", async ({ page }) => {
+  const emptied = { ...courses, items: [] };
+  const added = { ...courses, items: [lessive] };
+  await mock(page, {
+    // Read at the opening, then at the return to the foreground: another member has emptied the list.
+    getShoppingLists: [pageReply("shopping_lists", 7, [courses, marche, drive]), pageReply("shopping_lists", 8, [emptied, marche, drive])],
+    addItem: [{ status: 201, body: { list: added, versions: { shopping_lists: 9 } } }],
+  });
+  await page.goto("/tribes/demo/courses");
+  await page.getByRole("button", { name: "Sélectionner", exact: true }).click();
+  await pick(page, "lessive").click();
+  await actions(page).getByRole("button", { name: "Déplacer vers…" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+
+  await backToForeground(page);
+  await expect(page.getByText("La liste est vide.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(actions(page)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Ajouter un article à la main" }).click();
+  await page.getByRole("combobox", { name: "Article", exact: true }).fill("lessive");
+  await page.getByRole("button", { name: "Ajouter à la liste" }).click();
+  await expect(page.locator(".item-name")).toHaveText(["lessive"]);
+  await expect(page.getByRole("button", { name: "Sélectionner", exact: true })).toBeVisible();
+  await expect(actions(page)).toHaveCount(0);
+});
+
+test("an item gone from the copy leaves the selection, and comes back unselected (D14; review of PR #121, point 1)", async ({ page }) => {
+  await mock(page, {
+    // « pain » leaves the list, then comes back with its identifier (moved there and back, D10).
+    getShoppingLists: [pageReply("shopping_lists", 7, [courses, marche, drive]), pageReply("shopping_lists", 8, [{ ...courses, items: [boeuf, lessive] }, marche, drive]), pageReply("shopping_lists", 9, [courses, marche, drive])],
+  });
+  await page.goto("/tribes/demo/courses");
+  await page.getByRole("button", { name: "Sélectionner", exact: true }).click();
+  await pick(page, "pain").click();
+  await backToForeground(page);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aucun article");
+  await backToForeground(page);
+  await expect(pick(page, "pain")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aucun article");
+});
