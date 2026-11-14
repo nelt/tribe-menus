@@ -4,6 +4,7 @@ Format : une ligne par PR, sous la version à venir (ADR 0012). Versions sémant
 
 ## Non publié
 
+- Plan `courses-suite` (brouillon) : liste périmée et « Recalculer » (C8), sélection, déplacement et nouvelle liste à partir d'une sélection (C9, C10), dans les trois formats ; D1 à D4 prises par le développeur (un article coché dont la quantité augmente montre ce qui reste à prendre, migration `0010` ; une ligne ajoutée à un plat rend la liste périmée et le recalcul crée son article, sauf pour un plat servi dont tous les articles sont partis ; péremption calculée par le serveur à la demande, `GET shopping-lists/stale` ; clavier virtuel d'une tablette en paysage réglé par `interactive-widget=resizes-content`), les autres proposées (règle du recalcul, péremption, routes, ADR 0031, part prise, déplacement, écritures croisées, message nommé d'une liste supprimée entre-temps, mode sélection, points reportés de `courses`) ; cinq lots puis `v0.6.0` ; feuille de route (plan en brouillon, point reporté du clavier virtuel rattaché au plan).
 - Plan `grands-ecrans` terminé (étape 19) : `v0.5.0` en production ; feuille de route (plan terminé, point reporté « Mise en page d'ordinateur » retiré, message de `tribe-menus-deploy` quand GitHub ne répond pas reporté), `CLAUDE.md` (version en service).
 
 ## 0.5.0 — 2026-11-08
