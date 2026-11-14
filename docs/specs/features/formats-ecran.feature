@@ -157,6 +157,24 @@ Fonctionnalité: Formats d'écran
     Alors la saisie de l'article "pain" est toujours en cours
     Et la liste "Courses" s'affiche à côté du choix des listes
 
+  @ENF-03 @C9 @ui @moyen
+  Scénario: Tourner la tablette garde la sélection d'articles
+    Étant donné la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
+    Quand j'ouvre l'onglet Courses
+    Et je sélectionne "pain" dans la liste "Courses"
+    Et je tourne la tablette
+    Alors "pain" est toujours sélectionné dans la liste "Courses"
+    Et la liste "Courses" s'affiche à côté du choix des listes
+
+  @ENF-03 @C9 @ui @etendu
+  Scénario: Sur un grand écran, les actions de la sélection restent dans le volet de la liste
+    Étant donné la liste "Courses" contenant les articles ajoutés "pain" et "lessive"
+    Quand j'ouvre l'onglet Courses
+    Et je sélectionne "pain" dans la liste "Courses"
+    Alors les onglets sont sur le côté gauche de l'écran
+    Et les actions de déplacement et de création à partir de la sélection s'affichent sous la liste "Courses"
+    Et la liste "Courses" s'affiche à côté du choix des listes
+
   @ENF-03 @manuel
   Scénario: Le clavier virtuel ne change pas la mise en page d'une tablette
     Étant donné une tablette tenue en paysage

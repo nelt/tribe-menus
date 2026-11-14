@@ -19,7 +19,7 @@ Permettre à une tribu (une famille, ou tout groupe qui partage ses repas) de pl
 | **Plat servi** | Un plat de la bibliothèque placé dans un repas, avec son propre **nombre de parts** (la taille de la tribu au moment de l'ajout, de 1 à 50, Q35). Exemple : chili 3 parts et chili végétarien 1 part. Il a une **identité propre**, distincte de celle du plat : retiré puis ajouté de nouveau au même repas, c'est un nouveau plat servi (Q32). |
 | **Liste de courses** | Liste nommée, **indépendante du planning** : elle existe par elle-même et reçoit des articles ajoutés à la main (C3) ou les courses des repas d'une période (C4). Une tribu a toujours **au moins une liste**, et exactement une **liste principale**, celle que montre l'onglet Courses (C1). Plusieurs listes peuvent exister en même temps. Une liste n'est jamais close : déclarer les courses faites en retire les articles cochés (C11) ; elle n'est supprimée que vide (C12). |
 | **Liste principale** | La liste ouverte par défaut et proposée par défaut pour ajouter des courses. Créée avec la tribu ; tout membre peut désigner une autre liste comme principale ; elle ne peut pas être supprimée. |
-| **Article** | Une ligne d'une liste de courses : un ingrédient, avec une quantité et son unité, ou **sans quantité** (« sel », Q36). Un article **calculé** provient de plats servis (ses **provenances**) et reste lié à eux : on voit à quels plats il participe (C5) ; une liste a au plus un article calculé par ingrédient et famille d'unités, et au plus un article calculé sans quantité par ingrédient (Q36). Un article **ajouté** a été saisi à la main, hors planning, avec ou sans quantité (Q13). |
+| **Article** | Une ligne d'une liste de courses : un ingrédient, avec une quantité et son unité, ou **sans quantité** (« sel », Q36). Un article **calculé** provient de plats servis (ses **provenances**) et reste lié à eux : on voit à quels plats il participe (C5) ; une liste a au plus un article calculé par ingrédient et famille d'unités, et au plus un article calculé sans quantité par ingrédient (Q36). Un article **ajouté** a été saisi à la main, hors planning, avec ou sans quantité (Q13). Un article calculé décoché parce que sa quantité a augmenté garde sa **part prise**, la quantité qu'il avait quand il était coché : on voit ce qui reste à prendre (Q41). |
 | **Plats servis reçus** | Les plats servis dont une liste a déjà reçu les courses, par ajout (C4) ou par déplacement (C9, C10). Un plat servi reçu ne peut pas être ajouté une seconde fois à la même liste, même après que ses articles ont été achetés ou déplacés (Q22). |
 
 ### Ajout des courses d'une période
@@ -28,7 +28,7 @@ L'ajout (C4) prend les plats servis des repas de la période (bornes incluses) q
 
 - un ingrédient déjà présent dans la liste, dans la même famille d'unités, s'additionne à l'article existant, qui gagne de nouvelles provenances ; sinon un nouvel article calculé est créé ;
 - une ligne de plat sans quantité donne un article calculé sans quantité, distinct des articles avec quantité du même ingrédient ; il gagne la provenance sans changer, et garde sa coche (Q36) ;
-- un article coché dont la quantité augmente est décoché (il faut en racheter) ;
+- un article coché dont la quantité augmente est décoché et garde sa part prise : il s'affiche « 750 g · encore 250 g » (Q41) ;
 - les articles ajoutés à la main ne sont jamais fusionnés avec les articles calculés ;
 - si des plats servis de la période étaient déjà reçus, ils sont ignorés et un message indique combien ;
 - tous les plats servis retenus deviennent des plats servis reçus de la liste, y compris ceux qui n'ont aucun ingrédient (« Restes ») ;
@@ -36,13 +36,20 @@ L'ajout (C4) prend les plats servis des repas de la période (bornes incluses) q
 
 ### Recalcul d'une liste
 
-Un article calculé reste lié à ses provenances. Une liste est **périmée** (C8) quand l'une des provenances de ses articles a changé depuis le dernier calcul : parts du plat servi modifiées, ingrédients du plat modifiés (P2), plat retiré du repas (R4). Un plat ajouté ensuite à un repas ne rend pas la liste périmée : on l'ajoute en ajoutant de nouveau les courses de la période (C4).
+Un article calculé reste lié à ses provenances, et une liste garde, pour chaque plat servi reçu, ses parts, les parts de référence du plat et les lignes du plat au moment du calcul. Une liste est **périmée** (C8) quand « Recalculer » y changerait quelque chose : parts du plat servi modifiées, parts de référence ou ingrédients du plat modifiés (P2), ligne ajoutée au plat, plat retiré du repas (R4). Un changement sans effet sur les articles ne la rend pas périmée : quantité réécrite dans une autre unité de sa famille (500 g en 0,5 kg), parts modifiées d'un plat servi sans ingrédient ou dont aucun ingrédient n'a de quantité, plat renommé. Un plat ajouté ensuite à un repas ne la rend pas périmée non plus : on l'ajoute en ajoutant de nouveau les courses de la période (C4). Un plat servi dont tous les articles ont quitté la liste (achetés ou déplacés), ou qui n'y a jamais rien apporté, ne la rend jamais périmée (Q43).
 
-Le recalcul reconstruit les articles calculés de la liste à partir de l'état actuel de leurs provenances, puis :
+Le recalcul reprend chaque plat servi reçu qui a encore une provenance dans la liste, à partir de l'état actuel du planning et du plat, ingrédient par ingrédient (un ingrédient sans quantité comptant à part) :
+
+- un ingrédient dont un article de la liste porte encore la provenance est recalculé ;
+- un ingrédient dont l'article a quitté la liste (acheté, ou déplacé vers une autre liste) n'est **pas recréé** ;
+- un ingrédient **ajouté au plat** depuis le calcul, ou dont l'unité a changé de famille (« sel » devenu « 5 g »), **est créé** (Q43) ;
+- un ingrédient retiré du plat, ou un plat retiré du repas, fait disparaître sa provenance ; un article qui n'a plus de provenance disparaît, même coché.
+
+Ensuite :
 
 - les **articles ajoutés** à la main sont conservés tels quels ;
-- un article calculé encore présent **reste coché** s'il l'était et que sa quantité n'a pas augmenté ; si sa quantité augmente, il est décoché (il faut en racheter). « Encore présent » signifie même ingrédient et même famille d'unités ;
-- une provenance retirée du planning disparaît de ses articles ; un article qui n'a plus de provenance ou plus de quantité disparaît, même coché.
+- un article calculé encore présent **reste coché** s'il l'était et que sa quantité n'a pas augmenté ; si sa quantité augmente, il est décoché et garde sa part prise ; un article décoché dont la quantité baisse jusqu'à sa part prise, ou en dessous, est de nouveau coché (Q41). « Encore présent » signifie même ingrédient et même famille d'unités ;
+- si la liste devait dépasser 300 articles, rien n'est recalculé (Q38).
 
 Le recalcul ne concerne que les articles présents : un article déjà retiré par les courses faites (C11) n'est pas recréé.
 
@@ -50,8 +57,10 @@ Le recalcul ne concerne que les articles présents : un article déjà retiré p
 
 Dans une liste, on peut sélectionner des articles (calculés ou ajoutés) pour les **déplacer** vers une autre liste (C9) ou **créer une nouvelle liste** à partir d'eux (C10). Un article déplacé garde sa coche et ses provenances ; ses plats servis deviennent des plats servis reçus de la liste d'arrivée (la liste de départ les garde aussi). Dans la liste d'arrivée :
 
-- un article calculé dont l'ingrédient y est déjà présent, dans la même famille d'unités, est fusionné avec l'article existant ; une provenance déjà présente dans cet article n'est pas comptée deux fois ; l'article fusionné n'est coché que si les deux l'étaient ;
+- un article calculé dont l'ingrédient y est déjà présent, dans la même famille d'unités, est fusionné avec l'article existant ; une provenance déjà présente dans cet article n'est pas comptée deux fois ; l'article fusionné n'est coché que si les deux l'étaient, et garde sinon la somme de leurs parts prises (Q41) ;
 - un article ajouté reste une ligne distincte.
+
+Seuls les articles sélectionnés qui sont encore dans la liste de départ sont déplacés ; le membre est averti de ceux qui n'y étaient plus (Q42). Une liste créée à partir d'une sélection prend le nom saisi, avec les règles des noms de listes (Q38), se place après les autres et n'est pas la liste principale. Rien n'est déplacé si la liste d'arrivée devait dépasser 300 articles, si la tribu a déjà 20 listes pour une nouvelle liste, ou si la liste d'arrivée est la liste de départ (Q38).
 
 ### Règle de calcul
 
@@ -150,7 +159,7 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
 - **Q8** : chaque plat servi part de la taille de la tribu (4 par défaut, réglable par tout membre, T3), quel que soit le nombre de parts de référence du plat ; un nouveau plat est proposé pour ce même nombre de parts (PT-08, 2026-09-28).
 - **Q9** : la bibliothèque de plats et le référentiel d'ingrédients sont propres à chaque tribu : partagés entre ses membres, jamais entre tribus.
 - **Q10** : les articles calculés ne changent que sur action explicite (ajout de courses, « Recalculer », déplacement), jamais automatiquement quand le planning change : la liste ne bouge pas sous les yeux de celui qui fait les courses. Le changement est seulement signalé (C8) (révisé le 2026-10-01).
-- **Q11** : au recalcul, les articles ajoutés à la main sont conservés, et les coches aussi, sauf quand la quantité d'un article augmente.
+- **Q11** : au recalcul, les articles ajoutés à la main sont conservés, et les coches aussi, sauf quand la quantité d'un article augmente : il est alors décoché et garde sa part prise (Q41).
 - **Q12** : plusieurs listes sont permises. Un même plat servi peut être reçu par plusieurs listes ; il ne l'est qu'une fois par liste (Q22) (révisé le 2026-10-01).
 - **Q13** : un article ajouté à la main est un ingrédient du référentiel (autocomplétion et création comme en P4), avec quantité et unité facultatives. Il reste une ligne distincte, jamais fusionnée avec un article calculé du même ingrédient.
 - **Q14** : « courses faites » est possible même s'il reste des articles non cochés : seuls les articles cochés sont retirés, la liste reste utilisable. Pas d'historique des courses faites (révisé le 2026-10-01).
@@ -222,3 +231,18 @@ Stories EF-01 à EF-11, détaillées dans `gestion-membres-et-sessions.md` ; cri
   - **retrait d'un article ajouté déjà retiré** par un autre membre : rien n'est signalé, le retrait est fait ;
   - **deux ajouts de courses simultanés** à la même liste : le second ignore les plats servis reçus par le premier (Q22).
 - **Q40** : **ordre des articles** d'une liste : les articles non cochés d'abord, les cochés en bas ; dans chaque groupe, par ordre alphabétique du nom de l'ingrédient, au sens du nom normalisé (Q29), articles calculés et ajoutés mêlés, pour retrouver un article au rayon ; pour un même ingrédient, l'article avec quantité avant l'article sans quantité, l'article calculé avant l'article ajouté. L'ordre d'ajout est écarté : il disperse les ingrédients d'un même rayon. Un classement par rayon demanderait une donnée de plus sur l'ingrédient : hors V1 (plan `courses`, D13, 2026-11-06).
+- **Q41** : **part prise** d'un article calculé (plan `courses-suite`, D1 et D9, 2026-11-14). Elle remplace « décoché avec toute sa quantité », relevé à la recette de `v0.4.0` : la part déjà dans le chariot redevenait « à acheter ».
+  - quand la quantité d'un article coché augmente (ajout des courses d'une période, recalcul), il est décoché et sa part prise devient la quantité qu'il avait ; sur un article déjà décoché avec une part prise, elle ne change pas ;
+  - quand la quantité baisse jusqu'à la part prise ou en dessous (recalcul), l'article est de nouveau coché, sans part prise ;
+  - cocher un article efface sa part prise, tout étant pris ; décocher un article coché ne lui en donne pas (on a remis l'article en rayon) ;
+  - les courses faites ne retirent que les articles cochés : un article avec une part prise reste, avec elle ;
+  - un article fusionné par un déplacement (C9, C10) est coché si les deux l'étaient ; sinon sa part prise est la somme des parts prises, la quantité entière comptant pour un article coché ;
+  - un article sans quantité et un article ajouté n'ont jamais de part prise ;
+  - affichage : « 750 g · encore 250 g », le reste dans la plus grande unité de sa famille qui donne au moins 1 (Q37).
+- **Q42** : **écritures croisées du recalcul et du déplacement**, qui complètent Q39 (plan `courses-suite`, D11, 2026-11-14) :
+  - **recalcul et ajout des courses, ou deux recalculs simultanés** sur la même liste : le second voit l'état laissé par le premier ;
+  - **déplacement d'articles partis entre-temps** (cochés puis retirés par les courses faites, déplacés, ou disparus par un recalcul) : seuls ceux qui restent sont déplacés ; le membre voit « 1 article déplacé vers « Marché ». 1 article n'était plus dans la liste. » ;
+  - **liste d'arrivée supprimée entre-temps** : rien n'est déplacé ; le membre reste sur la liste de départ, sa sélection gardée, et voit « La liste « Marché » a été supprimée entre-temps. Rien n'a été déplacé. » ;
+  - **écriture sur une liste supprimée entre-temps** (Q39) : le message nomme la liste et dit ce qui n'a pas été fait, « La liste « Jetable » a été supprimée entre-temps. L'article n'a pas été ajouté. » ; selon l'écriture, « Les courses des repas n'ont pas été ajoutées. », « Elle n'a pas été renommée. », « Rien n'a été recalculé. », « Rien n'a été déplacé. » ; une coche ou un retrait restent sans message ;
+  - **coche d'un article déplacé entre-temps** : sans effet ni message, l'article disparaît de la liste affichée (Q39) ; sans réseau, Q18 la reporte sur sa nouvelle liste (plan hors-ligne).
+- **Q43** : **péremption et recalcul** (plan `courses-suite`, D2, D5 et D6, 2026-11-14) : une liste est périmée quand le recalcul y changerait un article (existence, quantité, part prise, coche ou provenances), les quantités comparées en unités de base. Une ligne ajoutée à un plat rend périmée une liste qui a reçu un de ses plats servis et y garde une de ses provenances, et le recalcul crée l'article de cette ligne ; un plat servi dont tous les articles ont quitté la liste ne la rend pas périmée et le recalcul n'y recrée rien, pour ne pas faire reparaître un repas déjà acheté. La péremption est calculée par le serveur à la demande ; elle est signalée, jamais appliquée d'elle-même (Q10).
