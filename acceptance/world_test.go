@@ -126,6 +126,7 @@ func (w *world) registerSteps(sc *godog.ScenarioContext) {
 	w.registerMealPlanSteps(sc)
 	w.registerShoppingSteps(sc)
 	w.registerMealShoppingSteps(sc)
+	w.registerRecomputeSteps(sc)
 }
 
 // reset prepares the world of a new scenario.

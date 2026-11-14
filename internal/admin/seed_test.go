@@ -87,9 +87,9 @@ func TestSeed(t *testing.T) {
 		day(0) + " lunch Pizza maison 4",
 		day(0) + " dinner Ratatouille 4",
 		day(1) + " lunch Pâtes pesto 4",
-		day(1) + " dinner Chili con carne 3",
+		day(1) + " dinner Chili con carne 5", // 3, then 5 after the shopping (plan courses-suite, D20)
 		day(1) + " dinner Chili végétarien 1",
-		day(2) + " dinner Soupe à l'oignon 4",
+		day(2) + " dinner Soupe à l'oignon 6", // 4, then 6
 		day(3) + " lunch Chili con carne 4",
 		day(3) + " dinner Gratin de courgettes 4",
 	}
@@ -117,20 +117,28 @@ func TestSeed(t *testing.T) {
 		if it.Quantity != nil {
 			q = it.Quantity.Text() + " " + string(it.Quantity.Unit)
 		}
+		if it.Taken != nil {
+			q += " taken " + it.Taken.Text()
+		}
 		if it.Manual {
 			q += " manual"
 		}
 		items[it.Ingredient] += q + ";"
 	}
-	// Chili con carne for 3 then 4 servings of 4: 875 g of beef; onions 1.5 and 2 of it, 0.5
-	// of the vegetarian chili, 1 of the ratatouille, 6 of the soup.
-	for ingredient, want := range map[string]string{"bœuf haché": "875 g;", "oignon": "11 piece;", "pain": "4 piece;- manual;", "lessive": "- manual;"} {
+	// Chili con carne for 3 then 4 servings of 4: 875 g of beef, checked, then the Tuesday
+	// chili for 5 servings and the list recomputed: 1125 g, 875 g taken (plan courses-suite,
+	// D20); onions 2.5 and 2 of it, 0.5 of the vegetarian chili, 1 of the ratatouille, 6 of
+	// the soup, whose 6 servings since leave the list stale.
+	for ingredient, want := range map[string]string{"bœuf haché": "1125 g taken 875;", "oignon": "12 piece;", "pain": "4 piece;- manual;", "lessive": "- manual;"} {
 		if items[ingredient] != want {
 			t.Errorf("%s: %q, want %q; items %v", ingredient, items[ingredient], want, items)
 		}
 	}
 	if len(market.Items) != 1 || market.Items[0].Ingredient != "fraises" {
 		t.Errorf("Marché %+v", market)
+	}
+	if stale, err := shopping.NewLists(storage.NewShoppingStore(db)).Stale(ctx); err != nil || !slices.Equal(stale, []shopping.ListID{courses.ID}) {
+		t.Errorf("stale lists %v, %v; want « Courses »", stale, err)
 	}
 }
 

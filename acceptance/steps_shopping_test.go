@@ -57,6 +57,7 @@ type apiItem struct {
 	Ingredient string      `json:"ingredient"`
 	Quantity   string      `json:"quantity,omitempty"`
 	Unit       string      `json:"unit,omitempty"`
+	Taken      string      `json:"taken,omitempty"`
 	Checked    bool        `json:"checked"`
 	Manual     bool        `json:"manual"`
 	Sources    []apiSource `json:"sources"`
@@ -301,7 +302,7 @@ func (w *world) registerShoppingSteps(sc *godog.ScenarioContext) {
 		w.shopping.seen = lists
 		return err
 	})
-	sc.Step(`^je tente de (renommer|désigner comme principale|ajouter un article à|ajouter les courses des repas à|déclarer les courses faites de|supprimer) la liste "([^"]*)" de la tribu "([^"]*)" en utilisant son identifiant$`, w.crossAccessList)
+	sc.Step(`^je tente de (renommer|désigner comme principale|ajouter un article à|ajouter les courses des repas à|déclarer les courses faites de|recalculer|supprimer) la liste "([^"]*)" de la tribu "([^"]*)" en utilisant son identifiant$`, w.crossAccessList)
 	sc.Step(`^la liste "([^"]*)" de la tribu "([^"]*)" est inchangée$`, w.otherListUnchanged)
 	sc.Step(`^je tente de cocher puis de retirer cet article de la tribu "([^"]*)" en utilisant son identifiant et celui de sa liste$`, w.crossAccessItem)
 	sc.Step(`^chaque requête est refusée$`, func() error {
@@ -978,7 +979,7 @@ func (w *world) givenComputed(ctx context.Context, list, quantity, ingredient, d
 		sql  string
 		args []any
 	}{
-		{"INSERT INTO shopping_items VALUES (?, ?, ?, ?, ?, 0, 0)", []any{itemID, l.ID, ingredientKey, itemAmount, itemUnit}},
+		{"INSERT INTO shopping_items VALUES (?, ?, ?, ?, ?, 0, 0, NULL)", []any{itemID, l.ID, ingredientKey, itemAmount, itemUnit}},
 		{"INSERT INTO shopping_item_sources VALUES (?, ?, ?, ?, ?, ?, ?, ?)", []any{itemID, served.ServedDish.ID, d.ID, m.date, m.mealtime, servings, itemAmount, itemUnit}},
 		{"INSERT INTO shopping_received VALUES (?, ?, ?, ?, ?)", []any{l.ID, served.ServedDish.ID, d.ID, servings, d.Servings}},
 	}
@@ -1258,6 +1259,8 @@ func (w *world) crossAccessList(ctx context.Context, action, name, slug string) 
 			return w.api(ctx, "je", http.MethodPost, "shopping-lists/"+id+"/meal-shopping", map[string]string{"from": "2026-10-06", "to": "2026-10-12"})
 		case "déclarer les courses faites de":
 			return w.api(ctx, "je", http.MethodPost, "shopping-lists/"+id+"/checkout", map[string][]string{"items": {}})
+		case "recalculer":
+			return w.api(ctx, "je", http.MethodPost, "shopping-lists/"+id+"/recompute", nil)
 		default:
 			return w.api(ctx, "je", http.MethodDelete, "shopping-lists/"+id, nil)
 		}

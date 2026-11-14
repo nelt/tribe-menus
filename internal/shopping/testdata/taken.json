@@ -1,0 +1,20 @@
+{
+  "comment": "Table of cases of the taken quantity (plan courses-suite, D1, D9, Q41), read by go test (internal/shopping, applyTaken) and by web/src/shopping.ts (lot D, the remaining quantity shown). before is a computed item, after its new quantity, given by the meal shopping or the recomputation; checked and taken are the item after. Quantities are written as the API writes them, in the smallest unit of the family: a dot, no useless zero; taken is absent without taken quantity. shown is the quantity as the screen shows it, remaining what is left to take, quantity minus taken, both in the largest unit of their family that gives at least 1 (Q37).",
+  "cases": [
+    { "name": "checked, increases (C4)", "unit": "g", "before": { "quantity": "250", "checked": true }, "after": "750", "checked": false, "taken": "250", "shown": "750 g", "remaining": "encore 500 g" },
+    { "name": "checked, increases (C8)", "unit": "g", "before": { "quantity": "500", "checked": true }, "after": "750", "checked": false, "taken": "500", "shown": "750 g", "remaining": "encore 250 g" },
+    { "name": "conception example", "unit": "g", "before": { "quantity": "875", "checked": true }, "after": "1250", "checked": false, "taken": "875", "shown": "1,25 kg", "remaining": "encore 375 g" },
+    { "name": "remaining in kilograms", "unit": "g", "before": { "quantity": "500", "checked": true }, "after": "2000", "checked": false, "taken": "500", "shown": "2 kg", "remaining": "encore 1,5 kg" },
+    { "name": "pieces", "unit": "piece", "before": { "quantity": "2", "checked": true }, "after": "3", "checked": false, "taken": "2", "shown": "3 pièces", "remaining": "encore 1 pièce" },
+    { "name": "volume", "unit": "ml", "before": { "quantity": "500", "checked": true }, "after": "1500", "checked": false, "taken": "500", "shown": "1,5 l", "remaining": "encore 1 l" },
+    { "name": "taken kept when it increases again", "unit": "g", "before": { "quantity": "750", "taken": "500" }, "after": "1000", "checked": false, "taken": "500", "shown": "1 kg", "remaining": "encore 500 g" },
+    { "name": "taken kept when it decreases above it", "unit": "g", "before": { "quantity": "1000", "taken": "500" }, "after": "750", "checked": false, "taken": "500", "shown": "750 g", "remaining": "encore 250 g" },
+    { "name": "falls to the taken quantity", "unit": "g", "before": { "quantity": "750", "taken": "500" }, "after": "500", "checked": true, "shown": "500 g" },
+    { "name": "falls below the taken quantity", "unit": "g", "before": { "quantity": "750", "taken": "500" }, "after": "250", "checked": true, "shown": "250 g" },
+    { "name": "checked, decreases", "unit": "g", "before": { "quantity": "500", "checked": true }, "after": "250", "checked": true, "shown": "250 g" },
+    { "name": "checked, unchanged", "unit": "g", "before": { "quantity": "500", "checked": true }, "after": "500", "checked": true, "shown": "500 g" },
+    { "name": "unchecked, increases", "unit": "g", "before": { "quantity": "500" }, "after": "750", "checked": false, "shown": "750 g" },
+    { "name": "new item", "unit": "piece", "after": "1", "checked": false, "shown": "1 pièce" },
+    { "name": "checked, without quantity", "unit": "", "before": { "checked": true }, "after": "", "checked": true }
+  ]
+}

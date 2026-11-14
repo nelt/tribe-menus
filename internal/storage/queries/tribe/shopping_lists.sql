@@ -2,11 +2,14 @@
 SELECT id, name, rank, main FROM shopping_lists
 WHERE id > ? ORDER BY id LIMIT ?;
 
+-- name: AllShoppingLists :many
+SELECT id, name, rank, main FROM shopping_lists ORDER BY id;
+
 -- name: ShoppingListByID :one
 SELECT id, name, rank, main FROM shopping_lists WHERE id = ?;
 
 -- name: ShoppingItemsOfLists :many
-SELECT i.id, i.list_id, i.amount, i.unit, i.checked, i.manual, g.name
+SELECT i.id, i.list_id, i.amount, i.unit, i.taken_amount, i.checked, i.manual, g.name
 FROM shopping_items i JOIN ingredients g ON g.id = i.ingredient_id
 WHERE i.list_id >= sqlc.arg(first) AND i.list_id <= sqlc.arg(last)
 ORDER BY i.list_id, i.id;
@@ -50,11 +53,8 @@ DELETE FROM shopping_received WHERE list_id = ?;
 DELETE FROM shopping_lists WHERE id = ?;
 
 -- name: InsertShoppingItem :exec
-INSERT INTO shopping_items (id, list_id, ingredient_id, amount, unit, checked, manual)
-VALUES (?, ?, ?, ?, ?, ?, ?);
-
--- name: SetShoppingItemChecked :exec
-UPDATE shopping_items SET checked = ? WHERE id = ?;
+INSERT INTO shopping_items (id, list_id, ingredient_id, amount, unit, taken_amount, checked, manual)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: DeleteShoppingItemSources :exec
 DELETE FROM shopping_item_sources WHERE item_id = ?;
@@ -77,7 +77,7 @@ WHERE l.dish_id IN (
 ORDER BY l.dish_id, l.position;
 
 -- name: UpdateShoppingItem :exec
-UPDATE shopping_items SET amount = ?, unit = ?, checked = ? WHERE id = ?;
+UPDATE shopping_items SET amount = ?, unit = ?, taken_amount = ?, checked = ? WHERE id = ?;
 
 -- name: InsertShoppingItemSource :exec
 INSERT INTO shopping_item_sources (item_id, served_dish_id, dish_id, date, mealtime, servings, amount, unit)
@@ -90,3 +90,33 @@ VALUES (?, ?, ?, ?, ?);
 -- name: InsertShoppingReceivedLine :exec
 INSERT INTO shopping_received_lines (list_id, served_dish_id, position, ingredient_id, amount, unit)
 VALUES (?, ?, ?, ?, ?, ?);
+
+-- name: ShoppingReceivedOfList :many
+SELECT served_dish_id, dish_id, servings, dish_servings FROM shopping_received
+WHERE list_id = ? ORDER BY served_dish_id;
+
+-- name: ShoppingReceivedLinesOfList :many
+SELECT l.served_dish_id, l.position, l.ingredient_id, l.amount, l.unit, i.name
+FROM shopping_received_lines l JOIN ingredients i ON i.id = l.ingredient_id
+WHERE l.list_id = ? ORDER BY l.served_dish_id, l.position;
+
+-- name: ServedDishesReceivedBy :many
+SELECT s.id, s.date, s.mealtime, s.dish_id, s.servings, d.servings AS dish_servings
+FROM served_dishes s JOIN dishes d ON d.id = s.dish_id
+WHERE s.id IN (SELECT served_dish_id FROM shopping_received WHERE list_id = ?)
+ORDER BY s.id;
+
+-- name: DishLinesReceivedBy :many
+SELECT l.dish_id, l.position, l.ingredient_id, l.amount, l.unit, i.name
+FROM dish_ingredients l JOIN ingredients i ON i.id = l.ingredient_id
+WHERE l.dish_id IN (
+    SELECT s.dish_id FROM served_dishes s
+    WHERE s.id IN (SELECT served_dish_id FROM shopping_received WHERE list_id = ?)
+)
+ORDER BY l.dish_id, l.position;
+
+-- name: DeleteShoppingReceivedLines :exec
+DELETE FROM shopping_received_lines WHERE list_id = ? AND served_dish_id = ?;
+
+-- name: DeleteShoppingReceived :exec
+DELETE FROM shopping_received WHERE list_id = ? AND served_dish_id = ?;

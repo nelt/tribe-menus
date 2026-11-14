@@ -1,7 +1,7 @@
 # Conception : listes de courses
 
-- **Mise à jour** : 2026-11-14 (plan `courses-suite`, lot A)
-- **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; noms du serveur des listes et des articles fixés par le lot B, ceux du calcul par le lot C ; en production avec `v0.4.0` (2026-11-08) ; à tenir à jour par les plans qui touchent ce domaine ; recalcul, part prise et déplacement ajoutés par le plan [`courses-suite`](../plans/2026-11-14-recalcul-et-selection-des-courses.md), lot A (2026-11-14), noms du code à fixer par ses lots B et C ; hors-ligne à venir
+- **Mise à jour** : 2026-11-14 (plan `courses-suite`, lot B)
+- **Statut** : retenu avec le plan [`courses`](../plans/2026-11-06-listes-de-courses.md), accordé aux specs, au glossaire et au design par son lot A (2026-11-07) ; noms du serveur des listes et des articles fixés par le lot B, ceux du calcul par le lot C ; en production avec `v0.4.0` (2026-11-08) ; à tenir à jour par les plans qui touchent ce domaine ; recalcul, part prise et déplacement ajoutés par le plan [`courses-suite`](../plans/2026-11-14-recalcul-et-selection-des-courses.md), lot A (2026-11-14), noms du recalcul fixés par son lot B, ceux du déplacement à fixer par son lot C ; hors-ligne à venir
 - **Stories** : C1 à C6, C11, C12 (`courses`) ; C8 à C10 (`courses-suite`) ; P2 pour le calcul ; T1 et ENF-02 pour les listes. C7 attend le plan hors-ligne.
 
 Ce document décrit la conception retenue pour les listes de courses : modèle, calcul, découpage du code, API, échanges. Il s'appuie sur la bibliothèque de plats ([`bibliotheque-de-plats.md`](bibliotheque-de-plats.md)), dont il réutilise les quantités, les unités, le référentiel et la copie des collections, et sur le planning ([`planning-des-repas.md`](planning-des-repas.md)), dont il lit les plats servis. Les règles fonctionnelles sont dans `docs/specs/fonctionnalites.md` (C1 à C12, « Ajout des courses d'une période », « Recalcul d'une liste », « Sélection d'articles », « Règle de calcul », « Unités, conversions et arrondis », Q10 à Q18, Q22 à Q24, Q36 à Q43), les décisions dans les ADR (0003, 0027, 0029, 0031) et dans les plans `courses` (D1 à D24) et `courses-suite` (D1 à D22).
@@ -162,11 +162,13 @@ classDiagram
             +Version(ctx) int
             +Lists(ctx, after, limit) version, Page~List~
             +Write(ctx, func(Tx) error) Versions
+            +Read(ctx, func(Tx) error)
         }
         class Tx {
             <<interface>>
             dish.Catalog : Ingredient, AddIngredient, SetDefaultUnit
             +List(ctx, ListID) List, ErrNotFound
+            +AllLists(ctx) []List
             +ListCount(ctx) int
             +NextRank(ctx) int
             +InsertList(ctx, List)
@@ -174,24 +176,24 @@ classDiagram
             +SetMain(ctx, ListID)
             +DeleteList(ctx, ListID)
             +InsertItem(ctx, ListID, Item, ingredient)
-            +SetChecked(ctx, ItemID, bool)
             +DeleteItem(ctx, ItemID)
             +ServedDishes(ctx, Period) []Served, avec parts de référence et lignes du plat
             +UpdateItem(ctx, Item)
             +InsertSource(ctx, ItemID, Source)
             +InsertReceived(ctx, ListID, Served) et lignes du plat
             +Received(ctx, ListID) plats servis reçus et lignes gardées
-            +CurrentServed(ctx, []ServedDishID) parts ou retiré, plats et lignes
+            +CurrentReceived(ctx, ListID) ceux encore au planning, plats et lignes actuels
             +ReplaceReceived(ctx, ListID, Served) et lignes du plat
-            +DeleteItem, DeleteSource, MoveItem(ctx, ItemID, ListID)
+            +DeleteSources(ctx, ItemID)
+            +MoveItem(ctx, ItemID, ListID) au lot C
         }
         class compute {
             <<functions>>
             addMealShopping(List, []Served, newID) liste, changements, added, ignored
             +Contribution(Quantity, servings, reference) Quantity
             +RoundItem(Quantity) Quantity
-            recompute(List, []Current) liste recalculée, changements
-            stale(List, []Current) bool
+            recompute(List, kept, current []Served, newID) liste recalculée, changements, stale
+            stale(List, kept, current []Served) bool
             move(source, target, []ItemID) départ, arrivée, moved, missing
             applyTaken(before, after Item) Item : coche et part prise (Q41)
         }
@@ -308,7 +310,7 @@ classDiagram
 ```
 
 - **`internal/shopping`** (nouveau paquet, ADR 0008) : règles pures (nom, période, limites), calcul pur (`compute`) et `Lists`, qui écrit derrière une interface `Store`, sans HTTP ni SQL (ADR 0002). Il dépend de `internal/dish` pour les unités, les familles et leur facteur (`Unit.Factor`), les quantités, le nom normalisé, la règle des noms (`CleanName`), celle d'une ligne saisie (`ParseLine`) et la résolution d'un ingrédient dans le référentiel (`ResolveIngredient`, sur l'interface `dish.Catalog`), communes aux plats et aux articles ajoutés ; de `internal/mealplan` pour la seule règle des dates (`ParseDate`), le `Tx` lui rendant les plats servis de la période. Le `Tx` écrit par opérations ciblées (une liste, un article, une coche, une provenance, un plat servi reçu), lues puis vérifiées par `Lists` ; le calcul pur rend la liste après, les articles créés ou changés avec les provenances qu'ils gagnent, et les plats servis reçus, que `Lists` écrit. Table de cas des quantités apportées et des arrondis : `internal/shopping/testdata/meal-shopping.json`, lue par `go test` et par `shopping.ts` (lot E).
-- **Plan `courses-suite`** : `Stale`, `Recompute` et `Move` dans `Lists` ; `recompute`, `stale`, `move` et `applyTaken` dans le calcul pur, avec leurs tables de cas (`internal/shopping/testdata/`, dont `taken.json`, lue aussi par `shopping.ts`) ; migration `0010` (`taken_amount`) ; noms du `Tx` à fixer par les lots B et C, comme l'a fait `courses`.
+- **Plan `courses-suite`** : `Stale`, `Recompute` et `Move` dans `Lists` ; `recompute`, `stale` (`recompute.go`), `move` et `applyTaken` dans le calcul pur, avec leurs tables de cas (`internal/shopping/testdata/`, dont `taken.json`, lue aussi par `shopping.ts`) ; migration `0010` (`taken_amount`). Lot B : `Stale` lit dans une transaction annulée (`Store.Read`) ; la coche s'écrit par `UpdateItem`, qui porte la part prise ; `Recompute` n'écrit rien pour une liste qui n'est pas périmée, et vérifie la limite de 300 articles après `recompute`, pour que `stale` dise périmée une liste dont le recalcul serait refusé. Noms du déplacement à fixer par le lot C.
 - **`internal/storage`** : migration `0009` (cinq tables, leurs déclencheurs, la liste « Courses », collection `shopping_lists` dans `storage.Collections`), requêtes sqlc, adaptateur `ShoppingStore`. Une écriture augmente la version d'une unité exactement (`writeCollections`, conception de la bibliothèque), qu'elle touche une ou cent lignes. Un article ajouté qui crée un ingrédient augmente aussi `ingredients`. Supprimer une liste supprime ses plats servis reçus et leurs lignes ; retirer un article, ses provenances.
 - **`internal/collection`** : inchangé ; `GET shopping-lists` passe par `Serve`.
 - **`internal/server`** : routes minces sous `/tribes/<slug>/api/`, derrière la session.
