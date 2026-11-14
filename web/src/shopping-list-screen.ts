@@ -1,10 +1,12 @@
 // Screen of a shopping list, after the mock-ups Doux-Liste and Doux-ArticleMain (plan courses,
-// C1, C3, C6, C11): its name, which opens the list picker, the progress, the items (checkbox,
-// quantity, « ajouté » and the cross of an item added), « Ajouter un article à la main » with
+// C1, C3, C6, C11) and Doux-ListeSuite (plan courses-suite, C8): its name, which opens the list
+// picker, the banner of a stale list with « Recalculer », the progress, the items (checkbox,
+// quantity, what remains to take, « ajouté » and the cross of an item added), « Ajouter un article à la main » with
 // the combobox of the catalog, and « Courses faites » with its sheet. The list waits for the
 // copy of the lists, checked at each visit. Every write needs the network (D2): without it,
 // « Réseau nécessaire » above the list, which stays shown. A list deleted in between (D11)
-// sends to the main list, which tells it.
+// sends to the main list, which names it and tells what was not done (plan courses-suite,
+// D12).
 import { LitElement, type PropertyValues, html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
@@ -12,7 +14,27 @@ import { type Ingredient, hasControl, initialOf, hasVisible, maxQuantityLength, 
 import { IngredientCombobox, type Option } from "./ingredient-combobox.ts";
 import { networkErrorMessage } from "./login.ts";
 import { colorClass } from "./dish-library-screen.ts";
-import { type Item, type ShoppingList, checkoutOf, dishCount, itemQuantity, itemRowLabel, maxItems, progressOf, removedMessage, shoppingErrorMessage, sortItems, sourceRows } from "./shopping.ts";
+import {
+  type Item,
+  type LostWrite,
+  type ShoppingList,
+  checkoutOf,
+  deletedListMessage,
+  dishCount,
+  itemQuantity,
+  itemRowLabel,
+  maxItems,
+  progressOf,
+  recomputeErrorMessage,
+  recomputedMessage,
+  remainingQuantity,
+  removedMessage,
+  shoppingErrorMessage,
+  sortItems,
+  sourceRows,
+  staleMessage,
+  takenSentence,
+} from "./shopping.ts";
 import type { ShoppingLists, WriteResult } from "./shopping-lists.ts";
 import { alertMessage, networkNeededMessage, warningBanner } from "./templates.ts";
 
@@ -20,7 +42,15 @@ import { alertMessage, networkNeededMessage, warningBanner } from "./templates.t
 const removalPauseMs = 500;
 
 /** What the screen tells above the list: a green banner, a warning, or « Réseau nécessaire ». */
-export type Notice = { kind: "done"; text: string } | { kind: "deleted" } | { kind: "network" };
+export type Notice = { kind: "done"; text: string } | { kind: "deleted"; text: string } | { kind: "network" };
+
+/**
+ * The event of a write refused for a list deleted in between (D11): its detail is the warning
+ * the main list shows, which names the list and tells what was not done (plan courses-suite, D12).
+ */
+export function listDeletedEvent(name: string | undefined, lost?: LostWrite): CustomEvent<string> {
+  return new CustomEvent("list-deleted", { detail: deletedListMessage(name, lost), bubbles: true, composed: true });
+}
 
 /** The item being added by hand: the ingredient typed or chosen, the quantity, the unit. */
 interface Draft {
@@ -34,6 +64,10 @@ const emptyDraft: Draft = { ingredient: "", quantity: "", unit: "" };
 const checkIcon = html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>`;
 const crossIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>`;
 const calendarIcon = html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"></path></svg>`;
+/** The icon of the recomputation (Doux-ListeSuite), in the stale banner and the pill « Repas modifiés ». */
+export function recomputeIcon(size: number, stroke: number) {
+  return html`<svg width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${stroke} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg>`;
+}
 const plusIcon = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 /** The green banner of a write done, with its cross (Doux-Courses). */
@@ -44,12 +78,23 @@ export function doneBanner(text: string, close: () => void) {
   </div>`;
 }
 
-/** The error banner of a write without network (D2). */
-export function networkBanner() {
+/** An error banner: a write without network (D2), a refusal at the top of the screen. */
+function errorBanner(text: string) {
   return html`<div class="banner-error" role="alert">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
-    <span>${networkNeededMessage}</span>
+    <span>${text}</span>
   </div>`;
+}
+
+/** The error banner of a write without network (D2). */
+export function networkBanner() {
+  return errorBanner(networkNeededMessage);
+}
+
+/** Under the sources of an item with a taken quantity: what was taken and what remains (D9). */
+function takenNote(item: Item) {
+  const sentence = takenSentence(item);
+  return sentence === undefined ? nothing : html`<p class="item-taken-note">${sentence}</p>`;
 }
 
 export class ShoppingListScreen extends LitElement {
@@ -68,6 +113,8 @@ export class ShoppingListScreen extends LitElement {
     sheet: { state: true },
     removalPaused: { state: true },
     open: { state: true },
+    recomputing: { state: true },
+    recomputeError: { state: true },
   };
 
   declare lists: ShoppingLists;
@@ -93,6 +140,12 @@ export class ShoppingListScreen extends LitElement {
   sheet: { leaving: string[]; message: string } | undefined = undefined;
   /** The computed items unfolded (C5). */
   open: ReadonlySet<string> = new Set();
+  /** « Recalculer » runs (D13). */
+  recomputing = false;
+  /** The message of a refusal of « Recalculer », under the stale banner (Q38). */
+  recomputeError: string | undefined = undefined;
+  /** The dishes of the sources already looked for by a check of the library (plan courses-suite, D15). */
+  readonly #lookedFor = new Set<string>();
   /** A removal runs, or has just ended: the crosses wait. */
   removalPaused = false;
   #removalPause: ReturnType<typeof setTimeout> | undefined;
@@ -130,6 +183,31 @@ export class ShoppingListScreen extends LitElement {
     const dialog = this.querySelector<HTMLDialogElement>("dialog.sheet");
     if (changed.has("sheet") && dialog !== null && this.sheet !== undefined && !dialog.open) {
       dialog.showModal();
+    }
+    this.#lookForDishes();
+  }
+
+  /**
+   * A source unfolded whose dish the copy of the library does not hold (a dish created by
+   * another member since its check) makes it check once, then the source shows (plan
+   * courses-suite, D15; review of PR #101, point 3).
+   */
+  #lookForDishes() {
+    const list = this.#list();
+    const dishes = this.lists.library.dishes.items;
+    if (list === undefined || dishes === undefined) {
+      return;
+    }
+    const known = new Set(dishes.map((d) => d.id));
+    const missing = list.items
+      .filter((i) => this.open.has(i.id))
+      .flatMap((i) => i.sources.map((s) => s.dish))
+      .filter((d) => !known.has(d) && !this.#lookedFor.has(d));
+    if (missing.length > 0) {
+      for (const d of missing) {
+        this.#lookedFor.add(d);
+      }
+      void this.lists.checkLibrary();
     }
   }
 
@@ -189,6 +267,7 @@ export class ShoppingListScreen extends LitElement {
               ${list.main ? html`<span class="pill pill--main">principale</span>` : nothing}
             </a>`}
       </h1>
+      ${this.#stale(list)}
       ${progress.total === 0
         ? nothing
         : html`<div class="progress">
@@ -197,12 +276,24 @@ export class ShoppingListScreen extends LitElement {
           </div>`}`;
   }
 
+  /** The banner of a stale list, with « Recalculer » (C8, D13), and the refusal of 300 items under it. */
+  #stale(list: ShoppingList) {
+    if (!this.lists.isStale(list.id)) {
+      return nothing;
+    }
+    return html`<div class="banner-stale">
+        <p class="banner-stale-text">${recomputeIcon(22, 2.2)}<span>${staleMessage}</span></p>
+        <button class="button-recompute" type="button" ?disabled=${this.recomputing} @click=${() => this.#recompute(list)}>${this.recomputing ? "Recalcul en cours…" : "Recalculer"}</button>
+      </div>
+      ${this.recomputeError === undefined ? nothing : errorBanner(this.recomputeError)}`;
+  }
+
   #notice() {
     switch (this.notice?.kind) {
       case "done":
         return doneBanner(this.notice.text, () => (this.notice = undefined));
       case "deleted":
-        return warningBanner("Cette liste a été supprimée entre-temps.");
+        return warningBanner(this.notice.text);
       case "network":
         return networkBanner();
       default:
@@ -220,7 +311,9 @@ export class ShoppingListScreen extends LitElement {
   #item(list: ShoppingList, item: Item) {
     const quantity = itemQuantity(item);
     const open = !item.manual && this.open.has(item.id);
-    const shown = html`<span class="item-name">${item.ingredient}</span>
+    const rest = remainingQuantity(item);
+    const name = html`<span class="item-name">${item.ingredient}</span>`;
+    const shown = html`${rest === undefined ? name : html`<span class="item-names">${name} <span class="item-remaining">${rest}</span></span>`}
       ${item.manual ? html`<span class="pill pill--dashed">ajouté</span>` : html`<span class="pill">${dishCount(item)}</span>`}
       ${quantity === "" ? nothing : html`<span class="item-quantity">${quantity}</span>`}`;
     return html`<li class="item ${item.checked ? "item--checked" : ""} ${open ? "item--open" : ""}">
@@ -251,7 +344,8 @@ export class ShoppingListScreen extends LitElement {
           ${r.quantity === "" ? nothing : html`<span class="item-source-quantity">${r.quantity}</span>`}
         </li>`,
       )}
-    </ul>`;
+    </ul>
+    ${takenNote(item)}`;
   }
 
   /** Unfolds or folds a computed item (C5). */
@@ -413,7 +507,7 @@ export class ShoppingListScreen extends LitElement {
   }
 
   #startAdding() {
-    this.notice = undefined;
+    this.#clearNotices();
     this.adding = true;
     this.draft = emptyDraft;
     this.formError = undefined;
@@ -451,7 +545,7 @@ export class ShoppingListScreen extends LitElement {
     if (this.#busy) {
       return;
     }
-    this.notice = undefined;
+    this.#clearNotices();
     const refused = this.#refusal();
     if (refused !== undefined) {
       this.formError = refused;
@@ -472,36 +566,66 @@ export class ShoppingListScreen extends LitElement {
         this.formError = result.error;
         return;
       }
-      this.#failedWrite(result);
+      this.#failedWrite(result, "add-item");
     } finally {
       this.#busy = false;
     }
   }
 
   async #setChecked(list: ShoppingList, item: Item, checked: boolean) {
-    this.notice = undefined;
+    this.#clearNotices();
     const result = await this.lists.setChecked(list.id, item.id, checked);
     if (result.kind !== "done") {
-      this.#failedWrite(result);
+      this.#failedWrite(result, "check");
     }
   }
 
   async #remove(list: ShoppingList, item: Item) {
-    this.notice = undefined;
+    this.#clearNotices();
     this.removalPaused = true;
     clearTimeout(this.#removalPause);
     try {
       const result = await this.lists.removeItem(list.id, item.id);
       if (result.kind !== "done") {
-        this.#failedWrite(result);
+        this.#failedWrite(result, "remove");
       }
     } finally {
       this.#removalPause = setTimeout(() => (this.removalPaused = false), removalPauseMs);
     }
   }
 
-  #askCheckout(list: ShoppingList) {
+  /** The banners disappear at the next action (docs/design/README.md, « Messages des listes de courses »). */
+  #clearNotices() {
     this.notice = undefined;
+    this.recomputeError = undefined;
+  }
+
+  /** « Recalculer » (C8, D13): « Liste recalculée. » once done; refused beyond 300 items (Q38). */
+  async #recompute(list: ShoppingList) {
+    if (this.recomputing) {
+      return;
+    }
+    this.#clearNotices();
+    this.recomputing = true;
+    try {
+      const result = await this.lists.recompute(list.id);
+      if (result.kind === "done") {
+        this.notice = { kind: "done", text: recomputedMessage };
+        return;
+      }
+      const message = result.kind === "refused" ? recomputeErrorMessage(result.error) : undefined;
+      if (message !== undefined) {
+        this.recomputeError = message;
+        return;
+      }
+      this.#failedWrite(result, "recompute");
+    } finally {
+      this.recomputing = false;
+    }
+  }
+
+  #askCheckout(list: ShoppingList) {
+    this.#clearNotices();
     const { leaving, message } = checkoutOf(list);
     this.sheet = { leaving, message };
   }
@@ -520,16 +644,16 @@ export class ShoppingListScreen extends LitElement {
         this.notice = { kind: "done", text: removedMessage(result.removed) };
         return;
       }
-      this.#failedWrite(result);
+      this.#failedWrite(result, "checkout");
     } finally {
       this.#busy = false;
     }
   }
 
   /** A write not done: the list deleted in between, or « Réseau nécessaire » (D2, D11). */
-  #failedWrite(result: Exclude<WriteResult, { kind: "done" }>) {
+  #failedWrite(result: Exclude<WriteResult, { kind: "done" }>, lost: LostWrite) {
     if (result.kind === "deleted") {
-      this.dispatchEvent(new Event("list-deleted", { bubbles: true, composed: true }));
+      this.dispatchEvent(listDeletedEvent(result.name, lost));
       return;
     }
     // A 401 has already brought back to the login.

@@ -2055,6 +2055,17 @@ a.button-secondary {
   font-weight: 800;
 }
 
+/* A stale list in the list picker (C8): « Repas modifiés ». */
+.pill--stale {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-color: var(--color-lunch-border);
+  color: var(--color-lunch-text);
+  font-weight: 800;
+}
+
 .pill--dashed {
   border-style: dashed;
   border-color: var(--color-dashed);
@@ -2143,6 +2154,55 @@ a.button-secondary {
 .banner-done svg,
 .banner-error svg {
   flex-shrink: 0;
+}
+
+/* A stale list (C8, D13; Doux-ListeSuite): the amber outline of a warning, « Recalculer » under the text. */
+.banner-stale {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: var(--border-thin) solid var(--color-lunch-border);
+  border-radius: var(--radius-field);
+}
+
+.banner-stale-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  color: var(--color-lunch-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.banner-stale-text svg {
+  flex-shrink: 0;
+}
+
+.button-recompute {
+  align-self: flex-start;
+  height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 14px;
+  background: var(--color-action);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.button-recompute:hover {
+  background: var(--color-action-hover);
+}
+
+.button-recompute:disabled {
+  border: var(--border-strong) dashed var(--color-dashed);
+  background: var(--color-background);
+  color: var(--color-text-muted);
+  cursor: default;
 }
 
 .banner-close {
@@ -2310,6 +2370,29 @@ a.button-secondary {
   overflow-wrap: anywhere;
   font-size: 16px;
   font-weight: 700;
+}
+
+/* The name of an item and, under it, what remains to take (D9). */
+.item-names {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 1px;
+  min-width: 0;
+}
+
+.item-remaining {
+  color: var(--color-lunch-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.item-taken-note {
+  margin: -2px 14px 10px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .item-quantity {

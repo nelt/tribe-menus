@@ -14,10 +14,14 @@ import {
   contributedQuantity,
   defaultPeriod,
   deleteBlocked,
+  deletedListMessage,
   dishCount,
   ignoredMessage,
   itemQuantity,
   itemRowLabel,
+  recomputeErrorMessage,
+  remainingQuantity,
+  takenSentence,
   listSummary,
   mealDays,
   mealShoppingErrorMessage,
@@ -297,3 +301,58 @@ test("itemRowLabel (C5)", () => {
   assert.equal(itemRowLabel(boeuf, false), "bœuf haché, 875 g, 2 plats. Afficher les repas");
   assert.equal(itemRowLabel({ ingredient: "sel", manual: false, sources: boeuf.sources }, true), "sel, sans quantité, 2 plats. Masquer les repas");
 });
+
+// The table of cases shared with applyTaken in Go (plan courses-suite, D9, Q41).
+const takenTable = JSON.parse(readFileSync(new URL("../../internal/shopping/testdata/taken.json", import.meta.url), "utf8")) as {
+  cases: { name: string; unit: string; after: string; checked: boolean; taken?: string; shown?: string; remaining?: string }[];
+};
+
+test("remainingQuantity and itemQuantity: the table shared with Go (D9)", () => {
+  assert.ok(takenTable.cases.length > 0);
+  for (const c of takenTable.cases) {
+    const it = item("x", { manual: false, ...(c.after === "" ? {} : { quantity: c.after, unit: c.unit }), checked: c.checked, ...(c.taken === undefined ? {} : { taken: c.taken }) });
+    assert.equal(itemQuantity(it), c.shown ?? "", c.name);
+    assert.equal(remainingQuantity(it), c.remaining, c.name);
+  }
+});
+
+test("remainingQuantity: nothing for a checked item, or a taken quantity not below the quantity", () => {
+  assert.equal(remainingQuantity(item("x", { quantity: "750", unit: "g", taken: "500", checked: true })), undefined);
+  assert.equal(remainingQuantity(item("x", { quantity: "750", unit: "g", taken: "750" })), undefined);
+  assert.equal(remainingQuantity(item("x", { quantity: "750", unit: "g" })), undefined);
+});
+
+test("takenSentence: under the sources of an item unfolded (D9)", () => {
+  assert.equal(takenSentence(item("x", { quantity: "1250", unit: "g", taken: "875" })), "875 g déjà pris : il reste 375 g à prendre. Cochez quand tout est pris.");
+  assert.equal(takenSentence(item("x", { quantity: "1250", unit: "g" })), undefined);
+});
+
+test("itemRowLabel: with what remains to take (D9)", () => {
+  const source = { servedDish: "s", dish: "d", date: "2026-10-06", mealtime: "dinner" as const, servings: 3 };
+  const beef = item("bœuf haché", { manual: false, quantity: "1250", unit: "g", taken: "875", sources: [source, { ...source, servedDish: "t" }] });
+  assert.equal(itemRowLabel(beef, false), "bœuf haché, 1,25 kg, encore 375 g à prendre, 2 plats. Afficher les repas");
+});
+
+test("recomputeErrorMessage (Q38)", () => {
+  assert.equal(recomputeErrorMessage("too_many_items"), "La liste ne peut pas dépasser 300 articles : rien n’a été recalculé.");
+  assert.equal(recomputeErrorMessage("list_name_empty"), undefined);
+});
+
+const deletedCases: [string, Parameters<typeof deletedListMessage>, string][] = [
+  ["an item added", ["Jetable", "add-item"], "La liste « Jetable » a été supprimée entre-temps. L’article n’a pas été ajouté."],
+  ["the meal shopping", ["Jetable", "meal-shopping"], "La liste « Jetable » a été supprimée entre-temps. Les courses des repas n’ont pas été ajoutées."],
+  ["a rename", ["Jetable", "rename"], "La liste « Jetable » a été supprimée entre-temps. Elle n’a pas été renommée."],
+  ["the main list", ["Jetable", "main"], "La liste « Jetable » a été supprimée entre-temps. Elle n’a pas été désignée comme principale."],
+  ["a recomputation", ["Jetable", "recompute"], "La liste « Jetable » a été supprimée entre-temps. Rien n’a été recalculé."],
+  ["a move", ["Jetable", "move"], "La liste « Jetable » a été supprimée entre-temps. Rien n’a été déplacé."],
+  ["the shopping done", ["Jetable", "checkout"], "La liste « Jetable » a été supprimée entre-temps. Les articles cochés n’ont pas été retirés."],
+  ["a check, nothing more", ["Jetable", "check"], "La liste « Jetable » a été supprimée entre-temps."],
+  ["a removal, nothing more", ["Jetable", "remove"], "La liste « Jetable » a été supprimée entre-temps."],
+  ["a list the copy did not hold", [undefined, "add-item"], "Cette liste a été supprimée entre-temps. L’article n’a pas été ajouté."],
+];
+
+for (const [name, args, want] of deletedCases) {
+  test(`deletedListMessage: ${name} (D12)`, () => {
+    assert.equal(deletedListMessage(...args), want);
+  });
+}

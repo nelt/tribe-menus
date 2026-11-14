@@ -202,7 +202,7 @@ test("« Courses faites »: the sheet counts, the items seen checked are sent, t
   await expect(page.getByText("2 articles retirés")).toHaveCount(0);
 });
 
-test("a write on a list deleted in between opens the main list, which tells it (D11)", async ({ page }) => {
+test("a write on a list deleted in between opens the main list, which names it and tells what was not done (D11; plan courses-suite, D12)", async ({ page }) => {
   await mockLists(page, [courses, drive], {
     getShoppingLists: [pageReply("shopping_lists", 7, [courses, drive]), pageReply("shopping_lists", 9, [courses])],
     addItem: [notFound],
@@ -212,9 +212,9 @@ test("a write on a list deleted in between opens the main list, which tells it (
   await page.getByRole("combobox", { name: "Article" }).fill("lait");
   await page.getByRole("button", { name: "Ajouter à la liste" }).click();
   await expect(page).toHaveURL(/\/tribes\/demo\/courses$/);
-  await expect(page.getByRole("alert")).toHaveText("Cette liste a été supprimée entre-temps.");
+  await expect(page.getByRole("alert")).toHaveText("La liste « Drive » a été supprimée entre-temps. L’article n’a pas été ajouté.");
   await page.getByRole("checkbox", { name: "Cocher sel" }).click();
-  await expect(page.getByText("Cette liste a été supprimée entre-temps.")).toHaveCount(0);
+  await expect(page.getByText(/supprimée entre-temps/)).toHaveCount(0);
 });
 
 test("the list picker: order of C2, summaries, the sheet of each list (C1, C2, C12)", async ({ page }) => {
