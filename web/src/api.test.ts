@@ -263,3 +263,25 @@ test("Api: a write of the meal plan, a 401 brings back to the login", async () =
   assert.deepEqual(await api.removeServedDish("s"), { kind: "unauthorized" });
   assert.equal(unauthorized(), 1);
 });
+
+test("Api.getStaleLists: the identifiers of the stale lists (C8, D7)", async () => {
+  const { api, requests } = apiWith(async () => jsonResponse(200, { lists: ["a", "b"] }));
+  assert.deepEqual(await api.getStaleLists(), { kind: "ok", value: ["a", "b"] });
+  assert.deepEqual(requests, [{ url: "api/shopping-lists/stale", method: "GET", body: undefined }]);
+});
+
+test("Api.getStaleLists: a body that is not a list of identifiers is a network error", async () => {
+  for (const body of [{}, { lists: [1] }, { lists: "a" }]) {
+    const { api } = apiWith(async () => jsonResponse(200, body));
+    assert.deepEqual(await api.getStaleLists(), { kind: "network-error" });
+  }
+  const { api, unauthorized } = apiWith(async () => jsonResponse(401, { error: "no_session" }));
+  assert.deepEqual(await api.getStaleLists(), { kind: "unauthorized" });
+  assert.equal(unauthorized(), 1);
+});
+
+test("Api.recomputeList: POST without body (C8)", async () => {
+  const { api, requests } = apiWith(async () => jsonResponse(200, { list: { id: "c/1" }, versions: {} }));
+  assert.deepEqual(await api.recomputeList("c/1"), { kind: "ok", value: { kind: "written", list: { id: "c/1" }, versions: {}, removed: undefined } });
+  assert.deepEqual(requests, [{ url: "api/shopping-lists/c%2F1/recompute", method: "POST", body: undefined }]);
+});

@@ -64,6 +64,10 @@ export interface Script {
   checkOut?: Reply[];
   /** POST shopping-lists/<id>/meal-shopping, whatever the identifier. */
   addMealShopping?: Reply[];
+  /** GET shopping-lists/stale (plan courses-suite, D7): no stale list by default. */
+  getStaleLists?: Reply[];
+  /** POST shopping-lists/<id>/recompute, whatever the identifier. */
+  recomputeList?: Reply[];
 }
 
 export interface Received {
@@ -104,6 +108,8 @@ export async function mockApi(page: Page, script: Script): Promise<Received[]> {
     "PUT shopping-lists/{id}/items/{item}/checked": [...(script.setChecked ?? [replies.networkError])],
     "POST shopping-lists/{id}/checkout": [...(script.checkOut ?? [replies.networkError])],
     "POST shopping-lists/{id}/meal-shopping": [...(script.addMealShopping ?? [replies.networkError])],
+    "GET shopping-lists/stale": [...(script.getStaleLists ?? [staleReply([])])],
+    "POST shopping-lists/{id}/recompute": [...(script.recomputeList ?? [replies.networkError])],
   };
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
@@ -154,11 +160,16 @@ function routedPath(method: string, path: string): string {
     return "meal-plan/{id}";
   }
   const shopping = /^shopping-lists\/([^/]+)(\/.*)?$/.exec(path);
-  if (shopping !== null && !(method === "PUT" && path === "shopping-lists/main")) {
+  if (shopping !== null && !(method === "PUT" && path === "shopping-lists/main") && !(method === "GET" && path === "shopping-lists/stale")) {
     const rest = (shopping[2] ?? "").replace(/^\/items\/[^/]+/, "/items/{item}");
     return `shopping-lists/{id}${rest}`;
   }
   return path;
+}
+
+/** The stale lists (plan courses-suite, D7): no ETag, computed at each call. */
+export function staleReply(lists: string[]): Reply {
+  return { status: 200, body: { lists } };
 }
 
 /** A page of a collection, with the ETag of its version (ADR 0029). */

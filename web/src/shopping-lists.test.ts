@@ -66,7 +66,7 @@ for (const [name, response, want] of writeCases) {
 type Collection = { version: number; items: unknown[] };
 
 /** An API whose collections are read in turn (the last one stays), and whose writes answer in turn. */
-function fakeApi(lists: Collection[], writes: Outcome<ShoppingWrite>[], catalog: Collection[] = [{ version: 1, items: [] }]) {
+function fakeApi(lists: Collection[], writes: Outcome<ShoppingWrite>[], catalog: Collection[] = [{ version: 1, items: [] }], stale: Outcome<string[]>[] = [{ kind: "ok", value: [] }]) {
   const calls: string[] = [];
   const pages: Record<string, Collection[]> = { "shopping-lists": lists, ingredients: catalog, dishes: [{ version: 1, items: [] }] };
   const write =
@@ -94,6 +94,11 @@ function fakeApi(lists: Collection[], writes: Outcome<ShoppingWrite>[], catalog:
     setChecked: write("checked"),
     checkOut: write("checkout"),
     addMealShopping: write("meal-shopping"),
+    recomputeList: write("recompute"),
+    getStaleLists: async (): Promise<Outcome<string[]>> => {
+      calls.push("GET stale");
+      return (stale.length > 1 ? stale.shift() : stale[0]) ?? { kind: "network-error" };
+    },
   } as unknown as Api;
   return { api, calls };
 }
@@ -110,7 +115,7 @@ const names = (lists: ShoppingLists) => lists.lists.items?.map((l) => `${l.name}
 test("ShoppingLists.check: the lists and the library at the same time (C5)", async () => {
   const { api, calls } = fakeApi([{ version: 5, items: [courses] }], []);
   const lists = await loaded(api);
-  assert.deepEqual(calls, ["GET shopping-lists", "GET dishes", "GET ingredients"]);
+  assert.deepEqual(calls, ["GET shopping-lists", "GET dishes", "GET ingredients", "GET stale"]);
   assert.equal(lists.library.loaded, true);
 });
 
@@ -129,7 +134,7 @@ test("ShoppingLists.create: the list and the next version taken, nothing reloade
   assert.deepEqual(await lists.create("Marché"), { kind: "done", list: marche, removed: 0 });
   assert.deepEqual(names(lists), ["Courses*", "Marché"]);
   assert.equal(lists.lists.version, 6);
-  assert.deepEqual(calls, ["GET shopping-lists", "GET dishes", "GET ingredients", 'create ["Marché"]']);
+  assert.deepEqual(calls, ["GET shopping-lists", "GET dishes", "GET ingredients", "GET stale", 'create ["Marché"]']);
 });
 
 test("ShoppingLists.create: another member wrote in between, the copy is checked", async () => {
@@ -151,7 +156,7 @@ test("ShoppingLists.create: a name refused, nothing checked", async () => {
   const { api, calls } = fakeApi([{ version: 5, items: [courses] }], [{ kind: "ok", value: { kind: "refused", error: "list_name_empty", list: undefined } }]);
   const lists = await loaded(api);
   assert.deepEqual(await lists.create(" "), { kind: "refused", error: "list_name_empty" });
-  assert.deepEqual(calls.slice(3), ['create [" "]']);
+  assert.deepEqual(calls.slice(4), ['create [" "]']);
 });
 
 test("ShoppingLists.setMain: the two flags swapped; already main, the copy checked (C1)", async () => {
@@ -230,7 +235,7 @@ test("ShoppingLists.addItem: a list deleted in between (D11)", async () => {
     [{ kind: "ok", value: { kind: "not-found" } }],
   );
   const lists = await loaded(api);
-  assert.deepEqual(await lists.addItem("m", { ingredient: "pain" }), { kind: "deleted" });
+  assert.deepEqual(await lists.addItem("m", { ingredient: "pain" }), { kind: "deleted", name: "Marché" });
   assert.equal(lists.find("m"), undefined);
 });
 
@@ -338,5 +343,76 @@ test("ShoppingLists.addMealShopping: nothing added, the versions empty; 300 item
   assert.deepEqual(await lists.addMealShopping("c", { from: "2026-10-06", to: "2026-10-12" }), { kind: "done", added: 0, ignored: 2 });
   assert.equal(lists.lists.version, 5);
   assert.deepEqual(await lists.addMealShopping("c", { from: "2026-10-06", to: "2026-10-12" }), { kind: "refused", error: "too_many_items" });
-  assert.deepEqual(await lists.addMealShopping("m", { from: "2026-10-06", to: "2026-10-12" }), { kind: "deleted" });
+  assert.deepEqual(await lists.addMealShopping("m", { from: "2026-10-06", to: "2026-10-12" }), { kind: "deleted", name: "Marché" });
+});
+
+test("ShoppingLists.check: the stale lists read just after the lists, kept without answer (C8, D7)", async () => {
+  const { api, calls } = fakeApi([{ version: 5, items: [courses, marche] }], [], undefined, [{ kind: "ok", value: ["c"] }, { kind: "network-error" }, { kind: "ok", value: [] }]);
+  const lists = await loaded(api);
+  assert.deepEqual(calls.slice(0, 1).concat(calls.slice(3)), ["GET shopping-lists", "GET stale"]);
+  assert.equal(lists.isStale("c"), true);
+  assert.equal(lists.isStale("m"), false);
+  await lists.check();
+  assert.equal(lists.isStale("c"), true);
+  await lists.check();
+  assert.equal(lists.isStale("c"), false);
+});
+
+test("ShoppingLists.check: the stale lists are not read when the lists are not", async () => {
+  const { api, calls } = fakeApi([], []);
+  const lists = new ShoppingLists(api, new Library(api));
+  assert.deepEqual(await lists.check(), { kind: "network-error" });
+  assert.equal(calls.includes("GET stale"), false);
+});
+
+test("ShoppingLists.recompute: the list taken, no longer stale, even with nothing changed (C8, D7)", async () => {
+  const after = { ...courses, items: [pain, { ...boeuf, quantity: "1250", taken: "875" }] };
+  const { api, calls } = fakeApi([{ version: 5, items: [courses, marche] }], [written(after, { shopping_lists: 6 }), written(after, {})], undefined, [{ kind: "ok", value: ["c", "m"] }]);
+  const lists = await loaded(api);
+  assert.deepEqual(await lists.recompute("c"), { kind: "done", list: listOf(after), removed: 0 });
+  assert.equal(lists.find("c")?.items[1]?.taken, "875");
+  assert.equal(lists.lists.version, 6);
+  assert.equal(lists.isStale("c"), false);
+  assert.equal(lists.isStale("m"), true);
+  assert.equal(calls.at(-1), 'recompute ["c"]');
+  assert.equal((await lists.recompute("m")).kind, "done");
+  assert.equal(lists.isStale("m"), false);
+});
+
+test("ShoppingLists.recompute: refused beyond 300 items, still stale; a list deleted, named (Q38, D12)", async () => {
+  const { api } = fakeApi(
+    [{ version: 5, items: [courses, marche] }, { version: 5, items: [courses, marche] }, { version: 6, items: [courses] }],
+    [
+      { kind: "ok", value: { kind: "refused", error: "too_many_items", list: undefined } },
+      { kind: "ok", value: { kind: "not-found" } },
+    ],
+    undefined,
+    [{ kind: "ok", value: ["c", "m"] }],
+  );
+  const lists = await loaded(api);
+  assert.deepEqual(await lists.recompute("c"), { kind: "refused", error: "too_many_items" });
+  assert.equal(lists.isStale("c"), true);
+  assert.deepEqual(await lists.recompute("m"), { kind: "deleted", name: "Marché" });
+});
+
+test("ShoppingLists.setChecked: a check erases the taken quantity shown at once (D9)", async () => {
+  const taken = { ...boeuf, quantity: "1250", taken: "875" };
+  const { api } = fakeApi([{ version: 5, items: [{ ...courses, items: [taken] }] }], [{ kind: "network-error" }]);
+  const lists = await loaded(api);
+  const pending = lists.setChecked("c", "a2", true);
+  assert.deepEqual(lists.find("c")?.items[0], { ...boeuf, quantity: "1250", checked: true });
+  await pending;
+});
+
+test("ShoppingLists.clear: the stale lists are forgotten", async () => {
+  const { api } = fakeApi([{ version: 5, items: [courses] }], [], undefined, [{ kind: "ok", value: ["c"] }]);
+  const lists = await loaded(api);
+  lists.clear();
+  assert.equal(lists.isStale("c"), false);
+});
+
+test("listOf: an item with a taken quantity (D9)", () => {
+  const raw = { ...courses, items: [{ ...boeuf, quantity: "1250", taken: "875" }] };
+  assert.deepEqual(listOf(raw)?.items[0]?.taken, "875");
+  assert.equal(listOf({ ...courses, items: [{ ...boeuf, taken: 875 }] }), undefined);
 });

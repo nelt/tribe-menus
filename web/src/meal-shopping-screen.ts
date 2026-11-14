@@ -31,6 +31,7 @@ import {
   shortDay,
   sortLists,
 } from "./shopping.ts";
+import { listDeletedEvent } from "./shopping-list-screen.ts";
 import type { ShoppingLists } from "./shopping-lists.ts";
 import { alertMessage, networkNeededMessage } from "./templates.ts";
 
@@ -79,7 +80,10 @@ export class MealShoppingScreen extends LitElement {
   failed = false;
   /** Increases at each change of the copies, to render again. */
   revision = 0;
-  /** The period chosen; from tomorrow to 7 days after today at the opening (D24). */
+  /**
+   * The period chosen; from tomorrow to 7 days after today at the opening (D24), and at each
+   * return to the foreground until the member touches a day (plan courses-suite, D15).
+   */
   period: Period = defaultPeriod(today());
   /** The field the calendar sets: « Du » at the opening, then « Au » (docs/design/README.md). */
   field: "from" | "to" = "from";
@@ -93,7 +97,16 @@ export class MealShoppingScreen extends LitElement {
   sending = false;
   /** The message of a refusal, or « Réseau nécessaire » (D2). */
   error: string | undefined = undefined;
+  /** The member touched a day: the period no longer follows the date of the device. */
+  #periodTouched = false;
   readonly #onChange = () => this.revision++;
+  /** Back in the foreground on another day, the period not touched follows it, as the planning (Q34). */
+  readonly #onVisibility = () => {
+    if (document.visibilityState === "visible" && !this.#periodTouched) {
+      this.period = defaultPeriod(today());
+      this.month = monthOf(this.period[this.field]);
+    }
+  };
 
   protected override createRenderRoot() {
     return this;
@@ -103,6 +116,7 @@ export class MealShoppingScreen extends LitElement {
     super.connectedCallback();
     this.lists.addEventListener("change", this.#onChange);
     this.planning.addEventListener("change", this.#onChange);
+    document.addEventListener("visibilitychange", this.#onVisibility);
     void this.#check();
   }
 
@@ -110,6 +124,7 @@ export class MealShoppingScreen extends LitElement {
     super.disconnectedCallback();
     this.lists.removeEventListener("change", this.#onChange);
     this.planning.removeEventListener("change", this.#onChange);
+    document.removeEventListener("visibilitychange", this.#onVisibility);
   }
 
   protected override updated(changed: PropertyValues<this>) {
@@ -284,6 +299,7 @@ export class MealShoppingScreen extends LitElement {
   /** A day touched sets the field being set; after « Du », « Au » (docs/design/README.md). */
   #pick(date: Day) {
     this.error = undefined;
+    this.#periodTouched = true;
     if (this.field === "from") {
       this.period = { ...this.period, from: date };
       this.field = "to";
@@ -305,7 +321,7 @@ export class MealShoppingScreen extends LitElement {
         return;
       }
       if (result.kind === "deleted") {
-        this.dispatchEvent(new Event("list-deleted", { bubbles: true, composed: true }));
+        this.dispatchEvent(listDeletedEvent(result.name, "meal-shopping"));
         return;
       }
       // A 401 has already brought back to the login.

@@ -3,7 +3,9 @@
 // the names and colours of the unfolded lines (C5), at each visit of the tab Courses and each
 // return of the application to the foreground. A write of the member takes the list sent back and the
 // version it gives, or checks the copy if another member wrote in between; a list or an item
-// unknown (404) makes it check itself, then tells whether the list is still there (D8, D11).
+// unknown (404) makes it check itself, then tells whether the list is still there (D8, D11),
+// named after the copy before the check (plan courses-suite, D12). After each check, the stale
+// lists, a state derived from the meal plan and the dishes, are read apart (C8, ADR 0031).
 // Nothing is written on the device (D2): the copy goes with a reload, the sign-out or a 401.
 import type { Api, Failure, ItemBody, Outcome, ShoppingWrite } from "./api.ts";
 import { CachedCollection } from "./collections.ts";
@@ -41,8 +43,8 @@ function itemOf(raw: unknown): Item | undefined {
   if (!isRecord(raw) || !Array.isArray(raw["sources"])) {
     return undefined;
   }
-  const { id, ingredient, quantity, unit, checked, manual } = raw;
-  if (typeof id !== "string" || typeof ingredient !== "string" || !optionalString(quantity) || !optionalString(unit) || typeof checked !== "boolean" || typeof manual !== "boolean") {
+  const { id, ingredient, quantity, unit, taken, checked, manual } = raw;
+  if (typeof id !== "string" || typeof ingredient !== "string" || !optionalString(quantity) || !optionalString(unit) || !optionalString(taken) || typeof checked !== "boolean" || typeof manual !== "boolean") {
     return undefined;
   }
   const sources: ItemSource[] = [];
@@ -53,7 +55,7 @@ function itemOf(raw: unknown): Item | undefined {
     }
     sources.push(source);
   }
-  return { id, ingredient, ...(quantity === undefined ? {} : { quantity }), ...(unit === undefined ? {} : { unit }), checked, manual, sources };
+  return { id, ingredient, ...(quantity === undefined ? {} : { quantity }), ...(unit === undefined ? {} : { unit }), ...(taken === undefined ? {} : { taken }), checked, manual, sources };
 }
 
 /** Returns the list described by a body of the API, or undefined if it is not one. */
@@ -84,12 +86,13 @@ export function listOf(raw: unknown): ShoppingList | undefined {
  * The result of a write on a list, as the screens show it: done, with the list up to date
  * when the API sends it back and the number of items removed by a checkout; refused, with
  * its error code (the list taken into the copy when the refusal sends it back); the list
- * deleted in between (D11); or a failure.
+ * deleted in between (D11), with its name in the copy before the check (D12), undefined if
+ * the copy did not hold it; or a failure.
  */
 export type WriteResult =
   | { kind: "done"; list: ShoppingList | undefined; removed: number }
   | { kind: "refused"; error: string }
-  | { kind: "deleted" }
+  | { kind: "deleted"; name: string | undefined }
   | Failure;
 
 /** The result of the meal shopping (C4): the served dishes added and ignored (Q22), or as a write. */
@@ -106,6 +109,8 @@ export class ShoppingLists extends EventTarget {
    * still there (review of PR #100, point 1).
    */
   readonly #shownChecks = new Map<string, symbol>();
+  /** The stale lists (C8), read after each check of the copy; kept as they were when the reading fails. */
+  #stale: ReadonlySet<string> = new Set();
 
   constructor(api: Api, library: Library) {
     super();
@@ -124,18 +129,41 @@ export class ShoppingLists extends EventTarget {
     return this.lists.items?.find((l) => (id === undefined ? l.main : l.id === id));
   }
 
+  /** Whether a list is stale (C8): the recomputation would change its items (D6). */
+  isStale(id: string): boolean {
+    return this.#stale.has(id);
+  }
+
   /** Checks the copy of the lists and that of the library against the API, at the same time. */
   async check(): Promise<Outcome<undefined>> {
-    const [lists, library] = await Promise.all([this.lists.check(), this.library.check()]);
+    const [lists, library] = await Promise.all([this.#checkLists(false), this.library.check()]);
     this.dispatchEvent(new Event("change"));
     return lists.kind !== "ok" ? lists : library;
   }
 
-  /** Checks the copy of the lists alone, behind after a refusal or a list unknown. */
-  async #checkLists(): Promise<Outcome<undefined>> {
+  /**
+   * Checks the copy of the lists alone, behind after a refusal or a list unknown, then reads
+   * the stale lists, just after it (D7): they depend on the meal plan and the dishes, not on
+   * the version of the lists. Without answer, the stale lists stay as they were.
+   */
+  async #checkLists(tell = true): Promise<Outcome<undefined>> {
     const outcome = await this.lists.check();
-    this.dispatchEvent(new Event("change"));
+    if (outcome.kind === "ok") {
+      const stale = await this.#api.getStaleLists();
+      if (stale.kind === "ok") {
+        this.#stale = new Set(stale.value);
+      }
+    }
+    if (tell) {
+      this.dispatchEvent(new Event("change"));
+    }
     return outcome;
+  }
+
+  /** Checks the copy of the library alone: a source whose dish it does not hold (plan courses-suite, D15). */
+  async checkLibrary(): Promise<void> {
+    await this.library.check();
+    this.dispatchEvent(new Event("change"));
   }
 
   /** Creates a list (C2). */
@@ -232,7 +260,12 @@ export class ShoppingLists extends EventTarget {
     if (list === undefined || !list.items.some((i) => i.id === item)) {
       return false;
     }
-    this.lists.put([{ ...list, items: sortItems(list.items.map((i) => (i.id === item ? { ...i, checked } : i))) }]);
+    // Checked or unchecked, an item has no taken quantity (D9).
+    const shown = (i: Item): Item => {
+      const { taken: _, ...rest } = i;
+      return { ...rest, checked };
+    };
+    this.lists.put([{ ...list, items: sortItems(list.items.map((i) => (i.id === item ? shown(i) : i))) }]);
     this.dispatchEvent(new Event("change"));
     return true;
   }
@@ -254,6 +287,19 @@ export class ShoppingLists extends EventTarget {
     }
     const write = outcome.kind === "ok" && outcome.value.kind === "written" ? outcome.value : undefined;
     return { kind: "done", added: write?.added ?? 0, ignored: write?.ignored ?? 0 };
+  }
+
+  /**
+   * Brings a list back in line with the meals (C8, D5): the list sent back is no longer stale,
+   * even when nothing changed. Refused beyond 300 items, the list stays stale (Q38).
+   */
+  async recompute(id: string): Promise<WriteResult> {
+    const result = await this.#written(id, await this.#api.recomputeList(id));
+    if (result.kind === "done") {
+      this.#stale = new Set([...this.#stale].filter((l) => l !== id));
+      this.dispatchEvent(new Event("change"));
+    }
+    return result;
   }
 
   /** Takes the answer to a write on a list: the list written, a refusal, or a list unknown. */
@@ -312,12 +358,14 @@ export class ShoppingLists extends EventTarget {
       }
       return { kind: "refused", error: write.error };
     }
+    // Named after the copy before the check, which forgets it (D12).
+    const name = id === undefined ? undefined : this.find(id)?.name;
     const checked = await this.#checkLists();
     if (checked.kind !== "ok") {
       return checked;
     }
     if (id === undefined || this.find(id) === undefined) {
-      return { kind: "deleted" };
+      return { kind: "deleted", name };
     }
     return { kind: "done", list: this.find(id), removed: 0 };
   }
@@ -325,6 +373,7 @@ export class ShoppingLists extends EventTarget {
   /** Forgets the copy (D2). */
   clear(): void {
     this.#shownChecks.clear();
+    this.#stale = new Set();
     this.lists.clear();
     this.dispatchEvent(new Event("change"));
   }
