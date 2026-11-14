@@ -23,15 +23,10 @@ authentification.feature: Les modifications autres que les listes de courses né
 authentification.feature: Une session révoquée hors ligne est fermée au retour du réseau
 compartimentage-tribus.feature: Les messages ne révèlent pas l'existence d'une autre tribu
 compartimentage-tribus.feature: Toutes les données sont compartimentées
-formats-ecran.feature: Sur un grand écran, les actions de la sélection restent dans le volet de la liste
-formats-ecran.feature: Tourner la tablette garde la sélection d'articles
 liste-courses.feature: Ajouter un article sans réseau
 liste-courses.feature: Cocher un article sans réseau
-liste-courses.feature: Créer une liste à partir d'une sélection
-liste-courses.feature: Déplacer des articles sélectionnés vers une autre liste
 liste-courses.feature: La coche d'un article déplacé entre-temps s'applique dans sa nouvelle liste
 liste-courses.feature: La coche d'un article supprimé par un recalcul est ignorée
-liste-courses.feature: La sélection est impossible sans article sélectionné
 liste-courses.feature: Les actions sur les listes elles-mêmes nécessitent le réseau
 liste-courses.feature: Les articles ajoutés hors ligne à une liste supprimée entre-temps sont ignorés
 liste-courses.feature: Les coches faites hors ligne sont synchronisées au retour du réseau

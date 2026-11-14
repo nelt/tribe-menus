@@ -5,6 +5,7 @@
 import { type Locator, type Page, expect } from "@playwright/test";
 import { scrolledBy } from "./scroll.ts";
 import { findDish } from "./steps-dishes.ts";
+import { shownListName } from "./steps-shopping.ts";
 import { apiDay, dateOf, dayLabel, mealOf, parseWritten } from "./steps-planning.ts";
 import { step } from "./steps.ts";
 
@@ -352,7 +353,8 @@ function picker(page: Page): Locator {
 
 step(/la liste "([^"]*)" s'affiche à côté du choix des listes/, async (world, name) => {
   const main = world.page.getByRole("main");
-  await expect(main.getByRole("heading", { level: 1 }).locator(".shopping-title-name")).toHaveText(name ?? "");
+  // Its title, or in selection mode the hint that names it (plan courses-suite, D14).
+  await expect.poll(() => shownListName(world.page)).toBe(name);
   await besidePane(picker(world.page), main);
   await expect(picker(world.page).locator('.list-card-link[aria-current="page"] .list-card-name')).toHaveText(name ?? "");
 });
