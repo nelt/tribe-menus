@@ -95,7 +95,52 @@ func (s *memStore) Write(_ context.Context, write func(Tx) error) (collection.Ve
 	return maps.Clone(s.versions), nil
 }
 
+func (s *memStore) Read(_ context.Context, read func(Tx) error) error {
+	saved := s.state.clone()
+	defer func() { s.state = saved }()
+	return read(memTx{s})
+}
+
 type memTx struct{ s *memStore }
+
+func (t memTx) AllLists(context.Context) ([]List, error) {
+	var lists []List
+	for _, id := range slices.Sorted(maps.Keys(t.s.state.lists)) {
+		l, _ := t.List(context.Background(), id)
+		lists = append(lists, l)
+	}
+	return lists, nil
+}
+
+func (t memTx) Received(_ context.Context, list ListID) ([]Served, error) {
+	return slices.Clone(t.s.state.received[list]), nil
+}
+
+// CurrentReceived returns the served dishes of the meal plan received by the list: the meal
+// plan holds the dishes as they are now.
+func (t memTx) CurrentReceived(_ context.Context, list ListID) ([]Served, error) {
+	var out []Served
+	for _, s := range t.s.state.served {
+		if slices.ContainsFunc(t.s.state.received[list], func(r Served) bool { return r.ID == s.ID }) {
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}
+
+func (t memTx) ReplaceReceived(_ context.Context, list ListID, s Served) error {
+	for i, r := range t.s.state.received[list] {
+		if r.ID == s.ID {
+			t.s.state.received[list][i] = s
+		}
+	}
+	return nil
+}
+
+func (t memTx) DeleteSources(_ context.Context, id ItemID) error {
+	t.item(id, func(it *Item) { it.Sources = nil })
+	return nil
+}
 
 func (t memTx) Ingredient(_ context.Context, normalized string) (dish.Ingredient, int64, bool, error) {
 	i, ok := t.s.state.ingredients[normalized]
@@ -649,5 +694,77 @@ func TestSetCheckedErasesTaken(t *testing.T) {
 	}
 	if !reflect.DeepEqual(store.state.lists["courses"], l) {
 		t.Errorf("stored %+v, returned %+v", store.state.lists["courses"], l)
+	}
+}
+
+func TestListsRecomputeAndStale(t *testing.T) {
+	ctx := context.Background()
+	store := newMemStore()
+	lists := newLists(store)
+	marche := mustCreate(t, lists, "Marché")
+	tue := served("s1", "chili", "2026-10-06", "dinner", 4, 4, chiliLines)
+	store.state.served = []Served{tue}
+	if _, _, _, _, err := lists.AddMealShopping(ctx, "courses", "2026-10-06", "2026-10-12"); err != nil {
+		t.Fatal(err)
+	}
+	beef, _ := itemNamed(store.state.lists["courses"], "bœuf haché")
+	if _, _, err := lists.SetChecked(ctx, "courses", beef.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	if ids, err := lists.Stale(ctx); err != nil || len(ids) != 0 {
+		t.Fatalf("stale before any change: %v, %v", ids, err)
+	}
+
+	// The Tuesday chili for 6 servings: Courses is stale, Marché is not (C8).
+	store.state.served = []Served{served("s1", "chili", "2026-10-06", "dinner", 6, 4, chiliLines)}
+	before := store.state.clone()
+	if ids, err := lists.Stale(ctx); err != nil || !slices.Equal(ids, []ListID{"courses"}) {
+		t.Fatalf("stale: %v, %v", ids, err)
+	}
+	if !reflect.DeepEqual(store.state, before) {
+		t.Error("stale changed the store")
+	}
+	if _, _, err := lists.Recompute(ctx, "unknown"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown list: %v", err)
+	}
+	version := store.versions[Collection]
+	l, versions, err := lists.Recompute(ctx, "courses")
+	if err != nil || versions[Collection] != version+1 {
+		t.Fatalf("recompute: %v, %v", versions, err)
+	}
+	if got := describeAll(l.Items); !slices.Equal(got, []string{"bœuf haché 750 g taken 500 | s1 750", "oignon 2 piece | s1 1.5"}) {
+		t.Errorf("items %v", got)
+	}
+	if !reflect.DeepEqual(store.state.lists["courses"], l) {
+		t.Errorf("stored\n%+v\nreturned\n%+v", store.state.lists["courses"], l)
+	}
+	if r := store.state.received["courses"]; len(r) != 1 || r[0].Servings != 6 {
+		t.Errorf("received %+v", r)
+	}
+	if ids, err := lists.Stale(ctx); err != nil || len(ids) != 0 {
+		t.Errorf("stale after the recomputation: %v, %v", ids, err)
+	}
+	// Again: nothing written, no version (D7).
+	if again, versions, err := lists.Recompute(ctx, "courses"); err != nil || versions[Collection] != version+1 || !reflect.DeepEqual(again, l) {
+		t.Errorf("again: %v, %v", versions, err)
+	}
+	if _, versions, err := lists.Recompute(ctx, marche.ID); err != nil || versions[Collection] != version+1 {
+		t.Errorf("Marché: %v, %v", versions, err)
+	}
+
+	// A line added to the dish beyond 300 items: refused, nothing written; still stale (Q38).
+	for i := range MaxItems - 2 {
+		mustAdd(t, lists, "courses", dish.LineInput{Name: fmt.Sprint("article ", i)})
+	}
+	store.state.served = []Served{served("s1", "chili", "2026-10-06", "dinner", 6, 4, append(slices.Clone(chiliLines), DishLine{"ail", 7, q(1000, dish.Piece)}))}
+	before = store.state.clone()
+	if _, _, err := lists.Recompute(ctx, "courses"); !errors.Is(err, ErrTooManyItems) {
+		t.Errorf("301 items: %v", err)
+	}
+	if !reflect.DeepEqual(store.state, before) {
+		t.Error("301 items: store changed")
+	}
+	if ids, err := lists.Stale(ctx); err != nil || !slices.Equal(ids, []ListID{"courses"}) {
+		t.Errorf("stale at 301 items: %v, %v", ids, err)
 	}
 }

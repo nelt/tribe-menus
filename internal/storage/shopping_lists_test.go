@@ -191,6 +191,9 @@ func itemText(it shopping.Item) string {
 		q, u = it.Quantity.Text(), " "+string(it.Quantity.Unit)
 	}
 	s := it.Ingredient + " " + q + u
+	if it.Taken != nil {
+		s += " taken " + it.Taken.Text()
+	}
 	if it.Manual {
 		s += " manual"
 	}
@@ -332,7 +335,7 @@ func TestShoppingStoreMealShopping(t *testing.T) {
 	}
 
 	// A check, then one served dish more: poured in the items present, unchecked as the
-	// quantity increases; the others ignored.
+	// quantity increases, with its taken quantity (Q41); the others ignored.
 	if _, _, err := lists.SetChecked(ctx, courses.ID, beef.ID, true); err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +344,125 @@ func TestShoppingStoreMealShopping(t *testing.T) {
 	if err != nil || added != 1 || ignored != 3 {
 		t.Fatalf("again: added %d, ignored %d, %v", added, ignored, err)
 	}
-	if it := l.Items[0]; itemText(it) != "bœuf haché 1650 g" || len(it.Sources) != 3 || it.ID != beef.ID {
+	if it := l.Items[0]; itemText(it) != "bœuf haché 1650 g taken 1050" || len(it.Sources) != 3 || it.ID != beef.ID {
 		t.Errorf("beef %s %+v", itemText(it), it)
+	}
+}
+
+// TestShoppingStoreRecompute: the recomputation reads the received served dishes as recorded
+// and as they are now, writes items, sources, taken quantities and received served dishes
+// in one write, reads back what it returned; the staleness writes nothing (C8, D5, D6).
+func TestShoppingStoreRecompute(t *testing.T) {
+	ctx := context.Background()
+	db := newTribeDB(t)
+	library := dish.NewLibrary(NewDishStore(db))
+	plan := mealplan.NewPlan(NewMealPlanStore(db))
+	lists := shopping.NewLists(NewShoppingStore(db))
+	lines := []dish.LineInput{{Name: "bœuf haché", Quantity: "500", Unit: "g"}, {Name: "oignon", Quantity: "1", Unit: "piece"}}
+	chili, _, err := library.Create(ctx, dish.Input{Name: "Chili con carne", Servings: 4, Lines: lines})
+	if err != nil {
+		t.Fatal(err)
+	}
+	serve := func(date, mealtime string) mealplan.ServedDish {
+		t.Helper()
+		servings := 4
+		s, _, err := plan.Serve(ctx, mealplan.ServeInput{Date: date, Mealtime: mealtime, Dish: chili.ID, Servings: &servings})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	tue, thu, sat := serve("2026-10-06", "dinner"), serve("2026-10-08", "lunch"), serve("2026-10-10", "dinner")
+	_, page, err := lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	courses := page.Items[0].ID
+	l, _, _, _, err := lists.AddMealShopping(ctx, courses, "2026-10-06", "2026-10-12")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := lists.SetChecked(ctx, courses, l.Items[0].ID, true); err != nil {
+		t.Fatal(err)
+	}
+	stale := func() []shopping.ListID {
+		t.Helper()
+		version, err := lists.Version(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids, err := lists.Stale(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if after, err := lists.Version(ctx); err != nil || after != version {
+			t.Errorf("staleness changed the version: %d, %v", after, err)
+		}
+		return ids
+	}
+	if ids := stale(); len(ids) != 0 {
+		t.Fatalf("stale %v", ids)
+	}
+
+	// Tuesday for 10 servings, Saturday removed, garlic added to the dish.
+	if _, _, err := plan.SetServings(ctx, tue.ID, 10); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Remove(ctx, sat.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := library.Update(ctx, chili.ID, chili.Revision, dish.Input{Name: chili.Name, Servings: 4, Lines: append(lines, dish.LineInput{Name: "ail", Quantity: "1", Unit: "piece"})}); err != nil {
+		t.Fatal(err)
+	}
+	if ids := stale(); !slices.Equal(ids, []shopping.ListID{courses}) {
+		t.Fatalf("stale %v", ids)
+	}
+	version, err := lists.Version(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l, versions, err := lists.Recompute(ctx, courses)
+	if err != nil || !maps.Equal(versions, collection.Versions{"shopping_lists": version + 1}) {
+		t.Fatalf("recompute: %v, %v", versions, err)
+	}
+	var got []string
+	for _, it := range l.Items {
+		got = append(got, itemText(it))
+	}
+	if want := []string{"ail 4 piece", "bœuf haché 1750 g taken 1500", "oignon 4 piece"}; !slices.Equal(got, want) {
+		t.Errorf("items %v, want %v", got, want)
+	}
+	if len(l.Items[0].Sources) != 2 || l.Items[0].Sources[0].Servings != 10 || len(l.Received) != 3 {
+		t.Errorf("garlic %+v, received %v", l.Items[0], l.Received)
+	}
+	_, page, err = lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(page.Items[0], l) {
+		t.Errorf("read back\n%+v\nreturned\n%+v", page.Items[0], l)
+	}
+	// Tuesday recorded again with the dish now; Saturday, removed, as it was.
+	var servings, keptLines int
+	if err := db.QueryRow("SELECT servings FROM shopping_received WHERE served_dish_id = ?", tue.ID).Scan(&servings); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.QueryRow("SELECT count(*) FROM shopping_received_lines WHERE served_dish_id = ?", tue.ID).Scan(&keptLines); err != nil {
+		t.Fatal(err)
+	}
+	if servings != 10 || keptLines != 3 {
+		t.Errorf("Tuesday received for %d servings, %d lines", servings, keptLines)
+	}
+	if err := db.QueryRow("SELECT count(*) FROM shopping_received_lines WHERE served_dish_id = ?", sat.ID).Scan(&keptLines); err != nil || keptLines != 2 {
+		t.Errorf("Saturday: %d lines, %v", keptLines, err)
+	}
+	if err := db.QueryRow("SELECT count(*) FROM shopping_received_lines WHERE served_dish_id = ?", thu.ID).Scan(&keptLines); err != nil || keptLines != 3 {
+		t.Errorf("Thursday: %d lines, %v", keptLines, err)
+	}
+	if ids := stale(); len(ids) != 0 {
+		t.Errorf("stale after the recomputation: %v", ids)
+	}
+	if _, versions, err := lists.Recompute(ctx, courses); err != nil || len(versions) != 0 {
+		t.Errorf("again: %v, %v", versions, err)
 	}
 }

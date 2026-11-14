@@ -60,6 +60,8 @@ type Store interface {
 	// Write runs write in a write transaction, and returns the versions of the shopping lists
 	// and of the ingredient catalog after it.
 	Write(ctx context.Context, write func(Tx) error) (collection.Versions, error)
+	// Read runs read in a transaction that writes nothing.
+	Read(ctx context.Context, read func(Tx) error) error
 }
 
 // Tx reads and writes in a write transaction.
@@ -68,6 +70,8 @@ type Tx interface {
 	dish.Catalog
 	// List returns the list with its items, or ErrNotFound.
 	List(ctx context.Context, id ListID) (List, error)
+	// AllLists returns every list with its items, in the order of their identifiers.
+	AllLists(ctx context.Context) ([]List, error)
 	ListCount(ctx context.Context) (int, error)
 	// NextRank returns a rank greater than that of every list.
 	NextRank(ctx context.Context) (int64, error)
@@ -91,6 +95,16 @@ type Tx interface {
 	// InsertReceived records a served dish received by a list, with the servings of
 	// reference and the lines of its dish at the time of the computation (D5).
 	InsertReceived(ctx context.Context, list ListID, s Served) error
+	// Received returns the served dishes received by a list as recorded, with the lines of
+	// their dish at the time of the computation, without date nor mealtime.
+	Received(ctx context.Context, list ListID) ([]Served, error)
+	// CurrentReceived returns the served dishes received by a list still in the meal plan,
+	// each with its dish as it is now.
+	CurrentReceived(ctx context.Context, list ListID) ([]Served, error)
+	// ReplaceReceived records again a served dish received by a list, with its dish now.
+	ReplaceReceived(ctx context.Context, list ListID, s Served) error
+	// DeleteSources deletes the sources of an item.
+	DeleteSources(ctx context.Context, id ItemID) error
 }
 
 // Lists are the shopping lists of a tribe.
@@ -386,4 +400,111 @@ func (l *Lists) CheckOut(ctx context.Context, id ListID, seen []ItemID) (List, i
 		return List{}, 0, nil, fmt.Errorf("check out list %s: %w", id, err)
 	}
 	return list, removed, versions, nil
+}
+
+// Recompute brings a list back in line with the meals (C8, D5): the served dishes it
+// received, still in the meal plan or not, and their dishes as they are now, read in the
+// write transaction, so that a recomputation and a meal shopping, or two recomputations, are
+// serialized (Q42). Nothing is written for a list that is not stale (D6): the versions are
+// empty. ErrTooManyItems beyond 300 items, and nothing is written (Q38).
+func (l *Lists) Recompute(ctx context.Context, id ListID) (List, collection.Versions, error) {
+	var list List
+	versions, err := l.Store.Write(ctx, func(tx Tx) error {
+		before, kept, current, err := readRecomputation(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		r, err := recompute(before, kept, current, l.NewID)
+		switch {
+		case err != nil:
+			return err
+		case !r.stale:
+			list = before
+			return nil
+		case len(r.list.Items) > MaxItems:
+			return ErrTooManyItems
+		}
+		list = r.list
+		for _, item := range r.deleted {
+			if err := tx.DeleteItem(ctx, item); err != nil {
+				return err
+			}
+		}
+		for _, c := range r.items {
+			item := c.item
+			item.Sources = nil
+			if c.isNew {
+				err = tx.InsertItem(ctx, id, item, c.key)
+			} else if err = tx.UpdateItem(ctx, item); err == nil {
+				err = tx.DeleteSources(ctx, item.ID)
+			}
+			if err != nil {
+				return err
+			}
+			for _, s := range c.item.Sources {
+				if err := tx.InsertSource(ctx, item.ID, s); err != nil {
+					return err
+				}
+			}
+		}
+		for _, s := range r.received {
+			if err := tx.ReplaceReceived(ctx, id, s); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return List{}, nil, fmt.Errorf("recompute list %s: %w", id, err)
+	}
+	return list, versions, nil
+}
+
+// Stale returns the identifiers of the stale lists, in their order (C8, D3, D6): those that
+// a recomputation would change, computed at each call from the meal plan and the dishes as
+// they are now (ADR 0031).
+func (l *Lists) Stale(ctx context.Context) ([]ListID, error) {
+	var ids []ListID
+	err := l.Store.Read(ctx, func(tx Tx) error {
+		lists, err := tx.AllLists(ctx)
+		if err != nil {
+			return err
+		}
+		for _, list := range lists {
+			kept, err := tx.Received(ctx, list.ID)
+			if err != nil {
+				return err
+			}
+			current, err := tx.CurrentReceived(ctx, list.ID)
+			if err != nil {
+				return err
+			}
+			if stale(list, kept, current) {
+				ids = append(ids, list.ID)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("stale lists: %w", err)
+	}
+	return ids, nil
+}
+
+// readRecomputation reads what the recomputation of a list needs: the list, its received
+// served dishes as recorded, and those still in the meal plan with their dishes now.
+func readRecomputation(ctx context.Context, tx Tx, id ListID) (List, []Served, []Served, error) {
+	list, err := tx.List(ctx, id)
+	if err != nil {
+		return List{}, nil, nil, err
+	}
+	kept, err := tx.Received(ctx, id)
+	if err != nil {
+		return List{}, nil, nil, err
+	}
+	current, err := tx.CurrentReceived(ctx, id)
+	if err != nil {
+		return List{}, nil, nil, err
+	}
+	return list, kept, current, nil
 }
