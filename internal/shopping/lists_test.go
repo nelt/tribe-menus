@@ -270,6 +270,21 @@ func (t memTx) InsertReceived(_ context.Context, list ListID, s Served) error {
 	return nil
 }
 
+func (t memTx) MoveItem(_ context.Context, id ItemID, list ListID) error {
+	for lid, l := range t.s.state.lists {
+		if i := slices.IndexFunc(l.Items, func(it Item) bool { return it.ID == id }); i >= 0 {
+			to := t.s.state.lists[list]
+			to.Items = append(to.Items, l.Items[i])
+			SortItems(to.Items)
+			t.s.state.lists[list] = to
+			l.Items = slices.Delete(l.Items, i, i+1)
+			t.s.state.lists[lid] = l
+			return nil
+		}
+	}
+	return nil
+}
+
 // newLists returns the lists on the store, whose identifiers are id1, id2…
 func newLists(store *memStore) *Lists {
 	l := NewLists(store)
@@ -766,5 +781,96 @@ func TestListsRecomputeAndStale(t *testing.T) {
 	}
 	if ids, err := lists.Stale(ctx); err != nil || !slices.Equal(ids, []ListID{"courses"}) {
 		t.Errorf("stale at 301 items: %v, %v", ids, err)
+	}
+}
+
+func TestListsMove(t *testing.T) {
+	ctx := context.Background()
+	store := newMemStore()
+	lists := newLists(store)
+	marche := mustCreate(t, lists, "Marché")
+	tue := served("s1", "chili", "2026-10-06", "dinner", 4, 4, chiliLines)
+	store.state.served = []Served{tue}
+	if _, _, _, _, err := lists.AddMealShopping(ctx, "courses", "2026-10-06", "2026-10-12"); err != nil {
+		t.Fatal(err)
+	}
+	courses := mustAdd(t, lists, "courses", dish.LineInput{Name: "pain"})
+	beef, bread := idOf(courses, "bœuf haché"), idOf(courses, "pain")
+
+	for _, c := range []struct {
+		name  string
+		items []ItemID
+		to    Target
+		want  error
+	}{
+		{"no item", nil, Target{List: marche.ID}, ErrNoItems},
+		{"same list", []ItemID{bread}, Target{List: "courses"}, ErrSameList},
+		{"unknown target", []ItemID{bread}, Target{List: "unknown"}, ErrTargetNotFound},
+		{"name of the new list", []ItemID{bread}, Target{New: true, Name: " "}, ErrListNameEmpty},
+	} {
+		before := store.state.clone()
+		if _, _, _, _, _, err := lists.Move(ctx, "courses", c.items, c.to); !errors.Is(err, c.want) {
+			t.Errorf("%s: %v, want %v", c.name, err, c.want)
+		}
+		if !reflect.DeepEqual(store.state, before) {
+			t.Errorf("%s: store changed", c.name)
+		}
+	}
+	if _, _, _, _, _, err := lists.Move(ctx, "unknown", []ItemID{bread}, Target{List: marche.ID}); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown source list: %v", err)
+	}
+
+	// The bœuf and an item gone in between, to Marché (C9, Q42).
+	version := store.versions[Collection]
+	source, target, moved, missing, versions, err := lists.Move(ctx, "courses", []ItemID{beef, "gone"}, Target{List: marche.ID})
+	if err != nil || moved != 1 || missing != 1 || versions[Collection] != version+1 {
+		t.Fatalf("move: %d, %d, %v, %v", moved, missing, versions, err)
+	}
+	if !reflect.DeepEqual(store.state.lists["courses"], source) || !reflect.DeepEqual(store.state.lists[marche.ID], target) {
+		t.Errorf("stored\n%+v\n%+v\nreturned\n%+v\n%+v", store.state.lists["courses"], store.state.lists[marche.ID], source, target)
+	}
+	if got := describeAll(target.Items); !slices.Equal(got, []string{"bœuf haché 500 g | s1 500"}) {
+		t.Errorf("Marché %v", got)
+	}
+	if r := store.state.received[marche.ID]; len(r) != 1 || !reflect.DeepEqual(r[0].Lines, chiliLines) {
+		t.Errorf("received by Marché %+v", r)
+	}
+	if !slices.Equal(store.state.lists["courses"].Received, []ServedDishID{"s1"}) {
+		t.Errorf("received by Courses %v", store.state.lists["courses"].Received)
+	}
+	// Neither list stale: the bœuf is not created again in Courses (C8).
+	if ids, err := lists.Stale(ctx); err != nil || len(ids) != 0 {
+		t.Errorf("stale after the move: %v, %v", ids, err)
+	}
+	// Nothing left to move: nothing written.
+	if _, _, moved, missing, versions, err := lists.Move(ctx, "courses", []ItemID{beef}, Target{List: marche.ID}); err != nil || moved != 0 || missing != 1 || versions[Collection] != version+1 {
+		t.Errorf("again: %d, %d, %v, %v", moved, missing, versions, err)
+	}
+
+	// The bread to a new list, last, not main (C10).
+	source, target, moved, _, _, err = lists.Move(ctx, "courses", []ItemID{bread}, Target{New: true, Name: "  Drive "})
+	if err != nil || moved != 1 {
+		t.Fatalf("new list: %d, %v", moved, err)
+	}
+	if target.Name != "Drive" || target.Main || target.Rank != 3 || !reflect.DeepEqual(store.state.lists[target.ID], target) {
+		t.Errorf("new list %+v", target)
+	}
+	if _, ok := itemNamed(source, "pain"); ok {
+		t.Error("pain still in Courses")
+	}
+	if !store.state.lists["courses"].Main {
+		t.Error("Courses no longer main")
+	}
+
+	// 20 lists: no new list, nothing moved.
+	for i := range MaxLists - 3 {
+		mustCreate(t, lists, fmt.Sprint("Liste ", i))
+	}
+	before := store.state.clone()
+	if _, _, _, _, _, err := lists.Move(ctx, "courses", []ItemID{idOf(source, "oignon")}, Target{New: true, Name: "Vrac"}); !errors.Is(err, ErrTooManyLists) {
+		t.Errorf("21st list: %v", err)
+	}
+	if !reflect.DeepEqual(store.state, before) {
+		t.Error("21st list: store changed")
 	}
 }

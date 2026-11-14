@@ -466,3 +466,119 @@ func TestShoppingStoreRecompute(t *testing.T) {
 		t.Errorf("again: %v, %v", versions, err)
 	}
 }
+
+// TestShoppingStoreMove: an item moves with its sources, a merged item loses its source item
+// and gains its sources, the target list receives the served dishes with their kept lines,
+// in one write; a new list is created in the same write (C9, C10, D10).
+func TestShoppingStoreMove(t *testing.T) {
+	ctx := context.Background()
+	db := newTribeDB(t)
+	library := dish.NewLibrary(NewDishStore(db))
+	plan := mealplan.NewPlan(NewMealPlanStore(db))
+	lists := shopping.NewLists(NewShoppingStore(db))
+	chili, _, err := library.Create(ctx, dish.Input{Name: "Chili con carne", Servings: 4, Lines: []dish.LineInput{
+		{Name: "bœuf haché", Quantity: "500", Unit: "g"}, {Name: "oignon", Quantity: "1", Unit: "piece"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	servings := 4
+	tue, _, err := plan.Serve(ctx, mealplan.ServeInput{Date: "2026-10-06", Mealtime: "dinner", Dish: chili.ID, Servings: &servings})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, page, err := lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	courses := page.Items[0].ID
+	marche, _, err := lists.Create(ctx, "Marché")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := lists.AddMealShopping(ctx, courses, "2026-10-06", "2026-10-12"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := lists.AddItem(ctx, courses, dish.LineInput{Name: "pain"}); err != nil {
+		t.Fatal(err)
+	}
+	thu, _, err := plan.Serve(ctx, mealplan.ServeInput{Date: "2026-10-08", Mealtime: "lunch", Dish: chili.ID, Servings: &servings})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := lists.AddMealShopping(ctx, marche.ID, "2026-10-08", "2026-10-08"); err != nil {
+		t.Fatal(err)
+	}
+	_, page, err = lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := page.Items[slices.IndexFunc(page.Items, func(l shopping.List) bool { return l.ID == courses })]
+	idOf := func(l shopping.List, ingredient string) shopping.ItemID {
+		for _, it := range l.Items {
+			if it.Ingredient == ingredient {
+				return it.ID
+			}
+		}
+		return ""
+	}
+	beef, onion, bread := idOf(l, "bœuf haché"), idOf(l, "oignon"), idOf(l, "pain")
+	if _, _, err := lists.SetChecked(ctx, courses, beef, true); err != nil {
+		t.Fatal(err)
+	}
+
+	// The bœuf and the onion merged with those of Thursday: one write.
+	version, err := lists.Version(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source, target, moved, missing, versions, err := lists.Move(ctx, courses, []shopping.ItemID{beef, onion, "gone"}, shopping.Target{List: marche.ID})
+	if err != nil || moved != 2 || missing != 1 || !maps.Equal(versions, collection.Versions{"shopping_lists": version + 1}) {
+		t.Fatalf("move: %d, %d, %v, %v", moved, missing, versions, err)
+	}
+	var got []string
+	for _, it := range target.Items {
+		got = append(got, itemText(it))
+	}
+	if want := []string{"bœuf haché 1000 g taken 500", "oignon 2 piece"}; !slices.Equal(got, want) {
+		t.Errorf("Marché %v, want %v", got, want)
+	}
+	if len(source.Items) != 1 || source.Items[0].ID != bread || !slices.Equal(target.Received, slices.Sorted(slices.Values([]shopping.ServedDishID{shopping.ServedDishID(tue.ID), shopping.ServedDishID(thu.ID)}))) {
+		t.Errorf("Courses %+v, received by Marché %v", source.Items, target.Received)
+	}
+	_, page, err = lists.Page(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range page.Items {
+		switch p.ID {
+		case courses:
+			if !reflect.DeepEqual(p, source) {
+				t.Errorf("Courses read back\n%+v\nreturned\n%+v", p, source)
+			}
+		case marche.ID:
+			if !reflect.DeepEqual(p, target) {
+				t.Errorf("Marché read back\n%+v\nreturned\n%+v", p, target)
+			}
+		}
+	}
+	var keptLines, sources int
+	if err := db.QueryRow("SELECT count(*) FROM shopping_received_lines WHERE list_id = ? AND served_dish_id = ?", marche.ID, tue.ID).Scan(&keptLines); err != nil || keptLines != 2 {
+		t.Errorf("lines received by Marché: %d, %v", keptLines, err)
+	}
+	if err := db.QueryRow("SELECT count(*) FROM shopping_item_sources WHERE item_id = ?", beef).Scan(&sources); err != nil || sources != 0 {
+		t.Errorf("sources of the merged item left: %d, %v", sources, err)
+	}
+	if ids, err := lists.Stale(ctx); err != nil || len(ids) != 0 {
+		t.Errorf("stale after the move: %v, %v", ids, err)
+	}
+
+	// The bread to a new list.
+	_, drive, moved, _, _, err := lists.Move(ctx, courses, []shopping.ItemID{bread}, shopping.Target{New: true, Name: "Drive"})
+	if err != nil || moved != 1 || drive.Rank != 3 || drive.Main || len(drive.Items) != 1 || drive.Items[0].ID != bread {
+		t.Fatalf("new list %+v, %d, %v", drive, moved, err)
+	}
+	if _, _, _, _, _, err := lists.Move(ctx, courses, []shopping.ItemID{bread}, shopping.Target{List: "unknown"}); !errors.Is(err, shopping.ErrTargetNotFound) {
+		t.Errorf("unknown target: %v", err)
+	}
+}

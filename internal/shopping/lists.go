@@ -28,6 +28,13 @@ var (
 	// ErrComputedItem refuses to remove a computed item by hand: it leaves by the shopping
 	// done (C11).
 	ErrComputedItem = errors.New("computed item")
+	// ErrNoItems refuses a move without item (C9, C10).
+	ErrNoItems = errors.New("no items")
+	// ErrSameList refuses to move items to their own list (C9).
+	ErrSameList = errors.New("same list")
+	// ErrTargetNotFound refuses a move to a list absent from the tribe: deleted in between,
+	// unknown, or of another tribe (D11, ENF-02).
+	ErrTargetNotFound = errors.New("target list not found")
 )
 
 // NotEmptyError refuses to delete a list that holds items (C12), maybe added in between
@@ -105,6 +112,8 @@ type Tx interface {
 	ReplaceReceived(ctx context.Context, list ListID, s Served) error
 	// DeleteSources deletes the sources of an item.
 	DeleteSources(ctx context.Context, id ItemID) error
+	// MoveItem moves an item, with its sources, to another list.
+	MoveItem(ctx context.Context, id ItemID, list ListID) error
 }
 
 // Lists are the shopping lists of a tribe.
@@ -489,6 +498,111 @@ func (l *Lists) Stale(ctx context.Context) ([]ListID, error) {
 		return nil, fmt.Errorf("stale lists: %w", err)
 	}
 	return ids, nil
+}
+
+// Target is where a move takes the items: the existing list List, or a new list named Name.
+type Target struct {
+	List ListID
+	New  bool
+	Name string
+}
+
+// Move moves the selected items of a list to another list, existing or created with them
+// (C9, C10, D10), in one transaction: only the items still in the list move, the others are
+// counted missing (Q42). A new list follows the rules of the lists: its name, the 20 lists,
+// created last, not main. It returns the source list, the target list, and the numbers of
+// items moved and missing. ErrNoItems without item, ErrSameList for the list itself,
+// ErrTargetNotFound for a target list absent from the tribe, ErrTooManyItems beyond 300
+// items in the target list, ErrTooManyLists: nothing is written.
+func (l *Lists) Move(ctx context.Context, id ListID, items []ItemID, to Target) (List, List, int, int, collection.Versions, error) {
+	if len(items) == 0 {
+		return List{}, List{}, 0, 0, nil, ErrNoItems
+	}
+	if !to.New && to.List == id {
+		return List{}, List{}, 0, 0, nil, ErrSameList
+	}
+	var newID string
+	if to.New {
+		name, err := ParseListName(to.Name)
+		if err != nil {
+			return List{}, List{}, 0, 0, nil, err
+		}
+		if newID, err = l.NewID(); err != nil {
+			return List{}, List{}, 0, 0, nil, err
+		}
+		to.Name = name
+	}
+	var m moving
+	versions, err := l.Store.Write(ctx, func(tx Tx) error {
+		source, err := tx.List(ctx, id)
+		if err != nil {
+			return err
+		}
+		target, err := moveTarget(ctx, tx, to, ListID(newID))
+		if err != nil {
+			return err
+		}
+		kept, err := tx.Received(ctx, id)
+		if err != nil {
+			return err
+		}
+		if m, err = move(source, target, items, kept); err != nil {
+			return err
+		}
+		for _, item := range m.relocated {
+			if err := tx.MoveItem(ctx, item, target.ID); err != nil {
+				return err
+			}
+		}
+		for _, g := range m.merged {
+			if err := tx.DeleteItem(ctx, g.from); err != nil {
+				return err
+			}
+			if err := tx.UpdateItem(ctx, g.item); err != nil {
+				return err
+			}
+			for _, s := range g.sources {
+				if err := tx.InsertSource(ctx, g.item.ID, s); err != nil {
+					return err
+				}
+			}
+		}
+		for _, s := range m.received {
+			if err := tx.InsertReceived(ctx, target.ID, s); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return List{}, List{}, 0, 0, nil, fmt.Errorf("move items of list %s: %w", id, err)
+	}
+	return m.source, m.target, m.moved, m.missing, versions, nil
+}
+
+// moveTarget reads the target list of a move, or creates the new list of this identifier,
+// last and not main (C10, D10): ErrTargetNotFound, ErrTooManyLists.
+func moveTarget(ctx context.Context, tx Tx, to Target, id ListID) (List, error) {
+	if !to.New {
+		target, err := tx.List(ctx, to.List)
+		if errors.Is(err, ErrNotFound) {
+			return List{}, ErrTargetNotFound
+		}
+		return target, err
+	}
+	n, err := tx.ListCount(ctx)
+	if err != nil {
+		return List{}, err
+	}
+	if n >= MaxLists {
+		return List{}, ErrTooManyLists
+	}
+	rank, err := tx.NextRank(ctx)
+	if err != nil {
+		return List{}, err
+	}
+	target := List{ID: id, Name: to.Name, Rank: rank}
+	return target, tx.InsertList(ctx, target)
 }
 
 // readRecomputation reads what the recomputation of a list needs: the list, its received

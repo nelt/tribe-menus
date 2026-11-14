@@ -151,10 +151,10 @@ Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot C : déplacement et nouvelle liste, domaine et API (`feature/deplacement-api`)
 
-- [ ] **15. Déplacement pur** (D10) : fusion, provenances sans doublon, part prise et coche (D9), plats servis reçus copiés, articles partis entre-temps, limites ; tests en tableaux d'abord.
-- [ ] **16. `shopping.Lists.Move`**, vers une liste existante ou nouvelle, dans une transaction ; adaptateur.
-- [ ] **17. API** : `POST shopping-lists/{id}/move` (D7), corps de 16 Kio, test à 300 identifiants.
-- [ ] **18. Étapes godog** des scénarios « API » de C9 et C10 et des écritures croisées, retirés de `pending.txt`.
+- [x] **15. Déplacement pur** (D10) : fusion, provenances sans doublon, part prise et coche (D9), plats servis reçus copiés, articles partis entre-temps, limites ; tests en tableaux d'abord. *Fait le 2026-11-14* : `move` et `join` dans `move.go`.
+- [x] **16. `shopping.Lists.Move`**, vers une liste existante ou nouvelle, dans une transaction ; adaptateur. *Fait le 2026-11-14* : `Target` (`List`, ou `New` et `Name`) ; `Tx.MoveItem` (requête `MoveShoppingItem`) ; erreurs `ErrNoItems`, `ErrSameList`, `ErrTargetNotFound`.
+- [x] **17. API** : `POST shopping-lists/{id}/move` (D7), corps de 16 Kio, test à 300 identifiants. *Fait le 2026-11-14* ; `400 bad_request` sans `to` ni `name`, ou avec les deux.
+- [x] **18. Étapes godog** des scénarios « API » de C9 et C10 et des écritures croisées, retirés de `pending.txt`. *Fait le 2026-11-14* : 17 scénarios retirés (`acceptance/steps_move_test.go`), dont les deux du lot B qui attendaient le déplacement.
 
 ### Lot D : péremption, recalcul et points reportés à l'écran (`feature/ecran-recalcul`)
 
@@ -224,3 +224,12 @@ Par le développeur, guidé pas à pas, sur téléphone Android, tablette Androi
 - **Péremption et refus des 300 articles** : `stale` dit périmée une liste dont le recalcul serait refusé ; le bandeau reste, et « Recalculer » affiche le message des 300 articles.
 - **Plats servis reçus réécrits** : le recalcul remplace les lignes gardées, les parts et les parts de référence de tous les plats servis vivants encore au planning, changés ou non.
 - **En attente du lot C** : « Le recalcul ne recrée pas un article déplacé vers une autre liste » et l'exemple « recalculer » de « Une liste d'une autre tribu ne peut être ni recalculée ni vidée par un déplacement », qui passe déjà, le plan du scénario attendant son exemple du déplacement.
+
+**Lot C** (`feature/deplacement-api`), 2026-11-14, dans le Dev Container :
+
+- **Fusion dont la part prise atteint la quantité** : quand un plat servi est des deux côtés (non compté deux fois, D10) et qu'un seul des deux articles est coché, la somme des parts prises (D9) égale ou dépasse la quantité fusionnée. L'article fusionné est alors coché, sans part prise, comme un article dont la quantité baisse jusqu'à sa part prise (D9) ; la base refuse d'ailleurs une part prise qui n'est pas inférieure à la quantité (migration `0010`).
+- **Nouvelle liste sans article à déplacer** : si tous les articles sélectionnés sont partis entre-temps, la liste nouvelle est créée quand même, vide, avec `moved` à 0 : le membre a demandé sa création, et la réponse porte toujours `target`. Vers une liste existante, rien n'est écrit et `versions` est vide.
+- **Corps du déplacement** : exactement un de `to` et `name` (`400 bad_request` sinon) ; `to` vide vaut une liste inconnue (`404 target_not_found`). `same_list` est vérifié avant la lecture de la liste de départ : la réponse ne dit rien de plus que l'identifiant envoyé.
+- **ENF-02** : le déplacement depuis une liste d'une autre tribu est essayé avec une liste nouvelle comme arrivée ; la transaction échoue sur la liste de départ avant de créer quoi que ce soit.
+- **Revue de la PR #118, point 1, pour le lot E** : vers une liste nouvelle, `moved` peut valoir 0 alors que la liste est créée ; les libellés de D11 ne prévoient pas ce cas. À prévoir dans `shopping.ts` (étape 24), avec sa ligne dans la table de cas, et à faire valider à l'écran.
+- **Revue de la PR #118, point 2, pour la recette (étape 28)** : un déplacement copie les plats servis reçus et leurs lignes gardées dans la liste d'arrivée, et la liste de départ les garde (Q22) ; un même plat servi peut donc être reçu par plusieurs listes. La taille de `GET shopping-lists` (D15) se mesure après quelques déplacements, pas seulement sur une liste fraîche.

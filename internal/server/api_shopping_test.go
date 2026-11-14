@@ -47,6 +47,7 @@ func TestShoppingRoutesNeedASession(t *testing.T) {
 		{"POST", "/api/shopping-lists/0123/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`},
 		{"GET", "/api/shopping-lists/stale", ""},
 		{"POST", "/api/shopping-lists/0123/recompute", ""},
+		{"POST", "/api/shopping-lists/0123/move", `{"items":["0456"],"to":"0789"}`},
 	}
 	for _, slug := range []string{"martin", "dupont"} {
 		for _, r := range routes {
@@ -443,6 +444,9 @@ func TestShoppingLimits(t *testing.T) {
 	if rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/checkout", over, alice); rec.Code != 400 {
 		t.Errorf("checkout over 16 KiB: %d", rec.Code)
 	}
+	if rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/move", over, alice); rec.Code != 400 {
+		t.Errorf("move over 16 KiB: %d", rec.Code)
+	}
 }
 
 // TestShoppingConditional: ETag and 304 for unchanged lists (ADR 0029); a new dish does not
@@ -502,6 +506,7 @@ func TestShoppingListsOfAnotherTribe(t *testing.T) {
 		{"POST", "shopping-lists/%s/checkout", `{"items":[]}`},
 		{"POST", "shopping-lists/%s/meal-shopping", `{"from":"2026-10-06","to":"2026-10-12"}`},
 		{"POST", "shopping-lists/%s/recompute", ""},
+		{"POST", "shopping-lists/%s/move", `{"items":["` + item + `"],"name":"Drive"}`},
 		{"PUT", "shopping-lists/" + courses + "/items/%s/checked", `{"checked":true}`},
 		{"DELETE", "shopping-lists/" + courses + "/items/%s", ""},
 	}
@@ -519,8 +524,99 @@ func TestShoppingListsOfAnotherTribe(t *testing.T) {
 			t.Errorf("%s %s of durand: %d %v %s; unknown: %d %v %s", a.method, a.path, foreign.Code, foreign.Header(), foreign.Body, other.Code, other.Header(), other.Body)
 		}
 	}
+	// A move to a list of durand: the answer for an unknown target list.
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists", `{"name":"Drive"}`, alice)
+	wantStatus(t, rec, http.StatusCreated)
+	drive := decode[listWrittenResponse](t, rec).List.ID
+	rec = f.do("POST", "/tribes/martin/api/shopping-lists/"+drive+"/items", `{"ingredient":"pain"}`, alice)
+	wantStatus(t, rec, http.StatusCreated)
+	pain := decode[listWrittenResponse](t, rec).List.Items[0].ID
+	moveTo := func(id string) *httptest.ResponseRecorder {
+		return f.do("POST", "/tribes/martin/api/shopping-lists/"+drive+"/move", `{"items":["`+pain+`"],"to":"`+id+`"}`, alice)
+	}
+	if foreign, other := moveTo(marche), moveTo(unknown); foreign.Code != 404 || strings.TrimSpace(foreign.Body.String()) != `{"error":"target_not_found"}` || foreign.Body.String() != other.Body.String() {
+		t.Errorf("move to a list of durand: %d %s; unknown: %d %s", foreign.Code, foreign.Body, other.Code, other.Body)
+	}
 	rec = f.do("GET", "/tribes/durand/api/shopping-lists", "", david)
 	if rec.Header().Get("ETag") != `"shopping_lists-2"` || !strings.Contains(rec.Body.String(), `"ingredient":"reblochon","checked":false`) {
 		t.Errorf("lists of durand changed: %v %s", rec.Header(), rec.Body)
+	}
+}
+
+// TestMoveItems: a move to an existing list and to a new one (C9, C10, D7), its refusals,
+// and a selection of 300 identifiers in its body (revue #92, point 1).
+func TestMoveItems(t *testing.T) {
+	f := newAPIFixture(t)
+	alice := f.signIn(t, "martin", "alice@exemple.fr")
+	courses := f.mainList(t, "martin", alice).ID
+	rec := f.do("POST", "/tribes/martin/api/shopping-lists", `{"name":"Marché"}`, alice)
+	wantStatus(t, rec, http.StatusCreated)
+	marche := decode[listWrittenResponse](t, rec).List.ID
+	var pain, lessive string
+	for _, name := range []string{"pain", "lessive"} {
+		rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/items", `{"ingredient":"`+name+`"}`, alice)
+		wantStatus(t, rec, http.StatusCreated)
+		for _, it := range decode[listWrittenResponse](t, rec).List.Items {
+			if it.Ingredient == "pain" {
+				pain = it.ID
+			} else {
+				lessive = it.ID
+			}
+		}
+	}
+	move := func(body string) *httptest.ResponseRecorder {
+		return f.do("POST", "/tribes/martin/api/shopping-lists/"+courses+"/move", body, alice)
+	}
+	for _, c := range []struct{ body, status, want string }{
+		{`{"items":[],"to":"` + marche + `"}`, "400", `{"error":"no_items"}`},
+		{`{"items":["` + pain + `"],"to":"` + courses + `"}`, "400", `{"error":"same_list"}`},
+		{`{"items":["` + pain + `"],"name":""}`, "400", `{"error":"list_name_empty"}`},
+		{`{"items":["` + pain + `"]}`, "400", `{"error":"bad_request"}`},
+		{`{"items":["` + pain + `"],"to":"` + marche + `","name":"Drive"}`, "400", `{"error":"bad_request"}`},
+		{`{"items":["` + pain + `"],"to":""}`, "404", `{"error":"target_not_found"}`},
+	} {
+		if rec := move(c.body); fmt.Sprint(rec.Code) != c.status || strings.TrimSpace(rec.Body.String()) != c.want {
+			t.Errorf("%s: %d %s", c.body, rec.Code, rec.Body)
+		}
+	}
+	if rec := f.do("POST", "/tribes/martin/api/shopping-lists/"+strings.Repeat("0", 32)+"/move", `{"items":["`+pain+`"],"to":"`+marche+`"}`, alice); rec.Code != 404 || strings.TrimSpace(rec.Body.String()) != `{"error":"not_found"}` {
+		t.Errorf("unknown source list: %d %s", rec.Code, rec.Body)
+	}
+
+	// The bread and 299 identifiers gone in between, to Marché.
+	ids := []string{pain}
+	for i := range 299 {
+		ids = append(ids, fmt.Sprintf("%032x", i+1))
+	}
+	body, err := json.Marshal(map[string]any{"items": ids, "to": marche})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(body) <= maxBodyBytes {
+		t.Fatalf("move of %d bytes, within the 4 KiB", len(body))
+	}
+	rec = move(string(body))
+	wantStatus(t, rec, http.StatusOK)
+	got := decode[movedResponse](t, rec)
+	if got.Moved != 1 || got.Missing != 299 || got.List.ID != courses || len(got.List.Items) != 1 || got.Target.ID != marche ||
+		len(got.Target.Items) != 1 || got.Target.Items[0].ID != pain || got.Versions["shopping_lists"] != 4 {
+		t.Errorf("moved %s", rec.Body)
+	}
+
+	// The lessive to a new list, last, not main.
+	rec = move(`{"items":["` + lessive + `"],"name":" Drive "}`)
+	wantStatus(t, rec, http.StatusOK)
+	got = decode[movedResponse](t, rec)
+	if got.Target.Name != "Drive" || got.Target.Main || got.Target.Rank != 3 || len(got.Target.Items) != 1 || len(got.List.Items) != 0 {
+		t.Errorf("new list %s", rec.Body)
+	}
+	lists := f.lists(t, "martin", alice)
+	if len(lists) != 3 {
+		t.Errorf("lists %+v", lists)
+	}
+	for _, l := range lists {
+		if l.ID == got.Target.ID && fmt.Sprint(l) != fmt.Sprint(got.Target) {
+			t.Errorf("read back %+v\nreturned %+v", l, got.Target)
+		}
 	}
 }

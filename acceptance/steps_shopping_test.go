@@ -173,7 +173,7 @@ func (w *world) registerShoppingSteps(sc *godog.ScenarioContext) {
 		return w.removeItem(ctx, "je", list, ingredient)
 	})
 	sc.Step(`^j'ai ouvert la liste "([^"]*)"$`, w.openList)
-	sc.Step(`^Bruno a retiré entre-temps "([^"]*)" de la liste "([^"]*)"$`, func(ctx context.Context, ingredient, list string) error {
+	sc.Step(`^Bruno a retiré entre-temps (?:l'article ajouté )?"([^"]*)" de la liste "([^"]*)"$`, func(ctx context.Context, ingredient, list string) error {
 		if err := w.removeItem(ctx, "Bruno", list, ingredient); err != nil {
 			return err
 		}
@@ -302,7 +302,7 @@ func (w *world) registerShoppingSteps(sc *godog.ScenarioContext) {
 		w.shopping.seen = lists
 		return err
 	})
-	sc.Step(`^je tente de (renommer|désigner comme principale|ajouter un article à|ajouter les courses des repas à|déclarer les courses faites de|recalculer|supprimer) la liste "([^"]*)" de la tribu "([^"]*)" en utilisant son identifiant$`, w.crossAccessList)
+	sc.Step(`^je tente de (renommer|désigner comme principale|ajouter un article à|ajouter les courses des repas à|déclarer les courses faites de|recalculer|déplacer l'article "[^"]*" depuis|supprimer) la liste "([^"]*)" de la tribu "([^"]*)" en utilisant son identifiant$`, w.crossAccessList)
 	sc.Step(`^la liste "([^"]*)" de la tribu "([^"]*)" est inchangée$`, w.otherListUnchanged)
 	sc.Step(`^je tente de cocher puis de retirer cet article de la tribu "([^"]*)" en utilisant son identifiant et celui de sa liste$`, w.crossAccessItem)
 	sc.Step(`^chaque requête est refusée$`, func() error {
@@ -1248,6 +1248,13 @@ func (w *world) crossAccessList(ctx context.Context, action, name, slug string) 
 	}
 	w.shopping.foreign = target
 	attempt := func(id string) (*httptest.ResponseRecorder, error) {
+		if strings.HasPrefix(action, "déplacer") {
+			items := []string{}
+			for _, it := range target.Items {
+				items = append(items, string(it.ID))
+			}
+			return w.api(ctx, "je", http.MethodPost, "shopping-lists/"+id+"/move", map[string]any{"items": items, "name": "Drive"})
+		}
 		switch action {
 		case "renommer":
 			return w.api(ctx, "je", http.MethodPut, "shopping-lists/"+id+"/name", map[string]string{"name": "Drive"})
