@@ -24,6 +24,18 @@ import {
   takenSentence,
   listSummary,
   mealDays,
+  moveErrorMessage,
+  moveTargets,
+  movedMessage,
+  moveTitle,
+  newListSheetMessage,
+  selectAllLabel,
+  selectedIn,
+  selectionHint,
+  selectionLabel,
+  targetSummary,
+  toggleAll,
+  toggleSelected,
   mealShoppingErrorMessage,
   mealShoppingMessage,
   monthGrid,
@@ -356,3 +368,79 @@ for (const [name, args, want] of deletedCases) {
     assert.equal(deletedListMessage(...args), want);
   });
 }
+
+test("selectionLabel: the header of the selection mode (D14)", () => {
+  assert.equal(selectionLabel(0), "Aucun article");
+  assert.equal(selectionLabel(1), "1 sélectionné");
+  assert.equal(selectionLabel(2), "2 sélectionnés");
+});
+
+test("selectionHint: under the header, the list named", () => {
+  assert.equal(selectionHint("Courses"), "Choisissez les articles à sortir de « Courses ». Ils gardent leur coche et leurs plats.");
+});
+
+test("selectedIn: the items selected still in the list, in the order of the list (D14)", () => {
+  const l = list("l", { items: [item("a"), item("b"), item("c", { checked: true })] });
+  assert.deepEqual(selectedIn(new Set(["c", "a", "gone"]), l), ["a", "c"]);
+  assert.deepEqual(selectedIn(new Set(), l), []);
+});
+
+test("toggleSelected: an item in, then out", () => {
+  const once = toggleSelected(new Set(["a"]), "b");
+  assert.deepEqual([...once].sort(), ["a", "b"]);
+  assert.deepEqual([...toggleSelected(once, "a")], ["b"]);
+});
+
+test("selectAllLabel and toggleAll: « Tout », then « Aucun » once every item is selected, checked ones too", () => {
+  const l = list("l", { items: [item("a"), item("b", { checked: true })] });
+  assert.equal(selectAllLabel(new Set(["a"]), l), "Tout");
+  const all = toggleAll(new Set(["a"]), l);
+  assert.deepEqual([...all].sort(), ["a", "b"]);
+  assert.equal(selectAllLabel(all, l), "Aucun");
+  assert.deepEqual([...toggleAll(all, l)], []);
+  // An item gone in between does not count.
+  assert.equal(selectAllLabel(new Set(["a", "b", "gone"]), l), "Aucun");
+});
+
+test("moveTitle and newListSheetMessage: the two sheets", () => {
+  assert.equal(moveTitle(1), "Déplacer 1 article vers…");
+  assert.equal(moveTitle(2), "Déplacer 2 articles vers…");
+  assert.equal(newListSheetMessage(1, "Courses"), "L’article sélectionné quittera « Courses » pour cette nouvelle liste.");
+  assert.equal(newListSheetMessage(2, "Courses"), "Les 2 articles sélectionnés quitteront « Courses » pour cette nouvelle liste.");
+});
+
+test("moveTargets: the other lists, in the order of the picker, with their number of items", () => {
+  const courses = list("c", { name: "Courses", main: true, rank: 1, items: [item("a")] });
+  const drive = list("d", { name: "Drive", rank: 3 });
+  const marche = list("m", { name: "Marché", rank: 2, items: [item("b"), item("c"), item("e", { checked: true })] });
+  assert.deepEqual(moveTargets([drive, courses, marche], "c").map((l) => l.id), ["m", "d"]);
+  assert.deepEqual(moveTargets([drive, courses, marche], "d").map((l) => l.id), ["c", "m"]);
+  assert.equal(targetSummary(marche), "3 articles");
+  assert.equal(targetSummary(courses), "1 article");
+  assert.equal(targetSummary(drive), "Vide");
+});
+
+// The green banner after a move (D11, D14), the name of the target list a link; review of
+// PR #118, point 1: toward a new list, nothing may be moved, the list created all the same.
+const movedCases: [string, Parameters<typeof movedMessage>, [string, string, string]][] = [
+  ["one item", [1, 0, "Marché", false], ["1 article déplacé vers ", "« Marché »", "."]],
+  ["two items", [2, 0, "Marché", false], ["2 articles déplacés vers ", "« Marché »", "."]],
+  ["toward a new list", [2, 0, "Drive", true], ["2 articles déplacés vers la nouvelle liste ", "« Drive »", "."]],
+  ["one item gone in between", [1, 1, "Marché", false], ["1 article déplacé vers ", "« Marché »", ". 1 article n’était plus dans la liste."]],
+  ["two items gone in between", [1, 2, "Marché", false], ["1 article déplacé vers ", "« Marché »", ". 2 articles n’étaient plus dans la liste."]],
+  ["nothing moved, every item gone", [0, 2, "Marché", false], ["Aucun article déplacé vers ", "« Marché »", ". 2 articles n’étaient plus dans la liste."]],
+  ["a new list created empty, every item gone", [0, 1, "Drive", true], ["La nouvelle liste ", "« Drive »", " a été créée, vide. 1 article n’était plus dans la liste."]],
+];
+
+for (const [name, args, [start, link, end]] of movedCases) {
+  test(`movedMessage: ${name}`, () => {
+    assert.deepEqual(movedMessage(...args), { start, link, end });
+  });
+}
+
+test("moveErrorMessage: the refusals of a move, the target list named (Q38, Q42)", () => {
+  assert.deepEqual(moveErrorMessage("target_not_found", "Marché"), { kind: "warning", text: "La liste « Marché » a été supprimée entre-temps. Rien n’a été déplacé." });
+  assert.deepEqual(moveErrorMessage("too_many_items", "Marché"), { kind: "error", text: "La liste « Marché » ne peut pas dépasser 300 articles : rien n’a été déplacé." });
+  assert.equal(moveErrorMessage("too_many_lists", "Drive"), undefined);
+  assert.equal(moveErrorMessage("list_name_empty", "Drive"), undefined);
+});
