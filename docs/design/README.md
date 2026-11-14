@@ -378,7 +378,7 @@ Les bandeaux d'avertissement n'ont pas de bouton de fermeture : ils disparaissen
 
 **Recalcul, part prise et sélection** (plan `courses-suite`, lot A, 2026-11-14)
 
-`Doux-ListeSuite`, `Doux-ChoixListesSuite` et `GE-CoursesSuite-*` font référence pour ce plan : dessinées d'après `Doux-Liste`, `Doux-Courses` (états périmée et sélection) et `GE-Courses-*`, dans les trois formats (`grands-ecrans`, D13 ; `courses-suite`, D17), à valider par le développeur à la revue du lot A. `Doux-Courses` et `Doux-CoursesSelection` ne restent la référence que de l'état hors ligne.
+`Doux-ListeSuite`, `Doux-ChoixListesSuite` et `GE-CoursesSuite-*` font référence pour ce plan : dessinées d'après `Doux-Liste`, `Doux-Courses` (états périmée et sélection) et `GE-Courses-*`, dans les trois formats (`grands-ecrans`, D13 ; `courses-suite`, D17), validées par le développeur le 2026-11-14. `Doux-Courses` et `Doux-CoursesSelection` ne restent la référence que de l'état hors ligne.
 
 - **Bandeau de liste périmée** (C8, D13) : sous l'en-tête, avant la progression : liseré ambre `#F2D27A`, icône de recalcul, « Des repas ont changé depuis l'ajout de leurs courses à cette liste. », puis « Recalculer » en aplat rouge tomate, aligné à gauche. Pendant le recalcul, le bouton devient « Recalcul en cours… », inactif, en pointillé. Après, le bandeau disparaît et un bandeau vert « Liste recalculée. », avec sa croix, le remplace. Le bandeau n'apparaît pas en mode sélection.
 - **Pastille « Repas modifiés »** (C8) : sur la carte d'une liste périmée, dans le choix des listes comme dans le volet de liste en étendu, après « principale » : pilule de 12 px au liseré `#F2D27A`, texte `#8A6100`, icône de recalcul.
