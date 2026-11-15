@@ -1,15 +1,17 @@
 // Reporter of Playwright that writes the control page of a run (plan recette-auto, step 12):
 // the control points of the plan of the acceptance run, each with its capture and its video at
 // the instant of its step. A point whose step ran in no journey fails the run.
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import type { FullResult, Reporter, TestCase, TestResult, TestStep } from "@playwright/test/reporter";
-import { type RanStep, type RanTest, controlPage, matchPoints, parseControlPoints } from "./controle.ts";
+import { type ControlPoint, type RanStep, type RanTest, controlPage, matchPoints } from "./controle.ts";
 import { captureName, videoStartAnnotation } from "./test.ts";
 
 interface Options {
   /** docs/recettes/vX.Y.Z.md */
   plan: string;
+  /** Its control points, read with the settings, before the run (recetteSettings). */
+  points: ControlPoint[];
   /** Directory of the run, where the page and the captures are written. */
   outputDir: string;
 }
@@ -56,9 +58,9 @@ export default class ControlReporter implements Reporter {
   }
 
   async onEnd(result: FullResult): Promise<{ status: FullResult["status"] } | undefined> {
-    const { plan, outputDir } = this.#options;
+    const { plan, points, outputDir } = this.#options;
     const version = basename(plan, ".md");
-    const { shown, missing } = matchPoints(parseControlPoints(await readFile(plan, "utf8")), this.#tests);
+    const { shown, missing } = matchPoints(points, this.#tests);
     // Only the captures of the designated steps are written, named after their point.
     await mkdir(join(outputDir, "captures"), { recursive: true });
     for (const s of shown) {

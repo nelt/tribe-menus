@@ -4,6 +4,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { type ControlPoint, parseControlPoints } from "./controle.ts";
 
 export interface RecetteSettings {
   /** https://<host>/tribes/<slug>/, the tribe recette-auto on the staging instance. */
@@ -18,9 +19,17 @@ export interface RecetteSettings {
   outputDir: string;
   /** The plan of the acceptance run of the version, docs/recettes/vX.Y.Z.md (D12). */
   plan: string;
+  /**
+   * Its control points of the video, read with the settings: an unreadable plan stops
+   * Playwright before the project setup, without using up a code request (review of #123).
+   */
+  points: ControlPoint[];
 }
 
-/** Reads the settings; throws when run otherwise than by make recette-auto. */
+/**
+ * Reads the settings and the control points of the plan; throws when run otherwise than by
+ * make recette-auto, or when the plan cannot be read.
+ */
 export function recetteSettings(env: NodeJS.ProcessEnv = process.env): RecetteSettings {
   const configDir = env["RECETTE_CONFIG_DIR"] || join(homedir(), ".config", "tribe-menus");
   const outputDir = env["RECETTE_OUTPUT_DIR"];
@@ -32,6 +41,12 @@ export function recetteSettings(env: NodeJS.ProcessEnv = process.env): RecetteSe
   if (typeof file.tribeURL !== "string" || !/^https:\/\/[^/]+\/tribes\/[^/]+\/$/.test(file.tribeURL) || typeof file.address !== "string") {
     throw new Error("recette-auto.json: tribeURL https://<host>/tribes/<slug>/ and address needed");
   }
+  let points: ControlPoint[];
+  try {
+    points = parseControlPoints(readFileSync(plan, "utf8"));
+  } catch (error) {
+    throw new Error(`${plan}: ${error instanceof Error ? error.message : String(error)}`);
+  }
   return {
     tribeURL: file.tribeURL,
     address: file.address,
@@ -39,5 +54,6 @@ export function recetteSettings(env: NodeJS.ProcessEnv = process.env): RecetteSe
     storageState: join(configDir, "recette-auto.state.json"),
     outputDir,
     plan,
+    points,
   };
 }

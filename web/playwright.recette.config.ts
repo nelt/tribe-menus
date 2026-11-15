@@ -35,7 +35,7 @@ export default defineConfig({
   reporter: [
     ["list"],
     ["html", { open: "never", outputFolder: join(settings.outputDir, "rapport") }],
-    ["./recette/controle-reporter.ts", { plan: settings.plan, outputDir: settings.outputDir }],
+    ["./recette/controle-reporter.ts", { plan: settings.plan, points: settings.points, outputDir: settings.outputDir }],
   ],
   use: {
     baseURL: settings.tribeURL,
