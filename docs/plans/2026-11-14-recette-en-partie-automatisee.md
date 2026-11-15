@@ -2,7 +2,7 @@
 
 - **Nom** : `recette-auto`
 - **Date** : 2026-11-14
-- **Statut** : brouillon. D1 à D4 demandées par le développeur le 2026-11-14 ; les autres proposées, confirmées par la fusion de la PR du plan. Place dans la feuille de route : lot A pendant la fin de `courses-suite`, pour servir dès la recette de `v0.6.0` ; lots B et C après `courses-suite`, avant le plan hors-ligne (D14).
+- **Statut** : brouillon. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres proposées, confirmées par la fusion de la PR du plan. Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
 
 ## Objectif
 
@@ -46,7 +46,7 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 - **D11. Vidéos dans un volume, supprimées en fin de recette** (ADR 0032, points 11 et 12) : volume `tribe-menus-recette-videos`, monté sur `/home/vscode/recette-videos`, distinct du volume des secrets ; un dossier `vX.Y.Z/<horodatage>/` par exécution (vidéos, traces, captures, page de contrôle), les exécutions relancées après un correctif s'y ajoutant ; ni archive ni empreinte. `make recette-clean VERSION=vX.Y.Z` supprime le dossier de la version quand la recette est terminée : plan de recette rempli, release décidée ou abandonnée ; `make recette-clean` sans version vide le volume.
 - **D12. Le plan de recette d'une version** (`docs/recettes/vX.Y.Z.md`) : tableau des changements (entrée, gravité, probabilité, dépendance, voie, parcours ou point de la séance), liste des points de contrôle de la vidéo et check-list de la séance manuelle, tirées du tableau, puis les résultats : exécution automatique (date, PR déployée, parcours passés ou en échec), contrôle de la vidéo (verdict par point, remarque, instant de la vidéo et description d'un défaut, assez précise pour se passer de la vidéo une fois supprimée), séance manuelle (cases cochées, défauts et PR qui les corrigent), écarts acceptés. Un défaut corrigé relance une analyse réduite aux changements du correctif.
 - **D13. `RELEASING.md`, étape 6** devient : analyse et plan de recette dans la PR de release ; déploiement en recette ; `make recette-auto` ; contrôle de la vidéo, point par point ; séance manuelle guidée d'après le plan, réduite au vrai appareil et aux vraies messageries ; résultats consignés ; `make recette-clean` une fois la recette terminée. Les scénarios `@manuel` y restent, toujours dans la voie manuelle.
-- **D14. Placement** : le lot A (procédure, gabarit) ne demande aucun outil et sert dès la recette de `v0.6.0`, avec la voie automatique encore vide ; il peut fusionner pendant `courses-suite` sans rien changer à l'application. Les lots B et C viennent après `v0.6.0`, avant le plan hors-ligne, dont la recette (réseau coupé, application installée) gagnera à s'appuyer dessus.
+- **D14. Placement** (décision du développeur, 2026-11-15) : la recette automatique est en place **pour la recette de `v0.6.0`**. Les lots A à C passent après les lots de `courses-suite` (tous fusionnés le 2026-11-14) et avant la PR de release `release/v0.6.0`, ouverte une fois le lot C fusionné : ses notes de version emportent donc les lignes de ce plan, qui ne changent pas l'application. Le plan de recette de `v0.6.0` est le premier ; ses parcours ciblés sont écrits au lot C, d'après une analyse anticipée des changements de `v0.6.0`. Remplace la proposition du 2026-11-14 (lot A seul pour `v0.6.0`, outillage après).
 
 ## Étapes
 
@@ -72,9 +72,11 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 - [ ] 13. Parcours de base (ADR 0032, point 5) : connexion (projet `setup`) ; chaque onglet dans chaque projet ; créer un plat suffixé de l'exécution et le retrouver par la recherche ; l'ajouter à un repas de demain et relire le planning ; ajouter les courses du repas à « Courses » et cocher un article ; recharger et retrouver chaque écriture.
 - [ ] 14. Contrôles du serveur visibles depuis le navigateur : la page de la tribu sert `Cache-Control: no-cache`, les fichiers à empreinte `immutable`, le cookie de session préfixé `__Host-` (lus dans les réponses enregistrées par Playwright, sans rien ajouter à l'application).
-- [ ] 15. Séance S1 (ci-dessous), puis première exécution complète sur l'archive de la PR d'un lot ou de `main`, avant une release.
-- [ ] 16. Première release passée par le déroulé complet (D13), avec ses parcours ciblés ; plan de recette rempli.
-- [ ] 17. Clôture : statut « terminé » ; feuille de route ; `CLAUDE.md` (commandes : `recette-auto` ; recette) ; `CHANGELOG.md`.
+- [ ] 15. Analyse anticipée des changements de `v0.6.0` (section `## Non publié` de `CHANGELOG.md`, migration `0010`) : brouillon de `docs/recettes/v0.6.0.md`, validé par le développeur avant l'écriture des parcours ciblés.
+- [ ] 16. Parcours ciblés de `v0.6.0` que l'analyse demande, avec leurs étapes nommées pour les points de contrôle de la vidéo (pistes : liste périmée et « Recalculer », part prise, sélection et déplacement dans les trois formats, écritures croisées à deux contextes, taille de `GET shopping-lists`).
+- [ ] 17. Séance S1 (ci-dessous) ; répétition générale : archive de la PR du lot C déployée en recette (elle contient tout `courses-suite`), `make recette-auto`, contrôle de la vidéo, corrections des parcours ; `make recette-clean`.
+- [ ] 18. Recette de `v0.6.0` par le déroulé complet (D13) sur l'archive de la PR de release ; plan de recette rempli ; release et déploiement en production selon `RELEASING.md` (étapes 28 et 29 de `courses-suite`).
+- [ ] 19. Clôture : statut « terminé » ; feuille de route ; `CLAUDE.md` (commandes : `recette-auto` ; recette) ; `CHANGELOG.md`.
 
 ### Séance S1 : préparation (développeur)
 
@@ -98,7 +100,6 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 ## Questions ouvertes
 
-- **Lot A pour `v0.6.0`** (D14) : le développeur veut-il l'analyse dès la recette de `v0.6.0`, quitte à fusionner le lot A avant la PR de release de `courses-suite` ?
 - **Projets** : quatre suffisent-ils, ou faut-il la tablette en portrait (`moyen`) dans les parcours de base ?
 - **Place des vidéos** pendant une recette (quatre projets, exécutions relancées) : à mesurer à la première exécution ; sans incidence durable, le volume étant vidé à la fin.
 - **Tribu `recette-auto` qui s'emplit** : la recréer à chaque reconstruction de la recette, ou ajouter une commande d'administration qui la vide ?
