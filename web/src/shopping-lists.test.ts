@@ -48,7 +48,14 @@ const writeCases: [string, Parameters<typeof shoppingWriteOf>[0], Outcome<Shoppi
   ],
   ["a count not a number", { status: 200, body: { list: marche, added: "4", ignored: 1, versions: {} } }, { kind: "network-error" }],
   ["the versions only, empty", { status: 200, body: { versions: {} } }, { kind: "ok", value: { kind: "written", list: undefined, versions: {}, removed: undefined } }],
+  [
+    "a move",
+    { status: 200, body: { list: courses, target: marche, moved: 2, missing: 1, versions: { shopping_lists: 6 } } },
+    { kind: "ok", value: { kind: "written", list: courses, versions: { shopping_lists: 6 }, removed: undefined, target: marche, moved: 2, missing: 1 } },
+  ],
+  ["a move without its target", { status: 200, body: { list: courses, moved: 2, missing: 1, versions: {} } }, { kind: "network-error" }],
   ["a list unknown", { status: 404, body: { error: "not_found" } }, { kind: "ok", value: { kind: "not-found" } }],
+  ["the target of a move unknown", { status: 404, body: { error: "target_not_found" } }, { kind: "ok", value: { kind: "refused", error: "target_not_found", list: undefined } }],
   ["a name refused", { status: 400, body: { error: "list_name_empty" } }, { kind: "ok", value: { kind: "refused", error: "list_name_empty", list: undefined } }],
   ["a list no longer empty", { status: 409, body: { error: "list_not_empty", list: marche } }, { kind: "ok", value: { kind: "refused", error: "list_not_empty", list: marche } }],
   ["a request refused for its form", { status: 400, body: { error: "bad_request" } }, { kind: "network-error" }],
@@ -95,6 +102,7 @@ function fakeApi(lists: Collection[], writes: Outcome<ShoppingWrite>[], catalog:
     checkOut: write("checkout"),
     addMealShopping: write("meal-shopping"),
     recomputeList: write("recompute"),
+    moveItems: write("move"),
     getStaleLists: async (): Promise<Outcome<string[]>> => {
       calls.push("GET stale");
       return (stale.length > 1 ? stale.shift() : stale[0]) ?? { kind: "network-error" };
@@ -277,7 +285,7 @@ test("ShoppingLists.checkOut: the number of items removed (D9)", async () => {
   const lists = await loaded(api);
   const result = await lists.checkOut("c", ["a1"]);
   assert.equal(result.kind === "done" && result.removed, 1);
-  assert.deepEqual(calls.at(-1), 'checkout ["c",["a1"]]');
+  assert.deepEqual(calls.at(-2), 'checkout ["c",["a1"]]');
 });
 
 test("ShoppingLists.clear: the copy is forgotten", async () => {
@@ -415,4 +423,65 @@ test("listOf: an item with a taken quantity (D9)", () => {
   const raw = { ...courses, items: [{ ...boeuf, quantity: "1250", taken: "875" }] };
   assert.deepEqual(listOf(raw)?.items[0]?.taken, "875");
   assert.equal(listOf({ ...courses, items: [{ ...boeuf, taken: 875 }] }), undefined);
+});
+
+const moved = (list: unknown, target: unknown, n: number, missing: number, versions: Record<string, number>): Outcome<ShoppingWrite> => ({
+  kind: "ok",
+  value: { kind: "written", list, target, moved: n, missing, versions, removed: undefined },
+});
+
+test("ShoppingLists.move: the two lists taken, then the stale lists read again (C9, D14; review of PR #119, point 2)", async () => {
+  const left = { ...courses, items: [boeuf] };
+  const arrived = { ...marche, items: [pain], received: [] };
+  const { api, calls } = fakeApi([{ version: 5, items: [courses, marche] }], [moved(left, arrived, 1, 0, { shopping_lists: 6 })], undefined, [{ kind: "ok", value: ["c"] }, { kind: "ok", value: ["m"] }]);
+  const lists = await loaded(api);
+  assert.deepEqual(await lists.move("c", ["a1"], { list: "m" }), { kind: "done", target: listOf(arrived), moved: 1, missing: 0 });
+  assert.deepEqual(calls.slice(-2), ['move ["c",["a1"],{"list":"m"}]', "GET stale"]);
+  assert.deepEqual(lists.find("c")?.items.map((i) => i.id), ["a2"]);
+  assert.deepEqual(lists.find("m")?.items.map((i) => i.id), ["a1"]);
+  assert.equal(lists.lists.version, 6);
+  assert.equal(lists.isStale("c"), false);
+  assert.equal(lists.isStale("m"), true);
+});
+
+test("ShoppingLists.move: toward a new list, taken into the copy, even with nothing moved (C10; review of PR #118, point 1)", async () => {
+  const drive = { id: "d", name: "Drive", main: false, rank: 3, items: [], received: [] };
+  const { api, calls } = fakeApi([{ version: 5, items: [courses, marche] }], [moved(courses, drive, 0, 1, { shopping_lists: 6 })]);
+  const lists = await loaded(api);
+  assert.deepEqual(await lists.move("c", ["gone"], { name: "Drive" }), { kind: "done", target: listOf(drive), moved: 0, missing: 1 });
+  assert.equal(calls.at(-2), 'move ["c",["gone"],{"name":"Drive"}]');
+  assert.deepEqual(names(lists), ["Courses*", "Drive", "Marché"]);
+});
+
+test("ShoppingLists.move: the target deleted in between, the copy checked; 300 items; the source deleted, named (Q38, Q42, D12)", async () => {
+  const { api, calls } = fakeApi(
+    [{ version: 5, items: [courses, marche] }, { version: 6, items: [courses] }, { version: 6, items: [courses] }, { version: 7, items: [] }],
+    [
+      { kind: "ok", value: { kind: "refused", error: "target_not_found", list: undefined } },
+      { kind: "ok", value: { kind: "refused", error: "too_many_items", list: undefined } },
+      { kind: "ok", value: { kind: "not-found" } },
+    ],
+  );
+  const lists = await loaded(api);
+  assert.deepEqual(await lists.move("c", ["a1"], { list: "m" }), { kind: "refused", error: "target_not_found" });
+  assert.equal(lists.find("m"), undefined);
+  assert.equal(calls.at(-2), "GET shopping-lists");
+  assert.deepEqual(await lists.move("c", ["a1"], { list: "m" }), { kind: "refused", error: "too_many_items" });
+  assert.deepEqual(await lists.move("c", ["a1"], { name: "Drive" }), { kind: "deleted", name: "Courses" });
+});
+
+test("ShoppingLists.move: a name refused, nothing checked", async () => {
+  const { api, calls } = fakeApi([{ version: 5, items: [courses] }], [{ kind: "ok", value: { kind: "refused", error: "list_name_empty", list: undefined } }]);
+  const lists = await loaded(api);
+  assert.deepEqual(await lists.move("c", ["a1"], { name: " " }), { kind: "refused", error: "list_name_empty" });
+  assert.equal(calls.at(-1), 'move ["c",["a1"],{"name":" "}]');
+});
+
+test("ShoppingLists.checkOut: the stale lists read again once done (review of PR #119, point 2)", async () => {
+  const { api, calls } = fakeApi([{ version: 5, items: [courses] }], [written({ ...courses, items: [boeuf] }, { shopping_lists: 6 }, 1)], undefined, [{ kind: "ok", value: ["c"] }, { kind: "ok", value: [] }]);
+  const lists = await loaded(api);
+  assert.equal(lists.isStale("c"), true);
+  assert.equal((await lists.checkOut("c", ["a1"])).kind, "done");
+  assert.deepEqual(calls.slice(-2), ['checkout ["c",["a1"]]', "GET stale"]);
+  assert.equal(lists.isStale("c"), false);
 });

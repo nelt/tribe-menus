@@ -1,7 +1,7 @@
 // Steps of the scenarios @ui of the shopping lists (liste-courses.feature), against the real
 // server (ADR 0028; plan courses, D16). The lists and the dishes are written through the API,
 // as a member would with another device; what is proved is what the browser shows.
-import { expect } from "@playwright/test";
+import { type Page, expect } from "@playwright/test";
 import { unitCode } from "./steps-dishes.ts";
 import { apiDay, mealOf } from "./steps-planning.ts";
 import { World, step } from "./steps.ts";
@@ -272,12 +272,26 @@ step(/le "([^"]*)" du (.+?) (à midi|au soir) réglé à (\d+) parts/, async (wo
   await setServings(world, "je", name ?? "", day ?? "", mealtime ?? "", servings ?? "");
 });
 
-/** Shows a list in the browser, unless it already is: the main list at the path of the tab. */
+/**
+ * The name of the list shown: its title, or in selection mode the hint under the header,
+ * « Choisissez les articles à sortir de « Courses ». … » (plan courses-suite, D14).
+ */
+export async function shownListName(page: Page): Promise<string | undefined> {
+  const main = page.getByRole("main");
+  const title = main.getByRole("heading", { level: 1 }).locator(".shopping-title-name");
+  if ((await title.count()) > 0) {
+    return (await title.textContent()) ?? undefined;
+  }
+  const hint = main.locator(".selection-hint");
+  return (await hint.count()) > 0 ? /« (.*) »/.exec((await hint.textContent()) ?? "")?.[1] : undefined;
+}
+
+/** Shows a list in the browser, unless it already is, a selection kept: the main list at the path of the tab. */
 async function showList(world: World, name: string): Promise<void> {
-  const title = world.page.getByRole("heading", { level: 1 }).locator(".shopping-title-name");
-  if (world.pageOwner !== undefined && (await title.count()) > 0 && (await title.textContent()) === name) {
+  if (world.pageOwner !== undefined && (await shownListName(world.page)) === name) {
     return;
   }
+  const title = world.page.getByRole("heading", { level: 1 }).locator(".shopping-title-name");
   const list = (await lists(world)).find((l) => l.name === name);
   if (list === undefined) {
     throw new Error(`no list "${name}"`);
@@ -326,4 +340,129 @@ step(/la liste "([^"]*)" (ne )?porte (?:pas )?la mention "([^"]*)"/, async (worl
   } else {
     await expect(card).not.toContainText(mention ?? "");
   }
+});
+
+// C9, C10
+
+step(/la liste "([^"]*)" contenant les articles ajoutés "([^"]*)" et "([^"]*)"/, async (world, name, a, b) => {
+  const list = await ensureList(world, name ?? "");
+  const tribe = await world.tribe();
+  for (const ingredient of [a, b]) {
+    await tribe.apiOk("je", "POST", `shopping-lists/${list.id}/items`, { ingredient });
+  }
+});
+
+/** The list shown in selection mode, entered unless it already is. */
+async function selecting(world: World, name: string): Promise<void> {
+  await showList(world, name);
+  const start = world.page.getByRole("button", { name: "Sélectionner", exact: true });
+  if ((await start.count()) > 0) {
+    await start.click();
+  }
+  await expect(world.page.getByRole("main").locator(".selection-hint")).toBeVisible();
+}
+
+function pickButton(page: Page, ingredient: string) {
+  return page.getByRole("button", { name: new RegExp(`^Sélectionner ${ingredient}(,|$)`) });
+}
+
+function selectionActions(page: Page) {
+  return page.getByRole("group", { name: "Actions de la sélection" });
+}
+
+step(/je sélectionne "([^"]*)" dans la liste "([^"]*)"/, async (world, ingredient, name) => {
+  await selecting(world, name ?? "");
+  await pickButton(world.page, ingredient ?? "").click();
+  await expect(pickButton(world.page, ingredient ?? "")).toHaveAttribute("aria-pressed", "true");
+});
+
+step(/"([^"]*)" est toujours sélectionné dans la liste "([^"]*)"/, async (world, ingredient, name) => {
+  await expect.poll(() => shownListName(world.page)).toBe(name);
+  await expect(pickButton(world.page, ingredient ?? "")).toHaveAttribute("aria-pressed", "true");
+});
+
+step(/aucun article n'est sélectionné/, async (world) => {
+  // The scenario names no list: the main one, that of the tab.
+  const main = (await lists(world)).find((l) => l.main);
+  await selecting(world, main?.name ?? "");
+  await expect(world.page.getByRole("heading", { level: 1 })).toHaveText("Aucun article");
+});
+
+step(/les actions de déplacement et de création à partir de la sélection sont indisponibles/, async (world) => {
+  await expect(selectionActions(world.page).getByRole("button", { name: "Déplacer vers…" })).toBeDisabled();
+  await expect(selectionActions(world.page).getByRole("button", { name: "Nouvelle liste" })).toBeDisabled();
+});
+
+step(/les actions de déplacement et de création à partir de la sélection s'affichent sous la liste "([^"]*)"/, async (world, name) => {
+  const main = world.page.getByRole("main");
+  await expect.poll(() => shownListName(world.page)).toBe(name);
+  const actions = main.getByRole("group", { name: "Actions de la sélection" });
+  await expect(actions.getByRole("button", { name: "Déplacer vers…" })).toBeEnabled();
+  await expect(actions.getByRole("button", { name: "Nouvelle liste" })).toBeEnabled();
+  // At the bottom of the pane of the list, under its items.
+  const bar = await actions.boundingBox();
+  const pane = await main.boundingBox();
+  const last = await main.locator(".item").last().boundingBox();
+  const viewport = world.page.viewportSize();
+  if (bar === null || pane === null || last === null || viewport === null) {
+    throw new Error("the actions of the selection are not laid out");
+  }
+  expect(bar.y).toBeGreaterThanOrEqual(last.y + last.height);
+  expect(Math.abs(bar.y + bar.height - viewport.height)).toBeLessThanOrEqual(1);
+  expect(bar.x).toBeGreaterThanOrEqual(pane.x - 1);
+  expect(bar.x + bar.width).toBeLessThanOrEqual(pane.x + pane.width + 1);
+});
+
+/** Waits for the green banner after a move, and keeps its text for the outcome (the next steps open other lists). */
+async function movedBanner(world: World): Promise<void> {
+  const banner = world.page.locator(".banner-done").filter({ has: world.page.locator(".banner-link") });
+  await expect(banner).toBeVisible();
+  world.memory.set("moved", ((await banner.textContent()) ?? "").replace(/\s+/g, " ").trim());
+}
+
+step(/je déplace la sélection vers la liste "([^"]*)"/, async (world, target) => {
+  await selectionActions(world.page).getByRole("button", { name: "Déplacer vers…" }).click();
+  await world.page
+    .getByRole("dialog")
+    .locator(".sheet-target")
+    .filter({ has: world.page.locator(".sheet-target-name").getByText(target ?? "", { exact: true }) })
+    .click();
+  await movedBanner(world);
+});
+
+step(/je crée la liste "([^"]*)" à partir de la sélection/, async (world, name) => {
+  await selectionActions(world.page).getByRole("button", { name: "Nouvelle liste" }).click();
+  const sheet = world.page.getByRole("dialog", { name: "Nouvelle liste" });
+  await sheet.getByRole("textbox", { name: "Nom de la liste" }).fill(name ?? "");
+  await sheet.getByRole("button", { name: "Créer la liste" }).click();
+  await movedBanner(world);
+});
+
+step(/un message m'indique que (\d+) articles? (?:a|ont) été déplacés? vers la liste "([^"]*)"/, async (world, n, target) => {
+  const moved = Number(n);
+  expect(world.memory.get("moved")).toBe(`${moved} ${moved > 1 ? "articles déplacés" : "article déplacé"} vers « ${target ?? ""} ».`);
+});
+
+/** The lines of an ingredient in the list shown. */
+function itemLines(page: Page, ingredient: string) {
+  return page.locator(".item").filter({ has: page.locator(".item-name", { hasText: new RegExp(`^${ingredient}$`) }) });
+}
+
+step(/la liste "([^"]*)" contient (?:toujours )?l'article ajouté "([^"]*)"/, async (world, name, ingredient) => {
+  await showList(world, name ?? "");
+  await expect(itemLines(world.page, ingredient ?? "").locator(".pill")).toHaveText("ajouté");
+});
+
+step(/la liste "([^"]*)" ne contient plus "([^"]*)"/, async (world, name, ingredient) => {
+  await showList(world, name ?? "");
+  await expect(world.page.locator(".items")).toBeVisible();
+  await expect(itemLines(world.page, ingredient ?? "")).toHaveCount(0);
+});
+
+step(/la liste principale de la tribu est toujours la liste "([^"]*)"/, async (world, name) => {
+  // The tab Courses opens the main list (C1).
+  await world.open("je", "courses");
+  const title = world.page.getByRole("heading", { level: 1 });
+  await expect(title.locator(".shopping-title-name")).toHaveText(name ?? "");
+  await expect(title.locator(".pill--main")).toHaveText("principale");
 });

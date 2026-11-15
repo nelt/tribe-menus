@@ -359,6 +359,8 @@ Plan `courses-suite` : après chaque vérification de la copie, `GET shopping-li
 
 Réalisation (`courses-suite`, lot D) : les listes périmées sont relues après chaque vérification de la copie, y compris celle qui suit un refus ou un `404` ; sans réponse, elles restent ce qu'elles étaient. Une coche montrée aussitôt efface la part prise de l'article. Un `404` rend le nom de la liste lu dans la copie avant la vérification ; l'écran qui a écrit en fait le message, avec ce qui n'a pas été fait (`deletedListMessage`), et le passe à la liste principale par l'événement `list-deleted`. Une provenance dont le plat manque à la copie de la bibliothèque fait vérifier celle-ci une fois par plat.
 
+Réalisation (`courses-suite`, lot E) : `move` prend la liste de départ et la liste d'arrivée de la réponse (une liste nouvelle entre ainsi dans la copie), puis relit les listes périmées, comme « Courses faites » (revue de la PR #119, point 2) : les plats servis reçus copiés peuvent rendre périmée la liste d'arrivée, et les articles partis cesser de rendre périmée la liste de départ. `404 target_not_found` est un refus, compté parmi les conflits : la copie se vérifie et oublie la liste d'arrivée. La sélection n'envoie que les articles sélectionnés encore dans la copie ; si tous en sont partis, rien n'est envoyé.
+
 Ce que l'écran montre de ces échanges (bandeaux, feuilles, messages, « Réseau nécessaire ») est décrit dans `docs/design/README.md`, « Listes de courses » et « Messages des listes de courses » (lot A). `shopping.ts` trie de nouveau les articles après une coche locale, avec la même règle que `SortItems`.
 
 ## Échanges

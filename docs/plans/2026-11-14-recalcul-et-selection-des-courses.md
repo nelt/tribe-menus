@@ -166,10 +166,10 @@ Depuis une session cloud, une fois ce plan revu et ses décisions confirmées.
 
 ### Lot E : sélection à l'écran, dans les trois formats (`feature/ecran-selection`)
 
-- [ ] **24. `shopping.ts`** : état de sélection (sélectionnés, « Tout » et « Aucun », actions possibles, articles disparus retirés), libellés des bandeaux du déplacement, avec leurs tests.
-- [ ] **25. Mode sélection** (D14) : en-tête, pastilles rondes, cartes sélectionnées, actions en compact et dans le volet de la liste en moyen et en étendu ; navigations par `#go`.
-- [ ] **26. Feuilles « Déplacer vers… » et « Nouvelle liste »**, bandeaux après le déplacement, refus (D11).
-- [ ] **27. C9, C10 et les scénarios de `formats-ecran.feature`** sous les sept projets, retirés de `pending.txt`.
+- [x] **24. `shopping.ts`** : état de sélection (sélectionnés, « Tout » et « Aucun », actions possibles, articles disparus retirés), libellés des bandeaux du déplacement, avec leurs tests. *Fait le 2026-11-14* : `selectedIn`, `toggleSelected`, `toggleAll`, `movedMessage` (table de cas, dont la liste nouvelle créée vide), `moveErrorMessage` ; `Api.moveItems`, `ShoppingLists.move`, listes périmées relues après un déplacement et après « Courses faites » (revue #119, point 2).
+- [x] **25. Mode sélection** (D14) : en-tête, pastilles rondes, cartes sélectionnées, actions en compact et dans le volet de la liste en moyen et en étendu ; navigations par `#go`. *Fait le 2026-11-14* : barre d'onglets masquée en compact par `:has(.selection-actions)` ; actions collées en bas du volet (`position: sticky`) en moyen et en étendu ; le lien du bandeau passe par `#go` (`#followLink`).
+- [x] **26. Feuilles « Déplacer vers… » et « Nouvelle liste »**, bandeaux après le déplacement, refus (D11). *Fait le 2026-11-14* : états dans `e2e/ecrans-selection.spec.ts`.
+- [x] **27. C9, C10 et les scénarios de `formats-ecran.feature`** sous les sept projets, retirés de `pending.txt`. *Fait le 2026-11-14* : cinq scénarios `@ui` (étapes dans `e2e/steps-shopping.ts`) ; `make e2e-formats` vert.
 
 ### Recette et release
 
@@ -244,3 +244,12 @@ Par le développeur, guidé pas à pas, sur téléphone Android, tablette Androi
 - **Provenance absente du dépliage** : la copie de la bibliothèque est vérifiée une fois par plat manquant d'un article déplié, pas à chaque rendu.
 - **Revue de la PR #119, point 2, pour le lot E (étape 24 ou 25, copie des listes)** : les listes périmées ne sont relues qu'aux vérifications de la copie. « Courses faites » peut retirer les derniers articles d'un plat servi changé : la liste n'est plus périmée (D2), mais le bandeau et la pastille restent jusqu'à la vérification suivante, et « Recalculer » répond « Liste recalculée. » sans rien changer. Au lot E, un déplacement peut rendre périmée la liste d'arrivée (plats servis reçus copiés, D10) et cesser de rendre périmée celle de départ. À faire : relire `GET shopping-lists/stale` après un déplacement réussi et après « Courses faites », avec leurs tests dans `shopping-lists.test.ts`.
 - **Revue de la PR #119, pour la clôture (étape 30)** : reporter dans le tableau « Messages des listes de courses » de `docs/design/README.md` les deux phrases ajoutées à D12, si le développeur les valide.
+
+**Lot E** (`feature/ecran-selection`), 2026-11-14, dans le Dev Container, à valider à la revue :
+
+- **Revue de la PR #118, point 1** : vers une liste nouvelle dont tous les articles sélectionnés sont partis entre-temps, le bandeau dit « La nouvelle liste « Drive » a été créée, vide. 1 article n'était plus dans la liste. » ; vers une liste existante, « Aucun article déplacé vers « Marché ». … ». Libellés à valider à l'écran.
+- **Revue de la PR #119, point 2** : `GET shopping-lists/stale` relu après un déplacement réussi et après « Courses faites » (`shopping-lists.test.ts`).
+- **Écarts à la maquette** : un article en sélection garde « encore 250 g » sous son nom ; son nom accessible est fixe (« Sélectionner pain, 2 pièces », avec `aria-pressed`), sans l'alternance « Sélectionner » et « Désélectionner » ; sans autre liste, la feuille « Déplacer vers… » le dit et propose « Nouvelle liste ».
+- **Liste qui se vide pendant une sélection** : le mode sélection prend fin avec son dernier article ; si tous les articles sélectionnés ont quitté la copie, une feuille ouverte se ferme sans rien envoyer.
+- **Barre d'onglets en compact** : masquée par une règle CSS (`mt-app:has(.selection-actions)`), sans état dans `mt-app`.
+- **Preuves** : en étendu, toucher une autre liste du volet de gauche quitte la sélection (`ecrans-selection.spec.ts`) ; la sélection n'est pas une saisie : aucune confirmation avant de la quitter.

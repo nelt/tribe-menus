@@ -220,12 +220,13 @@ export function mealPlanWriteOf(response: RawResponse): Outcome<MealPlanWrite> {
  * The answer to a write of the shopping lists (plan courses, D8, D9, D11): the list up to
  * date (absent after a change of the main list or a deletion), the versions of the
  * collections it changed, for a checkout the number of items removed, for the meal shopping
- * the number of served dishes added and ignored (Q22); a refusal, with
+ * the number of served dishes added and ignored (Q22), for a move the target list and the
+ * number of items moved and gone in between (plan courses-suite, D7); a refusal, with
  * its error code and, for a list no longer empty, the list up to date; or a list or an item
  * unknown, deleted in between. The lists are read by shopping-lists.ts.
  */
 export type ShoppingWrite =
-  | { kind: "written"; list: unknown; versions: Record<string, number>; removed: number | undefined; added?: number; ignored?: number }
+  | { kind: "written"; list: unknown; versions: Record<string, number>; removed: number | undefined; added?: number; ignored?: number; target?: unknown; moved?: number; missing?: number }
   | { kind: "refused"; error: string; list: unknown }
   | { kind: "not-found" };
 
@@ -236,16 +237,18 @@ export type ShoppingWrite =
 export function shoppingWriteOf(response: RawResponse): Outcome<ShoppingWrite> {
   if (response !== "network-error" && isRecord(response.body)) {
     const { status, body } = response;
-    const { versions, error, removed, added, ignored } = body;
-    const counts = [removed, added, ignored].every((n) => n === undefined || typeof n === "number");
-    if ((status === 200 || status === 201) && isRecord(versions) && Object.values(versions).every((v) => typeof v === "number") && counts) {
+    const { versions, error, removed, added, ignored, target, moved, missing } = body;
+    const counts = [removed, added, ignored, moved, missing].every((n) => n === undefined || typeof n === "number");
+    const move = typeof moved === "number" && typeof missing === "number" ? { target, moved, missing } : {};
+    if ((status === 200 || status === 201) && isRecord(versions) && Object.values(versions).every((v) => typeof v === "number") && counts && (moved === undefined || target !== undefined)) {
       const meal = typeof added === "number" && typeof ignored === "number" ? { added, ignored } : {};
-      return { kind: "ok", value: { kind: "written", list: body["list"], versions: versions as Record<string, number>, removed: removed as number | undefined, ...meal } };
+      return { kind: "ok", value: { kind: "written", list: body["list"], versions: versions as Record<string, number>, removed: removed as number | undefined, ...meal, ...move } };
     }
     if (status === 404 && error === "not_found") {
       return { kind: "ok", value: { kind: "not-found" } };
     }
-    if ((status === 400 || status === 409) && typeof error === "string" && error !== "bad_request") {
+    // The target list of a move, unknown: deleted in between (Q42).
+    if (((status === 400 || status === 409) && typeof error === "string" && error !== "bad_request") || (status === 404 && error === "target_not_found")) {
       return { kind: "ok", value: { kind: "refused", error, list: body["list"] } };
     }
   }
@@ -438,6 +441,14 @@ export class Api extends EventTarget {
   /** Brings a list back in line with the meals (C8, D5): the versions empty when nothing changes. */
   recomputeList(list: string): Promise<Outcome<ShoppingWrite>> {
     return this.#writeShopping("POST", `${listURL(list)}/recompute`);
+  }
+
+  /**
+   * Moves items to another list, or to a new list of a name (C9, C10, D7): the source and
+   * target lists sent back, with the items moved and those gone in between (Q42).
+   */
+  moveItems(list: string, items: string[], to: { list: string } | { name: string }): Promise<Outcome<ShoppingWrite>> {
+    return this.#writeShopping("POST", `${listURL(list)}/move`, "list" in to ? { items, to: to.list } : { items, name: to.name });
   }
 
   /**
