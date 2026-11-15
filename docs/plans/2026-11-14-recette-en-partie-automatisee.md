@@ -2,7 +2,7 @@
 
 - **Nom** : `recette-auto`
 - **Date** : 2026-11-14
-- **Statut** : brouillon. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres proposées, confirmées par la fusion de la PR du plan. Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
+- **Statut** : en cours depuis le 2026-11-15. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres confirmées par la fusion de la PR du plan (#120, 2026-11-15). Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
 
 ## Objectif
 
@@ -52,11 +52,11 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 ### Lot A : procédure d'analyse et plan de recette (`feature/procedure-de-recette`)
 
-- [ ] 1. `docs/recette.md` : rôle de la recette face à la CI, inventaire, grille des trois questions avec des exemples tirés des recettes passées (double toucher de `planning`, clavier virtuel de `grands-ecrans`, `504` au téléchargement de `v0.5.0`), les quatre règles de la voie de preuve et leur ordre, comment désigner un point de contrôle de la vidéo et ce qu'une vidéo d'un navigateur émulé ne prouve pas, parcours de base, déroulé, cas d'une version corrective (ADR 0032, point 14).
-- [ ] 2. `docs/recettes/_template.md`, et `docs/recettes/README.md` qui liste les plans de recette.
-- [ ] 3. `RELEASING.md`, étape 6 (D13) ; renvois dans les ADR 0005 (point 4) et 0016 (« Recette »).
-- [ ] 4. ADR 0032 accepté ; `CLAUDE.md` (recette, ligne « Déploiement »).
-- [ ] 5. Essai à blanc de l'analyse sur `v0.5.0` (`grands-ecrans`), comparé à ce que sa séance a réellement trouvé : l'analyse aurait-elle envoyé en manuel le clavier virtuel en paysage ? Résultat dans les notes d'exécution ; la grille est corrigée s'il le faut.
+- [x] 1. `docs/recette.md` : rôle de la recette face à la CI, inventaire, grille des trois questions avec des exemples tirés des recettes passées (double toucher de `planning`, clavier virtuel de `grands-ecrans`, `504` au téléchargement de `v0.5.0`), les quatre règles de la voie de preuve et leur ordre, comment désigner un point de contrôle de la vidéo et ce qu'une vidéo d'un navigateur émulé ne prouve pas, parcours de base, déroulé, cas d'une version corrective (ADR 0032, point 14).
+- [x] 2. `docs/recettes/_template.md`, et `docs/recettes/README.md` qui liste les plans de recette.
+- [x] 3. `RELEASING.md`, étape 6 (D13) ; renvois dans les ADR 0005 (point 4) et 0016 (« Recette »).
+- [x] 4. ADR 0032 accepté ; `CLAUDE.md` (recette, ligne « Déploiement »).
+- [x] 5. Essai à blanc de l'analyse sur `v0.5.0` (`grands-ecrans`), comparé à ce que sa séance a réellement trouvé : l'analyse aurait-elle envoyé en manuel le clavier virtuel en paysage ? Résultat dans les notes d'exécution ; la grille est corrigée s'il le faut.
 
 ### Lot B : relève du code et outillage (`feature/outillage-recette-auto`)
 
@@ -106,3 +106,31 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 - **Parcours de deux appareils** (écritures croisées, deux contextes Playwright sur la même session) : utiles en automatique, ou laissés à la séance manuelle ?
 
 ## Notes d'exécution
+
+**Lot A** (`feature/procedure-de-recette`), 2026-11-15, depuis une session cloud :
+
+- **Opérations sur le serveur en voie 1** : retour arrière avec restauration, provisionnement relancé et `tribe-menus-check report` demandent SSH et `sudo`, que le Dev Container n'a pas ; ni appareil ni messagerie, ils n'entraient dans aucune règle. Ajoutés à la règle 1, précision notée dans l'ADR 0032, point 4.
+- **Un changement, plusieurs entrées** : un même changement peut relever de deux voies par des aspects différents (le rendu du semainier en voie 2, son défilement au doigt en voie 1) ; le plan de recette lui donne une entrée par aspect, plutôt qu'une voie « principale ».
+- **Défaut du déploiement lui-même** (`504` au téléchargement de `v0.5.0`) : vu par le développeur en déployant, il n'est cherché par aucune voie ; il reste aux PR qui touchent `deploy/`.
+- **`RELEASING.md`** : étape 6 découpée en cinq temps (plan de recette, déploiement, parcours et contrôle de la vidéo, séance manuelle, résultats), étape 12 « Fin de la recette » ajoutée. Tant que les lots B et C ne sont pas fusionnés, les voies 2 et 3 se vérifient à la main.
+
+**Essai à blanc sur `v0.5.0`** (étape 5), à partir de la section 0.5.0 de `CHANGELOG.md` et de la séance du plan `grands-ecrans` (2026-11-09) :
+
+| Entrée | G | P | Dépendance | Voie |
+| --- | --- | --- | --- | --- |
+| `grands-ecrans/B` : formats, rail, dialogues centrés, dans chaque format | moyenne | élevée | aucune | 2 (rail et dialogues comparés aux maquettes `GE-*`) |
+| `grands-ecrans/B` : format gardé pendant une saisie quand le clavier virtuel ferait basculer | moyenne | élevée | appareil | **1** |
+| `grands-ecrans/B` : fenêtre large mais basse (moins de 560 px) en compact | faible | moyenne | aucune | 3 (taille de fenêtre) |
+| `grands-ecrans/C` : semainier et repas en panneau, rendu | moyenne | élevée | aucune | 2 |
+| `grands-ecrans/C` : défilement au doigt calé sur un jour, cibles au doigt | moyenne | élevée | appareil | **1** |
+| `grands-ecrans/C` : focus et Échap au clavier | faible | moyenne | aucune | 3 |
+| `grands-ecrans/D` : deux volets, « Plat enregistré. » en étendu | moyenne | élevée | aucune | 2 |
+| `grands-ecrans/D` : « Abandonner la modification ? » en moyen et en étendu, pas en compact | haute (saisie perdue) | élevée | aucune | 2 |
+| `grands-ecrans/D` : rotation sans perte de saisie ni de défilement | haute | élevée | appareil | **1** (rotation de l'appareil) ; le changement de format seul, en 3 par une taille de fenêtre |
+| Tests du semainier rendus stables (deux lignes) | faible | faible | aucune | 4 |
+| Plans `courses` (clôture) et `grands-ecrans` (brouillon) | — | — | aucune | 4 |
+| Connexion sur tablette et ordinateur, `@manuel` « La session survit au redémarrage du navigateur », `tribe-menus-check report` | — | — | — | parcours de base ; **1** ; **1** |
+
+- **Ce que la séance a trouvé** : le clavier virtuel qui cache « Enregistrer le plat » en paysage, classé en voie 1 par la grille, donc vu par la séance réduite. Aucun défaut n'est tombé dans les voies 2 à 4 ; la grille n'en aurait raté aucun.
+- **Séance manuelle** : de neuf points à quatre sur la tablette (clavier virtuel, rotation, défilement et cibles au doigt), plus le scénario `@manuel` et `tribe-menus-check report` ; le reste en contrôle de la vidéo (sept points environ) ou automatique.
+- **Le double toucher de `v0.3.0`**, rejoué de même : toucher, voie 1. Aucune correction de la grille.

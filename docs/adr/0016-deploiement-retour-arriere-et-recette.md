@@ -36,6 +36,7 @@ Les releases sont construites par la CI et publiées sur GitHub (ADR 0012). Le s
    - envoi d'e-mails réels par le compte `no-reply@` (ADR 0014), pour recevoir les codes sur téléphone ;
    - marquée `noindex`, comme l'application en production.
 6. **Déploiement en recette** : `sudo tribe-menus-deploy --env recette --pr <numéro>` installe l'archive construite par la CI pour la PR. Le téléchargement des artefacts de workflow exige un jeton même sur un dépôt public : jeton à portée fine, limité à la lecture des Actions de ce dépôt, stocké en credential systemd sur le serveur. **Seules les PR du propriétaire du dépôt** sont déployées en recette, jamais celles venant d'un fork. *Précisé le 2026-10-17 (plan `recette`, D1, lot C) : la production a aussi une instance sur le serveur, où une PR est refusée ; une PR n'est déployée que si elle est ouverte, que son auteur est le propriétaire du dépôt, que sa branche est une branche du dépôt, et que l'archive est l'artefact de l'exécution réussie de `ci.yml` sur son dernier commit. La recette accepte aussi une version publiée.*
+   *Précisé par l'ADR 0032 (2026-11-15) : une fois l'archive déployée, la recette suit le plan de recette de la version (`docs/recette.md`) ; des parcours Playwright automatiques y sont joués depuis le Dev Container, dans une tribu dédiée `recette-auto`, avant la séance manuelle.*
 7. La CI produit l'archive (`make build`) pour chaque PR et la conserve comme artefact quelques jours (ADR 0013).
 8. **Caddy** sert les deux noms d'hôte, chacun vers son socket (ADR 0006).
 
