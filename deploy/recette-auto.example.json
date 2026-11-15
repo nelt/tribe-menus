@@ -1,0 +1,9 @@
+{
+  "tribeURL": "https://recette.example.org/tribes/identifiant-de-la-tribu/",
+  "address": "recette-auto@example.org",
+  "pop3": {
+    "host": "pop3.example.org",
+    "port": 995,
+    "user": "recette-auto@example.org"
+  }
+}

@@ -68,8 +68,11 @@ ENV GOTOOLCHAIN=auto
 ENV PATH=/home/${USERNAME}/.local/bin:/home/${USERNAME}/go/bin:${PATH}
 
 # Claude Code, version épinglée (installateur officiel). Les dossiers de
-# configuration de Claude Code et de GitHub CLI sont créés ici pour que les
-# volumes montés dessus appartiennent à l'utilisateur.
+# configuration de Claude Code et de GitHub CLI, ceux de la recette automatique
+# (valeurs de l'instance et secrets, vidéos ; plan recette-auto, D10 et D11)
+# sont créés ici pour que les volumes montés dessus appartiennent à
+# l'utilisateur, en 0700 pour ceux de la recette.
 RUN mkdir -p "/home/${USERNAME}/.claude" "/home/${USERNAME}/.config/gh" \
+ && mkdir -m 0700 -p "/home/${USERNAME}/.config/tribe-menus" "/home/${USERNAME}/recette-videos" \
  && curl -fsSL https://claude.ai/install.sh | bash -s "${CLAUDE_CODE_VERSION}" \
  && claude --version

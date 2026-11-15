@@ -6,10 +6,10 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev seed generate lint test acceptance e2e e2e-formats vuln build dist probe ci
+.PHONY: help tools dev seed generate lint test acceptance e2e e2e-formats vuln build dist probe recette-auto recette-clean ci
 
 help: ## List the targets
-	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-12s %s\n", $$1, $$2}'
+	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
 
 tools: ## Install dependencies, Playwright browsers and their system libraries, shellcheck if missing (idempotent)
 	go mod download
@@ -62,5 +62,11 @@ dist: build ## Archive in dist/: binary, site/, deploy/ and LICENSE, with its SH
 
 probe: ## Checks of an instance from outside: make probe URL=https://<host> [ARGS="-dkim-selector <s>"] (uses up the code requests of the hour)
 	go run ./internal/tools/probe -url "$(URL)" $(ARGS)
+
+recette-auto: ## Journeys against the staging instance, filmed: make recette-auto VERSION=vX.Y.Z [PR=<number>] [ARGS="<playwright test>"] (one code request)
+	go run ./internal/tools/recetteauto run -version "$(VERSION)" $(if $(PR),-pr "$(PR)") $(if $(ARGS),-- $(ARGS))
+
+recette-clean: ## Remove the videos of the acceptance run of a version, once it is over: make recette-clean [VERSION=vX.Y.Z] (all without VERSION)
+	go run ./internal/tools/recetteauto clean $(if $(filter command line,$(origin VERSION)),-version "$(VERSION)")
 
 ci: lint test acceptance e2e vuln build dist ## All checks required by the CI, in order
