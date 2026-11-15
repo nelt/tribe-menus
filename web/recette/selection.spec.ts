@@ -2,6 +2,7 @@
 // liste » and « Déplacer vers… » in each format. Two items added by hand to « Courses », both
 // selected and sent to a new list; then sent back one by one; the empty list deleted (C12: the
 // tribe keeps no list of the runs, 20 at most); the items checked and taken out of « Courses ».
+// The lists left by a run stopped halfway are removed first.
 import type { Page } from "@playwright/test";
 import { check, checkout, itemLine, listCard, listTitle, openCourses, openListPicker, runSuffix } from "./helpers.ts";
 import { expect, step, test } from "./test.ts";
@@ -29,6 +30,14 @@ function movedBanner(page: Page) {
   return page.locator(".banner-done").filter({ has: page.locator(".banner-link") });
 }
 
+/** Deletes a list from the picker: it must be empty and not the main one (C12). */
+async function deleteList(page: Page, name: string) {
+  await openListPicker(page);
+  await page.getByRole("button", { name: `Actions pour la liste ${name}` }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Supprimer la liste" }).click();
+  await expect(listCard(page, name)).toHaveCount(0);
+}
+
 /** Opens the move sheet for the selection, then moves it to « Courses ». */
 async function moveToCourses(page: Page) {
   await actions(page).getByRole("button", { name: "Déplacer vers…" }).click();
@@ -41,6 +50,24 @@ test("selection, new list and move", async ({ page }, testInfo) => {
   const milk = `lait ${run}`;
   const eggs = `œufs ${run}`;
   const list = `Sélection ${run}`;
+
+  // A run stopped halfway leaves its list, items added by hand in it: removed, then the list.
+  await test.step("Lists of stopped runs removed", async () => {
+    await openCourses(page);
+    await openListPicker(page);
+    const left = (await page.locator(".list-card-name").allInnerTexts()).filter((n) => n.startsWith("Sélection "));
+    for (const name of left) {
+      await listCard(page, name).locator(".list-card-link").click();
+      await expect(listTitle(page)).toHaveText(name);
+      const remove = page.getByRole("button", { name: /^Retirer / });
+      while ((await remove.count()) > 0) {
+        const before = await remove.count();
+        await remove.first().click();
+        await expect(remove).toHaveCount(before - 1);
+      }
+      await deleteList(page, name);
+    }
+  });
 
   await step(page, "Two items added by hand", async () => {
     await openCourses(page);
@@ -64,7 +91,7 @@ test("selection, new list and move", async ({ page }, testInfo) => {
     const sheet = page.getByRole("dialog", { name: "Nouvelle liste" });
     await sheet.getByRole("textbox", { name: "Nom de la liste" }).fill(list);
     await sheet.getByRole("button", { name: "Créer la liste" }).click();
-    await expect(movedBanner(page)).toContainText(`2 articles déplacés vers « ${list} ».`);
+    await expect(movedBanner(page)).toContainText(`2 articles déplacés vers la nouvelle liste « ${list} ».`);
     await expect(itemLine(page, milk)).toHaveCount(0);
   });
 
@@ -89,12 +116,7 @@ test("selection, new list and move", async ({ page }, testInfo) => {
     await expect(itemLine(page, eggs)).toHaveCount(0);
   });
 
-  await step(page, "Empty list deleted", async () => {
-    await openListPicker(page);
-    await page.getByRole("button", { name: `Actions pour la liste ${list}` }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Supprimer la liste" }).click();
-    await expect(listCard(page, list)).toHaveCount(0);
-  });
+  await step(page, "Empty list deleted", () => deleteList(page, list));
 
   await step(page, "Items taken out of Courses", async () => {
     await openCourses(page);
