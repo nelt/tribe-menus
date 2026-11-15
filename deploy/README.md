@@ -21,6 +21,7 @@ Rien de propre à l'instance ici (ADR 0011, point 5) : les exemples utilisent `e
 | `caddy/attente.html` | Page d'attente, servie en 503 quand l'application ne répond pas. | `/usr/share/tribe-menus/` |
 | `apt/caddy-stable.asc` | Clé de signature du dépôt apt du projet Caddy (D15). | `/etc/apt/keyrings/` |
 | `config.example.json` | Exemple du fichier de configuration de `tribe-menus serve -config` (plan `production`, D1), lu par un test avec le vrai lecteur. Sur le serveur, `provision.sh` produit ce fichier. | — |
+| `recette-auto.example.json` | Modèle de `recette-auto.json`, valeurs de la recette automatique (plan `recette-auto`, D10), lu par un test. Rien sur le serveur. | volume `tribe-menus-recette` du Dev Container, à la main |
 
 Le contrôle externe, lancé du Dev Container, est un outil du projet : `make probe` (`internal/tools/probe`, voir « Contrôles »).
 
@@ -108,6 +109,42 @@ sudo tribe-menus-admin recette seed -members recette-membres.txt
 ```
 
 Jamais en production. `sudo tribe-menus-admin production init` crée une tribu, de façon interactive (EF-08).
+
+## Tribu de la recette automatique
+
+La recette automatique (`make recette-auto`, ADR 0032) se connecte à une tribu à elle sur la recette, dont l'unique membre est une vraie boîte du MX Plan ; le code y est relevé en POP3 par `internal/tools/mailbox`. Mise en place à la séance S1 du plan `recette-auto` (2026-11-15) ; à refaire après une reconstruction de la recette.
+
+1. **Boîte** `recette-auto@<domaine>`, créée dans l'espace client OVHcloud (MX Plan), avec un mot de passe propre ; aucune redirection vers elle ni depuis elle. POP3 sur TLS dès la connexion (port 995 ; serveur relevé dans l'espace client), vérifié par :
+
+   ```sh
+   openssl s_client -connect <serveur POP3>:995 -quiet   # « +OK » attendu, puis QUIT
+   ```
+
+2. **Tribu**, sur le serveur, de façon interactive (EF-08) : nom au choix, un identifiant d'URL, l'adresse de la boîte en premier membre, sans autre membre. L'identifiant ne s'écrit que dans le volume du Dev Container.
+
+   ```sh
+   sudo tribe-menus-admin recette init
+   ```
+
+   Une tribu qui gêne (données accumulées par les exécutions) se recrée par « Recréer la tribu de recette », qui efface toutes les bases de la recette : on recrée ensuite la tribu de recette, puis celle-ci.
+
+3. **Volume `tribe-menus-recette`** du Dev Container, monté sur `~/.config/tribe-menus` (D10), rempli à la main dans le Dev Container :
+
+   ```sh
+   cp deploy/recette-auto.example.json ~/.config/tribe-menus/recette-auto.json
+   nano ~/.config/tribe-menus/recette-auto.json          # tribeURL, address, pop3.host, pop3.port, pop3.user
+   (umask 077; read -rs -p 'Mot de passe : ' p && printf '%s\n' "$p" > ~/.config/tribe-menus/recette-auto.pop3)
+   ```
+
+   Le mot de passe est lu sans écho, jamais passé en argument ; le fichier est en `0600`, refusé sinon. Le volume garde aussi l'état de session de la dernière exécution (`recette-auto.state.json`).
+
+4. **Première relève**, après une demande de code faite depuis un navigateur pour l'adresse de la boîte :
+
+   ```sh
+   go run ./internal/tools/mailbox -since "$(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%SZ)"
+   ```
+
+   L'outil n'écrit que le code sur sa sortie standard. Il supprime de la boîte tous les messages adressés à elle qu'il a relevés, codes plus anciens compris ; les autres restent.
 
 ## Ce que fait `provision.sh`
 

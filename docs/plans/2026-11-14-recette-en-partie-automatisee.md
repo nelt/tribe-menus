@@ -2,7 +2,7 @@
 
 - **Nom** : `recette-auto`
 - **Date** : 2026-11-14
-- **Statut** : en cours depuis le 2026-11-15. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres confirmées par la fusion de la PR du plan (#120, 2026-11-15). Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
+- **Statut** : en cours depuis le 2026-11-15 ; lot A fusionné (#122), lot B en PR. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres confirmées par la fusion de la PR du plan (#120, 2026-11-15). Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
 
 ## Objectif
 
@@ -60,13 +60,13 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 ### Lot B : relève du code et outillage (`feature/outillage-recette-auto`)
 
-- [ ] 6. `internal/tools/mailbox` : client POP3 sur TLS (`USER`, `PASS`, `LIST`, `RETR`, `DELE`, `QUIT`), choix du message (destinataire, arrivée après l'heure de la demande, le plus récent), extraction du code d'après le texte du message (ADR 0014, point 4), délai et intervalle de relève ; rien d'autre sur la sortie standard que le code ; ni mot de passe ni contenu de message dans les erreurs. Tests en tableaux de cas contre un faux serveur POP3 (`net.Listener`, `httptest` n'ayant pas d'équivalent), dont : aucun message, message plus ancien que la demande, autre destinataire, plusieurs messages, coupure du serveur, délai dépassé.
-- [ ] 7. Volumes `tribe-menus-recette` (D10) et `tribe-menus-recette-videos` (D11) dans `.devcontainer/devcontainer.json` ; `deploy/recette-auto.example.json` (modèle, sans valeur réelle).
-- [ ] 8. `web/playwright.recette.config.ts` : `baseURL` lue dans `recette-auto.json`, projet `setup` puis les quatre projets (ADR 0032, point 10) qui en dépendent, `video` à la taille de la fenêtre de chaque projet, `trace: "on"`, `screenshot: "on"`, court temps d'arrêt après une action visible (ADR 0032, point 11), aucun `webServer`, aucune reprise automatique d'un test en échec (`retries: 0`), sortie dans le volume des vidéos (D11).
-- [ ] 9. Projet `setup` (`web/recette/connexion.setup.ts`) : demande de code, relève par `mailbox` (appelé par `execFile`), saisie, état de session écrit dans le volume.
-- [ ] 10. `make recette-auto` (ADR 0010) : contrôle des fichiers du volume, version servie par la recette lue et vérifiée contre `VERSION` ou `PR`, exécution dans le dossier de la version (D11), chemin de la page de contrôle affiché à la fin ; `make recette-clean [VERSION=vX.Y.Z]`.
-- [ ] 11. `make ci` ne lance ni les parcours ni la relève ; il compile et vérifie (`tsc`, `go vet`, `staticcheck`) `web/recette/` et l'outil.
-- [ ] 12. Rapport de contrôle : à la fin de l'exécution, une page HTML locale qui liste les points de contrôle de la version (lus dans `docs/recettes/vX.Y.Z.md`), chacun avec sa capture et un lien vers la vidéo à l'instant de son étape ; une étape désignée qui n'existe dans aucun parcours fait échouer `make recette-auto`.
+- [x] 6. `internal/tools/mailbox` : client POP3 sur TLS (`USER`, `PASS`, `LIST`, `RETR`, `DELE`, `QUIT`), choix du message (destinataire, arrivée après l'heure de la demande, le plus récent), extraction du code d'après le texte du message (ADR 0014, point 4), délai et intervalle de relève ; rien d'autre sur la sortie standard que le code ; ni mot de passe ni contenu de message dans les erreurs. Tests en tableaux de cas contre un faux serveur POP3 (`net.Listener`, `httptest` n'ayant pas d'équivalent), dont : aucun message, message plus ancien que la demande, autre destinataire, plusieurs messages, coupure du serveur, délai dépassé.
+- [x] 7. Volumes `tribe-menus-recette` (D10) et `tribe-menus-recette-videos` (D11) dans `.devcontainer/devcontainer.json` ; `deploy/recette-auto.example.json` (modèle, sans valeur réelle).
+- [x] 8. `web/playwright.recette.config.ts` : `baseURL` lue dans `recette-auto.json`, projet `setup` puis les quatre projets (ADR 0032, point 10) qui en dépendent, `video` à la taille de la fenêtre de chaque projet, `trace: "on"`, `screenshot: "on"`, court temps d'arrêt après une action visible (ADR 0032, point 11), aucun `webServer`, aucune reprise automatique d'un test en échec (`retries: 0`), sortie dans le volume des vidéos (D11).
+- [x] 9. Projet `setup` (`web/recette/connexion.setup.ts`) : demande de code, relève par `mailbox` (appelé par `execFile`), saisie, état de session écrit dans le volume.
+- [x] 10. `make recette-auto` (ADR 0010) : contrôle des fichiers du volume, version servie par la recette lue et vérifiée contre `VERSION` ou `PR`, exécution dans le dossier de la version (D11), chemin de la page de contrôle affiché à la fin ; `make recette-clean [VERSION=vX.Y.Z]`.
+- [x] 11. `make ci` ne lance ni les parcours ni la relève ; il compile et vérifie (`tsc`, `go vet`, `staticcheck`) `web/recette/` et l'outil.
+- [x] 12. Rapport de contrôle : à la fin de l'exécution, une page HTML locale qui liste les points de contrôle de la version (lus dans `docs/recettes/vX.Y.Z.md`), chacun avec sa capture et un lien vers la vidéo à l'instant de son étape ; une étape désignée qui n'existe dans aucun parcours fait échouer `make recette-auto`.
 
 ### Lot C : parcours de base et première recette (`feature/parcours-recette`)
 
@@ -80,8 +80,8 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 ### Séance S1 : préparation (développeur)
 
-- [ ] Boîte `recette-auto@codingmatters.org` créée sur le MX Plan, avec un mot de passe propre ; POP3 sur TLS accessible (serveur et port relevés dans l'espace client OVHcloud, à reporter dans `recette-auto.json`) ; aucune redirection vers elle, aucune depuis elle.
-- [ ] Tribu `recette-auto` créée sur l'instance de recette (`admin init`, interactif, membre unique `recette-auto@codingmatters.org`) ; commande exacte vérifiée au lot B et écrite dans `deploy/README.md`.
+- [x] Boîte `recette-auto@codingmatters.org` créée sur le MX Plan, avec un mot de passe propre ; POP3 sur TLS accessible (serveur et port relevés dans l'espace client OVHcloud, à reporter dans `recette-auto.json`) ; aucune redirection vers elle, aucune depuis elle.
+- [x] Tribu `recette-auto` créée sur l'instance de recette (`admin init`, interactif, membre unique `recette-auto@codingmatters.org`) ; commande exacte vérifiée au lot B et écrite dans `deploy/README.md`.
 - [ ] Volume du Dev Container rempli : `recette-auto.json`, `recette-auto.pop3` en `0600`.
 - [ ] Première relève à la main : `go run ./internal/tools/mailbox …` après une demande de code depuis le navigateur.
 
@@ -134,3 +134,15 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 - **Ce que la séance a trouvé** : le clavier virtuel qui cache « Enregistrer le plat » en paysage, classé en voie 1 par la grille, donc vu par la séance réduite. Aucun défaut n'est tombé dans les voies 2 à 4 ; la grille n'en aurait raté aucun.
 - **Séance manuelle** : de neuf points à quatre sur la tablette (clavier virtuel, rotation, défilement et cibles au doigt), plus le scénario `@manuel` et `tribe-menus-check report` ; le reste en contrôle de la vidéo (sept points environ) ou automatique.
 - **Le double toucher de `v0.3.0`**, rejoué de même : toucher, voie 1. Aucune correction de la grille.
+
+**Séance S1** (développeur), 2026-11-15 : boîte créée, POP3 sur TLS vérifié par `openssl s_client` ; tribu créée par `sudo tribe-menus-admin recette init`, membre unique, connexion vérifiée avec un code relevé à la main ; un e-mail de test laissé dans la boîte (la première relève le supprimera s'il est adressé à la boîte). Restent le volume et la première relève par `mailbox`, une fois le lot B fusionné et le Dev Container reconstruit avec ses volumes.
+
+**Lot B** (`feature/outillage-recette-auto`), 2026-11-15, dans le Dev Container :
+
+- **Configuration partagée** : `recette-auto.json` et le mot de passe sont lus par `internal/tools/recetteconfig`, commun à `mailbox` et à `internal/tools/recetteauto` (l'outil de `make recette-auto`, ADR 0010 : rien de long dans le Makefile) ; `web/recette/config.ts` relit le même fichier pour Playwright. Le fichier porte aussi `tribeURL`, absent de D10, qui en disait le contenu sans en fixer les clés.
+- **Version servie** : lue dans le pied de page du site public de la recette (« Code source de cette version (pr-131) », `{{VERSION}}` remplacé par `internal/tools/dist`), sans rien ajouter à l'application. `VERSION` nomme le plan de recette et le dossier de l'exécution ; `PR`, quand il est donné, est ce que la recette doit servir (répétition générale du lot C : `VERSION=v0.6.0 PR=<lot C>`).
+- **Choix du message** : par l'en-tête `Date`, écrit par le serveur de l'instance, avec 30 secondes de tolérance d'horloge ; l'en-tête `Received` du MX aurait demandé de lire un format moins régulier. Code extrait de la ligne « Votre code de connexion à … : 12345678 » du texte décodé, refusé si deux lignes en portent un. Mot de passe refusé : arrêt immédiat ; coupure ou erreur du serveur : nouvel essai jusqu'au délai.
+- **Instant de l'étape dans la vidéo** : Playwright ne donne pas le début d'une vidéo ; le `test` des parcours (`web/recette/test.ts`) note l'heure de création de la page en annotation, et la page de contrôle ouvre la vidéo une seconde avant l'étape (`#t=`). Vérifié sur un essai local jetable (deux projets, deux étapes) : capture juste, instant juste, code de sortie 1 pour une étape désignée absente.
+- **Captures** : prises à la fin de chaque étape nommée (`step`), après une pause de 800 ms ; seules celles des étapes désignées par le plan de recette sont écrites, sous `captures/<point>-<projet>.png`. `slowMo` de 250 ms en plus, pour la lisibilité de la vidéo.
+- **Un seul worker** : la tribu `recette-auto` est partagée par les quatre projets, et une vidéo se lit mieux sans écritures croisées ; à revoir au lot C si l'exécution est trop longue.
+- **Non vérifié dans ce lot** : le montage des volumes (le Dev Container de cette session n'a pas été reconstruit) et une exécution contre la recette, qui attendent le remplissage du volume ; ce sera la première tâche du lot C.
