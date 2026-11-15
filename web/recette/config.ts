@@ -24,6 +24,8 @@ export interface RecetteSettings {
    * Playwright before the project setup, without using up a code request (review of #123).
    */
   points: ControlPoint[];
+  /** make recette-auto REUSE=1: the project setup takes up a session still valid. */
+  reuseSession: boolean;
 }
 
 /**
@@ -55,5 +57,6 @@ export function recetteSettings(env: NodeJS.ProcessEnv = process.env): RecetteSe
     outputDir,
     plan,
     points,
+    reuseSession: env["RECETTE_REUSE_SESSION"] === "1",
   };
 }

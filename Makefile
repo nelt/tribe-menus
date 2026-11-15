@@ -63,8 +63,8 @@ dist: build ## Archive in dist/: binary, site/, deploy/ and LICENSE, with its SH
 probe: ## Checks of an instance from outside: make probe URL=https://<host> [ARGS="-dkim-selector <s>"] (uses up the code requests of the hour)
 	go run ./internal/tools/probe -url "$(URL)" $(ARGS)
 
-recette-auto: ## Journeys against the staging instance, filmed: make recette-auto VERSION=vX.Y.Z [PR=<number>] [ARGS="<playwright test>"] (one code request)
-	go run ./internal/tools/recetteauto run -version "$(VERSION)" $(if $(PR),-pr "$(PR)") $(if $(ARGS),-- $(ARGS))
+recette-auto: ## Journeys against the staging instance, filmed: make recette-auto VERSION=vX.Y.Z [PR=<number>] [REUSE=1] [ARGS="<playwright test>"] (one code request, none with REUSE=1 and a session still valid)
+	go run ./internal/tools/recetteauto run -version "$(VERSION)" $(if $(PR),-pr "$(PR)") $(if $(REUSE),-reuse-session) $(if $(ARGS),-- $(ARGS))
 
 recette-clean: ## Remove the videos of the acceptance run of a version, once it is over: make recette-clean [VERSION=vX.Y.Z] (all without VERSION)
 	go run ./internal/tools/recetteauto clean $(if $(filter command line,$(origin VERSION)),-version "$(VERSION)")

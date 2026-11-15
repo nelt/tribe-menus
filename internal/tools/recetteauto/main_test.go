@@ -53,9 +53,11 @@ func TestRun(t *testing.T) {
 		wantErr    string
 		wantRun    bool
 		wantExtras []string
+		wantReuse  bool
 	}{
 		{name: "pull request served", args: []string{"-version", "v0.6.0", "-pr", "131"}, served: "pr-131", wantRun: true},
 		{name: "version served", args: []string{"-version", "v0.6.0"}, served: "v0.6.0", wantRun: true},
+		{name: "session reused", args: []string{"-version", "v0.6.0", "-pr", "131", "-reuse-session"}, served: "pr-131", wantRun: true, wantReuse: true},
 		{name: "arguments for playwright", args: []string{"-version", "v0.6.0", "-pr", "131", "--", "--project", "phone-chromium"}, served: "pr-131", wantRun: true, wantExtras: []string{"--project", "phone-chromium"}},
 		{name: "another pull request served", args: []string{"-version", "v0.6.0", "-pr", "131"}, served: "pr-130", wantCode: 1, wantErr: "serves pr-130, not pr-131"},
 		{name: "pull request served, version asked", args: []string{"-version", "v0.6.0"}, served: "pr-131", wantCode: 1, wantErr: "serves pr-131, not v0.6.0"},
@@ -114,6 +116,9 @@ func TestRun(t *testing.T) {
 			}
 			out := filepath.Join(videos, "v0.6.0", "20261115-103000")
 			wantEnv := []string{"RECETTE_CONFIG_DIR=" + configDir, "RECETTE_OUTPUT_DIR=" + out, "RECETTE_PLAN=" + filepath.Join(root, "docs", "recettes", "v0.6.0.md")}
+			if tt.wantReuse {
+				wantEnv = append(wantEnv, "RECETTE_REUSE_SESSION=1")
+			}
 			if !slices.Equal(gotEnv, wantEnv) || gotDir != filepath.Join(root, "web") || !slices.Equal(gotArgs, tt.wantExtras) {
 				t.Errorf("playwright in %s with %q, %q", gotDir, gotEnv, gotArgs)
 			}
