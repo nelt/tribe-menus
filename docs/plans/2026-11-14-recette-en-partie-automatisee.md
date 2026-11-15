@@ -2,7 +2,7 @@
 
 - **Nom** : `recette-auto`
 - **Date** : 2026-11-14
-- **Statut** : en cours depuis le 2026-11-15 ; lot A fusionné (#122), lot B en PR. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres confirmées par la fusion de la PR du plan (#120, 2026-11-15). Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
+- **Statut** : en cours depuis le 2026-11-15 ; lots A (#122) et B (#123) fusionnés, lot C en cours. D1 à D4 et D14 prises par le développeur (2026-11-14 et 2026-11-15) ; les autres confirmées par la fusion de la PR du plan (#120, 2026-11-15). Place dans la feuille de route : après les lots de `courses-suite`, **avant la recette de `v0.6.0`**, qui l'attend (D14).
 
 ## Objectif
 
@@ -70,8 +70,8 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 ### Lot C : parcours de base et première recette (`feature/parcours-recette`)
 
-- [ ] 13. Parcours de base (ADR 0032, point 5) : connexion (projet `setup`) ; chaque onglet dans chaque projet ; créer un plat suffixé de l'exécution et le retrouver par la recherche ; l'ajouter à un repas de demain et relire le planning ; ajouter les courses du repas à « Courses » et cocher un article ; recharger et retrouver chaque écriture.
-- [ ] 14. Contrôles du serveur visibles depuis le navigateur : la page de la tribu sert `Cache-Control: no-cache`, les fichiers à empreinte `immutable`, le cookie de session préfixé `__Host-` (lus dans les réponses enregistrées par Playwright, sans rien ajouter à l'application).
+- [x] 13. Parcours de base (ADR 0032, point 5) : connexion (projet `setup`) ; chaque onglet dans chaque projet ; créer un plat suffixé de l'exécution et le retrouver par la recherche ; l'ajouter à un repas de demain et relire le planning ; ajouter les courses du repas à « Courses » et cocher un article ; recharger et retrouver chaque écriture.
+- [x] 14. Contrôles du serveur visibles depuis le navigateur : la page de la tribu sert `Cache-Control: no-cache`, les fichiers à empreinte `immutable`, le cookie de session préfixé `__Host-` (lus dans les réponses enregistrées par Playwright, sans rien ajouter à l'application).
 - [ ] 15. Analyse anticipée des changements de `v0.6.0` (section `## Non publié` de `CHANGELOG.md`, migration `0010`) : brouillon de `docs/recettes/v0.6.0.md`, validé par le développeur avant l'écriture des parcours ciblés.
 - [ ] 16. Parcours ciblés de `v0.6.0` que l'analyse demande, avec leurs étapes nommées pour les points de contrôle de la vidéo (pistes : liste périmée et « Recalculer », part prise, sélection et déplacement dans les trois formats, écritures croisées à deux contextes, taille de `GET shopping-lists`).
 - [ ] 17. Séance S1 (ci-dessous) ; répétition générale : archive de la PR du lot C déployée en recette (elle contient tout `courses-suite`), `make recette-auto`, contrôle de la vidéo, corrections des parcours ; `make recette-clean`.
@@ -82,8 +82,8 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 
 - [x] Boîte `recette-auto@codingmatters.org` créée sur le MX Plan, avec un mot de passe propre ; POP3 sur TLS accessible (serveur et port relevés dans l'espace client OVHcloud, à reporter dans `recette-auto.json`) ; aucune redirection vers elle, aucune depuis elle.
 - [x] Tribu `recette-auto` créée sur l'instance de recette (`admin init`, interactif, membre unique `recette-auto@codingmatters.org`) ; commande exacte vérifiée au lot B et écrite dans `deploy/README.md`.
-- [ ] Volume du Dev Container rempli : `recette-auto.json`, `recette-auto.pop3` en `0600`.
-- [ ] Première relève à la main : `go run ./internal/tools/mailbox …` après une demande de code depuis le navigateur.
+- [x] Volume du Dev Container rempli : `recette-auto.json`, `recette-auto.pop3` en `0600`.
+- [x] Première relève à la main : `go run ./internal/tools/mailbox …` après une demande de code depuis le navigateur.
 
 ## Critères de validation
 
@@ -147,3 +147,11 @@ Proposées le 2026-11-14 ; détail et alternatives dans l'ADR 0032.
 - **Un seul worker** : la tribu `recette-auto` est partagée par les quatre projets, et une vidéo se lit mieux sans écritures croisées ; à revoir au lot C si l'exécution est trop longue.
 - **Non vérifié dans ce lot** : le montage des volumes (le Dev Container de cette session n'a pas été reconstruit) et une exécution contre la recette, qui attendent le remplissage du volume ; ce sera la première tâche du lot C.
 - **Revue de la PR #123, point 2 (à traiter au lot C, étape 17)** : un code d'une demande précédente peut être pris pour le bon. `pick` accepte un message daté jusqu'à 30 s avant la demande (`clockSkew`) : une exécution interrompue juste après sa demande, relancée dans les 30 s, peut relever le code de l'ancienne demande s'il arrive avant le nouveau ; ce code est lié au jeton de l'ancienne demande, la connexion échoue (`ErrNewCodeNeeded`) et l'exécution consomme une deuxième demande. Pistes : vider la boîte juste avant la demande dans `connexion.setup.ts`, ou, si le code est refusé, relever de nouveau avec le même `since` en écartant le code essayé.
+
+**Lot C** (`feature/parcours-recette`), 2026-11-15, dans le Dev Container, S1 terminée (volume rempli, première relève faite par le développeur) :
+
+- **Premières exécutions** contre la recette, qui servait `pr-111` (`v0.5.0`), `make recette-auto VERSION=v0.6.0 PR=111` : connexion par le code relevé en POP3 en 12 à 17 s ; parcours de base et contrôles du serveur passés dans les quatre projets après deux corrections des parcours (titre « Plats » de niveau 2 dans le volet en étendu ; ingrédient limité à 40 caractères par le champ, d'où des projets abrégés dans les noms). Environ 65 Mo pour une exécution de neuf tests. Les données de ces exécutions, écrites sous `v0.5.0`, seront celles que la migration `0010` trouvera à la répétition générale (entrée 1 du plan de recette).
+- **Limites des demandes de code** : la troisième exécution en cinq minutes a été refusée (« Trop de demandes depuis cet appareil », limite par IP, avec les essais manuels de S1 depuis la même connexion). Le projet `setup` dit désormais ce refus ; `make recette-auto REUSE=1` reprend la session de la dernière exécution quand elle ouvre encore la tribu, sans demande de code, pour les essais pendant l'écriture des parcours. La recette d'une release se lance sans `REUSE` : la connexion par e-mail fait partie des parcours de base.
+- **Revue #123, point 2** traité : le projet `setup` vide la boîte (`mailbox -drain`) avant la demande, ce qui supprime aussi l'e-mail de test laissé à S1.
+- **Données de la tribu** : les plats et les plats servis s'accumulent (un par projet et par exécution) ; les articles des parcours sont retirés par « Courses faites », et le parcours de sélection proposé supprime la liste qu'il crée (limite de 20 listes).
+- **Analyse anticipée de `v0.6.0`** (étape 15) : `docs/recettes/v0.6.0.md`, en attente de validation par le développeur ; elle tranche, à confirmer, deux questions ouvertes du plan : la tablette en portrait reste hors des parcours, les écritures croisées se font à deux contextes dans `recalcul.spec.ts`.

@@ -6,6 +6,6 @@ Le plan de recette est la seule trace de la recette : les vidéos des parcours a
 
 | Version | Plan de recette | Statut |
 | --- | --- | --- |
-| — | — | — |
+| `v0.6.0` | [`v0.6.0.md`](v0.6.0.md) | analyse proposée |
 
 Les recettes de `v0.1.0` à `v0.5.0` sont antérieures à cette procédure : leurs séances sont décrites dans les plans `recette`, `bibliotheque`, `planning`, `courses` et `grands-ecrans`.
