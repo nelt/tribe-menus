@@ -167,3 +167,41 @@ func TestClean(t *testing.T) {
 		})
 	}
 }
+
+func TestServe(t *testing.T) {
+	videos := t.TempDir()
+	write(t, filepath.Join(videos, "v0.6.0", "20261115-200756", "controle.html"), "<!doctype html>")
+	write(t, filepath.Join(videos, "v0.6.0", "20261115-200756", "resultats", "a", "video.webm"), "0123456789")
+	write(t, filepath.Join(videos, "v0.6.0", "20261115-152345", "controle.html"), "<!doctype html>")
+
+	pages, err := controlPages(videos)
+	if want := []string{"v0.6.0/20261115-152345/controle.html", "v0.6.0/20261115-200756/controle.html"}; err != nil || !slices.Equal(pages, want) {
+		t.Errorf("controlPages: %q, %v; want %q", pages, err, want)
+	}
+
+	srv := httptest.NewServer(pagesHandler(videos))
+	defer srv.Close()
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/v0.6.0/20261115-200756/resultats/a/video.webm", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Range", "bytes=2-5")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusPartialContent || string(body) != "2345" || resp.Header.Get("Content-Type") != "video/webm" {
+		t.Errorf("part of a video: %d %q %q, want 206 \"2345\" video/webm", resp.StatusCode, body, resp.Header.Get("Content-Type"))
+	}
+}
+
+func TestServeLoopbackOnly(t *testing.T) {
+	for _, addr := range []string{"0.0.0.0:8095", ":8095", "example.org:8095", "8095"} {
+		var stdout bytes.Buffer
+		if err := serve(context.Background(), t.TempDir(), addr, &stdout); err == nil || stdout.Len() != 0 {
+			t.Errorf("serve on %q: %v, served", addr, err)
+		}
+	}
+}

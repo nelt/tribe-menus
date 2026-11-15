@@ -6,7 +6,7 @@ VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help tools dev seed generate lint test acceptance e2e e2e-formats vuln build dist probe recette-auto recette-clean ci
+.PHONY: help tools dev seed generate lint test acceptance e2e e2e-formats vuln build dist probe recette-auto recette-page recette-clean ci
 
 help: ## List the targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -65,6 +65,9 @@ probe: ## Checks of an instance from outside: make probe URL=https://<host> [ARG
 
 recette-auto: ## Journeys against the staging instance, filmed: make recette-auto VERSION=vX.Y.Z [PR=<number>] [REUSE=1] [ARGS="<playwright test>"] (one code request, none with REUSE=1 and a session still valid)
 	go run ./internal/tools/recetteauto run -version "$(VERSION)" $(if $(PR),-pr "$(PR)") $(if $(REUSE),-reuse-session) $(if $(ARGS),-- $(ARGS))
+
+recette-page: ## Serve the control pages and videos of the acceptance runs on http://localhost:8095/ (Ctrl-C stops)
+	go run ./internal/tools/recetteauto serve
 
 recette-clean: ## Remove the videos of the acceptance run of a version, once it is over: make recette-clean [VERSION=vX.Y.Z] (all without VERSION)
 	go run ./internal/tools/recetteauto clean $(if $(filter command line,$(origin VERSION)),-version "$(VERSION)")
