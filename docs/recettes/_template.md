@@ -9,11 +9,11 @@ Procédure : [`docs/recette.md`](../recette.md) (ADR 0032).
 
 ## Changements et voies de preuve
 
-Une ligne par entrée de l'inventaire (section `## Non publié` de `CHANGELOG.md`, migrations, `deploy/`, dépendances). Gravité et probabilité : haute/moyenne/faible et élevée/moyenne/faible. Dépendance : serveur, appareil, messagerie, aucune. Voie : 1 manuel, 2 automatique + vidéo, 3 automatique, 4 CI.
+Une ligne par entrée de l'inventaire (section `## Non publié` de `CHANGELOG.md`, migrations, `deploy/`, dépendances). Gravité et probabilité : haute/moyenne/faible et élevée/moyenne/faible. Dépendance : serveur, appareil, messagerie, aucune. Voie, en toutes lettres (`docs/recette.md`, section 3) : **manuel** (vrai appareil, vraie messagerie, `@manuel`, SSH), **auto + vidéo** (parcours puis contrôle de la vidéo), **auto** (parcours seul), **CI** (rien de plus que les parcours de base).
 
-| # | Changement | Gravité | Probabilité | Dépendance | Voie | Couvert par |
+| # | Changement | Voie | Couvert par | Gravité | Probabilité | Dépendance |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `<lot>` : … | | | | | parcours `…` / point de contrôle V1 / point manuel M1 / CI |
+| 1 | `<lot>` : … |  | parcours `…` / point de contrôle V1 / point manuel M1 / CI |  |  |  |
 
 Parcours ciblés demandés par l'analyse :
 

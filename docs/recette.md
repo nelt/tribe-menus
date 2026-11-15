@@ -75,6 +75,8 @@ Quatre règles, **appliquées dans l'ordre** ; la première qui s'applique donne
 3. **Automatique** : dépendance au serveur, ou risque moyen ou élevé que des vérifications du parcours suffisent à établir : une quantité juste, un article déplacé, une écriture relue après rechargement, un en-tête.
 4. **CI** : le reste, c'est-à-dire un risque faible (gravité et probabilité faibles ou moyennes) sans dépendance à l'environnement. Rien de plus que les parcours de base, dont la vidéo ne se regarde qu'en cas d'échec.
 
+Dans le plan de recette, la voie s'écrit en toutes lettres, dans la colonne qui suit le changement : **manuel**, **auto + vidéo**, **auto**, **CI**.
+
 **Un point automatisable sans parcours existant** : soit on écrit le parcours, s'il resservira (une fonction durable, un écran qui évoluera), soit on le vérifie à la main pour cette release, et le plan de recette le dit.
 
 ```mermaid
