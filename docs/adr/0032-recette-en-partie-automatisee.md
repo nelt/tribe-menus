@@ -12,7 +12,7 @@ La CI prouve déjà les règles contre l'API (godog) et l'interface sur un serve
 On veut :
 
 - décider, **pour chaque release**, ce qui se prouve automatiquement et ce qui reste manuel, à partir des changements et de leurs risques, plutôt que de rejouer une check-list qui grossit ;
-- jouer la partie automatique contre l'instance de recette, depuis le Dev Container, avec une **preuve** (vidéo, trace) de ce qui a été vu ;
+- jouer la partie automatique contre l'instance de recette, depuis le Dev Container, filmée (vidéo, trace) pour que le développeur contrôle ce qui a été vu ;
 - lire le code de connexion envoyé par e-mail sans porte dérobée sur une instance publique.
 
 Le Dev Container n'a ni adresse publique ni port 25 : il ne peut pas recevoir de courrier, seulement en relever. La bibliothèque standard de Go n'a pas de client IMAP ; le protocole POP3, lui, tient en quelques commandes texte. La limitation des demandes de code (ENF-01, ADR 0021 : 3 par quart d'heure pour une adresse, 10 par heure pour une IP) et le quota du MX Plan (ADR 0014) bornent le nombre de connexions par exécution.
@@ -39,7 +39,7 @@ Le Dev Container n'a ni adresse publique ni port 25 : il ne peut pas recevoir de
 9. **Une seule demande de code par exécution** : un projet Playwright `setup`, filmé, se connecte et enregistre l'état de la session (`storageState`) hors du dépôt ; les autres projets le reprennent. L'exécution se lance avant la séance manuelle, qui part souvent de la même IP.
 10. **Quatre projets** repris de `web/playwright.config.ts` : `phone-chromium`, `phone-webkit`, `tablet-landscape-chromium`, `computer-chromium`. Vidéo, trace et captures toujours enregistrées ; rapport HTML.
 11. **Des preuves faites pour être contrôlées** : vidéo à la taille de la fenêtre (Playwright la réduit par défaut à 800 × 800 au plus, illisible pour un ordinateur) ; chaque parcours découpé en étapes nommées (`test.step`), qui titrent la trace ; une capture pleine page à chaque point de contrôle désigné par le plan de recette, nommée d'après lui ; un court temps d'arrêt après chaque action visible, pour que la vidéo montre l'état obtenu et pas seulement la transition. La trace (pellicule, état de la page à chaque étape) sert à examiner un passage douteux de la vidéo.
-12. **Les preuves restent hors de GitHub** : résultats dans `web/recette-results/` (ignoré par Git), réunis en une archive `recette-vX.Y.Z-<horodatage>.tar.gz` avec son empreinte SHA-256, gardée par le développeur. Le plan de recette consigne la date, l'archive de PR déployée, le résultat de chaque parcours, le verdict de chaque contrôle de la vidéo et l'empreinte des preuves.
+12. **Les vidéos sont un support de contrôle, pas une archive** : vidéos, traces, captures et rapport de chaque exécution sont écrits dans un volume du Dev Container, hors du dépôt de travail, un dossier par version et par exécution ; ils ne sont ni archivés, ni publiés, ni gardés. **Une fois la recette terminée** (plan de recette rempli, release décidée ou abandonnée), ils sont supprimés (`make recette-clean`). Ce qui reste de la recette est le **plan de recette** : date, archive de PR déployée, résultat de chaque parcours, verdict de chaque contrôle de la vidéo, avec l'instant de la vidéo qui montre un défaut, et ce qu'en a fait le développeur.
 13. **Lancement par `make recette-auto`** depuis le Dev Container, après `tribe-menus-deploy --env recette --pr <numéro>` ; Claude Code peut le lancer et reporter le résultat dans le plan de recette, et un résumé sur la PR. Pas de workflow GitHub : la CI n'a pas le mot de passe de la boîte et ne doit pas l'avoir (dépôt public, workflows sur PR).
 14. **Version corrective d'une vulnérabilité** (ADR 0022) : au niveau normal, comme une release ordinaire. Aux niveaux accéléré et urgent, l'analyse reste dans la conversation, hors de GitHub, et seul un plan de recette en termes neutres entre dans la PR, après la production.
 
@@ -72,9 +72,10 @@ sequenceDiagram
     DC->>PW: parcours de base et parcours ciblés,<br/>4 projets, session reprise (vidéo, trace)
     PW->>R: lectures et écritures dans la tribu recette-auto
     PW-->>DC: rapport, vidéos, traces
-    DC-->>Dev: archive des preuves et son SHA-256,<br/>résultats dans docs/recettes/vX.Y.Z.md
+    DC-->>Dev: vidéos, traces et page de contrôle<br/>dans le volume du Dev Container
     Dev->>DC: contrôle de la vidéo aux points désignés<br/>(verdicts dans docs/recettes/vX.Y.Z.md)
     Note over Dev: séance manuelle réduite<br/>au vrai appareil et aux vraies messageries
+    Dev->>DC: make recette-clean, recette terminée<br/>(vidéos et traces supprimées)
 ```
 
 ## Alternatives envisagées
@@ -86,12 +87,13 @@ sequenceDiagram
 - **Mailpit dans le Dev Container** : écarté pour la recette, qui envoie par le MX Plan ; possible plus tard pour éprouver `SMTPMailer` en local.
 - **Une boîte Gmail dédiée** : écarté pour l'automatique. Ajoute un compte tiers ; la réception sur les vraies messageries reste une vérification manuelle, ponctuelle (ADR 0014, point 6).
 - **Les parcours dans un workflow GitHub** : écarté (point 13).
-- **Les vidéos en artefact de CI ou dans la PR** : écarté. Elles montrent l'identifiant de la tribu de recette dans les URL et pèsent lourd ; une empreinte suffit à les lier au plan de recette.
+- **Les vidéos en artefact de CI ou dans la PR** : écarté. Elles montrent l'identifiant de la tribu de recette dans les URL et pèsent lourd.
+- **Archiver les vidéos avec leur empreinte, comme preuve durable** : écarté par le développeur (2026-11-15). La vidéo sert au contrôle ; une fois les verdicts consignés dans le plan de recette, elle n'a plus d'usage, et la garder coûte de la place et un rangement.
 - **Une check-list fixe qui s'allonge à chaque plan** : c'est l'état actuel. Écarté au profit de l'analyse, qui garde la séance manuelle courte et la justifie.
 
 ## Conséquences
 
-- **Positif** : chaque séance de recette a un plan argumenté, relu avant d'être joué ; le jugement visuel se fait sur la vidéo, après coup et de nouveau si besoin, et la séance manuelle se réduit à ce qui demande un vrai appareil ou une vraie messagerie ; l'environnement réel (serveur, envoi, migration) est éprouvé à chaque release, avec des preuves datées ; aucune dépendance nouvelle.
-- **Négatif** : un outil POP3 et des parcours à maintenir, cassés par des changements d'écran comme les tests d'écran ; une boîte, une tribu et un secret de plus à gérer ; l'analyse ajoute un temps de rédaction à chaque release ; la tribu `recette-auto` s'emplit.
+- **Positif** : chaque séance de recette a un plan argumenté, relu avant d'être joué ; le jugement visuel se fait sur la vidéo, après coup et de nouveau si besoin tant que la recette n'est pas terminée, et la séance manuelle se réduit à ce qui demande un vrai appareil ou une vraie messagerie ; l'environnement réel (serveur, envoi, migration) est éprouvé à chaque release, avec des preuves datées ; aucune dépendance nouvelle.
+- **Négatif** : aucune vidéo ne survit à la recette : un doute ultérieur sur ce qui a été vu ne se tranche qu'avec le plan de recette, ou en rejouant le parcours sur la recette ; un outil POP3 et des parcours à maintenir, cassés par des changements d'écran comme les tests d'écran ; une boîte, une tribu et un secret de plus à gérer ; l'analyse ajoute un temps de rédaction à chaque release ; la tribu `recette-auto` s'emplit.
 - **Risques acceptés** : le mot de passe de la boîte est lisible dans le Dev Container, donc par Claude Code ; il ne donne accès qu'à la tribu `recette-auto` de la recette, qui n'a que des données de test. La relève dépend de la disponibilité du POP3 du MX Plan.
 - **Précise** l'ADR 0005 (point 4 : ce qui est vérifié en recette) et l'ADR 0016 (déroulé de la recette) ; `RELEASING.md`, étape 6, renvoie à `docs/recette.md`.
