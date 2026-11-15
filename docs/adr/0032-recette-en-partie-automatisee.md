@@ -1,7 +1,7 @@
 # 0032. Recette en partie automatisée : plan de recette par analyse des risques, parcours filmés sur la recette
 
 - **Date** : 2026-11-14
-- **Statut** : proposé (plan `recette-auto`), accepté à la fusion de la PR du plan
+- **Statut** : accepté (fusion de la PR du plan `recette-auto`, #120, 2026-11-15)
 
 ## Contexte
 
@@ -26,7 +26,7 @@ Le Dev Container n'a ni adresse publique ni port 25 : il ne peut pas recevoir de
    - **probabilité qu'un défaut ait échappé à la CI** : *élevée* (code nouveau sans scénario passé, calcul, migration, comportement que seul un navigateur réel exerce, scénarios encore en attente, écran prouvé seulement sur l'API simulée), *moyenne*, *faible* (scénarios godog ou `@ui` passés dans tous les formats, changement mécanique) ;
    - **dépendance à l'environnement réel** : migration sur des données existantes ; Caddy, TLS, en-têtes, cookies ; envoi SMTP ; systemd et provisionnement ; cache et empreintes du front ; vrai appareil (toucher, clavier virtuel, rotation, application installée) ; jugement visuel ; vraies messageries ; Safari réel.
 4. **Voie de preuve**, déduite des trois réponses ; un changement peut en avoir plusieurs. La dépendance à l'environnement se lit en deux familles : **le serveur** (migration, Caddy, TLS, cookies, cache, envoi SMTP), qu'un parcours sur la recette voit ; **l'appareil physique** (toucher, clavier virtuel, rotation de l'appareil, application installée, ressenti de la fluidité) et **les vraies messageries**, qu'aucun navigateur émulé ne voit, filmé ou non. Les règles s'appliquent dans l'ordre :
-   1. **manuel sur un vrai appareil** : ce qui dépend de l'appareil physique ou des vraies messageries, et les scénarios `@manuel`. La vidéo d'un navigateur émulé n'en prouve rien ;
+   1. **manuel sur un vrai appareil** : ce qui dépend de l'appareil physique ou des vraies messageries, et les scénarios `@manuel`. La vidéo d'un navigateur émulé n'en prouve rien. *Précisé le 2026-11-15 (lot A) : aussi les opérations sur le serveur qui demandent SSH ou `sudo`, que le Dev Container ne fait pas (retour arrière et restauration, provisionnement, `tribe-menus-check report`) ;*
    2. **automatique avec contrôle de la vidéo** : ce qui demande un jugement humain sans demander d'appareil (conformité à la maquette, lisibilité, enchaînement d'un parcours, messages et bandeaux, mise en page dans un format), et tout changement de gravité haute et de probabilité élevée qui ne relève pas de la règle 1. Le parcours joue et vérifie ce qui s'assert ; le développeur regarde ensuite les passages que le plan de recette désigne, et y consigne son verdict. Le contrôle se fait après l'exécution, sans téléphone en main, et se refait sur la même preuve ;
    3. **automatique** : dépendance au serveur, ou risque moyen ou élevé que des vérifications du parcours suffisent à établir (une quantité juste, un article déplacé, une écriture relue) ;
    4. **CI** : risque faible (gravité et probabilité faibles ou moyennes) sans dépendance à l'environnement. Rien de plus en recette que les parcours de base (point 5), dont la vidéo n'est regardée qu'en cas d'échec.

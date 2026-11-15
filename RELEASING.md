@@ -38,11 +38,14 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
    ```
 
 5. **PR** intitulée `Release X.Y.Z`, commit signé (`git commit -s`), `make ci` avant de pousser. La ligne de `CHANGELOG.md` de cette PR, c'est la section renommée : pas de ligne en plus. Sur une branche `release/…`, le workflow `e2e-formats` lance aussi tous les scénarios `@ui` et tests d'écran dans tous les formats (`make e2e-formats`, ADR 0030, point 7) : il doit être vert avant la recette.
-6. **Recette** : le développeur déploie l'archive de la PR en recette (`sudo tribe-menus-deploy --env recette --pr <numéro>`, qui lit l'artefact `tribe-menus-pr-<numéro>` de la CI) et y vérifie, sur téléphone :
-   - les scénarios `@manuel` (ADR 0005), dont la liste est tenue ci-dessous ;
-   - les stories de la section, sur un vrai appareil.
+6. **Recette**, selon `docs/recette.md` (ADR 0032) :
+   1. **Plan de recette** : avant le déploiement en recette, la session qui prépare la PR de release analyse les changements de la section et ajoute à la PR `docs/recettes/vX.Y.Z.md` (gabarit `docs/recettes/_template.md`, ligne dans `docs/recettes/README.md`) : voie de preuve de chaque changement, points de contrôle de la vidéo, check-list de la séance manuelle. Le développeur le valide avant la séance. Les parcours ciblés qu'il demande sont écrits dans une PR ordinaire, ou dans la PR de release.
+   2. **Déploiement** : le développeur déploie l'archive de la PR en recette (`sudo tribe-menus-deploy --env recette --pr <numéro>`, qui lit l'artefact `tribe-menus-pr-<numéro>` de la CI). L'artefact est gardé trois jours (`ci.yml`) : déployer en recette dans ce délai, ou relancer la CI de la PR (`gh run rerun <identifiant>`), qui en produit un nouveau.
+   3. **Parcours automatiques** : `make recette-auto` depuis le Dev Container, avant la séance manuelle ; puis **contrôle de la vidéo** par le développeur, point par point.
+   4. **Séance manuelle**, guidée pas à pas, réduite à la voie 1 du plan de recette : vrai appareil, vraies messageries, scénarios `@manuel` (liste ci-dessous), opérations sur le serveur.
+   5. **Résultats** dans le plan de recette. Un défaut trouvé se corrige par une PR ordinaire ; la PR de release est ensuite mise à jour avec `main`, et une analyse réduite aux changements du correctif dit ce qu'on rejoue.
 
-   L'artefact est gardé trois jours (`ci.yml`) : déployer en recette dans ce délai, ou relancer la CI de la PR (`gh run rerun <identifiant>`), qui en produit un nouveau. Un défaut trouvé se corrige par une PR ordinaire ; la PR de release est ensuite mise à jour avec `main`.
+   Tant que l'outillage du plan `recette-auto` n'est pas en place, le point 3 est sans objet : les voies automatiques se vérifient à la main pendant la séance.
 7. **Fusion** par le développeur.
 8. **Étiquette annotée**, posée par le développeur (seul le propriétaire du dépôt peut créer une étiquette `v*`, et elle ne se déplace ni ne se supprime) sur le commit de fusion :
 
@@ -71,6 +74,7 @@ Versionnage sémantique adapté à une application (ADR 0012, point 4) :
 
     La dernière commande affiche `tribe-menus vX.Y.Z (<commit>)`, avec le commit de l'étiquette.
 11. **Déploiement** par le développeur, en production : instantané du VPS depuis l'espace client PulseHeberg (ADR 0025, point 4), puis `sudo tribe-menus-deploy vX.Y.Z`, puis le provisionnement si les notes le demandent (`deploy/README.md`).
+12. **Fin de la recette** : le plan de recette est complété (statut « terminée ») par une PR ordinaire, et les vidéos de la version sont supprimées (`make recette-clean VERSION=vX.Y.Z`, une fois l'outillage en place). Une release abandonnée termine aussi sa recette.
 
 Si le workflow échoue, la release n'est pas publiée. Selon la cause :
 

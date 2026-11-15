@@ -20,6 +20,7 @@ Les critères d'acceptation sont écrits en Gherkin français dans `docs/specs/f
 4. **Scénarios difficiles à automatiser** (PT-15, 2026-09-28) :
    - les scénarios négatifs (« aucune action ne permet de supprimer le plat », « aucune fonction de l'interface ne permet de modifier le journal ») sont prouvés contre l'API : la route correspondante n'existe pas et la requête est refusée (`405 Method Not Allowed` ou `404`) ;
    - les scénarios qui exigent un vrai appareil (survie de la session après fermeture du navigateur ou de l'app installée) portent le tag `@manuel` : exclus de `make ci`, ils sont vérifiés sur téléphone dans l'environnement de recette avant chaque release, selon la liste tenue dans `RELEASING.md` (ADR 0012).
+   *Précisé par l'ADR 0032 (2026-11-15) : la recette d'une release suit un plan de recette issu d'une analyse des changements et des risques, qui sépare ce que prouve la CI, ce que prouvent des parcours automatiques joués sur la recette (avec ou sans contrôle de la vidéo) et ce qui reste manuel ; les scénarios `@manuel` restent toujours manuels (`docs/recette.md`).*
 5. **Tests d'accès croisé entre tribus (ENF-02)** : exécutés avec godog contre l'API, avec deux tribus réelles, pour la lecture, la modification et la suppression.
 6. **Principes de clean code appliqués** :
    - logique métier sans dépendance à HTTP, SQL ou au DOM, et testable isolément ;
