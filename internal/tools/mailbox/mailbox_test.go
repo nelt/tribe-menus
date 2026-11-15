@@ -384,3 +384,21 @@ func TestRunArguments(t *testing.T) {
 		}
 	}
 }
+
+// TestExample checks that the model of deploy/ is read as a configuration (D10).
+func TestExample(t *testing.T) {
+	example, err := os.ReadFile(filepath.Join("..", "..", "..", "deploy", "recette-auto.example.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, configFile), example, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, passwordFile), []byte(password), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := readConfig(dir); err != nil {
+		t.Errorf("readConfig of the example: %v", err)
+	}
+}

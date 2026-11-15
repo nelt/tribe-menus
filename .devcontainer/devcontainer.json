@@ -28,9 +28,15 @@
     "GIT_CONFIG_KEY_1": "credential.helper",
     "GIT_CONFIG_VALUE_1": "!gh auth git-credential"
   },
+  // Recette automatique (plan recette-auto, D10 et D11 ; ADR 0032) : valeurs de
+  // l'instance, mot de passe de la boîte et état de session dans un volume,
+  // vidéos, traces et page de contrôle dans un autre, vidé en fin de recette
+  // (make recette-clean). Rien de cela dans le dépôt de travail.
   "mounts": [
     "source=tribe-menus-claude,target=/home/vscode/.claude,type=volume",
-    "source=tribe-menus-gh,target=/home/vscode/.config/gh,type=volume"
+    "source=tribe-menus-gh,target=/home/vscode/.config/gh,type=volume",
+    "source=tribe-menus-recette,target=/home/vscode/.config/tribe-menus,type=volume",
+    "source=tribe-menus-recette-videos,target=/home/vscode/recette-videos,type=volume"
   ],
 
   // Pas d'agent SSH de l'hôte dans le conteneur : le push passe par HTTPS,
