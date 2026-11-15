@@ -337,8 +337,39 @@ func TestDialTLS(t *testing.T) {
 	}
 }
 
+func TestDrain(t *testing.T) {
+	other := loginCode(t, "quelquun@example.org", "11111111", request)
+	tests := []struct {
+		name    string
+		server  *fakePOP3
+		wantBox []string
+		wantErr string
+	}{
+		{name: "empty box", server: &fakePOP3{}, wantBox: []string{}},
+		{name: "codes old and new deleted, others kept", server: &fakePOP3{messages: []string{
+			loginCode(t, box, "22222222", request.Add(-time.Hour)),
+			other,
+			loginCode(t, box, "33333333", request.Add(time.Hour)),
+			message(t, box, request, "Bonjour.\n"),
+		}}, wantBox: []string{other}},
+		{name: "password refused", server: &fakePOP3{refusePass: true}, wantErr: "login refused"},
+		{name: "connection cut", server: &fakePOP3{messages: []string{other}, cuts: 1}, wantErr: "pop3 RETR", wantBox: []string{other}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := start(t, tt.server).drain(context.Background())
+			if (tt.wantErr == "") != (err == nil) || (err != nil && !strings.Contains(err.Error(), tt.wantErr)) {
+				t.Fatalf("drain: %v, want %q", err, tt.wantErr)
+			}
+			if tt.wantBox != nil && !slices.Equal(tt.server.box(), tt.wantBox) {
+				t.Errorf("box after the drain: %d messages, want %d", len(tt.server.box()), len(tt.wantBox))
+			}
+		})
+	}
+}
+
 func TestRunArguments(t *testing.T) {
-	for _, args := range [][]string{{}, {"-since", "hier"}, {"-since", request.Format(time.RFC3339), "plus"}} {
+	for _, args := range [][]string{{}, {"-since", "hier"}, {"-since", request.Format(time.RFC3339), "plus"}, {"-drain", "-since", request.Format(time.RFC3339)}} {
 		var stdout, stderr bytes.Buffer
 		if code := run(context.Background(), args, &stdout, &stderr); code != 2 || stdout.Len() != 0 {
 			t.Errorf("run %q: exit %d, stdout %q", args, code, stdout.String())

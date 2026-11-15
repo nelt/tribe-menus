@@ -6,6 +6,11 @@
 // Usage:
 //
 //	go run ./internal/tools/mailbox -since <RFC 3339 time of the request> [-config <dir>]
+//	go run ./internal/tools/mailbox -drain [-config <dir>]
+//
+// -drain empties the box of the messages addressed to it, in one session, before a code
+// request: a code of an earlier request, arriving late, can then not be taken for the new
+// one (review of #123, point 2).
 //
 // The directory (default: ~/.config/tribe-menus, the volume tribe-menus-recette of the Dev
 // Container, D10) holds recette-auto.json (address of the box, server, port and account
@@ -41,12 +46,16 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	rawSince := flags.String("since", "", "time of the code request, RFC 3339")
 	timeout := flags.Duration("timeout", 2*time.Minute, "how long to wait for the code")
 	interval := flags.Duration("interval", 5*time.Second, "time between two fetches")
+	drain := flags.Bool("drain", false, "delete the messages addressed to the box, then exit")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
 	since, err := time.Parse(time.RFC3339Nano, *rawSince)
-	if flags.NArg() != 0 || err != nil || *timeout <= 0 || *interval <= 0 {
-		fmt.Fprintln(stderr, "mailbox: want -since <RFC 3339 time>, without other arguments")
+	if *drain && *rawSince == "" {
+		err = nil
+	}
+	if flags.NArg() != 0 || err != nil || (*drain && *rawSince != "") || *timeout <= 0 || *interval <= 0 {
+		fmt.Fprintln(stderr, "mailbox: want -since <RFC 3339 time> or -drain, without other arguments")
 		return 2
 	}
 	cfg, password, err := recetteconfig.Read(*dir)
@@ -62,6 +71,13 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			return dialTLS(ctx, net.JoinHostPort(cfg.POP3.Host, strconv.Itoa(cfg.POP3.Port)), nil)
 		},
 		interval: *interval,
+	}
+	if *drain {
+		if err := f.drain(ctx); err != nil {
+			fmt.Fprintln(stderr, "mailbox:", err)
+			return 1
+		}
+		return 0
 	}
 	code, err := f.wait(ctx, since, *timeout)
 	if err != nil {
@@ -114,6 +130,19 @@ func (f fetcher) wait(ctx context.Context, since time.Time, timeout time.Duratio
 		case <-time.After(f.interval):
 		}
 	}
+}
+
+// drain deletes, in one session, every message addressed to the box, codes or not.
+func (f fetcher) drain(ctx context.Context) error {
+	// No message is dated after the end of time: none is kept as the code.
+	_, err := f.fetch(ctx, time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC))
+	if errors.Is(err, errNoCode) {
+		return nil
+	}
+	if err == nil {
+		return errors.New("drain: a code dated after the end of time")
+	}
+	return err
 }
 
 // fetch runs one session: reads every message, deletes those addressed to the box, and
