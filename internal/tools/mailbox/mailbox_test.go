@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
 	"mime/quotedprintable"
 	"net"
 	"net/http/httptest"
@@ -59,8 +60,11 @@ type fakePOP3 struct {
 	// sessions.
 	refusePass bool
 	cuts       int
-	sessions   int
-	passwords  []string
+	// hangAfter, when not 0, leaves every session after that many without a greeting, until
+	// the client closes the connection.
+	hangAfter int
+	sessions  int
+	passwords []string
 }
 
 func (s *fakePOP3) add(m string) {
@@ -90,12 +94,17 @@ func (s *fakePOP3) session(conn net.Conn) {
 	defer conn.Close()
 	s.mu.Lock()
 	s.sessions++
+	hang := s.hangAfter > 0 && s.sessions > s.hangAfter
 	cut := s.cuts > 0
 	if cut {
 		s.cuts--
 	}
 	messages := slices.Clone(s.messages)
 	s.mu.Unlock()
+	if hang {
+		_, _ = io.Copy(io.Discard, conn)
+		return
+	}
 
 	in := bufio.NewScanner(conn)
 	say := func(line string) { fmt.Fprint(conn, line+"\r\n") }
@@ -204,6 +213,7 @@ func TestWait(t *testing.T) {
 		{name: "message arriving later", later: first, want: "33333333", wantBox: []string{}},
 		{name: "connection cut, then the code", server: &fakePOP3{messages: []string{first}, cuts: 1}, want: "33333333", wantBox: []string{}, sessions: 2},
 		{name: "connection always cut", server: &fakePOP3{messages: []string{first}, cuts: 1000}, wantErr: "last error: pop3 RETR", wantBox: []string{first}},
+		{name: "last session cut by the deadline, the error before it kept", server: &fakePOP3{messages: []string{first}, cuts: 1, hangAfter: 1}, wantErr: "last error: pop3 RETR", wantBox: []string{first}, sessions: 2},
 		{name: "password refused, no retry", server: &fakePOP3{messages: []string{first}, refusePass: true}, wantErr: "login refused: pop3 PASS: refused by the server", wantBox: []string{first}, sessions: 1},
 	}
 	for _, tt := range tests {

@@ -85,19 +85,24 @@ type fetcher struct {
 var errLogin = errors.New("login refused")
 
 // wait fetches until a code dated after since is found, or timeout. A session that fails
-// otherwise than by the login (connection cut, server unavailable) is tried again.
+// otherwise than by the login (connection cut, server unavailable) is tried again. The error
+// shown at the timeout is that of the last session ended before it: a session cut by the
+// timeout itself says nothing of the server (review of #123, point 3).
 func (f fetcher) wait(ctx context.Context, since time.Time, timeout time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+	deadline, _ := ctx.Deadline()
 	var last error
 	for {
 		code, err := f.fetch(ctx, since)
+		// A connection reaches the deadline a little before ctx is marked done.
+		cut := ctx.Err() != nil || !time.Now().Before(deadline)
 		switch {
 		case err == nil:
 			return code, nil
 		case errors.Is(err, errLogin):
 			return "", err
-		case !errors.Is(err, errNoCode):
+		case !cut && !errors.Is(err, errNoCode):
 			last = err
 		}
 		select {
