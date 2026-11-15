@@ -15,7 +15,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -23,10 +22,10 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/nelt/tribe-menus/internal/tools/recetteconfig"
 )
 
 func main() {
@@ -35,28 +34,10 @@ func main() {
 	os.Exit(run(ctx, os.Args[1:], os.Stdout, os.Stderr))
 }
 
-// Files of the configuration directory (D10), also read by web/playwright.recette.config.ts.
-const (
-	configFile   = "recette-auto.json"
-	passwordFile = "recette-auto.pop3"
-)
-
-// config is what the fetch reads from recette-auto.json; the URL of the tribe, in the same
-// file, is for Playwright.
-type config struct {
-	Address string `json:"address"`
-	POP3    struct {
-		Host string `json:"host"`
-		Port int    `json:"port"`
-		User string `json:"user"`
-	} `json:"pop3"`
-}
-
 func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("mailbox", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	home, _ := os.UserHomeDir()
-	dir := flags.String("config", filepath.Join(home, ".config", "tribe-menus"), "directory of "+configFile+" and "+passwordFile)
+	dir := flags.String("config", recetteconfig.DefaultDir(), "directory of "+recetteconfig.ConfigFile+" and "+recetteconfig.PasswordFile)
 	rawSince := flags.String("since", "", "time of the code request, RFC 3339")
 	timeout := flags.Duration("timeout", 2*time.Minute, "how long to wait for the code")
 	interval := flags.Duration("interval", 5*time.Second, "time between two fetches")
@@ -68,7 +49,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "mailbox: want -since <RFC 3339 time>, without other arguments")
 		return 2
 	}
-	cfg, password, err := readConfig(*dir)
+	cfg, password, err := recetteconfig.Read(*dir)
 	if err != nil {
 		fmt.Fprintln(stderr, "mailbox:", err)
 		return 1
@@ -89,38 +70,6 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, code)
 	return 0
-}
-
-// readConfig reads the configuration and the password, refused when readable by others.
-func readConfig(dir string) (config, string, error) {
-	var cfg config
-	b, err := os.ReadFile(filepath.Join(dir, configFile))
-	if err != nil {
-		return cfg, "", fmt.Errorf("read %s: %w", configFile, err)
-	}
-	if err := json.Unmarshal(b, &cfg); err != nil {
-		return cfg, "", fmt.Errorf("read %s: %w", configFile, err)
-	}
-	if cfg.Address == "" || cfg.POP3.Host == "" || cfg.POP3.Port == 0 || cfg.POP3.User == "" {
-		return cfg, "", fmt.Errorf("%s: address, pop3.host, pop3.port and pop3.user needed", configFile)
-	}
-	path := filepath.Join(dir, passwordFile)
-	info, err := os.Stat(path)
-	if err != nil {
-		return cfg, "", fmt.Errorf("read %s: %w", passwordFile, err)
-	}
-	if info.Mode().Perm()&0o077 != 0 {
-		return cfg, "", fmt.Errorf("%s: readable by others, want mode 0600", passwordFile)
-	}
-	b, err = os.ReadFile(path)
-	if err != nil {
-		return cfg, "", fmt.Errorf("read %s: %w", passwordFile, err)
-	}
-	password := strings.TrimRight(string(b), "\r\n")
-	if password == "" {
-		return cfg, "", fmt.Errorf("%s: empty", passwordFile)
-	}
-	return cfg, password, nil
 }
 
 // fetcher fetches the login code from a box.

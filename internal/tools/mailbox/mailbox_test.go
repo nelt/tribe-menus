@@ -11,8 +11,6 @@ import (
 	"mime/quotedprintable"
 	"net"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -329,76 +327,11 @@ func TestDialTLS(t *testing.T) {
 	}
 }
 
-func TestReadConfig(t *testing.T) {
-	const good = `{"tribeURL": "https://recette.example.org/tribes/x/", "address": "a@example.org", "pop3": {"host": "pop3.example.org", "port": 995, "user": "a@example.org"}}`
-	tests := []struct {
-		name     string
-		config   string
-		password string
-		mode     os.FileMode
-		wantErr  string
-	}{
-		{name: "complete", config: good, password: password + "\n", mode: 0o600},
-		{name: "no configuration", password: password, mode: 0o600, wantErr: "read recette-auto.json"},
-		{name: "missing port", config: `{"address": "a@example.org", "pop3": {"host": "h", "user": "u"}}`, password: password, mode: 0o600, wantErr: "pop3.port"},
-		{name: "no password", config: good, wantErr: "read recette-auto.pop3"},
-		{name: "password readable by others", config: good, password: password, mode: 0o644, wantErr: "want mode 0600"},
-		{name: "empty password", config: good, password: "\n", mode: 0o600, wantErr: "empty"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if tt.config != "" {
-				if err := os.WriteFile(filepath.Join(dir, configFile), []byte(tt.config), 0o600); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if tt.mode != 0 {
-				path := filepath.Join(dir, passwordFile)
-				if err := os.WriteFile(path, []byte(tt.password), tt.mode); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Chmod(path, tt.mode); err != nil {
-					t.Fatal(err)
-				}
-			}
-			cfg, got, err := readConfig(dir)
-			if tt.wantErr != "" {
-				if err == nil || !strings.Contains(err.Error(), tt.wantErr) || strings.Contains(err.Error(), password) {
-					t.Fatalf("readConfig: %v, want %q", err, tt.wantErr)
-				}
-				return
-			}
-			if err != nil || got != password || cfg.POP3.Port != 995 {
-				t.Errorf("readConfig: %+v, %q, %v", cfg, got, err)
-			}
-		})
-	}
-}
-
 func TestRunArguments(t *testing.T) {
 	for _, args := range [][]string{{}, {"-since", "hier"}, {"-since", request.Format(time.RFC3339), "plus"}} {
 		var stdout, stderr bytes.Buffer
 		if code := run(context.Background(), args, &stdout, &stderr); code != 2 || stdout.Len() != 0 {
 			t.Errorf("run %q: exit %d, stdout %q", args, code, stdout.String())
 		}
-	}
-}
-
-// TestExample checks that the model of deploy/ is read as a configuration (D10).
-func TestExample(t *testing.T) {
-	example, err := os.ReadFile(filepath.Join("..", "..", "..", "deploy", "recette-auto.example.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, configFile), example, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, passwordFile), []byte(password), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := readConfig(dir); err != nil {
-		t.Errorf("readConfig of the example: %v", err)
 	}
 }
