@@ -1,0 +1,105 @@
+// Targeted journey of v0.6.0 (docs/recettes/v0.6.0.md, entries 5 and 11): selection, « Nouvelle
+// liste » and « Déplacer vers… » in each format. Two items added by hand to « Courses », both
+// selected and sent to a new list; then sent back one by one; the empty list deleted (C12: the
+// tribe keeps no list of the runs, 20 at most); the items checked and taken out of « Courses ».
+import type { Page } from "@playwright/test";
+import { check, checkout, itemLine, listCard, listTitle, openCourses, openListPicker, runSuffix } from "./helpers.ts";
+import { expect, step, test } from "./test.ts";
+
+function actions(page: Page) {
+  return page.getByRole("group", { name: "Actions de la sélection" });
+}
+
+/** Enters the selection mode, unless the list already is in it, and selects these items. */
+async function select(page: Page, ...ingredients: string[]) {
+  const start = page.getByRole("button", { name: "Sélectionner", exact: true });
+  if ((await start.count()) > 0) {
+    await start.click();
+  }
+  await expect(page.getByRole("main").locator(".selection-hint")).toBeVisible();
+  for (const ingredient of ingredients) {
+    const pick = page.getByRole("button", { name: new RegExp(`^Sélectionner ${ingredient}(,|$)`) });
+    await pick.click();
+    await expect(pick).toHaveAttribute("aria-pressed", "true");
+  }
+}
+
+/** The green banner of a move, with its link to the target list. */
+function movedBanner(page: Page) {
+  return page.locator(".banner-done").filter({ has: page.locator(".banner-link") });
+}
+
+/** Opens the move sheet for the selection, then moves it to « Courses ». */
+async function moveToCourses(page: Page) {
+  await actions(page).getByRole("button", { name: "Déplacer vers…" }).click();
+  await page.getByRole("dialog").locator(".sheet-target").filter({ has: page.locator(".sheet-target-name").getByText("Courses", { exact: true }) }).click();
+  await expect(movedBanner(page)).toContainText("1 article déplacé vers « Courses ».");
+}
+
+test("selection, new list and move", async ({ page }, testInfo) => {
+  const run = runSuffix(testInfo.project.name);
+  const milk = `lait ${run}`;
+  const eggs = `œufs ${run}`;
+  const list = `Sélection ${run}`;
+
+  await step(page, "Two items added by hand", async () => {
+    await openCourses(page);
+    await page.getByRole("button", { name: "Ajouter un article à la main" }).click();
+    for (const ingredient of [milk, eggs]) {
+      await page.getByRole("combobox", { name: "Article" }).fill(ingredient);
+      await page.getByRole("button", { name: "Ajouter à la liste" }).click();
+      await expect(itemLine(page, ingredient)).toBeVisible();
+    }
+    await page.getByRole("button", { name: "Annuler" }).click();
+  });
+
+  await step(page, "Two items selected", async () => {
+    await select(page, milk, eggs);
+    await expect(actions(page).getByRole("button", { name: "Déplacer vers…" })).toBeEnabled();
+    await expect(actions(page).getByRole("button", { name: "Nouvelle liste" })).toBeEnabled();
+  });
+
+  await step(page, "New list from the selection", async () => {
+    await actions(page).getByRole("button", { name: "Nouvelle liste" }).click();
+    const sheet = page.getByRole("dialog", { name: "Nouvelle liste" });
+    await sheet.getByRole("textbox", { name: "Nom de la liste" }).fill(list);
+    await sheet.getByRole("button", { name: "Créer la liste" }).click();
+    await expect(movedBanner(page)).toContainText(`2 articles déplacés vers « ${list} ».`);
+    await expect(itemLine(page, milk)).toHaveCount(0);
+  });
+
+  await step(page, "New list holds the items", async () => {
+    await movedBanner(page).locator(".banner-link").click();
+    await expect(listTitle(page)).toHaveText(list);
+    await expect(itemLine(page, milk)).toBeVisible();
+    await expect(itemLine(page, eggs)).toBeVisible();
+  });
+
+  await step(page, "Move sheet", async () => {
+    await select(page, milk);
+    await actions(page).getByRole("button", { name: "Déplacer vers…" }).click();
+    await expect(page.getByRole("dialog").locator(".sheet-target-name").getByText("Courses", { exact: true })).toBeVisible();
+  });
+
+  await step(page, "Items sent back to Courses", async () => {
+    await page.getByRole("dialog").locator(".sheet-target").filter({ has: page.locator(".sheet-target-name").getByText("Courses", { exact: true }) }).click();
+    await expect(movedBanner(page)).toContainText("1 article déplacé vers « Courses ».");
+    await select(page, eggs);
+    await moveToCourses(page);
+    await expect(itemLine(page, eggs)).toHaveCount(0);
+  });
+
+  await step(page, "Empty list deleted", async () => {
+    await openListPicker(page);
+    await page.getByRole("button", { name: `Actions pour la liste ${list}` }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Supprimer la liste" }).click();
+    await expect(listCard(page, list)).toHaveCount(0);
+  });
+
+  await step(page, "Items taken out of Courses", async () => {
+    await openCourses(page);
+    await check(page, milk);
+    await check(page, eggs);
+    await checkout(page, milk, eggs);
+  });
+});
