@@ -4,15 +4,18 @@
 //
 // Usage:
 //
-//	go run ./internal/tools/recetteauto run -version vX.Y.Z [-pr <number>] [-- <arguments of playwright test>]
+//	go run ./internal/tools/recetteauto run -version vX.Y.Z [-pr <number>] [-reuse-session] [-- <arguments of playwright test>]
 //	go run ./internal/tools/recetteauto clean [-version vX.Y.Z]
+//	go run ./internal/tools/recetteauto serve [-addr 127.0.0.1:8095]
 //
 // run checks the files of the volume tribe-menus-recette, that the plan of the acceptance run
 // docs/recettes/vX.Y.Z.md exists, and that the staging instance serves the archive of the pull
 // request (pr-<number>) or else the version, read on its public site; then it runs
 // web/playwright.recette.config.ts, writing into a new directory vX.Y.Z/<time>/ of the volume
 // of the videos, and shows the path of the control page. It exits in error when a journey
-// fails. clean removes the directory of the version, or everything in the volume.
+// fails. clean removes the directory of the version, or everything in the volume. serve
+// serves the volume of the videos on a loopback address, with the requests of a part of a file
+// that a browser needs to put a video at the instant of a step, and lists the control pages.
 package main
 
 import (
@@ -70,7 +73,7 @@ func defaultVideos() string {
 
 func (e env) main(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "recetteauto: want run or clean")
+		fmt.Fprintln(stderr, "recetteauto: want run, clean or serve")
 		return 2
 	}
 	flags := flag.NewFlagSet("recetteauto "+args[0], flag.ContinueOnError)
@@ -78,15 +81,19 @@ func (e env) main(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	version := flags.String("version", "", "version of the release, vX.Y.Z")
 	videos := flags.String("videos", defaultVideos(), "volume of the videos")
 	var pr *int
-	var configDir, root *string
+	var reuse *bool
+	var configDir, root, addr *string
 	switch args[0] {
 	case "run":
 		pr = flags.Int("pr", 0, "pull request whose archive the staging instance serves")
+		reuse = flags.Bool("reuse-session", false, "take up the session of the last run if still valid, without a code request (while writing journeys)")
 		configDir = flags.String("config", recetteconfig.DefaultDir(), "directory of "+recetteconfig.ConfigFile)
 		root = flags.String("root", ".", "root of the repository")
 	case "clean":
+	case "serve":
+		addr = flags.String("addr", "127.0.0.1:8095", "loopback address to serve the volume on")
 	default:
-		fmt.Fprintln(stderr, "recetteauto: want run or clean")
+		fmt.Fprintln(stderr, "recetteauto: want run, clean or serve")
 		return 2
 	}
 	if err := flags.Parse(args[1:]); err != nil {
@@ -97,18 +104,20 @@ func (e env) main(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		return 2
 	}
 	var err error
-	if args[0] == "clean" {
-		if flags.NArg() != 0 {
-			fmt.Fprintln(stderr, "recetteauto: unexpected arguments")
-			return 2
-		}
+	switch {
+	case args[0] != "run" && flags.NArg() != 0:
+		fmt.Fprintln(stderr, "recetteauto: unexpected arguments")
+		return 2
+	case args[0] == "clean":
 		err = clean(*videos, *version, stdout)
-	} else {
+	case args[0] == "serve":
+		err = serve(ctx, *videos, *addr, stdout)
+	default:
 		if *version == "" || *pr < 0 {
 			fmt.Fprintln(stderr, "recetteauto: run: want -version vX.Y.Z [-pr <number>]")
 			return 2
 		}
-		err = e.run(ctx, *configDir, *videos, *root, *version, *pr, flags.Args(), stdout, stderr)
+		err = e.run(ctx, *configDir, *videos, *root, *version, *pr, *reuse, flags.Args(), stdout, stderr)
 	}
 	if err != nil {
 		fmt.Fprintln(stderr, "recetteauto:", err)
@@ -117,7 +126,7 @@ func (e env) main(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	return 0
 }
 
-func (e env) run(ctx context.Context, configDir, videos, root, version string, pr int, extra []string, stdout, stderr io.Writer) error {
+func (e env) run(ctx context.Context, configDir, videos, root, version string, pr int, reuse bool, extra []string, stdout, stderr io.Writer) error {
 	cfg, _, err := recetteconfig.Read(configDir)
 	if err != nil {
 		return fmt.Errorf("volume tribe-menus-recette: %w", err)
@@ -148,6 +157,9 @@ func (e env) run(ctx context.Context, configDir, videos, root, version string, p
 	}
 	fmt.Fprintf(stdout, "Staging instance serving %s; run written to %s\n", served, out)
 	environ := []string{"RECETTE_CONFIG_DIR=" + configDir, "RECETTE_OUTPUT_DIR=" + out, "RECETTE_PLAN=" + plan}
+	if reuse {
+		environ = append(environ, "RECETTE_REUSE_SESSION=1")
+	}
 	runErr := e.playwright(ctx, filepath.Join(root, "web"), environ, extra, stdout, stderr)
 	page := filepath.Join(out, "controle.html")
 	if _, err := os.Stat(page); err == nil {

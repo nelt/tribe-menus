@@ -13,10 +13,11 @@ ARG GH_VERSION=2.102.0
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Paquets système : client sqlite3 (ADR 0009), shellcheck (scripts de deploy/,
-# plan recette, D10), sudo (installation des dépendances système de Playwright par
-# make tools).
+# plan recette, D10), jq (scripts de deploy/ exécutés par les tests de
+# internal/deploy, comme sur le serveur), sudo (installation des dépendances
+# système de Playwright par make tools).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends shellcheck sqlite3 sudo xz-utils \
+ && apt-get install -y --no-install-recommends jq shellcheck sqlite3 sudo xz-utils \
  && rm -rf /var/lib/apt/lists/*
 
 # Node à la version de .nvmrc, archive officielle vérifiée par son empreinte.

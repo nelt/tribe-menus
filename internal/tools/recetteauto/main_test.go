@@ -53,9 +53,11 @@ func TestRun(t *testing.T) {
 		wantErr    string
 		wantRun    bool
 		wantExtras []string
+		wantReuse  bool
 	}{
 		{name: "pull request served", args: []string{"-version", "v0.6.0", "-pr", "131"}, served: "pr-131", wantRun: true},
 		{name: "version served", args: []string{"-version", "v0.6.0"}, served: "v0.6.0", wantRun: true},
+		{name: "session reused", args: []string{"-version", "v0.6.0", "-pr", "131", "-reuse-session"}, served: "pr-131", wantRun: true, wantReuse: true},
 		{name: "arguments for playwright", args: []string{"-version", "v0.6.0", "-pr", "131", "--", "--project", "phone-chromium"}, served: "pr-131", wantRun: true, wantExtras: []string{"--project", "phone-chromium"}},
 		{name: "another pull request served", args: []string{"-version", "v0.6.0", "-pr", "131"}, served: "pr-130", wantCode: 1, wantErr: "serves pr-130, not pr-131"},
 		{name: "pull request served, version asked", args: []string{"-version", "v0.6.0"}, served: "pr-131", wantCode: 1, wantErr: "serves pr-131, not v0.6.0"},
@@ -114,6 +116,9 @@ func TestRun(t *testing.T) {
 			}
 			out := filepath.Join(videos, "v0.6.0", "20261115-103000")
 			wantEnv := []string{"RECETTE_CONFIG_DIR=" + configDir, "RECETTE_OUTPUT_DIR=" + out, "RECETTE_PLAN=" + filepath.Join(root, "docs", "recettes", "v0.6.0.md")}
+			if tt.wantReuse {
+				wantEnv = append(wantEnv, "RECETTE_REUSE_SESSION=1")
+			}
 			if !slices.Equal(gotEnv, wantEnv) || gotDir != filepath.Join(root, "web") || !slices.Equal(gotArgs, tt.wantExtras) {
 				t.Errorf("playwright in %s with %q, %q", gotDir, gotEnv, gotArgs)
 			}
@@ -160,5 +165,43 @@ func TestClean(t *testing.T) {
 				t.Errorf("left %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestServe(t *testing.T) {
+	videos := t.TempDir()
+	write(t, filepath.Join(videos, "v0.6.0", "20261115-200756", "controle.html"), "<!doctype html>")
+	write(t, filepath.Join(videos, "v0.6.0", "20261115-200756", "resultats", "a", "video.webm"), "0123456789")
+	write(t, filepath.Join(videos, "v0.6.0", "20261115-152345", "controle.html"), "<!doctype html>")
+
+	pages, err := controlPages(videos)
+	if want := []string{"v0.6.0/20261115-152345/controle.html", "v0.6.0/20261115-200756/controle.html"}; err != nil || !slices.Equal(pages, want) {
+		t.Errorf("controlPages: %q, %v; want %q", pages, err, want)
+	}
+
+	srv := httptest.NewServer(pagesHandler(videos))
+	defer srv.Close()
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/v0.6.0/20261115-200756/resultats/a/video.webm", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Range", "bytes=2-5")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusPartialContent || string(body) != "2345" || resp.Header.Get("Content-Type") != "video/webm" {
+		t.Errorf("part of a video: %d %q %q, want 206 \"2345\" video/webm", resp.StatusCode, body, resp.Header.Get("Content-Type"))
+	}
+}
+
+func TestServeLoopbackOnly(t *testing.T) {
+	for _, addr := range []string{"0.0.0.0:8095", ":8095", "example.org:8095", "8095"} {
+		var stdout bytes.Buffer
+		if err := serve(context.Background(), t.TempDir(), addr, &stdout); err == nil || stdout.Len() != 0 {
+			t.Errorf("serve on %q: %v, served", addr, err)
+		}
 	}
 }

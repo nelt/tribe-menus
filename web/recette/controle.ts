@@ -69,6 +69,10 @@ export interface RanStep {
   title: string;
   /** Seconds from the start of the video of its test. */
   offset: number;
+  /** What it does and checks, in French Gherkin, one line each. */
+  gherkin?: string[];
+  /** It failed: the test stopped there. */
+  failed?: boolean;
   /** Path of its capture, relative to the control page, if any. */
   capture?: string;
 }
@@ -78,6 +82,8 @@ export interface RanTest {
   file: string;
   project: string;
   title: string;
+  /** Its scenario, in French. */
+  scenario?: string;
   status: string;
   /** Path of its video, relative to the control page, if any. */
   video?: string;
@@ -123,26 +129,101 @@ function escape(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-/** The local control page: the points, then the tests that failed, with their videos. */
+/** The instant of the video to open at for a step. */
+function instant(step: RanStep): number {
+  return Math.max(0, step.offset - lead);
+}
+
+/** A Gherkin line, its keyword in bold. */
+function gherkinLine(line: string): string {
+  const m = /^(Étant donné que|Étant donné qu'|Étant donné|Quand|Alors|Et|Mais)\b(.*)$/s.exec(line);
+  return m === null ? escape(line) : `<strong>${escape(m[1] ?? "")}</strong>${escape(m[2] ?? "")}`;
+}
+
+/** The steps of a test as a scenario: each with its Gherkin and, with a video, a link to its instant. */
+function scenarioSteps(test: RanTest, video: string | undefined, current?: RanStep): string {
+  // The steps without Gherkin are tooling (a box emptied, data of a stopped run removed), not
+  // the application: left out, unless one of them failed.
+  const items = test.steps.filter((step) => step.gherkin !== undefined || step.failed === true || step === current).map((step) => {
+    const lines = (step.gherkin ?? [step.title]).map((l) => `<span class="line">${gherkinLine(l)}</span>`).join("");
+    const classes = [step === current ? "current" : "", step.failed === true ? "failed" : ""].filter((c) => c !== "").join(" ");
+    const at = video === undefined ? "" : `<button type="button" class="at" data-video="${escape(video)}" data-t="${instant(step).toFixed(1)}" title="Voir la vidéo à ce moment">▶ ${step.offset.toFixed(1)} s</button>`;
+    return `<li${classes === "" ? "" : ` class="${classes}"`}><span class="lines">${lines}</span><span class="name">${escape(step.title)}</span>${at}</li>`;
+  });
+  const end = test.status === "passed" ? "" : `<li class="failed"><span class="lines"><span class="line"><strong>Arrêté</strong> : ${escape(test.status)}${test.steps.some((s) => s.failed) ? ", à l'étape marquée" : ""}</span></span></li>`;
+  return `<ol class="steps">${items.join("")}${end}</ol>`;
+}
+
+/** The mark of an outcome. */
+function outcome(status: string): string {
+  return status === "passed" ? `<span class="ok">✓ passé</span>` : status === "skipped" ? `<span class="skip">— ignoré</span>` : `<span class="ko">✗ ${escape(status)}</span>`;
+}
+
+/**
+ * The local control page: what ran, by journey and project; the points to check, each with
+ * what to look at, its scenario with the designated step, its capture and its video; then each
+ * scenario as it ran. A step's time puts the video of its block at that instant.
+ */
 export function controlPage(version: string, shown: readonly Shown[], missing: readonly ControlPoint[], tests: readonly RanTest[]): string {
-  const video = (path: string | undefined, offset: number) =>
-    path === undefined ? "<p>Pas de vidéo.</p>" : `<video controls preload="metadata" src="${escape(`${path}#t=${Math.max(0, offset - lead).toFixed(1)}`)}"></video>`;
-  const points = shown.map(
-    ({ point, test, step }) => `
-    <section>
-      <h2>${escape(point.id)} · entrée ${escape(point.entry)} · ${escape(point.project)}</h2>
-      <p class="look">${escape(point.look)}</p>
-      <p class="where"><code>${escape(point.file)}</code>, « ${escape(test.title)} », étape « ${escape(point.step)} », à ${step.offset.toFixed(1)} s · ${escape(test.status)}</p>
-      <div class="proof">
-        ${step.capture === undefined ? "<p>Pas de capture.</p>" : `<a href="${escape(step.capture)}"><img src="${escape(step.capture)}" alt="Capture de l'étape « ${escape(point.step)} »"></a>`}
-        ${video(test.video, step.offset)}
-      </div>
-    </section>`,
-  );
+  const files = [...new Set(tests.map((t) => t.file))];
+  const projects = [...new Set(tests.map((t) => t.project))];
+  const byFile = (file: string) => tests.filter((t) => t.file === file);
+  const scenarioOf = (file: string) => byFile(file).find((t) => t.scenario !== undefined)?.scenario ?? file;
+
+  const summary = `<table class="summary">
+    <thead><tr><th>Scénario</th>${projects.map((p) => `<th>${escape(p)}</th>`).join("")}</tr></thead>
+    <tbody>${files
+      .map(
+        (file) => `<tr><th><a href="#${escape(file)}">${escape(scenarioOf(file))}</a><br><code>${escape(file)}</code></th>${projects
+          .map((project) => {
+            const t = byFile(file).find((x) => x.project === project);
+            return `<td>${t === undefined ? "" : `${outcome(t.status)}${t.video === undefined ? "" : ` · <a href="${escape(t.video)}">vidéo</a>`}`}</td>`;
+          })
+          .join("")}</tr>`,
+      )
+      .join("")}</tbody>
+  </table>`;
+
   const absent = missing.map((p) => `<li>${escape(p.id)} : <code>${escape(p.file)}</code>, ${escape(p.project)}, étape « ${escape(p.step)} »</li>`);
-  const failed = tests
-    .filter((t) => t.status !== "passed" && t.status !== "skipped")
-    .map((t) => `<li><code>${escape(t.file)}</code>, ${escape(t.project)} : « ${escape(t.title)} » (${escape(t.status)})${t.video === undefined ? "" : `, <a href="${escape(t.video)}">vidéo</a>`}</li>`);
+
+  const points = shown.map(({ point, test, step }, i) => {
+    const id = `v${i}`;
+    return `
+    <section class="point">
+      <h3>${escape(point.id)} · ${escape(point.project)} <span class="entry">entrée ${escape(point.entry)}</span> ${outcome(test.status)}</h3>
+      <p class="look"><span class="label">À regarder</span> ${escape(point.look)}</p>
+      <div class="point-body">
+        <div class="scenario">
+          <p class="scenario-title">${escape(test.scenario ?? test.title)} <code>${escape(point.file)}</code></p>
+          ${scenarioSteps(test, test.video === undefined ? undefined : id, step)}
+        </div>
+        <div class="proof">
+          ${test.video === undefined ? "<p>Pas de vidéo.</p>" : `<video id="${id}" controls preload="metadata" src="${escape(`${test.video}#t=${instant(step).toFixed(1)}`)}"></video>`}
+          ${step.capture === undefined ? "<p>Pas de capture.</p>" : `<a href="${escape(step.capture)}"><img src="${escape(step.capture)}" alt="Capture de l'étape « ${escape(point.step)} »"></a>`}
+        </div>
+      </div>
+    </section>`;
+  });
+
+  const scenarios = files.map((file, i) => {
+    const runs = byFile(file);
+    const first = runs.find((t) => t.status === "passed") ?? runs[0];
+    const id = `s${i}`;
+    return `
+    <section class="journey" id="${escape(file)}">
+      <h3>${escape(scenarioOf(file))} <code>${escape(file)}</code></h3>
+      <p class="runs">${runs.map((t) => `${escape(t.project)} ${outcome(t.status)}${t.video === undefined ? "" : ` (<a href="${escape(t.video)}">vidéo</a>)`}`).join(" · ")}</p>
+      <div class="point-body">
+        <div class="scenario">${first === undefined ? "" : scenarioSteps(first, first.video === undefined ? undefined : id)}</div>
+        <div class="proof">${first?.video === undefined ? "" : `<p class="small">Vidéo de ${escape(first.project)}</p><video id="${id}" controls preload="metadata" src="${escape(first.video)}"></video>`}</div>
+      </div>
+      ${runs
+        .filter((t) => t !== first && t.status !== "passed" && t.status !== "skipped")
+        .map((t) => `<p class="small ko">En échec dans ${escape(t.project)} :</p>${scenarioSteps(t, undefined)}`)
+        .join("")}
+    </section>`;
+  });
+
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -150,22 +231,43 @@ export function controlPage(version: string, shown: readonly Shown[], missing: r
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Contrôle de la vidéo ${escape(version)}</title>
   <style>
-    body { font: 15px/1.5 system-ui, sans-serif; margin: 0 auto; padding: 16px; max-width: 1400px; color: #222; background: #fff; }
-    section { border-top: 1px solid #ccc; padding: 8px 0 16px; }
-    h2 { font-size: 1.1em; margin: 8px 0 4px; }
-    .look { font-weight: 600; margin: 4px 0; }
-    .where { color: #555; margin: 4px 0 8px; }
-    .proof { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-    .proof img, .proof video { max-width: min(100%, 640px); max-height: 80vh; border: 1px solid #ccc; }
-    .missing { color: #a00; }
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 0 auto; padding: 16px; max-width: 1500px; color: #222; background: #fff; }
+    h1 { margin: 0 0 4px; } h2 { margin: 32px 0 8px; border-bottom: 2px solid #222; } h3 { font-size: 1.1em; margin: 0 0 6px; }
+    code { font-size: .85em; color: #555; }
+    .summary { border-collapse: collapse; margin: 8px 0; } .summary th, .summary td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; vertical-align: top; }
+    .ok { color: #1a7f37; font-weight: 600; } .ko { color: #b00; font-weight: 600; } .skip { color: #777; }
+    .point, .journey { border-top: 1px solid #ccc; padding: 12px 0 20px; }
+    .entry { font-weight: normal; color: #555; font-size: .9em; }
+    .look { background: #fff6d6; border-left: 4px solid #d4a000; padding: 6px 10px; margin: 6px 0 10px; }
+    .label { font-weight: 700; margin-right: 6px; }
+    .point-body { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+    .scenario { flex: 1 1 420px; min-width: 0; } .scenario-title { font-weight: 600; margin: 0 0 4px; }
+    .steps { margin: 0; padding-left: 22px; } .steps li { margin: 2px 0; padding: 3px 6px; border-radius: 4px; }
+    .steps .line { display: block; } .steps .name { display: block; font-size: .8em; color: #777; }
+    .steps li.current { background: #fff6d6; outline: 2px solid #d4a000; } .steps li.failed { background: #fde8e8; }
+    .at { font: inherit; font-size: .85em; border: 1px solid #aaa; background: #f6f6f6; border-radius: 4px; cursor: pointer; padding: 0 6px; margin-top: 2px; }
+    .proof { flex: 1 1 420px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+    .proof img, .proof video { max-width: min(100%, 640px); max-height: 75vh; border: 1px solid #ccc; }
+    .small { font-size: .9em; color: #555; margin: 0 0 4px; } .missing { color: #b00; }
   </style>
 </head>
 <body>
   <h1>Contrôle de la vidéo ${escape(version)}</h1>
-  <p>${shown.length} point(s) à contrôler ; verdicts dans le plan de recette. Une vidéo commence ${lead} s avant son étape.</p>
+  <p>${shown.length} point(s) à contrôler ; verdicts dans le plan de recette. Les parcours se lisent comme des scénarios ; « ▶ » place la vidéo du bloc au moment de l'étape (${lead} s avant).</p>
+  <h2>Ce qui a été joué</h2>
+  ${summary}
   ${absent.length === 0 ? "" : `<h2 class="missing">Étapes désignées introuvables</h2><ul class="missing">${absent.join("")}</ul>`}
-  ${failed.length === 0 ? "" : `<h2 class="missing">Parcours en échec</h2><ul class="missing">${failed.join("")}</ul>`}
-  ${points.join("")}
+  <h2>Points à contrôler</h2>
+  ${points.length === 0 ? "<p>Aucun point désigné par le plan de recette.</p>" : points.join("")}
+  <h2>Scénarios joués</h2>
+  ${scenarios.join("")}
+  <script>
+    document.addEventListener("click", (e) => {
+      const at = e.target.closest("button.at");
+      const video = at && document.getElementById(at.dataset.video);
+      if (video) { video.currentTime = Number(at.dataset.t); video.play(); video.scrollIntoView({ block: "nearest" }); }
+    });
+  </script>
 </body>
 </html>
 `;

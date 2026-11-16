@@ -75,6 +75,8 @@ Quatre règles, **appliquées dans l'ordre** ; la première qui s'applique donne
 3. **Automatique** : dépendance au serveur, ou risque moyen ou élevé que des vérifications du parcours suffisent à établir : une quantité juste, un article déplacé, une écriture relue après rechargement, un en-tête.
 4. **CI** : le reste, c'est-à-dire un risque faible (gravité et probabilité faibles ou moyennes) sans dépendance à l'environnement. Rien de plus que les parcours de base, dont la vidéo ne se regarde qu'en cas d'échec.
 
+Dans le plan de recette, la voie s'écrit en toutes lettres, dans la colonne qui suit le changement : **manuel**, **auto + vidéo**, **auto**, **CI**.
+
 **Un point automatisable sans parcours existant** : soit on écrit le parcours, s'il resservira (une fonction durable, un écran qui évoluera), soit on le vérifie à la main pour cette release, et le plan de recette le dit.
 
 ```mermaid
@@ -110,7 +112,7 @@ Le verdict de chaque point va dans le plan de recette : conforme, ou défaut ave
 2. **Parcours ciblés** que l'analyse demande, écrits dans une PR ordinaire, fusionnée avant la PR de release ou ajoutée à elle.
 3. **Déploiement en recette** de l'archive de la PR de release, par le développeur (`sudo tribe-menus-deploy --env recette --pr <numéro>`).
 4. **`make recette-auto`** depuis le Dev Container, avant la séance manuelle, qui part souvent de la même IP (limitation des demandes de code, ADR 0021).
-5. **Contrôle de la vidéo**, point par point, verdicts dans le plan de recette.
+5. **Contrôle de la vidéo**, point par point, verdicts dans le plan de recette. `make recette-page` sert les pages de contrôle et les vidéos du volume sur `http://localhost:8095/`, port à transférer dans VS Code ; un navigateur de l'hôte (Chrome, Firefox) les lit plus sûrement que celui de VS Code.
 6. **Séance manuelle**, guidée pas à pas, réduite à la voie 1.
 7. **Défauts** : chacun se corrige par une PR ordinaire ; la PR de release est mise à jour avec `main`, puis une **analyse réduite aux changements du correctif** dit ce qu'on rejoue (au moins les parcours de base et l'entrée du défaut).
 8. **Fin de la recette** : plan de recette rempli, release décidée ou abandonnée ; `make recette-clean VERSION=vX.Y.Z` supprime les vidéos de la version.
