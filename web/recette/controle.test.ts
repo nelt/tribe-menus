@@ -55,8 +55,20 @@ test("parseControlPoints refuses a row it cannot read, and the template", () => 
 });
 
 const ran: RanTest[] = [
-  { file: "courses.spec.ts", project: "phone-chromium", title: "recalcul", status: "passed", video: "resultats/a/video.webm", steps: [{ title: "Liste recalculée", offset: 12.34, capture: "captures/V1-phone-chromium.png" }] },
-  { file: "courses.spec.ts", project: "computer-chromium", title: "recalcul", status: "failed", steps: [] },
+  {
+    file: "courses.spec.ts",
+    project: "phone-chromium",
+    title: "recompute",
+    scenario: "Liste périmée et <recalcul>",
+    status: "passed",
+    video: "resultats/a/video.webm",
+    steps: [
+      { title: "List up to date", offset: 0.5 },
+      { title: "Stale list", offset: 8.2, gherkin: ["Quand je reviens sur l'application", "Alors un bandeau s'affiche"] },
+      { title: "Liste recalculée", offset: 12.34, gherkin: ["Quand je touche « Recalculer »", "Et j'attends"], capture: "captures/V1-phone-chromium.png" },
+    ],
+  },
+  { file: "courses.spec.ts", project: "computer-chromium", title: "recompute", status: "failed", steps: [{ title: "Stale list", offset: 3, gherkin: ["Quand je reviens"], failed: true }] },
 ];
 
 test("matchPoints finds the step in the test of the file and the project, or reports it missing", () => {
@@ -72,14 +84,24 @@ test("matchPoints finds the step in the test of the file and the project, or rep
   );
 });
 
-test("controlPage escapes the plan and links the video at the instant of the step", () => {
+test("controlPage shows each point with its scenario, the designated step, its capture and its video", () => {
   const points = parseControlPoints(plan("| V1 | 3 | `courses.spec.ts`, `phone-chromium` et `computer-chromium` | « Liste recalculée » | <b>bandeau</b> & co |"));
   const { shown, missing } = matchPoints(points, ran);
   const page = controlPage("v0.6.0", shown, missing, ran);
+  // The plan and the scenario are escaped.
   assert.match(page, /&#60;b&#62;bandeau&#60;\/b&#62; &#38; co/);
   assert.doesNotMatch(page, /<b>bandeau/);
-  assert.match(page, /<video controls preload="metadata" src="resultats\/a\/video.webm#t=11.3">/);
+  assert.match(page, /Liste périmée et &#60;recalcul&#62;/);
+  // The video opens a second before the step; each step puts it at its instant.
+  assert.match(page, /<video id="v0" controls preload="metadata" src="resultats\/a\/video.webm#t=11.3">/);
+  assert.match(page, /<button type="button" class="at" data-video="v0" data-t="7.2"[^>]*>▶ 8.2 s<\/button>/);
   assert.match(page, /<img src="captures\/V1-phone-chromium.png"/);
+  // The designated step stands out, its keywords in bold; a step without Gherkin is tooling, left out.
+  assert.match(page, /<li class="current"><span class="lines"><span class="line"><strong>Quand<\/strong> je touche « Recalculer »<\/span><span class="line"><strong>Et<\/strong> j&#39;attends<\/span>/);
+  assert.doesNotMatch(page, /List up to date/);
+  // What ran, what is missing, what failed.
+  assert.match(page, /<th>phone-chromium<\/th><th>computer-chromium<\/th>/);
   assert.match(page, /Étapes désignées introuvables.*V1 : <code>courses.spec.ts<\/code>, computer-chromium/s);
-  assert.match(page, /Parcours en échec.*computer-chromium : « recalcul » \(failed\)/s);
+  assert.match(page, /<li class="failed"><span class="lines"><span class="line"><strong>Quand<\/strong> je reviens/);
+  assert.match(page, /✗ failed/);
 });

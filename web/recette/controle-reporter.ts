@@ -5,7 +5,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import type { FullResult, Reporter, TestCase, TestResult, TestStep } from "@playwright/test/reporter";
 import { type ControlPoint, type RanStep, type RanTest, controlPage, matchPoints } from "./controle.ts";
-import { captureName, videoStartAnnotation } from "./test.ts";
+import { captureName, gherkinName, scenarioAnnotation, videoStartAnnotation } from "./test.ts";
 
 interface Options {
   /** docs/recettes/vX.Y.Z.md */
@@ -43,12 +43,22 @@ export default class ControlReporter implements Reporter {
     if (video !== undefined) {
       ran.video = relative(this.#options.outputDir, video);
     }
+    const scenario = [...test.annotations, ...result.annotations].find((a) => a.type === scenarioAnnotation)?.description;
+    if (scenario !== undefined) {
+      ran.scenario = scenario;
+    }
     for (const s of flatten(result.steps)) {
       const step: RanStep = { title: s.title, offset: (s.startTime.getTime() - start) / 1000 };
-      // The capture is attached by the last action of the step, a step of its own.
-      const body = [s, ...s.steps.filter((c) => c.category !== "test.step")].flatMap((c) => c.attachments)
-        .filter((a) => a.name === captureName)
-        .at(-1)?.body;
+      if (s.error !== undefined) {
+        step.failed = true;
+      }
+      // Attachments are made by actions of the step, steps of their own.
+      const attached = [s, ...s.steps.filter((c) => c.category !== "test.step")].flatMap((c) => c.attachments);
+      const gherkin = attached.find((a) => a.name === gherkinName)?.body;
+      if (gherkin !== undefined) {
+        step.gherkin = gherkin.toString("utf8").split("\n");
+      }
+      const body = attached.filter((a) => a.name === captureName).at(-1)?.body;
       if (body !== undefined) {
         this.#captures.push({ test: ran, step, body });
       }

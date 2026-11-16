@@ -7,7 +7,7 @@ import { chmod, readFile } from "node:fs/promises";
 import type { BrowserContext, Page } from "@playwright/test";
 import { promisify } from "node:util";
 import { recetteSettings } from "./config.ts";
-import { expect, step, test } from "./test.ts";
+import { expect, scenario, step, test } from "./test.ts";
 
 const settings = recetteSettings();
 
@@ -46,16 +46,18 @@ async function reusedSession(page: Page): Promise<boolean> {
   return menus.isVisible();
 }
 
-test("sign in with the code received by email", async ({ page }) => {
+test("sign in with the code received by email", scenario("Connexion par le code reçu par e-mail"), async ({ page }) => {
   // The tool waits for 2 minutes at most, after its compilation.
   test.setTimeout(4 * 60_000);
 
-  if (await test.step("Session of the last run reused", () => reusedSession(page))) {
+  // Tooling, not the application: no Gherkin, left out of the scenario on the control page.
+  const reused = await test.step("Session of the last run reused", () => reusedSession(page));
+  if (reused) {
     test.info().annotations.push({ type: "session", description: "reused, no code request" });
     return;
   }
 
-  await step(page, "Login screen", async () => {
+  await step(page, "Login screen", ["Étant donné que je ne suis pas connecté à la tribu", "Quand j'ouvre l'adresse de la tribu", "Alors l'écran de connexion « Bienvenue ! » s'affiche, à l'adresse …/connexion"], async () => {
     await page.goto("./");
     await expect(page).toHaveURL(/\/connexion$/);
     await expect(page.getByRole("heading", { name: "Bienvenue !" })).toBeVisible();
@@ -65,28 +67,34 @@ test("sign in with the code received by email", async ({ page }) => {
   // point 2).
   await test.step("Box emptied", () => mailbox("-drain"));
 
-  let since = new Date();
-  await step(page, "Code request", async () => {
-    await page.getByLabel("Votre adresse e-mail").fill(settings.address);
-    since = new Date();
-    await page.getByRole("button", { name: "Recevoir un code" }).click();
-    // A refusal, by the limits of the code requests above all (ADR 0021), is said as such.
-    const sent = page.getByRole("heading", { name: "Vérifiez vos e-mails" });
-    const refused = page.getByRole("alert");
-    await expect(sent.or(refused)).toBeVisible();
-    if (await refused.isVisible()) {
-      throw new Error(`code request refused: ${await refused.innerText()}`);
-    }
-  });
+  const code = await step(
+    page,
+    "Code request",
+    [
+      `Quand je saisis "${settings.address}" et touche « Recevoir un code »`,
+      "Alors l'écran « Vérifiez vos e-mails » s'affiche, sans message de refus",
+      `Et l'application envoie à "${settings.address}" un e-mail portant un code à 8 chiffres, reçu en moins de 2 minutes`,
+    ],
+    async () => {
+      await page.getByLabel("Votre adresse e-mail").fill(settings.address);
+      const since = new Date();
+      await page.getByRole("button", { name: "Recevoir un code" }).click();
+      // A refusal, by the limits of the code requests above all (ADR 0021), is said as such.
+      const sent = page.getByRole("heading", { name: "Vérifiez vos e-mails" });
+      const refused = page.getByRole("alert");
+      await expect(sent.or(refused)).toBeVisible();
+      if (await refused.isVisible()) {
+        throw new Error(`code request refused: ${await refused.innerText()}`);
+      }
+      return fetchCode(since);
+    },
+  );
 
-  const code = await test.step("Code fetched from the box", () => fetchCode(since));
-
-  await step(page, "Signed in", async () => {
+  await step(page, "Signed in", ["Quand je saisis le code reçu et touche « Se connecter »", "Alors le planning « Menus » s'affiche"], async () => {
     await page.getByLabel("Code de connexion").fill(code);
     await page.getByRole("button", { name: "Se connecter" }).click();
     await expect(page.getByRole("heading", { name: "Menus" })).toBeVisible();
+    await page.context().storageState({ path: settings.storageState });
+    await chmod(settings.storageState, 0o600);
   });
-
-  await page.context().storageState({ path: settings.storageState });
-  await chmod(settings.storageState, 0o600);
 });

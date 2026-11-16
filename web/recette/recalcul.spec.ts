@@ -7,7 +7,7 @@
 import type { Browser } from "@playwright/test";
 import { recetteSettings } from "./config.ts";
 import { addMealShopping, check, checkout, comeBack, itemLine, listCard, openCourses, openListPicker, openTomorrow, runSuffix, serve } from "./helpers.ts";
-import { expect, step, test } from "./test.ts";
+import { expect, scenario, step, test } from "./test.ts";
 
 const staleText = "Des repas ont changé depuis l’ajout de leurs courses à cette liste.";
 
@@ -33,12 +33,13 @@ async function doubleFromAnotherDevice(browser: Browser, baseURL: string, dish: 
   }
 }
 
-test("stale list, Recalculer and the taken part", async ({ page, browser, baseURL }, testInfo) => {
+test("stale list, Recalculer and the taken part", scenario("Liste rendue périmée par un autre appareil, « Recalculer » et part prise"), async ({ page, browser, baseURL }, testInfo) => {
   const run = runSuffix(testInfo.project.name);
   const dish = `Recalcul ${run}`;
   const ingredient = `farine ${run}`;
 
-  await step(page, "List up to date", async () => {
+  // Tooling, not the application: no Gherkin, left out of the scenario on the control page.
+  await test.step("List up to date", async () => {
     // A run stopped halfway may have left « Courses » stale: recomputed first.
     await openCourses(page);
     const recompute = page.locator(".banner-stale").getByRole("button", { name: "Recalculer" });
@@ -48,7 +49,7 @@ test("stale list, Recalculer and the taken part", async ({ page, browser, baseUR
     }
   });
 
-  await step(page, "Dish of 200 g created", async () => {
+  await step(page, "Dish of 200 g created", [`Étant donné le plat "${dish}" défini pour la taille de la tribu, avec 200 g de "${ingredient}", créé depuis l'écran Nouveau plat`], async () => {
     await page.goto("plats/nouveau");
     await expect(page.getByRole("heading", { name: "Nouveau plat" })).toBeVisible();
     await page.getByLabel("Nom du plat").fill(dish);
@@ -61,39 +62,39 @@ test("stale list, Recalculer and the taken part", async ({ page, browser, baseUR
     await expect(page.getByRole("heading", { name: "Plats", exact: true })).toBeVisible();
   });
 
-  await step(page, "Dish served tomorrow evening", async () => {
+  await step(page, "Dish served tomorrow evening", [`Et le plat "${dish}" servi demain soir pour la taille de la tribu, ajouté depuis le planning`], async () => {
     await openTomorrow(page, "soir");
     await serve(page, dish);
   });
 
-  await step(page, "Meal shopping checked", async () => {
+  await step(page, "Meal shopping checked", [`Et les courses des repas ajoutées à la liste "Courses", sans modifier la période proposée`, `Et la liste "Courses" contient 200 g de "${ingredient}"`, `Et je coche "${ingredient}" dans la liste "Courses"`], async () => {
     await addMealShopping(page);
     // Served for the size of the tribe, which the dish is defined for by default.
     await expect(itemLine(page, ingredient).locator(".item-quantity")).toHaveText("200 g");
     await check(page, ingredient);
   });
 
-  await test.step("Servings doubled on another device", () => doubleFromAnotherDevice(browser, baseURL ?? "", dish));
+  await step(undefined, "Servings doubled on another device", [`Quand, sur un autre appareil connecté à la même tribu, je double les parts du plat "${dish}" de demain soir`, "Alors le serveur garde le nouveau nombre de parts (relu après un rechargement)"], () => doubleFromAnotherDevice(browser, baseURL ?? "", dish));
 
-  await step(page, "Stale list seen on return", async () => {
+  await step(page, "Stale list seen on return", ["Quand je reviens sur l'application du premier appareil, sans la recharger", `Alors un bandeau en haut de la liste "Courses" indique que des repas ont changé`, "Et le bandeau propose l'action « Recalculer »"], async () => {
     await comeBack(page);
     await expect(page.locator(".banner-stale")).toContainText(staleText);
     await expect(page.locator(".banner-stale").getByRole("button", { name: "Recalculer" })).toBeEnabled();
   });
 
-  await step(page, "Lists with modified meals", async () => {
+  await step(page, "Lists with modified meals", ["Quand j'ouvre le choix des listes", `Alors la liste "Courses" porte la mention « Repas modifiés »`], async () => {
     await openListPicker(page);
     await expect(listCard(page, "Courses")).toContainText("Repas modifiés");
   });
 
-  await step(page, "List recomputed", async () => {
+  await step(page, "List recomputed", [`Quand je touche « Recalculer » dans la liste "Courses"`, "Alors un message m'indique « Liste recalculée. »", "Et le bandeau n'est plus affiché"], async () => {
     await openCourses(page);
     await page.locator(".banner-stale").getByRole("button", { name: "Recalculer" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Liste recalculée." })).toBeVisible();
     await expect(page.getByText(staleText)).toHaveCount(0);
   });
 
-  await step(page, "Taken part shown", async () => {
+  await step(page, "Taken part shown", [`Alors la liste "Courses" contient 400 g de "${ingredient}"`, `Et "${ingredient}" n'est plus coché, avec « encore 200 g » sous son nom`, "Et son dépliage dit « 200 g déjà pris : il reste 200 g à prendre. Cochez quand tout est pris. »"], async () => {
     const line = itemLine(page, ingredient);
     await expect(line.locator(".item-quantity")).toHaveText("400 g");
     await expect(line.locator(".item-remaining")).toHaveText("encore 200 g");
@@ -102,7 +103,7 @@ test("stale list, Recalculer and the taken part", async ({ page, browser, baseUR
     await expect(line.locator(".item-taken-note")).toHaveText("200 g déjà pris : il reste 200 g à prendre. Cochez quand tout est pris.");
   });
 
-  await step(page, "Item taken out", async () => {
+  await step(page, "Item taken out", [`Quand je coche "${ingredient}" puis termine les courses`, `Alors "${ingredient}" ne figure plus dans la liste "Courses"`], async () => {
     await check(page, ingredient);
     await checkout(page, ingredient);
   });
